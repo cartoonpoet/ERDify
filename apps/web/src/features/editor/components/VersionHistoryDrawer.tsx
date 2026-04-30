@@ -1,4 +1,5 @@
 import { useVersionHistory } from "../hooks/useVersionHistory";
+import { useEditorStore } from "../stores/useEditorStore";
 
 interface VersionHistoryDrawerProps {
   diagramId: string;
@@ -8,6 +9,7 @@ interface VersionHistoryDrawerProps {
 export function VersionHistoryDrawer({ diagramId, onClose }: VersionHistoryDrawerProps) {
   const { versions, isLoadingVersions, restoreVersion, isRestoring } =
     useVersionHistory(diagramId);
+  const isDirty = useEditorStore((s) => s.isDirty);
 
   return (
     <div
@@ -80,7 +82,12 @@ export function VersionHistoryDrawer({ diagramId, onClose }: VersionHistoryDrawe
                   </div>
                 </div>
                 <button
-                  onClick={() => restoreVersion(v.id)}
+                  onClick={() => {
+                    if (isDirty && !window.confirm("저장되지 않은 변경사항이 있습니다. 복원하면 변경사항이 사라집니다. 계속하시겠습니까?")) {
+                      return;
+                    }
+                    restoreVersion(v.id);
+                  }}
                   disabled={isRestoring}
                   style={{
                     padding: "4px 10px",

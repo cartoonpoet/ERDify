@@ -24,9 +24,9 @@ export function EditorPage() {
     if (data) setDocument(data.content);
   }, [data, setDocument]);
 
-  useDiagramAutosave(diagramId!);
+  useDiagramAutosave(diagramId ?? "");
 
-  const { saveVersion, isSavingVersion } = useVersionHistory(diagramId!);
+  const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "");
 
   function handleAddTable() {
     applyCommand((doc) =>

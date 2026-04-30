@@ -8,7 +8,7 @@ export function useDiagramAutosave(diagramId: string, delayMs = 3000): void {
   const clearDirty = useEditorStore((s) => s.clearDirty);
 
   useEffect(() => {
-    if (!isDirty || !document) return;
+    if (!isDirty || !document || !diagramId) return;
 
     const timer = setTimeout(async () => {
       try {
