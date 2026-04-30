@@ -40,7 +40,7 @@ export const CreateProjectModal = ({ open, onClose, onCreated, orgId }: CreatePr
           placeholder="예: Backend API"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          error={error ?? undefined}
+          {...(error ? { error } : {})}
           required
           autoFocus
         />

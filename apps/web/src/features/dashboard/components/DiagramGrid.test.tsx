@@ -3,15 +3,28 @@ import { MemoryRouter } from "react-router-dom";
 import { DiagramGrid } from "./DiagramGrid";
 import type { DiagramResponse } from "../../../shared/api/diagrams.api";
 
+const makeContent = (dialect: "postgresql" | "mysql") => ({
+  format: "erdify.schema.v1" as const,
+  id: "doc-1",
+  name: "test",
+  dialect,
+  entities: [],
+  relationships: [],
+  indexes: [] as [],
+  views: [] as [],
+  layout: { entityPositions: {} },
+  metadata: { revision: 0, stableObjectIds: true as const, createdAt: "", updatedAt: "" },
+});
+
 const diagrams: DiagramResponse[] = [
   {
     id: "d1", projectId: "p1", name: "User Schema",
-    content: { entities: [], relationships: [], dialect: "postgresql" },
+    content: makeContent("postgresql"),
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   },
   {
     id: "d2", projectId: "p1", name: "Order Schema",
-    content: { entities: [], relationships: [], dialect: "mysql" },
+    content: makeContent("mysql"),
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   },
 ];

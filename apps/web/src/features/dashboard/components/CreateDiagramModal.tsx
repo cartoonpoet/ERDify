@@ -41,7 +41,7 @@ export const CreateDiagramModal = ({ open, onClose, onCreated, projectId }: Crea
           placeholder="예: User Schema"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          error={error ?? undefined}
+          {...(error ? { error } : {})}
           required
           autoFocus
         />
