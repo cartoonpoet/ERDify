@@ -49,11 +49,7 @@ export class CollaborationService {
   async applyUpdate(diagramId: string, update: Uint8Array): Promise<Uint8Array> {
     const room = this.rooms.get(diagramId);
     if (!room) throw new NotFoundException("Room not found");
-    try {
-      Y.applyUpdate(room.ydoc, update);
-    } catch {
-      // ignore malformed/no-op update bytes
-    }
+    Y.applyUpdate(room.ydoc, update);
     return update;
   }
 
