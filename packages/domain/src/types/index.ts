@@ -8,4 +8,4 @@ export type {
   DiagramValidationResult,
   ReferentialAction,
   RelationshipCardinality
-} from "./diagram.type";
+} from "./diagram.type.js";

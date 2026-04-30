@@ -1,4 +1,4 @@
-import type { DiagramDialect, DiagramDocument } from "../types";
+import type { DiagramDialect, DiagramDocument } from "../types/index.js";
 
 interface CreateEmptyDiagramInput {
   id: string;

@@ -2,8 +2,11 @@
   "extends": "@erdify/config-typescript/node.json",
   "compilerOptions": {
     "declaration": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "outDir": "dist",
     "rootDir": "src"
   },
-  "include": ["src"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }

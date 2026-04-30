@@ -1,5 +1,5 @@
-export { createEmptyDiagram } from "./schema/create-empty-diagram";
-export { validateDiagram } from "./validation/validate-diagram";
+export { createEmptyDiagram } from "./schema/create-empty-diagram.js";
+export { validateDiagram } from "./validation/validate-diagram.js";
 export type {
   DiagramColumn,
   DiagramDialect,
@@ -10,4 +10,4 @@ export type {
   DiagramValidationResult,
   ReferentialAction,
   RelationshipCardinality
-} from "./types";
+} from "./types/index.js";

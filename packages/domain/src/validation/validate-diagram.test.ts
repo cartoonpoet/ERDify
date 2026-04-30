@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEmptyDiagram, validateDiagram } from "../index";
+import { createEmptyDiagram, validateDiagram } from "../index.js";
 
 describe("canonical ERD document", () => {
   it("creates a valid empty PostgreSQL diagram", () => {

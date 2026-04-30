@@ -1,4 +1,4 @@
-import type { DiagramDocument, DiagramValidationResult } from "../types";
+import type { DiagramDocument, DiagramValidationResult } from "../types/index.js";
 
 export function validateDiagram(diagram: DiagramDocument): DiagramValidationResult {
   const errors: string[] = [];
