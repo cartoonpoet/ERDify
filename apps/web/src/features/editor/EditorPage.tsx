@@ -6,8 +6,10 @@ import { getDiagram } from "../../shared/api/diagrams.api";
 import { useEditorStore } from "./stores/useEditorStore";
 import { EditorCanvas } from "./components/EditorCanvas";
 import { VersionHistoryDrawer } from "./components/VersionHistoryDrawer";
+import { PresenceIndicator } from "./components/PresenceIndicator";
 import { useDiagramAutosave } from "./hooks/useDiagramAutosave";
 import { useVersionHistory } from "./hooks/useVersionHistory";
+import { useRealtimeCollaboration } from "./hooks/useRealtimeCollaboration";
 
 export function EditorPage() {
   const { diagramId } = useParams<{ diagramId: string }>();
@@ -27,6 +29,7 @@ export function EditorPage() {
   useDiagramAutosave(diagramId ?? "");
 
   const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "");
+  const { collaborators, isConnected } = useRealtimeCollaboration(diagramId ?? "");
 
   function handleAddTable() {
     applyCommand((doc) =>
@@ -61,6 +64,18 @@ export function EditorPage() {
       >
         <span style={{ fontWeight: 600, fontSize: 14 }}>{data?.name}</span>
         <span style={{ fontSize: 12, color: "#9ca3af" }}>{saveStatus}</span>
+        <span
+          style={{
+            fontSize: 11,
+            color: isConnected ? "#059669" : "#9ca3af",
+            padding: "1px 6px",
+            borderRadius: 10,
+            background: isConnected ? "#d1fae5" : "#f3f4f6"
+          }}
+        >
+          {isConnected ? "실시간" : "오프라인"}
+        </span>
+        <PresenceIndicator collaborators={collaborators} />
         <div style={{ flex: 1 }} />
         <button
           onClick={handleAddTable}
