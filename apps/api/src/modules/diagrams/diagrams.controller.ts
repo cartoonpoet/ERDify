@@ -1,0 +1,48 @@
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import type { JwtPayload } from "../auth/strategies/jwt.strategy";
+import type { CreateDiagramDto } from "./dto/create-diagram.dto";
+import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
+import type { DiagramsService } from "./diagrams.service";
+
+@Controller()
+@UseGuards(JwtAuthGuard)
+export class DiagramsController {
+  constructor(private readonly diagramsService: DiagramsService) {}
+
+  @Post("projects/:projectId/diagrams")
+  create(
+    @CurrentUser() user: JwtPayload,
+    @Param("projectId") projectId: string,
+    @Body() dto: CreateDiagramDto
+  ) {
+    return this.diagramsService.create(projectId, user.sub, dto);
+  }
+
+  @Get("projects/:projectId/diagrams")
+  findAll(@CurrentUser() user: JwtPayload, @Param("projectId") projectId: string) {
+    return this.diagramsService.findAll(projectId, user.sub);
+  }
+
+  @Get("diagrams/:id")
+  findOne(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
+    return this.diagramsService.findOne(id, user.sub);
+  }
+
+  @Patch("diagrams/:id")
+  update(@CurrentUser() user: JwtPayload, @Param("id") id: string, @Body() dto: UpdateDiagramDto) {
+    return this.diagramsService.update(id, user.sub, dto);
+  }
+
+  @Post("diagrams/:id/versions")
+  @HttpCode(HttpStatus.CREATED)
+  saveVersion(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
+    return this.diagramsService.saveVersion(id, user.sub);
+  }
+
+  @Get("diagrams/:id/versions")
+  findVersions(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
+    return this.diagramsService.findVersions(id, user.sub);
+  }
+}

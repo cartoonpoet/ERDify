@@ -2,9 +2,9 @@ import { randomUUID } from "crypto";
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { OrganizationMember, Project } from "@erdify/db";
-import { Repository } from "typeorm";
-import { CreateProjectDto } from "./dto/create-project.dto";
-import { UpdateProjectDto } from "./dto/update-project.dto";
+import type { Repository } from "typeorm";
+import type { CreateProjectDto } from "./dto/create-project.dto";
+import type { UpdateProjectDto } from "./dto/update-project.dto";
 
 @Injectable()
 export class ProjectService {

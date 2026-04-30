@@ -13,9 +13,9 @@ import {
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
-import { CreateProjectDto } from "./dto/create-project.dto";
-import { UpdateProjectDto } from "./dto/update-project.dto";
-import { ProjectService } from "./project.service";
+import type { CreateProjectDto } from "./dto/create-project.dto";
+import type { UpdateProjectDto } from "./dto/update-project.dto";
+import type { ProjectService } from "./project.service";
 
 @Controller("organizations/:orgId/projects")
 @UseGuards(JwtAuthGuard)

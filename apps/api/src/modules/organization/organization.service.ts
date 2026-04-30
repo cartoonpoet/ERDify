@@ -8,10 +8,10 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Organization, OrganizationMember } from "@erdify/db";
-import { Repository } from "typeorm";
-import { CreateOrganizationDto } from "./dto/create-organization.dto";
-import { InviteMemberDto } from "./dto/invite-member.dto";
-import { UpdateOrganizationDto } from "./dto/update-organization.dto";
+import type { Repository } from "typeorm";
+import type { CreateOrganizationDto } from "./dto/create-organization.dto";
+import type { InviteMemberDto } from "./dto/invite-member.dto";
+import type { UpdateOrganizationDto } from "./dto/update-organization.dto";
 
 @Injectable()
 export class OrganizationService {

@@ -3,7 +3,7 @@ import type { OrganizationMember, Project } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { ProjectService } from "./project.service";
 
-type MockRepo<T> = {
+type MockRepo<_T> = {
   findOne: ReturnType<typeof vi.fn>;
   find: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;

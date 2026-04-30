@@ -18,6 +18,7 @@ export function createEmptyDiagram(input: CreateEmptyDiagramInput): DiagramDocum
     relationships: [],
     indexes: [],
     views: [],
+    layout: { entityPositions: {} },
     metadata: {
       revision: 1,
       stableObjectIds: true,

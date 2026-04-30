@@ -8,7 +8,7 @@ import type { Organization, OrganizationMember } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { OrganizationService } from "./organization.service";
 
-type MockRepo<T> = {
+type MockRepo<_T> = {
   findOne: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
   save: ReturnType<typeof vi.fn>;

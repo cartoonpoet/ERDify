@@ -3,9 +3,11 @@ export type {
   DiagramDialect,
   DiagramDocument,
   DiagramEntity,
+  DiagramLayout,
   DiagramMetadata,
   DiagramRelationship,
   DiagramValidationResult,
+  EntityPosition,
   ReferentialAction,
   RelationshipCardinality
 } from "./diagram.type.js";

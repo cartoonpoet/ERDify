@@ -43,6 +43,15 @@ export interface DiagramMetadata {
   updatedAt: string;
 }
 
+export interface EntityPosition {
+  x: number;
+  y: number;
+}
+
+export interface DiagramLayout {
+  entityPositions: Record<string, EntityPosition>;
+}
+
 export interface DiagramDocument {
   format: "erdify.schema.v1";
   id: string;
@@ -52,6 +61,7 @@ export interface DiagramDocument {
   relationships: DiagramRelationship[];
   indexes: [];
   views: [];
+  layout: DiagramLayout;
   metadata: DiagramMetadata;
 }
 

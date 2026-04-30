@@ -13,10 +13,10 @@ import {
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
-import { CreateOrganizationDto } from "./dto/create-organization.dto";
-import { InviteMemberDto } from "./dto/invite-member.dto";
-import { UpdateOrganizationDto } from "./dto/update-organization.dto";
-import { OrganizationService } from "./organization.service";
+import type { CreateOrganizationDto } from "./dto/create-organization.dto";
+import type { InviteMemberDto } from "./dto/invite-member.dto";
+import type { UpdateOrganizationDto } from "./dto/update-organization.dto";
+import type { OrganizationService } from "./organization.service";
 
 @Controller("organizations")
 @UseGuards(JwtAuthGuard)

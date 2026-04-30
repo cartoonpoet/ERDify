@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { AuthModule } from "./modules/auth/auth.module";
 import { DatabaseModule } from "./modules/database/database.module";
 import { HealthModule } from "./modules/health/health.module";
+import { DiagramsModule } from "./modules/diagrams/diagrams.module";
 import { OrganizationModule } from "./modules/organization/organization.module";
 import { ProjectModule } from "./modules/project/project.module";
 
@@ -15,6 +16,7 @@ import { ProjectModule } from "./modules/project/project.module";
     AuthModule,
     OrganizationModule,
     ProjectModule,
+    DiagramsModule,
     HealthModule
   ]
 })
