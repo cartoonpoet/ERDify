@@ -37,6 +37,7 @@ export const CreateDiagramModal = ({ open, onClose, onCreated, projectId }: Crea
     <Modal open={open} onClose={onClose} title="새 ERD 만들기">
       <form className={form} onSubmit={handleSubmit}>
         <Input
+          id="diagram-name"
           label="ERD 이름"
           placeholder="예: User Schema"
           value={name}

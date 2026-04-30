@@ -35,6 +35,7 @@ export const CreateOrgModal = ({ open, onClose, onCreated }: CreateOrgModalProps
     <Modal open={open} onClose={onClose} title="새 조직 만들기">
       <form className={form} onSubmit={handleSubmit}>
         <Input
+          id="org-name"
           label="조직 이름"
           placeholder="예: Acme Corp"
           value={name}

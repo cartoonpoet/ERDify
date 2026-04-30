@@ -5,7 +5,6 @@ import { listMyOrganizations } from "../../../shared/api/organizations.api";
 import { listProjects } from "../../../shared/api/projects.api";
 import { listDiagrams } from "../../../shared/api/diagrams.api";
 import { useWorkspaceStore } from "../../../shared/stores/useWorkspaceStore";
-import { vars } from "../../../design-system/tokens.css";
 import { OrgRail } from "../components/OrgRail";
 import { ProjectSidebar } from "../components/ProjectSidebar";
 import { DiagramGrid } from "../components/DiagramGrid";
@@ -13,7 +12,7 @@ import { CreateOrgModal } from "../components/CreateOrgModal";
 import { CreateProjectModal } from "../components/CreateProjectModal";
 import { CreateDiagramModal } from "../components/CreateDiagramModal";
 import {
-  shell, topbar, brand, brandAccent, topbarSpacer, avatar, body,
+  shell, topbar, brand, brandAccent, topbarSpacer, avatar, body, emptySidebar,
 } from "./dashboard-page.css";
 
 export const DashboardPage = () => {
@@ -73,7 +72,7 @@ export const DashboardPage = () => {
             onCreateProject={() => setProjectModalOpen(true)}
           />
         ) : (
-          <div style={{ width: 220, borderRight: `1px solid ${vars.color.border}` }} />
+          <div className={emptySidebar} />
         )}
 
         <DiagramGrid

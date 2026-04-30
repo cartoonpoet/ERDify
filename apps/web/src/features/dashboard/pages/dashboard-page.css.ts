@@ -47,3 +47,9 @@ export const body = style({
   gridTemplateColumns: "52px 220px 1fr",
   overflow: "hidden",
 });
+
+export const emptySidebar = style({
+  width: "220px",
+  borderRight: `1px solid ${vars.color.border}`,
+  flexShrink: 0,
+});

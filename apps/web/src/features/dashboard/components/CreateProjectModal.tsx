@@ -36,6 +36,7 @@ export const CreateProjectModal = ({ open, onClose, onCreated, orgId }: CreatePr
     <Modal open={open} onClose={onClose} title="새 프로젝트 만들기">
       <form className={form} onSubmit={handleSubmit}>
         <Input
+          id="project-name"
           label="프로젝트 이름"
           placeholder="예: Backend API"
           value={name}
