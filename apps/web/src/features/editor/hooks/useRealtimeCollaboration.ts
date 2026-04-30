@@ -25,7 +25,7 @@ export function useRealtimeCollaboration(diagramId: string): UseRealtimeCollabor
 
   const socketRef = useRef<Socket | null>(null);
   const ydocRef = useRef<Y.Doc>(new Y.Doc());
-  const isApplyingRemote = useRef(false);
+  const prevDocRef = useRef<string | null>(null);  // moved up here with other refs
 
   const token = useAuthStore((s) => s.token);
   const document = useEditorStore((s) => s.document);
@@ -46,11 +46,13 @@ export function useRealtimeCollaboration(diagramId: string): UseRealtimeCollabor
     socketRef.current = socket;
 
     function applyYjsUpdate(update: Uint8Array) {
-      isApplyingRemote.current = true;
       Y.applyUpdate(ydoc, update);
       const data = sharedContent.get("data");
-      if (data) setDocument(JSON.parse(data) as DiagramDocument);
-      isApplyingRemote.current = false;
+      if (data) {
+        // Synchronously mark prevDocRef so the document-change effect skips the emit
+        prevDocRef.current = data;
+        setDocument(JSON.parse(data) as DiagramDocument);
+      }
     }
 
     socket.on("connect", () => {
@@ -69,9 +71,8 @@ export function useRealtimeCollaboration(diagramId: string): UseRealtimeCollabor
   }, [diagramId, token, setDocument]);
 
   // Send local document changes as Yjs updates
-  const prevDocRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!document || !socketRef.current?.connected || isApplyingRemote.current) return;
+    if (!document || !socketRef.current?.connected) return;
 
     const ydoc = ydocRef.current;
     const sharedContent = ydoc.getMap<string>("content");

@@ -135,4 +135,23 @@ describe("useRealtimeCollaboration", () => {
     });
     expect(mockSocket.emit).toHaveBeenCalledWith("join", { diagramId: "d1" });
   });
+
+  it("emits yjs:update when local document changes while connected", () => {
+    // Set connected = true on the mock
+    mockSocket.connected = true;
+
+    // Provide an initial document
+    storeDoc = { entities: [], format: "erdify.schema.v1" };
+
+    const { rerender } = renderHook(() => useRealtimeCollaboration("d1"));
+
+    // Trigger a document change by updating storeDoc and re-rendering
+    storeDoc = { entities: [{ id: "new-entity" }], format: "erdify.schema.v1" };
+    rerender();
+
+    expect(mockSocket.emit).toHaveBeenCalledWith(
+      "yjs:update",
+      expect.any(Uint8Array)
+    );
+  });
 });
