@@ -6,17 +6,17 @@ import { HealthModule } from "./modules/health/health.module";
 import { DiagramsModule } from "./modules/diagrams/diagrams.module";
 import { OrganizationModule } from "./modules/organization/organization.module";
 import { ProjectModule } from "./modules/project/project.module";
+import { CollaborationModule } from "./modules/collaboration/collaboration.module";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true
-    }),
+    ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     AuthModule,
     OrganizationModule,
     ProjectModule,
     DiagramsModule,
+    CollaborationModule,
     HealthModule
   ]
 })
