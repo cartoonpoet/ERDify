@@ -46,6 +46,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { diagramId: string }
   ): Promise<void> {
+    if (!client.data.userId) { client.disconnect(); return; }
     const { diagramId } = payload;
     client.data.diagramId = diagramId;
     client.join(diagramId);
@@ -63,7 +64,8 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     @ConnectedSocket() client: Socket,
     @MessageBody() update: Uint8Array
   ): Promise<void> {
-    const { diagramId } = client.data as { diagramId: string };
+    const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
+    if (!diagramId || !userId) return;
     const broadcastUpdate = await this.collaborationService.applyUpdate(diagramId, update);
     client.to(diagramId).emit("yjs:update", broadcastUpdate);
     this.collaborationService.schedulePersist(diagramId);
@@ -74,7 +76,8 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { selectedEntityId: string | null }
   ): Promise<void> {
-    const { diagramId, userId } = client.data as { diagramId: string; userId: string };
+    const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
+    if (!diagramId || !userId) return;
     this.collaborationService.updatePresence(diagramId, userId, data);
     const presence = this.collaborationService.getPresence(diagramId);
     client.to(diagramId).emit("presence:state", presence);
@@ -82,7 +85,8 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
 
   @SubscribeMessage("snapshot:request")
   async handleSnapshotRequest(@ConnectedSocket() client: Socket): Promise<void> {
-    const { diagramId } = client.data as { diagramId: string };
+    const { diagramId } = client.data as { diagramId?: string };
+    if (!diagramId) return;
     await this.collaborationService.persistNow(diagramId);
     client.emit("snapshot:saved");
   }

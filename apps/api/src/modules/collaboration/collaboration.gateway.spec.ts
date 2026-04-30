@@ -85,6 +85,7 @@ describe("CollaborationGateway", () => {
       expect(client.emit).toHaveBeenCalledWith("yjs:sync", stateUpdate);
       expect(mockService.addPresence).toHaveBeenCalledWith("d1", "user-1", "socket-1");
       expect(mockServer.to).toHaveBeenCalledWith("d1");
+      expect(mockServer.emit).toHaveBeenCalledWith("presence:state", []);
     });
   });
 
@@ -113,6 +114,7 @@ describe("CollaborationGateway", () => {
 
       expect(mockService.updatePresence).toHaveBeenCalledWith("d1", "user-1", { selectedEntityId: "e1" });
       expect(client.to).toHaveBeenCalledWith("d1");
+      expect(client.emit).toHaveBeenCalledWith("presence:state", []);
     });
   });
 
@@ -126,6 +128,7 @@ describe("CollaborationGateway", () => {
 
       expect(mockService.leaveRoom).toHaveBeenCalledWith("d1", "user-1");
       expect(mockServer.to).toHaveBeenCalledWith("d1");
+      expect(mockServer.emit).toHaveBeenCalledWith("presence:state", []);
     });
 
     it("does nothing if client never joined a diagram", async () => {
