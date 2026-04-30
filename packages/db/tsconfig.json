@@ -1,0 +1,11 @@
+{
+  "extends": "@erdify/config-typescript/node.json",
+  "compilerOptions": {
+    "declaration": true,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}
