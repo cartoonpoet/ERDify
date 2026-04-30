@@ -30,4 +30,11 @@ describe("Modal", () => {
     render(<Modal open onClose={vi.fn()} title="조직 만들기"><div>내용</div></Modal>);
     expect(screen.getByText("조직 만들기")).toBeInTheDocument();
   });
+
+  it("패널 내부 클릭 시 onClose가 호출되지 않는다", () => {
+    const onClose = vi.fn();
+    render(<Modal open onClose={onClose} title="테스트"><div data-testid="panel-child">내용</div></Modal>);
+    fireEvent.click(screen.getByTestId("panel-child"));
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });
