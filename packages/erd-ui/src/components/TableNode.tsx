@@ -1,10 +1,11 @@
+import { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { Node, NodeProps } from "@xyflow/react";
 import type { DiagramEntity } from "@erdify/domain";
 
 export type TableNodeType = Node<{ entity: DiagramEntity; collaboratorColor?: string }, "table">;
 
-export function TableNode({ data, selected }: NodeProps<TableNodeType>) {
+export const TableNode = memo(({ data, selected }: NodeProps<TableNodeType>) => {
   const { entity, collaboratorColor } = data;
 
   return (
@@ -83,4 +84,4 @@ export function TableNode({ data, selected }: NodeProps<TableNodeType>) {
       <Handle type="source" position={Position.Right} />
     </div>
   );
-}
+});

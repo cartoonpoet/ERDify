@@ -23,6 +23,39 @@ function docToNodes(doc: DiagramDocument, collaborators: Collaborator[] = []): T
   });
 }
 
+function updateNodes(
+  prevDoc: DiagramDocument,
+  nextDoc: DiagramDocument,
+  prevNodes: TableNodeType[],
+  collaborators: Collaborator[]
+): TableNodeType[] {
+  const prevEntityMap = new Map(prevDoc.entities.map((e) => [e.id, e]));
+  const prevNodeMap = new Map(prevNodes.map((n) => [n.id, n]));
+
+  return nextDoc.entities.map((entity) => {
+    const prevNode = prevNodeMap.get(entity.id);
+    const prevEntity = prevEntityMap.get(entity.id);
+    const collab = collaborators.find((c) => c.selectedEntityId === entity.id);
+    const collaboratorColor = collab?.color;
+
+    const entitySame = prevEntity === entity;
+    const positionSame =
+      prevDoc.layout.entityPositions[entity.id] === nextDoc.layout.entityPositions[entity.id];
+    const collabSame = prevNode?.data.collaboratorColor === collaboratorColor;
+
+    if (prevNode && entitySame && positionSame && collabSame) {
+      return prevNode;
+    }
+
+    return {
+      id: entity.id,
+      type: "table" as const,
+      position: nextDoc.layout.entityPositions[entity.id] ?? { x: 0, y: 0 },
+      data: { entity, ...(collaboratorColor ? { collaboratorColor } : {}) },
+    };
+  });
+}
+
 interface EditorState {
   document: DiagramDocument | null;
   nodes: TableNodeType[];
@@ -53,10 +86,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     })),
 
   applyCommand: (fn) => {
-    const { document, collaborators } = get();
+    const { document, nodes, collaborators } = get();
     if (!document) return;
     const next = fn(document);
-    set({ document: next, nodes: docToNodes(next, collaborators), isDirty: true });
+    set({ document: next, nodes: updateNodes(document, next, nodes, collaborators), isDirty: true });
   },
 
   applyNodeChanges: (changes) => {
@@ -69,7 +102,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setCollaborators: (collaborators) =>
     set((state) => ({
       collaborators,
-      nodes: state.document ? docToNodes(state.document, collaborators) : state.nodes,
+      nodes: state.document
+        ? updateNodes(state.document, state.document, state.nodes, collaborators)
+        : state.nodes,
     })),
 
   clearDirty: () => set({ isDirty: false }),
