@@ -1,9 +1,7 @@
 {
-  "extends": "@erdify/config-typescript/node.json",
+  "extends": "@erdify/config-typescript/nest.json",
   "compilerOptions": {
     "declaration": true,
-    "module": "CommonJS",
-    "moduleResolution": "Node",
     "outDir": "dist",
     "rootDir": "src"
   },

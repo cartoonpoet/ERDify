@@ -16,13 +16,17 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migration:run": "pnpm build && typeorm migration:run -d dist/data-source.js",
+    "migration:revert": "pnpm build && typeorm migration:revert -d dist/data-source.js"
   },
   "dependencies": {
+    "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.22"
   },
   "devDependencies": {
     "@erdify/config-typescript": "workspace:*",
+    "tsx": "^4.19.4",
     "vitest": "^3.1.2"
   }
 }

@@ -4,6 +4,8 @@ type PostgresDataSourceOptions = Extract<DataSourceOptions, { type: "postgres" }
 
 interface CreateTypeOrmOptionsInput {
   databaseUrl: string;
+  entities?: PostgresDataSourceOptions["entities"];
+  migrations?: PostgresDataSourceOptions["migrations"];
 }
 
 export function createTypeOrmOptions(input: CreateTypeOrmOptionsInput): PostgresDataSourceOptions {
@@ -12,7 +14,7 @@ export function createTypeOrmOptions(input: CreateTypeOrmOptionsInput): Postgres
     url: input.databaseUrl,
     synchronize: false,
     migrationsRun: false,
-    entities: [],
-    migrations: []
+    entities: input.entities ?? [],
+    migrations: input.migrations ?? []
   };
 }
