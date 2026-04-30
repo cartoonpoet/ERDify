@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { addEntity } from "@erdify/domain";
-import { getDiagram } from "../../shared/api/diagrams.api";
-import { useEditorStore } from "./stores/useEditorStore";
-import { EditorCanvas } from "./components/EditorCanvas";
-import { VersionHistoryDrawer } from "./components/VersionHistoryDrawer";
-import { PresenceIndicator } from "./components/PresenceIndicator";
-import { useDiagramAutosave } from "./hooks/useDiagramAutosave";
-import { useVersionHistory } from "./hooks/useVersionHistory";
-import { useRealtimeCollaboration } from "./hooks/useRealtimeCollaboration";
+import { getDiagram } from "../../../shared/api/diagrams.api";
+import { useEditorStore } from "../stores/useEditorStore";
+import { EditorCanvas } from "../components/EditorCanvas";
+import { VersionHistoryDrawer } from "../components/VersionHistoryDrawer";
+import { PresenceIndicator } from "../components/PresenceIndicator";
+import { useDiagramAutosave } from "../hooks/useDiagramAutosave";
+import { useVersionHistory } from "../hooks/useVersionHistory";
+import { useRealtimeCollaboration } from "../hooks/useRealtimeCollaboration";
 
 export function EditorPage() {
   const { diagramId } = useParams<{ diagramId: string }>();
