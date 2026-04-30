@@ -74,6 +74,13 @@ export class OrganizationService {
     );
   }
 
+  async findMyOrganizations(userId: string): Promise<Organization[]> {
+    const memberships = await this.memberRepo.find({ where: { userId } });
+    if (memberships.length === 0) return [];
+    const orgIds = memberships.map((m) => m.organizationId);
+    return this.orgRepo.find({ where: orgIds.map((id) => ({ id })) });
+  }
+
   async removeMember(orgId: string, requesterId: string, targetUserId: string): Promise<void> {
     const org = await this.orgRepo.findOne({ where: { id: orgId } });
     if (!org) throw new NotFoundException("Organization not found");

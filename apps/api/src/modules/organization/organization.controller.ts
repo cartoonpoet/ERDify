@@ -16,12 +16,17 @@ import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import type { CreateOrganizationDto } from "./dto/create-organization.dto";
 import type { InviteMemberDto } from "./dto/invite-member.dto";
 import type { UpdateOrganizationDto } from "./dto/update-organization.dto";
-import type { OrganizationService } from "./organization.service";
+import { OrganizationService } from "./organization.service";
 
 @Controller("organizations")
 @UseGuards(JwtAuthGuard)
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
+
+  @Get()
+  findMyOrganizations(@CurrentUser() user: JwtPayload) {
+    return this.organizationService.findMyOrganizations(user.sub);
+  }
 
   @Post()
   create(@CurrentUser() user: JwtPayload, @Body() dto: CreateOrganizationDto) {
