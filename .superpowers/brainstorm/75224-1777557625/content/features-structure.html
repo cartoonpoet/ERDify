@@ -1,0 +1,121 @@
+<h2>features/ 폴더 구조 비교</h2>
+<p class="subtitle">depth vs 명확성 — 어떤 구조가 더 현실적으로 유지보수하기 좋을까?</p>
+
+<div class="cards">
+
+  <!-- Option A: Flat files per feature -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1e1e1e;padding:16px;font-family:'Menlo',monospace;font-size:11px;color:#d4d4d4;line-height:1.7">
+      <div style="color:#569cd6">features/</div>
+      <div style="padding-left:12px">
+        <div style="color:#4ec9b0">auth/</div>
+        <div style="padding-left:12px">
+          <div><span style="color:#ce9178">LoginPage.tsx</span> <span style="color:#6a9955">← 페이지</span></div>
+          <div><span style="color:#ce9178">RegisterPage.tsx</span></div>
+          <div><span style="color:#ce9178">LoginForm.tsx</span> <span style="color:#6a9955">← 섹션</span></div>
+          <div><span style="color:#ce9178">auth.css.ts</span></div>
+        </div>
+        <div style="color:#4ec9b0">dashboard/</div>
+        <div style="padding-left:12px">
+          <div><span style="color:#ce9178">DashboardPage.tsx</span></div>
+          <div><span style="color:#ce9178">OrgRail.tsx</span></div>
+          <div><span style="color:#ce9178">ProjectSidebar.tsx</span></div>
+          <div><span style="color:#ce9178">DiagramGrid.tsx</span></div>
+          <div><span style="color:#ce9178">dashboard.css.ts</span></div>
+        </div>
+        <div style="color:#4ec9b0">editor/</div>
+        <div style="padding-left:12px">
+          <div><span style="color:#ce9178">EditorPage.tsx</span></div>
+          <div><span style="color:#ce9178">EditorCanvas.tsx</span></div>
+          <div><span style="color:#ce9178">VersionHistoryDrawer.tsx</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 피처 내 플랫</h3>
+      <p>페이지와 섹션이 같은 레벨, 파일명으로 역할 구분. 최대 depth 3. 파일이 많아지면 섞일 수 있음.</p>
+    </div>
+  </div>
+
+  <!-- Option B: pages/ + components/ split -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1e1e1e;padding:16px;font-family:'Menlo',monospace;font-size:11px;color:#d4d4d4;line-height:1.7">
+      <div style="color:#569cd6">features/</div>
+      <div style="padding-left:12px">
+        <div style="color:#4ec9b0">auth/</div>
+        <div style="padding-left:12px">
+          <div style="color:#dcdcaa">pages/</div>
+          <div style="padding-left:12px">
+            <div><span style="color:#ce9178">LoginPage.tsx</span></div>
+            <div><span style="color:#ce9178">RegisterPage.tsx</span></div>
+          </div>
+          <div style="color:#dcdcaa">components/</div>
+          <div style="padding-left:12px">
+            <div><span style="color:#ce9178">LoginForm.tsx</span></div>
+          </div>
+        </div>
+        <div style="color:#4ec9b0">dashboard/</div>
+        <div style="padding-left:12px">
+          <div style="color:#dcdcaa">pages/</div>
+          <div style="padding-left:12px">
+            <div><span style="color:#ce9178">DashboardPage.tsx</span></div>
+          </div>
+          <div style="color:#dcdcaa">components/</div>
+          <div style="padding-left:12px">
+            <div><span style="color:#ce9178">OrgRail.tsx</span></div>
+            <div><span style="color:#ce9178">ProjectSidebar.tsx</span></div>
+            <div><span style="color:#ce9178">DiagramGrid.tsx</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. pages/ + components/ 분리</h3>
+      <p>페이지와 섹션이 명확히 구분. 최대 depth 4. 컴포넌트가 많아져도 혼재 없음. CSS는 컴포넌트 파일 옆에 바로.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Route-centric (colocation) -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#1e1e1e;padding:16px;font-family:'Menlo',monospace;font-size:11px;color:#d4d4d4;line-height:1.7">
+      <div style="color:#569cd6">features/</div>
+      <div style="padding-left:12px">
+        <div style="color:#4ec9b0">auth/</div>
+        <div style="padding-left:12px">
+          <div><span style="color:#ce9178">index.ts</span> <span style="color:#6a9955">← 외부 공개 API</span></div>
+          <div style="color:#dcdcaa">LoginPage/</div>
+          <div style="padding-left:12px">
+            <div><span style="color:#ce9178">index.tsx</span></div>
+            <div><span style="color:#ce9178">LoginForm.tsx</span> <span style="color:#6a9955">← 페이지 전용</span></div>
+            <div><span style="color:#ce9178">login-page.css.ts</span></div>
+          </div>
+          <div style="color:#dcdcaa">RegisterPage/</div>
+          <div style="padding-left:12px">
+            <div><span style="color:#ce9178">index.tsx</span></div>
+          </div>
+        </div>
+        <div style="color:#4ec9b0">dashboard/</div>
+        <div style="padding-left:12px">
+          <div><span style="color:#ce9178">index.ts</span></div>
+          <div style="color:#dcdcaa">DashboardPage/</div>
+          <div style="padding-left:12px">
+            <div><span style="color:#ce9178">index.tsx</span></div>
+            <div><span style="color:#ce9178">OrgRail.tsx</span> <span style="color:#6a9955">← 페이지 전용 섹션</span></div>
+            <div><span style="color:#ce9178">ProjectSidebar.tsx</span></div>
+            <div><span style="color:#ce9178">DiagramGrid.tsx</span></div>
+            <div><span style="color:#ce9178">dashboard-page.css.ts</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 라우트 중심 코로케이션</h3>
+      <p>섹션 컴포넌트를 해당 페이지 폴더 안에 바로 co-locate. 페이지 전용 섹션은 외부에서 import 불가. depth는 4지만 폴더 의미가 명확.</p>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:24px;padding:16px;background:#f8f9fa;border-radius:8px;font-size:13px;color:#5D6C7B">
+  💡 <strong>추천:</strong> <strong>B</strong> — pages/components 분리가 가장 직관적이고, depth가 4 이상 깊어지지 않아. CSS 파일은 각 컴포넌트 파일 바로 옆에 두면(OrgRail.tsx + org-rail.css.ts) 폴더 없이도 코로케이션 가능.
+</div>

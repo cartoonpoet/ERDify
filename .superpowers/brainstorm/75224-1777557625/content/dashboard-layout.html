@@ -1,0 +1,131 @@
+<h2>대시보드 레이아웃 구조</h2>
+<p class="subtitle">Organization → Project → Diagram으로 이어지는 네비게이션을 어떻게 배치할까?</p>
+
+<div class="cards">
+
+  <!-- Option A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f9fa;padding:16px;font-family:monospace;font-size:12px">
+      <div style="display:grid;grid-template-rows:40px 1fr;height:200px;gap:0;border:1px solid #dee2e6;border-radius:8px;overflow:hidden">
+        <div style="background:#fff;border-bottom:1px solid #dee2e6;display:flex;align-items:center;padding:0 12px;gap:8px">
+          <span style="font-weight:700;font-size:13px">ERDify</span>
+          <span style="flex:1"></span>
+          <span style="background:#0064E0;color:#fff;border-radius:100px;padding:3px 10px;font-size:11px">+ 새 ERD</span>
+        </div>
+        <div style="display:grid;grid-template-columns:200px 1fr">
+          <div style="background:#f8f9fa;border-right:1px solid #dee2e6;padding:10px 8px">
+            <div style="font-size:10px;color:#5D6C7B;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Organizations</div>
+            <div style="background:#fff;border-radius:6px;padding:5px 8px;margin-bottom:3px;font-size:11px;font-weight:500">Acme Corp ✓</div>
+            <div style="padding:5px 8px;margin-bottom:8px;font-size:11px;color:#5D6C7B">My Team</div>
+            <div style="font-size:10px;color:#5D6C7B;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Projects</div>
+            <div style="background:#0064E0;color:#fff;border-radius:6px;padding:5px 8px;margin-bottom:3px;font-size:11px">Backend API ✓</div>
+            <div style="padding:5px 8px;font-size:11px;color:#5D6C7B">Frontend App</div>
+          </div>
+          <div style="padding:12px">
+            <div style="font-size:11px;font-weight:600;margin-bottom:8px">Backend API ERDs</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div style="background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:8px;font-size:10px">
+                <div style="font-weight:500;margin-bottom:2px">User Schema</div>
+                <div style="color:#5D6C7B">수정 2시간 전</div>
+              </div>
+              <div style="background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:8px;font-size:10px">
+                <div style="font-weight:500;margin-bottom:2px">Order Schema</div>
+                <div style="color:#5D6C7B">수정 1일 전</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 사이드바 레이아웃</h3>
+      <p>왼쪽 사이드바에 Org/Project 트리, 오른쪽에 다이어그램 그리드. Notion·Linear·Figma 스타일.</p>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f9fa;padding:16px;font-family:monospace;font-size:12px">
+      <div style="display:grid;grid-template-rows:40px 1fr;height:200px;gap:0;border:1px solid #dee2e6;border-radius:8px;overflow:hidden">
+        <div style="background:#fff;border-bottom:1px solid #dee2e6;display:flex;align-items:center;padding:0 12px;gap:8px">
+          <span style="font-weight:700;font-size:13px">ERDify</span>
+          <span style="color:#5D6C7B;font-size:11px">Acme Corp</span>
+          <span style="color:#5D6C7B;font-size:11px">/</span>
+          <span style="font-size:11px;font-weight:500">Backend API</span>
+          <span style="flex:1"></span>
+          <span style="background:#0064E0;color:#fff;border-radius:100px;padding:3px 10px;font-size:11px">+ 새 ERD</span>
+        </div>
+        <div style="padding:16px">
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <span style="background:#f1f3f5;border-radius:100px;padding:3px 10px;font-size:10px;font-weight:500">전체</span>
+            <span style="border:1px solid #dee2e6;border-radius:100px;padding:3px 10px;font-size:10px;color:#5D6C7B">최근 수정</span>
+            <span style="border:1px solid #dee2e6;border-radius:100px;padding:3px 10px;font-size:10px;color:#5D6C7B">내가 만든</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div style="background:#fff;border:1px solid #dee2e6;border-radius:8px;padding:10px;font-size:10px">
+              <div style="height:50px;background:#f1f4f7;border-radius:4px;margin-bottom:6px;display:flex;align-items:center;justify-content:center;color:#5D6C7B;font-size:9px">ERD 미리보기</div>
+              <div style="font-weight:500;margin-bottom:2px">User Schema</div>
+              <div style="color:#5D6C7B">2시간 전</div>
+            </div>
+            <div style="background:#fff;border:1px solid #dee2e6;border-radius:8px;padding:10px;font-size:10px">
+              <div style="height:50px;background:#f1f4f7;border-radius:4px;margin-bottom:6px"></div>
+              <div style="font-weight:500;margin-bottom:2px">Order Schema</div>
+              <div style="color:#5D6C7B">1일 전</div>
+            </div>
+            <div style="border:2px dashed #dee2e6;border-radius:8px;padding:10px;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5D6C7B;gap:3px">
+              <span style="font-size:16px">+</span>
+              <span>새 ERD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 상단 네비 + 카드 그리드</h3>
+      <p>Org/Project를 상단 breadcrumb로 전환, 본문은 다이어그램 카드 그리드. GitHub·Vercel 스타일.</p>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f8f9fa;padding:16px;font-family:monospace;font-size:12px">
+      <div style="display:grid;grid-template-rows:40px 1fr;height:200px;gap:0;border:1px solid #dee2e6;border-radius:8px;overflow:hidden">
+        <div style="background:#fff;border-bottom:1px solid #dee2e6;display:flex;align-items:center;padding:0 12px;gap:8px">
+          <span style="font-weight:700;font-size:13px">ERDify</span>
+          <span style="flex:1"></span>
+          <span style="background:#0064E0;color:#fff;border-radius:100px;padding:3px 10px;font-size:11px">+ 새 ERD</span>
+        </div>
+        <div style="display:grid;grid-template-columns:48px 200px 1fr">
+          <div style="background:#1C1E21;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:6px">
+            <div style="width:28px;height:28px;background:#0064E0;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">A</div>
+            <div style="width:28px;height:28px;background:#444;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px;font-weight:700">M</div>
+            <div style="width:28px;height:28px;border:1px dashed #555;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#666;font-size:14px">+</div>
+          </div>
+          <div style="background:#f8f9fa;border-right:1px solid #dee2e6;padding:8px">
+            <div style="font-size:10px;font-weight:600;margin-bottom:6px;color:#1C2B33">Acme Corp</div>
+            <div style="background:#0064E0;color:#fff;border-radius:6px;padding:4px 8px;margin-bottom:2px;font-size:10px">Backend API ✓</div>
+            <div style="padding:4px 8px;font-size:10px;color:#5D6C7B">Frontend App</div>
+            <div style="padding:4px 8px;font-size:10px;color:#5D6C7B">Mobile</div>
+          </div>
+          <div style="padding:10px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div style="background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:8px;font-size:10px">
+                <div style="font-weight:500;margin-bottom:2px">User Schema</div>
+                <div style="color:#5D6C7B">2시간 전</div>
+              </div>
+              <div style="background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:8px;font-size:10px">
+                <div style="font-weight:500;margin-bottom:2px">Order Schema</div>
+                <div style="color:#5D6C7B">1일 전</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 3단 패널 (아이콘 레일 + 사이드바 + 메인)</h3>
+      <p>왼쪽 좁은 아이콘 레일(Org), 중간 사이드바(Project), 오른쪽 메인(Diagram). Slack·Discord·VS Code 스타일.</p>
+    </div>
+  </div>
+
+</div>

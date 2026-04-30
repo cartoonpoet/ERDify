@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERDify Auth Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: #e5e8ec;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 24px;
+    gap: 32px;
+  }
+  .label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #5D6C7B;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+    max-width: 900px;
+  }
+  .mockup-wrap {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .mockup-label {
+    padding: 10px 16px;
+    background: #F1F4F7;
+    border-bottom: 1px solid #DEE3E9;
+    font-size: 11px;
+    font-weight: 600;
+    color: #5D6C7B;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .auth-page {
+    background: #fff;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+  }
+
+  /* brand */
+  .auth-brand {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1C2B33;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+  .auth-brand span { color: #0064E0; }
+  .auth-tagline {
+    font-size: 13px;
+    color: #5D6C7B;
+    margin-bottom: 32px;
+  }
+
+  /* form */
+  .auth-form {
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1C2B33;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #DEE3E9;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #1C2B33;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus {
+    border-color: #0064E0;
+    box-shadow: 0 0 0 3px rgba(0,100,224,0.1);
+  }
+  .form-input.focused {
+    border-color: #0064E0;
+    box-shadow: 0 0 0 3px rgba(0,100,224,0.1);
+  }
+  .form-input::placeholder { color: #BCC0C4; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 11px;
+    background: #0064E0;
+    color: #fff;
+    border: none;
+    border-radius: 100px;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #BCC0C4;
+    font-size: 12px;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #DEE3E9;
+  }
+  .auth-link {
+    text-align: center;
+    font-size: 13px;
+    color: #5D6C7B;
+  }
+  .auth-link a {
+    color: #0064E0;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  /* register extras */
+  .name-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .form-hint {
+    font-size: 11px;
+    color: #5D6C7B;
+    margin-top: 4px;
+  }
+  .form-error {
+    font-size: 11px;
+    color: #E41E3F;
+    margin-top: 4px;
+  }
+  .password-strength {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .strength-bar {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: #DEE3E9;
+  }
+  .strength-bar.filled { background: #31A24C; }
+</style>
+</head>
+<body>
+
+<div class="label">로그인 / 회원가입 페이지</div>
+
+<div class="split">
+
+  <!-- Login -->
+  <div class="mockup-wrap">
+    <div class="mockup-label">로그인</div>
+    <div class="auth-page">
+      <div class="auth-brand">ERD<span>ify</span></div>
+      <div class="auth-tagline">고객사 DB 스키마를 한 곳에서</div>
+      <form class="auth-form" onsubmit="return false">
+        <div class="form-group">
+          <label class="form-label">이메일</label>
+          <input class="form-input focused" type="email" placeholder="name@company.com" value="junho@acme.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">비밀번호</label>
+          <input class="form-input" type="password" placeholder="••••••••" value="password">
+        </div>
+        <button class="btn-primary" type="submit">로그인</button>
+        <div class="auth-link">
+          계정이 없으신가요? <a href="#">회원가입</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Register -->
+  <div class="mockup-wrap">
+    <div class="mockup-label">회원가입</div>
+    <div class="auth-page">
+      <div class="auth-brand">ERD<span>ify</span></div>
+      <div class="auth-tagline">팀과 함께 스키마를 관리하세요</div>
+      <form class="auth-form" onsubmit="return false">
+        <div class="form-group">
+          <label class="form-label">이름</label>
+          <input class="form-input" type="text" placeholder="홍길동" value="손준호">
+        </div>
+        <div class="form-group">
+          <label class="form-label">이메일</label>
+          <input class="form-input" type="email" placeholder="name@company.com" value="">
+        </div>
+        <div class="form-group">
+          <label class="form-label">비밀번호</label>
+          <input class="form-input focused" type="password" placeholder="8자 이상">
+          <div class="password-strength">
+            <div class="strength-bar filled"></div>
+            <div class="strength-bar filled"></div>
+            <div class="strength-bar"></div>
+            <div class="strength-bar"></div>
+          </div>
+          <div class="form-hint">영문, 숫자 포함 8자 이상</div>
+        </div>
+        <button class="btn-primary" type="submit">시작하기</button>
+        <div class="auth-link">
+          이미 계정이 있으신가요? <a href="#">로그인</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

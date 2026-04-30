@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERDify Dashboard Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: #e5e8ec;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 24px;
+    min-height: 100vh;
+    gap: 24px;
+  }
+
+  .label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #5D6C7B;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* ── App Shell ── */
+  .app {
+    width: 100%;
+    max-width: 1100px;
+    height: 660px;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08);
+    display: grid;
+    grid-template-rows: 48px 1fr;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    background: #fff;
+    border-bottom: 1px solid #DEE3E9;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    grid-column: 1 / -1;
+  }
+  .brand {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1C2B33;
+    letter-spacing: -0.3px;
+  }
+  .brand span { color: #0064E0; }
+  .topbar-spacer { flex: 1; }
+  .avatar {
+    width: 30px; height: 30px;
+    background: #0064E0;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 12px; font-weight: 600;
+  }
+
+  /* ── Body (3-panel) ── */
+  .body {
+    display: grid;
+    grid-template-columns: 52px 220px 1fr;
+    overflow: hidden;
+  }
+
+  /* ── Org Rail ── */
+  .org-rail {
+    background: #F1F4F7;
+    border-right: 1px solid #DEE3E9;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 8px;
+  }
+  .org-icon {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .org-icon.active {
+    background: #0064E0;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,100,224,0.35);
+  }
+  .org-icon.inactive {
+    background: #fff;
+    color: #5D6C7B;
+    border: 1px solid #DEE3E9;
+  }
+  .org-icon.add {
+    background: transparent;
+    color: #5D6C7B;
+    border: 1.5px dashed #CBD2D9;
+    font-size: 18px;
+    font-weight: 400;
+    margin-top: auto;
+    margin-bottom: 4px;
+  }
+
+  /* ── Project Sidebar ── */
+  .sidebar {
+    background: #fff;
+    border-right: 1px solid #DEE3E9;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 16px 16px 8px;
+    border-bottom: 1px solid #F1F4F7;
+  }
+  .org-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1C2B33;
+    margin-bottom: 2px;
+  }
+  .org-members {
+    font-size: 11px;
+    color: #5D6C7B;
+  }
+  .sidebar-section-label {
+    padding: 12px 16px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #5D6C7B;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .project-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px;
+    font-size: 13px;
+    color: #5D6C7B;
+    cursor: pointer;
+    border-radius: 0;
+    transition: background 0.1s;
+  }
+  .project-item.active {
+    background: #EEF4FF;
+    color: #0064E0;
+    font-weight: 600;
+    position: relative;
+  }
+  .project-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: #0064E0;
+    border-radius: 0 2px 2px 0;
+  }
+  .project-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+  .sidebar-add-btn {
+    margin: 8px 12px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1.5px dashed #CBD2D9;
+    background: transparent;
+    color: #5D6C7B;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    border-top: 1px solid #F1F4F7;
+    font-size: 11px;
+    color: #5D6C7B;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ── Main ── */
+  .main {
+    background: #F8F9FB;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .main-header {
+    padding: 20px 24px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border-bottom: 1px solid #DEE3E9;
+  }
+  .main-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1C2B33;
+    flex: 1;
+  }
+  .main-subtitle {
+    font-size: 12px;
+    color: #5D6C7B;
+    margin-top: 1px;
+  }
+  .btn-primary {
+    background: #0064E0;
+    color: #fff;
+    border: none;
+    border-radius: 100px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-secondary {
+    background: transparent;
+    color: #1C2B33;
+    border: 1.5px solid #DEE3E9;
+    border-radius: 100px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: #fff;
+    border-bottom: 1px solid #DEE3E9;
+  }
+  .filter-chip {
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .filter-chip.active {
+    background: #1C2B33;
+    color: #fff;
+  }
+  .filter-chip.inactive {
+    background: #F1F4F7;
+    color: #5D6C7B;
+  }
+  .diagram-grid {
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .diagram-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #DEE3E9;
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .diagram-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+  }
+  .card-preview {
+    height: 90px;
+    background: #F1F4F7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-preview-inner {
+    display: flex;
+    gap: 6px;
+  }
+  .mini-table {
+    background: #fff;
+    border: 1px solid #DEE3E9;
+    border-radius: 4px;
+    padding: 5px 7px;
+    font-size: 8px;
+    color: #1C2B33;
+    min-width: 52px;
+  }
+  .mini-table-header {
+    background: #0064E0;
+    color: #fff;
+    margin: -5px -7px 4px;
+    padding: 3px 7px;
+    font-weight: 600;
+    border-radius: 4px 4px 0 0;
+  }
+  .mini-field { color: #5D6C7B; margin-top: 2px; }
+  .card-body-inner {
+    padding: 10px 12px;
+  }
+  .card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1C2B33;
+    margin-bottom: 3px;
+  }
+  .card-meta {
+    font-size: 11px;
+    color: #5D6C7B;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-badge {
+    background: #F1F4F7;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 10px;
+    color: #5D6C7B;
+  }
+  .diagram-card.new {
+    border: 1.5px dashed #CBD2D9;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 140px;
+    color: #5D6C7B;
+    font-size: 13px;
+  }
+  .new-icon {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #F1F4F7;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    color: #5D6C7B;
+  }
+
+  /* caption */
+  .caption {
+    font-size: 12px;
+    color: #5D6C7B;
+    text-align: center;
+    max-width: 1100px;
+  }
+</style>
+</head>
+<body>
+
+<div class="label">대시보드 목업 — 클릭해서 인터랙션 느낌 확인</div>
+
+<div class="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="brand">ERD<span>ify</span></div>
+    <div class="topbar-spacer"></div>
+    <div class="avatar">J</div>
+  </div>
+
+  <!-- 3-panel body -->
+  <div class="body">
+
+    <!-- Org Rail -->
+    <div class="org-rail">
+      <div class="org-icon active" title="Acme Corp">A</div>
+      <div class="org-icon inactive" title="My Team">M</div>
+      <div class="org-icon inactive" title="Side Project">S</div>
+      <div class="org-icon add" title="조직 추가">+</div>
+    </div>
+
+    <!-- Project Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="org-name">Acme Corp</div>
+        <div class="org-members">멤버 8명</div>
+      </div>
+      <div class="sidebar-section-label">프로젝트</div>
+      <div class="project-item active">
+        <div class="project-dot"></div>
+        Backend API
+      </div>
+      <div class="project-item">
+        <div class="project-dot"></div>
+        Frontend App
+      </div>
+      <div class="project-item">
+        <div class="project-dot"></div>
+        Mobile
+      </div>
+      <div class="project-item">
+        <div class="project-dot"></div>
+        Data Warehouse
+      </div>
+      <div style="padding: 4px 12px">
+        <div class="sidebar-add-btn">+ 새 프로젝트</div>
+      </div>
+      <div class="sidebar-footer">
+        ⚙️ Acme Corp 설정
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="main-header">
+        <div>
+          <div class="main-title">Backend API</div>
+          <div class="main-subtitle">ERD 다이어그램 6개</div>
+        </div>
+        <button class="btn-secondary">멤버 초대</button>
+        <button class="btn-primary">+ 새 ERD</button>
+      </div>
+      <div class="filter-row">
+        <div class="filter-chip active">전체</div>
+        <div class="filter-chip inactive">최근 수정</div>
+        <div class="filter-chip inactive">내가 만든</div>
+      </div>
+      <div class="diagram-grid">
+
+        <div class="diagram-card">
+          <div class="card-preview">
+            <div class="card-preview-inner">
+              <div class="mini-table">
+                <div class="mini-table-header">users</div>
+                <div class="mini-field">id</div>
+                <div class="mini-field">email</div>
+                <div class="mini-field">name</div>
+              </div>
+              <div class="mini-table">
+                <div class="mini-table-header">orders</div>
+                <div class="mini-field">id</div>
+                <div class="mini-field">user_id</div>
+                <div class="mini-field">total</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body-inner">
+            <div class="card-name">User Schema</div>
+            <div class="card-meta">
+              <span class="card-badge">PostgreSQL</span>
+              2시간 전
+            </div>
+          </div>
+        </div>
+
+        <div class="diagram-card">
+          <div class="card-preview">
+            <div class="card-preview-inner">
+              <div class="mini-table">
+                <div class="mini-table-header">products</div>
+                <div class="mini-field">id</div>
+                <div class="mini-field">name</div>
+                <div class="mini-field">price</div>
+              </div>
+              <div class="mini-table">
+                <div class="mini-table-header">inventory</div>
+                <div class="mini-field">id</div>
+                <div class="mini-field">product_id</div>
+                <div class="mini-field">qty</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body-inner">
+            <div class="card-name">Order Schema</div>
+            <div class="card-meta">
+              <span class="card-badge">PostgreSQL</span>
+              1일 전
+            </div>
+          </div>
+        </div>
+
+        <div class="diagram-card">
+          <div class="card-preview" style="background:#EEF4FF">
+            <div class="card-preview-inner">
+              <div class="mini-table">
+                <div class="mini-table-header">payments</div>
+                <div class="mini-field">id</div>
+                <div class="mini-field">order_id</div>
+                <div class="mini-field">status</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body-inner">
+            <div class="card-name">Payment Flow</div>
+            <div class="card-meta">
+              <span class="card-badge">MySQL</span>
+              3일 전
+            </div>
+          </div>
+        </div>
+
+        <div class="diagram-card">
+          <div class="card-preview">
+            <div class="card-preview-inner">
+              <div class="mini-table">
+                <div class="mini-table-header">sessions</div>
+                <div class="mini-field">id</div>
+                <div class="mini-field">user_id</div>
+                <div class="mini-field">token</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body-inner">
+            <div class="card-name">Auth Schema</div>
+            <div class="card-meta">
+              <span class="card-badge">PostgreSQL</span>
+              1주 전
+            </div>
+          </div>
+        </div>
+
+        <div class="diagram-card">
+          <div class="card-preview">
+            <div class="card-preview-inner">
+              <div class="mini-table">
+                <div class="mini-table-header">logs</div>
+                <div class="mini-field">id</div>
+                <div class="mini-field">action</div>
+                <div class="mini-field">created</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body-inner">
+            <div class="card-name">Audit Log</div>
+            <div class="card-meta">
+              <span class="card-badge">PostgreSQL</span>
+              2주 전
+            </div>
+          </div>
+        </div>
+
+        <div class="diagram-card new">
+          <div class="new-icon">+</div>
+          새 ERD 만들기
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="caption">Pretendard · Meta Blue #0064E0 · All Light 테마 · 3-panel layout</div>
+
+</body>
+</html>
