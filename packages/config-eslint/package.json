@@ -1,0 +1,11 @@
+{
+  "name": "@erdify/config-eslint",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./base": "./base.js",
+    "./react": "./react.js",
+    "./nest": "./nest.js"
+  }
+}

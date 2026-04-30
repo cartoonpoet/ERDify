@@ -1,0 +1,7 @@
+{
+  "name": "@erdify/config-typescript",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "files": ["base.json", "react.json", "nest.json", "node.json"]
+}
