@@ -2,7 +2,8 @@
   "extends": "@erdify/config-typescript/nest.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": ["node", "vitest/globals"]
   },
   "include": ["src"]
 }
