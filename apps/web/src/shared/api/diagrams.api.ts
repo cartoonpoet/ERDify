@@ -58,3 +58,9 @@ export function listVersions(diagramId: string): Promise<DiagramVersionResponse[
     .get<DiagramVersionResponse[]>(`/diagrams/${diagramId}/versions`)
     .then((r) => r.data);
 }
+
+export function restoreVersion(diagramId: string, versionId: string): Promise<DiagramResponse> {
+  return httpClient
+    .post<DiagramResponse>(`/diagrams/${diagramId}/restore/${versionId}`)
+    .then((r) => r.data);
+}
