@@ -34,7 +34,7 @@ export const inputError = style({
   selectors: {
     "&:focus": {
       borderColor: vars.color.error,
-      boxShadow: "0 0 0 3px rgba(228, 30, 63, 0.12)",
+      boxShadow: `0 0 0 3px ${vars.color.errorFocusRing}`,
     },
   },
 });

@@ -16,6 +16,7 @@ export const vars = createGlobalTheme(":root", {
     success: "#31A24C",
     error: "#E41E3F",
     focusRing: "rgba(0, 100, 224, 0.12)",
+    errorFocusRing: "rgba(228, 30, 63, 0.12)",
     selectedBg: "#EEF4FF",
   },
   font: {
