@@ -49,6 +49,15 @@ importers:
 
   packages/config-typescript: {}
 
+  packages/domain:
+    devDependencies:
+      '@erdify/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
+      vitest:
+        specifier: ^3.1.2
+        version: 3.2.4(@types/node@22.19.17)
+
 packages:
 
   '@esbuild/aix-ppc64@0.27.7':
