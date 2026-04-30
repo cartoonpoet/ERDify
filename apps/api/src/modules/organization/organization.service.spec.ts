@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   NotFoundException
 } from "@nestjs/common";
-import type { Organization, OrganizationMember } from "@erdify/db";
+import type { Organization, OrganizationMember, User } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { OrganizationService } from "./organization.service";
 
@@ -25,13 +25,16 @@ describe("OrganizationService", () => {
   let service: OrganizationService;
   let orgRepo: MockRepo<Organization>;
   let memberRepo: MockRepo<OrganizationMember>;
+  let userRepo: MockRepo<User>;
 
   beforeEach(() => {
     orgRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
     memberRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
+    userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
     service = new OrganizationService(
       orgRepo as unknown as Repository<Organization>,
-      memberRepo as unknown as Repository<OrganizationMember>
+      memberRepo as unknown as Repository<OrganizationMember>,
+      userRepo as unknown as Repository<User>
     );
   });
 

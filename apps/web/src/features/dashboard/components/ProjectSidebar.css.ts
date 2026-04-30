@@ -32,6 +32,12 @@ export const sectionLabel = style({
   letterSpacing: "0.6px",
 });
 
+export const projectItemWrapper = style({
+  position: "relative",
+  display: "flex",
+  alignItems: "center",
+});
+
 export const projectItem = style({
   display: "flex",
   alignItems: "center",
@@ -48,6 +54,28 @@ export const projectItem = style({
   position: "relative",
   selectors: {
     "&:hover": { background: vars.color.surfaceSecondary, color: vars.color.textPrimary },
+  },
+});
+
+export const projectDeleteBtn = style({
+  position: "absolute",
+  right: vars.space["3"],
+  top: "50%",
+  transform: "translateY(-50%)",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  color: vars.color.textDisabled,
+  fontSize: "14px",
+  lineHeight: 1,
+  padding: "2px 4px",
+  borderRadius: vars.radius.sm,
+  opacity: 0,
+  transition: "opacity 150ms ease, color 150ms ease",
+  flexShrink: 0,
+  selectors: {
+    "&:hover": { color: vars.color.error },
+    [`${projectItemWrapper}:hover &`]: { opacity: 1 },
   },
 });
 

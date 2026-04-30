@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 import type { Diagram } from "./diagram.entity";
 
 @Entity("diagram_versions")
@@ -22,5 +22,6 @@ export class DiagramVersion {
   createdAt!: Date;
 
   @ManyToOne("Diagram", "versions")
+  @JoinColumn({ name: "diagram_id" })
   diagram!: Diagram;
 }

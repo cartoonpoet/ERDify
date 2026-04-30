@@ -7,11 +7,12 @@ import {
   NotFoundException
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Organization, OrganizationMember } from "@erdify/db";
+import { Organization, OrganizationMember, User } from "@erdify/db";
 import type { Repository } from "typeorm";
 import type { CreateOrganizationDto } from "./dto/create-organization.dto";
 import type { InviteMemberDto } from "./dto/invite-member.dto";
 import type { UpdateOrganizationDto } from "./dto/update-organization.dto";
+import type { MemberRole } from "@erdify/db";
 
 @Injectable()
 export class OrganizationService {
@@ -19,7 +20,9 @@ export class OrganizationService {
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
     @InjectRepository(OrganizationMember)
-    private readonly memberRepo: Repository<OrganizationMember>
+    private readonly memberRepo: Repository<OrganizationMember>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>
   ) {}
 
   async create(userId: string, dto: CreateOrganizationDto): Promise<Organization> {
@@ -79,6 +82,29 @@ export class OrganizationService {
     if (memberships.length === 0) return [];
     const orgIds = memberships.map((m) => m.organizationId);
     return this.orgRepo.find({ where: orgIds.map((id) => ({ id })) });
+  }
+
+  async inviteByEmail(
+    orgId: string,
+    requesterId: string,
+    email: string,
+    role: MemberRole
+  ): Promise<OrganizationMember> {
+    const requesterMembership = await this.memberRepo.findOne({
+      where: { organizationId: orgId, userId: requesterId }
+    });
+    if (!requesterMembership || requesterMembership.role === "viewer") {
+      throw new ForbiddenException();
+    }
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) throw new NotFoundException("User with that email not found");
+    const existing = await this.memberRepo.findOne({
+      where: { organizationId: orgId, userId: user.id }
+    });
+    if (existing) throw new ConflictException("User is already a member");
+    return this.memberRepo.save(
+      this.memberRepo.create({ organizationId: orgId, userId: user.id, role })
+    );
   }
 
   async removeMember(orgId: string, requesterId: string, targetUserId: string): Promise<void> {

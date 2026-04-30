@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryColumn,
   UpdateDateColumn
@@ -29,5 +30,6 @@ export class Project {
   updatedAt!: Date;
 
   @ManyToOne("Organization", "projects")
+  @JoinColumn({ name: "organization_id" })
   organization!: Organization;
 }

@@ -8,6 +8,7 @@ import { Project } from "./entities/project.entity";
 import { User } from "./entities/user.entity";
 import { CreateDiagramsTable1746000000004 } from "./migrations/1746000000004-CreateDiagramsTable";
 import { CreateDiagramVersionsTable1746000000005 } from "./migrations/1746000000005-CreateDiagramVersionsTable";
+import { AddCreatedByToDiagrams1746000000006 } from "./migrations/1746000000006-AddCreatedByToDiagrams";
 import { CreateOrganizationMembersTable1746000000002 } from "./migrations/1746000000002-CreateOrganizationMembersTable";
 import { CreateOrganizationsTable1746000000001 } from "./migrations/1746000000001-CreateOrganizationsTable";
 import { CreateProjectsTable1746000000003 } from "./migrations/1746000000003-CreateProjectsTable";
@@ -25,6 +26,7 @@ export const AppDataSource = new DataSource({
     CreateOrganizationMembersTable1746000000002,
     CreateProjectsTable1746000000003,
     CreateDiagramsTable1746000000004,
-    CreateDiagramVersionsTable1746000000005
+    CreateDiagramVersionsTable1746000000005,
+    AddCreatedByToDiagrams1746000000006
   ]
 });

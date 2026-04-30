@@ -19,13 +19,13 @@
   },
   "dependencies": {
     "@erdify/domain": "workspace:*",
-    "react": "^18.2.0"
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@erdify/config-typescript": "workspace:*",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
-    "@types/react": "^18.3.20",
+    "@types/react": "^19.0.0",
     "@xyflow/react": "^12.5.4",
     "jsdom": "^26.1.0",
     "vitest": "^3.1.2"

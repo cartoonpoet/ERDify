@@ -18,13 +18,13 @@ const makeContent = (dialect: "postgresql" | "mysql") => ({
 
 const diagrams: DiagramResponse[] = [
   {
-    id: "d1", projectId: "p1", name: "User Schema",
-    content: makeContent("postgresql"),
+    id: "d1", projectId: "p1", organizationId: "org-1", name: "User Schema",
+    content: makeContent("postgresql"), createdBy: "user-1",
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   },
   {
-    id: "d2", projectId: "p1", name: "Order Schema",
-    content: makeContent("mysql"),
+    id: "d2", projectId: "p1", organizationId: "org-1", name: "Order Schema",
+    content: makeContent("mysql"), createdBy: "user-2",
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   },
 ];
@@ -33,25 +33,25 @@ const wrap = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter
 
 describe("DiagramGrid", () => {
   it("다이어그램 이름들을 렌더링한다", () => {
-    wrap(<DiagramGrid diagrams={diagrams} onCreateDiagram={vi.fn()} />);
+    wrap(<DiagramGrid diagrams={diagrams} currentUserId="user-1" onCreateDiagram={vi.fn()} onDeleteDiagram={vi.fn()} />);
     expect(screen.getByText("User Schema")).toBeInTheDocument();
     expect(screen.getByText("Order Schema")).toBeInTheDocument();
   });
 
   it("'새 ERD 만들기' 카드를 렌더링한다", () => {
-    wrap(<DiagramGrid diagrams={diagrams} onCreateDiagram={vi.fn()} />);
+    wrap(<DiagramGrid diagrams={diagrams} currentUserId="user-1" onCreateDiagram={vi.fn()} onDeleteDiagram={vi.fn()} />);
     expect(screen.getByText("새 ERD 만들기")).toBeInTheDocument();
   });
 
   it("'새 ERD 만들기' 클릭 시 onCreateDiagram이 호출된다", () => {
     const onCreateDiagram = vi.fn();
-    wrap(<DiagramGrid diagrams={diagrams} onCreateDiagram={onCreateDiagram} />);
+    wrap(<DiagramGrid diagrams={diagrams} currentUserId="user-1" onCreateDiagram={onCreateDiagram} onDeleteDiagram={vi.fn()} />);
     fireEvent.click(screen.getByText("새 ERD 만들기"));
     expect(onCreateDiagram).toHaveBeenCalledTimes(1);
   });
 
   it("로딩 상태에서 Skeleton을 렌더링한다", () => {
-    wrap(<DiagramGrid diagrams={[]} onCreateDiagram={vi.fn()} loading />);
+    wrap(<DiagramGrid diagrams={[]} currentUserId={null} onCreateDiagram={vi.fn()} onDeleteDiagram={vi.fn()} loading />);
     expect(document.querySelectorAll("[aria-hidden='true']").length).toBeGreaterThan(0);
   });
 });

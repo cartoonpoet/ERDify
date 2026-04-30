@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 import type { Organization } from "./organization.entity";
 import type { User } from "./user.entity";
 
@@ -19,8 +19,10 @@ export class OrganizationMember {
   joinedAt!: Date;
 
   @ManyToOne("Organization", "members")
+  @JoinColumn({ name: "organization_id" })
   organization!: Organization;
 
   @ManyToOne("User", "memberships")
+  @JoinColumn({ name: "user_id" })
   user!: User;
 }

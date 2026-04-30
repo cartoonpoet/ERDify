@@ -1,38 +1,48 @@
-import type { Collaborator } from "../hooks/useRealtimeCollaboration";
+import { useEditorStore } from "../stores/useEditorStore";
+import * as css from "./presence-indicator.css";
 
-interface Props {
-  collaborators: Collaborator[];
-}
+export const PresenceIndicator = () => {
+  const collaborators = useEditorStore((s) => s.collaborators);
+  const document = useEditorStore((s) => s.document);
 
-export function PresenceIndicator({ collaborators }: Props) {
   if (collaborators.length === 0) return null;
 
+  function getEntityName(entityId: string | null): string | null {
+    if (!entityId || !document) return null;
+    return document.entities.find((e) => e.id === entityId)?.name ?? null;
+  }
+
+  function getInitial(email: string): string {
+    return (email.split("@")[0]?.[0] ?? "?").toUpperCase();
+  }
+
   return (
-    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-      {collaborators.map((c) => (
-        <div
-          key={c.userId}
-          title={c.userId}
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: "50%",
-            background: c.color,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: "default",
-            flexShrink: 0,
-            outline: c.selectedEntityId ? `2px solid ${c.color}` : "none",
-            outlineOffset: 2
-          }}
-        >
-          {c.userId.charAt(0).toUpperCase()}
-        </div>
-      ))}
+    <div className={css.list}>
+      {collaborators.map((c) => {
+        const entityName = getEntityName(c.selectedEntityId);
+
+        return (
+          <div key={c.userId} className={css.avatarWrapper}>
+            <div
+              className={css.avatar}
+              style={{
+                background: c.color,
+                outline: c.selectedEntityId ? `2px solid ${c.color}` : "none",
+                outlineOffset: "2px",
+              }}
+            >
+              {getInitial(c.email)}
+            </div>
+
+            <div className={css.tooltip}>
+              <div className={css.tooltipName}>{c.email}</div>
+              {entityName && (
+                <div className={css.tooltipEntity}>{entityName} 편집 중</div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
-}
+};

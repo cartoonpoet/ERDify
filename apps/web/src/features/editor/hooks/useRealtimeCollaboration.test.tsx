@@ -1,7 +1,7 @@
 import { renderHook, act } from "@testing-library/react";
-import * as Y from "yjs";
+import * as Automerge from "@automerge/automerge";
+import type { DiagramDocument } from "@erdify/domain";
 
-// Mock socket.io-client before importing the hook
 const mockSocket = {
   on: vi.fn(),
   emit: vi.fn(),
@@ -14,36 +14,49 @@ vi.mock("socket.io-client", () => ({
   io: vi.fn(() => mockSocket)
 }));
 
-// Mock useAuthStore
 vi.mock("../../../shared/stores/useAuthStore", () => ({
   useAuthStore: vi.fn((selector: (s: { token: string | null }) => unknown) =>
     selector({ token: "test-token" })
   )
 }));
 
-// Track Zustand store state
-let storeDoc: object | null = null;
-let storeSelectedEntityId: string | null = null;
-const mockSetDocument = vi.fn((doc: object) => { storeDoc = doc; });
+const mockSetDocument = vi.fn();
+const mockSetCollaborators = vi.fn();
+const mockSubscribeUnsub = vi.fn();
+const mockSubscribe = vi.fn(() => mockSubscribeUnsub);
+
+const storeHook = Object.assign(
+  vi.fn((selector: (s: { document: null; setDocument: typeof mockSetDocument; setCollaborators: typeof mockSetCollaborators }) => unknown) =>
+    selector({ document: null, setDocument: mockSetDocument, setCollaborators: mockSetCollaborators })
+  ),
+  { subscribe: mockSubscribe }
+);
 
 vi.mock("../stores/useEditorStore", () => ({
-  useEditorStore: vi.fn((selector: (s: Record<string, unknown>) => unknown) =>
-    selector({
-      document: storeDoc,
-      setDocument: mockSetDocument,
-      selectedEntityId: storeSelectedEntityId
-    })
-  )
+  useEditorStore: storeHook
 }));
 
 import { useRealtimeCollaboration } from "./useRealtimeCollaboration";
 import { io } from "socket.io-client";
 
+function makeEmptyDoc(): DiagramDocument {
+  return {
+    format: "erdify.schema.v1",
+    id: "d1",
+    name: "Test",
+    dialect: "postgresql",
+    entities: [],
+    relationships: [],
+    indexes: [],
+    views: [],
+    layout: { entityPositions: {} },
+    metadata: { revision: 1, stableObjectIds: true, createdAt: "", updatedAt: "" }
+  };
+}
+
 describe("useRealtimeCollaboration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    storeDoc = null;
-    storeSelectedEntityId = null;
     mockSocket.connected = false;
   });
 
@@ -55,103 +68,74 @@ describe("useRealtimeCollaboration", () => {
     );
   });
 
-  it("disconnects socket on unmount", () => {
+  it("disconnects socket and unsubscribes store on unmount", () => {
     const { unmount } = renderHook(() => useRealtimeCollaboration("d1"));
     unmount();
     expect(mockSocket.disconnect).toHaveBeenCalled();
-  });
-
-  it("returns isConnected false initially", () => {
-    const { result } = renderHook(() => useRealtimeCollaboration("d1"));
-    expect(result.current.isConnected).toBe(false);
-  });
-
-  it("registers yjs:sync, yjs:update, presence:state, connect, disconnect event handlers", () => {
-    renderHook(() => useRealtimeCollaboration("d1"));
-    const registeredEvents = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.map((c: unknown[]) => c[0]);
-    expect(registeredEvents).toContain("connect");
-    expect(registeredEvents).toContain("disconnect");
-    expect(registeredEvents).toContain("yjs:sync");
-    expect(registeredEvents).toContain("yjs:update");
-    expect(registeredEvents).toContain("presence:state");
-  });
-
-  it("applies yjs:sync and calls setDocument with parsed content", () => {
-    renderHook(() => useRealtimeCollaboration("d1"));
-
-    const diagramContent = { entities: [], format: "erdify.schema.v1" };
-    const ydoc = new Y.Doc();
-    const sharedContent = ydoc.getMap<string>("content");
-    ydoc.transact(() => {
-      sharedContent.set("data", JSON.stringify(diagramContent));
-    });
-    const stateUpdate = Y.encodeStateAsUpdate(ydoc);
-
-    const syncCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find((c: unknown[]) => c[0] === "yjs:sync");
-    expect(syncCall).toBeTruthy();
-    act(() => {
-      (syncCall![1] as (u: Uint8Array) => void)(stateUpdate);
-    });
-
-    expect(mockSetDocument).toHaveBeenCalledWith(diagramContent);
-  });
-
-  it("applies yjs:update and calls setDocument", () => {
-    renderHook(() => useRealtimeCollaboration("d1"));
-
-    const diagramContent = { entities: [{ id: "e1" }], format: "erdify.schema.v1" };
-    const ydoc = new Y.Doc();
-    const sharedContent = ydoc.getMap<string>("content");
-    ydoc.transact(() => {
-      sharedContent.set("data", JSON.stringify(diagramContent));
-    });
-    const stateUpdate = Y.encodeStateAsUpdate(ydoc);
-
-    const updateCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find((c: unknown[]) => c[0] === "yjs:update");
-    act(() => {
-      (updateCall![1] as (u: Uint8Array) => void)(stateUpdate);
-    });
-
-    expect(mockSetDocument).toHaveBeenCalledWith(diagramContent);
-  });
-
-  it("returns collaborators from presence:state event", () => {
-    const { result } = renderHook(() => useRealtimeCollaboration("d1"));
-
-    const collaborators = [{ userId: "u1", color: "#ef4444", selectedEntityId: null }];
-    const presenceCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find((c: unknown[]) => c[0] === "presence:state");
-    act(() => {
-      (presenceCall![1] as (p: typeof collaborators) => void)(collaborators);
-    });
-
-    expect(result.current.collaborators).toEqual(collaborators);
+    expect(mockSubscribeUnsub).toHaveBeenCalled();
   });
 
   it("emits join on connect", () => {
     renderHook(() => useRealtimeCollaboration("d1"));
-    const connectCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find((c: unknown[]) => c[0] === "connect");
-    act(() => {
-      (connectCall![1] as () => void)();
-    });
+    const connectCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "connect"
+    );
+    act(() => { (connectCall![1] as () => void)(); });
     expect(mockSocket.emit).toHaveBeenCalledWith("join", { diagramId: "d1" });
   });
 
-  it("emits yjs:update when local document changes while connected", () => {
-    // Set connected = true on the mock
-    mockSocket.connected = true;
+  it("calls setDocument with doc content on am:init", () => {
+    renderHook(() => useRealtimeCollaboration("d1"));
 
-    // Provide an initial document
-    storeDoc = { entities: [], format: "erdify.schema.v1" };
+    const doc = Automerge.from(makeEmptyDoc() as unknown as Record<string, unknown>);
+    const bytes = Automerge.save(doc);
 
-    const { rerender } = renderHook(() => useRealtimeCollaboration("d1"));
-
-    // Trigger a document change by updating storeDoc and re-rendering
-    storeDoc = { entities: [{ id: "new-entity" }], format: "erdify.schema.v1" };
-    rerender();
-
-    expect(mockSocket.emit).toHaveBeenCalledWith(
-      "yjs:update",
-      expect.any(Uint8Array)
+    const initCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "am:init"
     );
+    act(() => { (initCall![1] as (b: number[]) => void)(Array.from(bytes)); });
+
+    expect(mockSetDocument).toHaveBeenCalledWith(
+      expect.objectContaining({ entities: [], format: "erdify.schema.v1" })
+    );
+  });
+
+  it("calls setDocument on am:change with updated content", () => {
+    renderHook(() => useRealtimeCollaboration("d1"));
+
+    const doc = Automerge.from(makeEmptyDoc() as unknown as Record<string, unknown>);
+    const initBytes = Automerge.save(doc);
+    const initCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "am:init"
+    );
+    act(() => { (initCall![1] as (b: number[]) => void)(Array.from(initBytes)); });
+
+    const newDoc = Automerge.change(doc, (d) => {
+      (d.entities as DiagramDocument["entities"]).push({
+        id: "e1", name: "Users", logicalName: null, comment: null, columns: []
+      });
+    });
+    const change = Automerge.getLastLocalChange(newDoc)!;
+
+    const changeCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "am:change"
+    );
+    act(() => { (changeCall![1] as (b: number[]) => void)(Array.from(change)); });
+
+    expect(mockSetDocument).toHaveBeenLastCalledWith(
+      expect.objectContaining({ entities: expect.arrayContaining([expect.objectContaining({ id: "e1" })]) })
+    );
+  });
+
+  it("calls setCollaborators in store from presence:state event", () => {
+    renderHook(() => useRealtimeCollaboration("d1"));
+
+    const collaborators = [{ userId: "u1", email: "u1@example.com", color: "#ef4444", selectedEntityId: null }];
+    const presenceCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "presence:state"
+    );
+    act(() => { (presenceCall![1] as (p: typeof collaborators) => void)(collaborators); });
+
+    expect(mockSetCollaborators).toHaveBeenCalledWith(collaborators);
   });
 });

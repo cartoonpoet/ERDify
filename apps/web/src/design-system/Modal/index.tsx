@@ -1,4 +1,4 @@
-import { type PropsWithChildren, useEffect } from "react";
+import type { PropsWithChildren, KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { backdrop, panel, header, title as titleStyle, closeBtn } from "./modal.css";
 
@@ -9,16 +9,11 @@ interface ModalProps extends PropsWithChildren {
 }
 
 export const Modal = ({ open, onClose, title, children }: ModalProps) => {
-  useEffect(() => {
-    if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
-
   if (!open) return null;
+
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Escape") onClose();
+  }
 
   return createPortal(
     <div
@@ -28,7 +23,15 @@ export const Modal = ({ open, onClose, title, children }: ModalProps) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={panel} role="dialog" aria-modal aria-label={title}>
+      <div
+        className={panel}
+        role="dialog"
+        aria-modal
+        aria-label={title}
+        tabIndex={-1}
+        autoFocus
+        onKeyDown={onKeyDown}
+      >
         <div className={header}>
           <span className={titleStyle}>{title}</span>
           <button className={closeBtn} onClick={onClose} aria-label="닫기">×</button>

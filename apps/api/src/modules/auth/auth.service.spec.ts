@@ -1,11 +1,11 @@
-import * as bcrypt from "bcrypt";
+import * as bcrypt from "bcryptjs";
 import { ConflictException, UnauthorizedException } from "@nestjs/common";
 import type { JwtService } from "@nestjs/jwt";
 import type { User } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { AuthService } from "./auth.service";
 
-vi.mock("bcrypt", () => ({
+vi.mock("bcryptjs", () => ({
   hash: vi.fn(),
   compare: vi.fn()
 }));

@@ -24,7 +24,7 @@ describe("CollaborationGateway", () => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const mockService = {
     joinRoom: vi.fn(),
-    applyUpdate: vi.fn(),
+    applyChanges: vi.fn(),
     addPresence: vi.fn(),
     updatePresence: vi.fn(),
     leaveRoom: vi.fn(),
@@ -74,10 +74,10 @@ describe("CollaborationGateway", () => {
   });
 
   describe("handleJoin", () => {
-    it("joins socket room, emits yjs:sync, broadcasts presence:state", async () => {
-      const stateUpdate = new Uint8Array([1, 0]);
+    it("joins socket room, emits am:init, broadcasts presence:state", async () => {
+      const docBytes = new Uint8Array([1, 2, 3]);
       mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
-      mockService.joinRoom.mockResolvedValue(stateUpdate);
+      mockService.joinRoom.mockResolvedValue(docBytes);
       mockService.getPresence.mockReturnValue([]);
       const client = makeSocket();
       client.data.userId = "user-1";
@@ -86,7 +86,7 @@ describe("CollaborationGateway", () => {
 
       expect(client.join).toHaveBeenCalledWith("d1");
       expect(client.data.diagramId).toBe("d1");
-      expect(client.emit).toHaveBeenCalledWith("yjs:sync", stateUpdate);
+      expect(client.emit).toHaveBeenCalledWith("am:init", Array.from(docBytes));
       expect(mockService.addPresence).toHaveBeenCalledWith("d1", "user-1", "socket-1");
       expect(mockServer.to).toHaveBeenCalledWith("d1");
       expect(mockServer.emit).toHaveBeenCalledWith("presence:state", []);
@@ -106,16 +106,15 @@ describe("CollaborationGateway", () => {
     });
   });
 
-  describe("handleYjsUpdate", () => {
-    it("applies update, broadcasts to room, schedules persist", async () => {
-      const update = new Uint8Array([2, 0]);
-      mockService.applyUpdate.mockResolvedValue(update);
+  describe("handleChange", () => {
+    it("applies changes, broadcasts am:change to others in room, schedules persist", () => {
+      const change = [1, 2, 3];
       const client = makeSocket();
       client.data = { userId: "user-1", diagramId: "d1" };
 
-      await gateway.handleYjsUpdate(client, update);
+      gateway.handleChange(client, change);
 
-      expect(mockService.applyUpdate).toHaveBeenCalledWith("d1", update);
+      expect(mockService.applyChanges).toHaveBeenCalledWith("d1", [Uint8Array.from(change)]);
       expect(client.to).toHaveBeenCalledWith("d1");
       expect(mockService.schedulePersist).toHaveBeenCalledWith("d1");
     });
@@ -154,19 +153,6 @@ describe("CollaborationGateway", () => {
       client.data = {};
       await gateway.handleDisconnect(client);
       expect(mockService.leaveRoom).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("handleSnapshotRequest", () => {
-    it("persists and emits snapshot:saved to requester", async () => {
-      mockService.persistNow.mockResolvedValue(undefined);
-      const client = makeSocket();
-      client.data = { userId: "user-1", diagramId: "d1" };
-
-      await gateway.handleSnapshotRequest(client);
-
-      expect(mockService.persistNow).toHaveBeenCalledWith("d1");
-      expect(client.emit).toHaveBeenCalledWith("snapshot:saved");
     });
   });
 });

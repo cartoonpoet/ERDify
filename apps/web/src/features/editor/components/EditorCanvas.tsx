@@ -1,78 +1,95 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
 import type { MouseEvent } from "react";
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  applyNodeChanges
-} from "@xyflow/react";
-import type { Edge, NodeChange } from "@xyflow/react";
+import { ReactFlow, Background, Controls, MarkerType } from "@xyflow/react";
+import type { Edge, EdgeChange, NodeChange, Connection } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { TableNode } from "@erdify/erd-ui";
 import type { TableNodeType } from "@erdify/erd-ui";
-import { updateEntityPosition } from "@erdify/domain";
-import type { DiagramDocument } from "@erdify/domain";
+import { updateEntityPosition, addRelationship, removeRelationship } from "@erdify/domain";
+import type { DiagramRelationship } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
 
 const nodeTypes = { table: TableNode };
 
-function docToNodes(doc: DiagramDocument): TableNodeType[] {
-  return doc.entities.map((entity) => ({
-    id: entity.id,
-    type: "table" as const,
-    position: doc.layout.entityPositions[entity.id] ?? { x: 0, y: 0 },
-    data: { entity }
-  }));
-}
+const EDGE_STYLE = {
+  stroke: "#6366f1",
+  strokeWidth: 1.5,
+} as const;
 
-function docToEdges(doc: DiagramDocument): Edge[] {
-  return doc.relationships.map((rel) => ({
+const EDGE_MARKER = {
+  type: MarkerType.ArrowClosed,
+  color: "#6366f1",
+  width: 16,
+  height: 16,
+} as const;
+
+export const EditorCanvas = () => {
+  const document = useEditorStore((s) => s.document);
+  const nodes = useEditorStore((s) => s.nodes);
+  const applyNodeChanges = useEditorStore((s) => s.applyNodeChanges);
+  const applyCommand = useEditorStore((s) => s.applyCommand);
+  const setSelectedEntity = useEditorStore((s) => s.setSelectedEntity);
+
+  if (!document) return null;
+
+  const edges: Edge[] = document.relationships.map((rel) => ({
     id: rel.id,
     source: rel.sourceEntityId,
     target: rel.targetEntityId,
-    label: rel.name
+    type: "smoothstep",
+    label: rel.name || undefined,
+    labelStyle: { fontSize: 11, fill: "#374151" },
+    labelBgStyle: { fill: "#ffffff", fillOpacity: 0.85 },
+    style: EDGE_STYLE,
+    markerEnd: EDGE_MARKER,
   }));
-}
 
-export function EditorCanvas() {
-  const { document, applyCommand, setSelectedEntity } = useEditorStore();
+  function onNodesChange(changes: NodeChange<TableNodeType>[]) {
+    applyNodeChanges(changes);
+  }
 
-  const [nodes, setNodes] = useState<TableNodeType[]>(() =>
-    document ? docToNodes(document) : []
-  );
-  const edges = useMemo<Edge[]>(
-    () => (document ? docToEdges(document) : []),
-    [document]
-  );
+  function onNodeDragStop(_: MouseEvent, node: TableNodeType) {
+    applyCommand((doc) => updateEntityPosition(doc, node.id, node.position));
+  }
 
-  // Re-sync nodes when document changes (add/remove entity, layout update)
-  useEffect(() => {
-    if (document) setNodes(docToNodes(document));
-  }, [document]);
+  function onNodeClick(_: MouseEvent, node: TableNodeType) {
+    setSelectedEntity(node.id);
+  }
 
-  const onNodesChange = useCallback((changes: NodeChange<TableNodeType>[]) => {
-    setNodes((nds) => applyNodeChanges(changes, nds));
-  }, []);
-
-  const onNodeDragStop = useCallback(
-    (_: MouseEvent, node: TableNodeType) => {
-      applyCommand((doc) => updateEntityPosition(doc, node.id, node.position));
-    },
-    [applyCommand]
-  );
-
-  const onNodeClick = useCallback(
-    (_: MouseEvent, node: TableNodeType) => {
-      setSelectedEntity(node.id);
-    },
-    [setSelectedEntity]
-  );
-
-  const onPaneClick = useCallback(() => {
+  function onPaneClick() {
     setSelectedEntity(null);
-  }, [setSelectedEntity]);
+  }
 
-  if (!document) return null;
+  function onConnect(connection: Connection) {
+    if (!connection.source || !connection.target) return;
+    if (connection.source === connection.target) return;
+    if (!document) return;
+
+    const sourceEntity = document.entities.find((e) => e.id === connection.source);
+    const targetEntity = document.entities.find((e) => e.id === connection.target);
+    if (!sourceEntity || !targetEntity) return;
+
+    const relationship: DiagramRelationship = {
+      id: crypto.randomUUID(),
+      name: "",
+      sourceEntityId: connection.source,
+      sourceColumnIds: [],
+      targetEntityId: connection.target,
+      targetColumnIds: [],
+      cardinality: "many-to-one",
+      onDelete: "no-action",
+      onUpdate: "no-action",
+    };
+
+    applyCommand((doc) => addRelationship(doc, relationship));
+  }
+
+  function onEdgesChange(changes: EdgeChange[]) {
+    const removes = changes.filter((c): c is EdgeChange & { type: "remove" } => c.type === "remove");
+    if (removes.length === 0) return;
+    applyCommand((doc) =>
+      removes.reduce((d, change) => removeRelationship(d, (change as { id: string }).id), doc)
+    );
+  }
 
   return (
     <ReactFlow
@@ -80,13 +97,16 @@ export function EditorCanvas() {
       edges={edges}
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onConnect={onConnect}
       onNodeDragStop={onNodeDragStop}
       onNodeClick={onNodeClick}
       onPaneClick={onPaneClick}
+      deleteKeyCode="Delete"
       fitView
     >
       <Background />
       <Controls />
     </ReactFlow>
   );
-}
+};

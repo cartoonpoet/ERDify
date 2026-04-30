@@ -53,3 +53,60 @@ export const emptySidebar = style({
   borderRight: `1px solid ${vars.color.border}`,
   flexShrink: 0,
 });
+
+export const avatarWrapper = style({
+  position: "relative",
+  outline: "none",
+});
+
+export const dropdown = style({
+  position: "absolute",
+  top: "calc(100% + 8px)",
+  right: 0,
+  background: vars.color.surface,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.lg,
+  boxShadow: vars.shadow.lg,
+  minWidth: "200px",
+  overflow: "hidden",
+  zIndex: 200,
+});
+
+export const dropdownHeader = style({
+  padding: `${vars.space["3"]} ${vars.space["4"]}`,
+  borderBottom: `1px solid ${vars.color.border}`,
+});
+
+export const dropdownEmail = style({
+  fontSize: "13px",
+  fontWeight: "600",
+  color: vars.color.textPrimary,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
+
+export const dropdownItem = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space["2"],
+  width: "100%",
+  padding: `${vars.space["3"]} ${vars.space["4"]}`,
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  fontSize: "13px",
+  color: vars.color.textPrimary,
+  fontFamily: vars.font.family,
+  textAlign: "left",
+  selectors: {
+    "&:hover": { background: vars.color.surfaceSecondary },
+  },
+});
+
+export const dropdownItemDanger = style({
+  color: vars.color.error,
+  selectors: {
+    "&:hover": { background: `${vars.color.error}0f` },
+  },
+});

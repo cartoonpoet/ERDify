@@ -19,3 +19,10 @@ export const getOrganization = (id: string): Promise<OrgResponse> =>
 
 export const deleteOrganization = (id: string): Promise<void> =>
   httpClient.delete(`/organizations/${id}`).then(() => undefined);
+
+export const inviteMemberByEmail = (
+  orgId: string,
+  email: string,
+  role: "owner" | "editor" | "viewer"
+): Promise<void> =>
+  httpClient.post(`/organizations/${orgId}/members/invite`, { email, role }).then(() => undefined);

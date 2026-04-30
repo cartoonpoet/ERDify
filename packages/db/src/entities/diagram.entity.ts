@@ -2,10 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from "typeorm";
 import type { DiagramVersion } from "./diagram-version.entity";
 import type { Project } from "./project.entity";
@@ -24,6 +25,9 @@ export class Diagram {
   @Column({ type: "jsonb" })
   content!: object;
 
+  @Column({ type: "varchar", name: "created_by", length: 36, nullable: true })
+  createdBy!: string | null;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
@@ -31,6 +35,7 @@ export class Diagram {
   updatedAt!: Date;
 
   @ManyToOne("Project", "diagrams")
+  @JoinColumn({ name: "project_id" })
   project!: Project;
 
   @OneToMany("DiagramVersion", "diagram")

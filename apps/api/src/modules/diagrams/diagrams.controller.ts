@@ -1,10 +1,10 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import type { CreateDiagramDto } from "./dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
-import type { DiagramsService } from "./diagrams.service";
+import { DiagramsService } from "./diagrams.service";
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -54,5 +54,11 @@ export class DiagramsController {
     @Param("versionId") versionId: string
   ) {
     return this.diagramsService.restoreVersion(id, versionId, user.sub);
+  }
+
+  @Delete("diagrams/:id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
+    return this.diagramsService.remove(id, user.sub);
   }
 }

@@ -53,6 +53,15 @@ export class OrganizationController {
     return this.organizationService.remove(id, user.sub);
   }
 
+  @Post(":id/members/invite")
+  inviteByEmail(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() body: { email: string; role: "owner" | "editor" | "viewer" }
+  ) {
+    return this.organizationService.inviteByEmail(id, user.sub, body.email, body.role);
+  }
+
   @Post(":id/members")
   inviteMember(
     @CurrentUser() user: JwtPayload,

@@ -30,6 +30,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
       const token = raw.replace("Bearer ", "");
       const payload = this.jwtService.verify<JwtPayload>(token);
       client.data.userId = payload.sub;
+      client.data.email = payload.email;
     } catch {
       client.disconnect();
     }
@@ -51,7 +52,6 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     if (!client.data.userId) { client.disconnect(); return; }
     const { diagramId } = payload;
 
-    // Check membership before allowing access
     const permitted = await this.diagramsService.canAccessDiagram(diagramId, client.data.userId as string);
     if (!permitted) {
       client.emit("error", { message: "Forbidden" });
@@ -63,47 +63,46 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
       client.data.diagramId = diagramId;
       client.join(diagramId);
 
-      const stateUpdate = await this.collaborationService.joinRoom(diagramId);
-      client.emit("yjs:sync", stateUpdate);
+      const docBytes = await this.collaborationService.joinRoom(diagramId);
+      client.emit("am:init", Array.from(docBytes));
 
-      this.collaborationService.addPresence(diagramId, client.data.userId as string, client.id);
+      this.collaborationService.addPresence(
+        diagramId,
+        client.data.userId as string,
+        client.id,
+        client.data.email as string
+      );
       const presence = this.collaborationService.getPresence(diagramId);
       this.server.to(diagramId).emit("presence:state", presence);
-    } catch (err) {
+    } catch {
       client.emit("error", { message: "Failed to join diagram" });
       client.disconnect();
     }
   }
 
-  @SubscribeMessage("yjs:update")
-  async handleYjsUpdate(
+  @SubscribeMessage("am:change")
+  handleChange(
     @ConnectedSocket() client: Socket,
-    @MessageBody() update: Uint8Array
-  ): Promise<void> {
+    @MessageBody() change: number[]
+  ): void {
     const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
     if (!diagramId || !userId) return;
-    const broadcastUpdate = await this.collaborationService.applyUpdate(diagramId, update);
-    client.to(diagramId).emit("yjs:update", broadcastUpdate);
+
+    const changeBytes = Uint8Array.from(change);
+    this.collaborationService.applyChanges(diagramId, [changeBytes]);
+    client.to(diagramId).emit("am:change", change);
     this.collaborationService.schedulePersist(diagramId);
   }
 
   @SubscribeMessage("presence:update")
-  async handlePresenceUpdate(
+  handlePresenceUpdate(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { selectedEntityId: string | null }
-  ): Promise<void> {
+  ): void {
     const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
     if (!diagramId || !userId) return;
     this.collaborationService.updatePresence(diagramId, userId, data);
     const presence = this.collaborationService.getPresence(diagramId);
     this.server.to(diagramId).emit("presence:state", presence);
-  }
-
-  @SubscribeMessage("snapshot:request")
-  async handleSnapshotRequest(@ConnectedSocket() client: Socket): Promise<void> {
-    const { diagramId } = client.data as { diagramId?: string };
-    if (!diagramId) return;
-    await this.collaborationService.persistNow(diagramId);
-    client.emit("snapshot:saved");
   }
 }

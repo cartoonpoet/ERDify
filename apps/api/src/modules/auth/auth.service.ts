@@ -1,9 +1,9 @@
 import { randomUUID } from "crypto";
 import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
-import type { JwtService } from "@nestjs/jwt";
+import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "@erdify/db";
-import * as bcrypt from "bcrypt";
+import * as bcrypt from "bcryptjs";
 import type { Repository } from "typeorm";
 import type { LoginDto } from "./dto/login.dto";
 import type { RegisterDto } from "./dto/register.dto";

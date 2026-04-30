@@ -13,6 +13,10 @@ export const rail = style({
   flexShrink: 0,
 });
 
+export const orgWrapper = style({
+  position: "relative",
+});
+
 export const orgIconBase = style({
   width: "32px",
   height: "32px",
@@ -27,6 +31,31 @@ export const orgIconBase = style({
   transition: "transform 100ms ease, box-shadow 100ms ease",
   selectors: {
     "&:hover": { transform: "scale(1.08)" },
+  },
+});
+
+export const orgDeleteBtn = style({
+  position: "absolute",
+  top: "-4px",
+  right: "-4px",
+  width: "14px",
+  height: "14px",
+  borderRadius: "50%",
+  background: vars.color.error,
+  color: vars.color.surface,
+  border: `1.5px solid ${vars.color.surface}`,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "9px",
+  fontWeight: "700",
+  cursor: "pointer",
+  opacity: 0,
+  transition: "opacity 150ms ease",
+  lineHeight: 1,
+  padding: 0,
+  selectors: {
+    [`${orgWrapper}:hover &`]: { opacity: 1 },
   },
 });
 

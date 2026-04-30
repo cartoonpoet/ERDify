@@ -4,8 +4,10 @@ import type { DiagramDocument } from "@erdify/domain";
 export interface DiagramResponse {
   id: string;
   projectId: string;
+  organizationId: string;
   name: string;
   content: DiagramDocument;
+  createdBy: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,7 +23,7 @@ export interface DiagramVersionResponse {
 
 export function createDiagram(
   projectId: string,
-  body: { name: string; dialect: "postgresql" | "mysql" | "mariadb" }
+  body: { name: string; dialect: "postgresql" | "mysql" | "mariadb"; content?: object }
 ): Promise<DiagramResponse> {
   return httpClient
     .post<DiagramResponse>(`/projects/${projectId}/diagrams`, body)
@@ -63,4 +65,8 @@ export function restoreVersion(diagramId: string, versionId: string): Promise<Di
   return httpClient
     .post<DiagramResponse>(`/diagrams/${diagramId}/restore/${versionId}`)
     .then((r) => r.data);
+}
+
+export function deleteDiagram(diagramId: string): Promise<void> {
+  return httpClient.delete(`/diagrams/${diagramId}`).then(() => undefined);
 }

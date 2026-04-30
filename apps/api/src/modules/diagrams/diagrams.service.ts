@@ -49,19 +49,21 @@ export class DiagramsService {
     await this.requireEditorOrOwner(project.organizationId, userId);
     const now = new Date().toISOString();
     const id = randomUUID();
-    const content = {
-      format: "erdify.schema.v1",
-      id,
-      name: dto.name,
-      dialect: dto.dialect,
-      entities: [],
-      relationships: [],
-      indexes: [],
-      views: [],
-      layout: { entityPositions: {} },
-      metadata: { revision: 1, stableObjectIds: true, createdAt: now, updatedAt: now }
-    };
-    return this.diagramRepo.save(this.diagramRepo.create({ id, projectId, name: dto.name, content }));
+    const content: object = dto.content
+      ? { ...(dto.content as object), id }
+      : {
+          format: "erdify.schema.v1",
+          id,
+          name: dto.name,
+          dialect: dto.dialect,
+          entities: [],
+          relationships: [],
+          indexes: [],
+          views: [],
+          layout: { entityPositions: {} },
+          metadata: { revision: 1, stableObjectIds: true, createdAt: now, updatedAt: now }
+        };
+    return this.diagramRepo.save(this.diagramRepo.create({ id, projectId, name: dto.name, content, createdBy: userId }));
   }
 
   async findAll(projectId: string, userId: string): Promise<Diagram[]> {
@@ -70,10 +72,10 @@ export class DiagramsService {
     return this.diagramRepo.find({ where: { projectId } });
   }
 
-  async findOne(diagramId: string, userId: string): Promise<Diagram> {
+  async findOne(diagramId: string, userId: string): Promise<Diagram & { organizationId: string }> {
     const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
     await this.requireMember(orgId, userId);
-    return diagram;
+    return { ...diagram, organizationId: orgId };
   }
 
   async canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {
@@ -121,5 +123,11 @@ export class DiagramsService {
 
     diagram.content = version.content;
     return this.diagramRepo.save(diagram);
+  }
+
+  async remove(diagramId: string, userId: string): Promise<void> {
+    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
+    await this.requireEditorOrOwner(orgId, userId);
+    await this.diagramRepo.remove(diagram);
   }
 }

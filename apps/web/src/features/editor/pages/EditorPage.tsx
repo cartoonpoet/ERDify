@@ -1,20 +1,28 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { addEntity } from "@erdify/domain";
 import { getDiagram } from "../../../shared/api/diagrams.api";
 import { useEditorStore } from "../stores/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
+import { EntityPanel } from "../components/EntityPanel";
 import { VersionHistoryDrawer } from "../components/VersionHistoryDrawer";
+import { InviteModal } from "../components/InviteModal";
 import { PresenceIndicator } from "../components/PresenceIndicator";
+import { ExportDdlModal } from "../components/ExportDdlModal";
 import { useDiagramAutosave } from "../hooks/useDiagramAutosave";
 import { useVersionHistory } from "../hooks/useVersionHistory";
 import { useRealtimeCollaboration } from "../hooks/useRealtimeCollaboration";
+import * as css from "./editor-page.css";
 
-export function EditorPage() {
+export const EditorPage = () => {
   const { diagramId } = useParams<{ diagramId: string }>();
+  const navigate = useNavigate();
   const [showHistory, setShowHistory] = useState(false);
-  const { document, isDirty, setDocument, applyCommand } = useEditorStore();
+  const [showInvite, setShowInvite] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+
+  const { document, isDirty, setDocument, applyCommand, selectedEntityId } = useEditorStore();
 
   const { data, isLoading } = useQuery({
     queryKey: ["diagram", diagramId],
@@ -22,14 +30,14 @@ export function EditorPage() {
     enabled: !!diagramId
   });
 
-  const { collaborators, isConnected } = useRealtimeCollaboration(diagramId ?? "");
-
   useEffect(() => {
-    if (data && !isConnected) setDocument(data.content);
-  }, [data, setDocument, isConnected]);
+    if (data) setDocument(data.content);
+  // data.id가 바뀔 때(다른 다이어그램으로 이동)만 재초기화, 백그라운드 refetch는 무시
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.id]);
 
+  useRealtimeCollaboration(diagramId ?? "");
   useDiagramAutosave(diagramId ?? "");
-
   const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "");
 
   function handleAddTable() {
@@ -42,92 +50,79 @@ export function EditorPage() {
   }
 
   if (isLoading) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-        Loading...
-      </div>
-    );
+    return <div className={css.loadingContainer}>Loading...</div>;
   }
 
-  const saveStatus = isDirty ? "수정됨" : "저장됨";
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <div
-        style={{
-          padding: "8px 16px",
-          borderBottom: "1px solid #e5e7eb",
-          display: "flex",
-          gap: 8,
-          alignItems: "center",
-          background: "#ffffff"
-        }}
-      >
-        <span style={{ fontWeight: 600, fontSize: 14 }}>{data?.name}</span>
-        <span style={{ fontSize: 12, color: "#9ca3af" }}>{saveStatus}</span>
-        <span
-          style={{
-            fontSize: 11,
-            color: isConnected ? "#059669" : "#9ca3af",
-            padding: "1px 6px",
-            borderRadius: 10,
-            background: isConnected ? "#d1fae5" : "#f3f4f6"
-          }}
+    <div className={css.root}>
+      <div className={css.topbar}>
+        <button
+          onClick={() => navigate(-1)}
+          className={css.backBtn}
+          title="뒤로가기"
         >
-          {isConnected ? "실시간" : "오프라인"}
-        </span>
-        <PresenceIndicator collaborators={collaborators} />
-        <div style={{ flex: 1 }} />
+          ←
+        </button>
+        <span className={css.diagramName}>{data?.name}</span>
+        <span className={css.statusText}>{isDirty ? "수정됨" : "저장됨"}</span>
+        <div className={css.spacer} />
+        <PresenceIndicator />
+        <button
+          onClick={() => setShowExport(true)}
+          className={css.topbarBtn({ variant: "secondary" })}
+        >
+          DDL 내보내기
+        </button>
+        <button
+          onClick={() => setShowInvite(true)}
+          className={css.topbarBtn({ variant: "secondary" })}
+        >
+          + 멤버 초대
+        </button>
         <button
           onClick={handleAddTable}
-          style={{
-            padding: "4px 12px",
-            background: "#374151",
-            color: "#fff",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-            fontSize: 13
-          }}
+          className={css.topbarBtn({ variant: "dark" })}
         >
           + 테이블
         </button>
         <button
           onClick={() => saveVersion()}
           disabled={isSavingVersion}
-          style={{
-            padding: "4px 12px",
-            background: isSavingVersion ? "#9ca3af" : "#059669",
-            color: "#fff",
-            border: "none",
-            borderRadius: 4,
-            cursor: isSavingVersion ? "not-allowed" : "pointer",
-            fontSize: 13
-          }}
+          className={css.topbarBtn({ variant: "success" })}
         >
           버전 저장
         </button>
         <button
           onClick={() => setShowHistory((v) => !v)}
-          style={{
-            padding: "4px 12px",
-            background: showHistory ? "#2563eb" : "#f3f4f6",
-            color: showHistory ? "#fff" : "#374151",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-            fontSize: 13
-          }}
+          className={css.topbarBtn({ variant: showHistory ? "historyActive" : "historyInactive" })}
         >
           기록
         </button>
       </div>
-      <div style={{ flex: 1, position: "relative" }}>
-        <EditorCanvas />
+
+      <div className={css.content}>
+        <div className={css.canvasArea}>
+          <EditorCanvas />
+        </div>
+        {selectedEntityId && <EntityPanel entityId={selectedEntityId} />}
         {showHistory && diagramId && (
           <VersionHistoryDrawer diagramId={diagramId} onClose={() => setShowHistory(false)} />
         )}
       </div>
+
+      {showInvite && data?.organizationId && (
+        <InviteModal
+          open={showInvite}
+          onClose={() => setShowInvite(false)}
+          organizationId={data.organizationId}
+        />
+      )}
+
+      <ExportDdlModal
+        open={showExport}
+        diagramName={data?.name ?? "diagram"}
+        onClose={() => setShowExport(false)}
+      />
     </div>
   );
-}
+};

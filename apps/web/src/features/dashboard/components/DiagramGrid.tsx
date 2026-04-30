@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -5,14 +6,20 @@ import type { DiagramResponse } from "../../../shared/api/diagrams.api";
 import { Button, Skeleton } from "../../../design-system";
 import {
   mainArea, mainHeader, mainTitle, filterRow, filterChip, filterChipVariants,
-  grid, diagramCard, cardPreview, miniTable, miniTableHeader, miniField,
-  cardBody, cardName, cardMeta, dialectBadge, newCard, newCardIcon,
+  grid, diagramCardWrapper, diagramCard, cardDeleteBtn, cardPreview,
+  miniTable, miniTableHeader, miniField, cardBody, cardName, cardMeta,
+  dialectBadge, newCard, newCardIcon,
 } from "./DiagramGrid.css";
+
+type FilterType = "all" | "recent" | "mine";
 
 interface DiagramGridProps {
   diagrams: DiagramResponse[];
   projectName?: string;
+  currentUserId: string | null;
   onCreateDiagram: () => void;
+  onImportDiagram?: () => void;
+  onDeleteDiagram: (diagramId: string) => void;
   loading?: boolean;
 }
 
@@ -35,48 +42,97 @@ const DiagramCardPreview = ({ diagram }: { diagram: DiagramResponse }) => {
   );
 };
 
-export const DiagramGrid = ({ diagrams, projectName, onCreateDiagram, loading = false }: DiagramGridProps) => (
-  <div className={mainArea}>
-    <div className={mainHeader}>
-      <div className={mainTitle}>{projectName ?? "프로젝트를 선택하세요"}</div>
+function applyFilter(diagrams: DiagramResponse[], filter: FilterType, userId: string | null): DiagramResponse[] {
+  if (filter === "recent") {
+    return [...diagrams].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  }
+  if (filter === "mine") {
+    return diagrams.filter((d) => d.createdBy !== null && d.createdBy === userId);
+  }
+  return diagrams;
+}
+
+export const DiagramGrid = ({ diagrams, projectName, currentUserId, onCreateDiagram, onImportDiagram, onDeleteDiagram, loading = false }: DiagramGridProps) => {
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const filtered = applyFilter(diagrams, activeFilter, currentUserId);
+
+  return (
+    <div className={mainArea}>
+      <div className={mainHeader}>
+        <div className={mainTitle}>{projectName ?? "프로젝트를 선택하세요"}</div>
+        {projectName && onImportDiagram && (
+          <Button variant="secondary" size="md" onClick={onImportDiagram}>
+            가져오기
+          </Button>
+        )}
+        {projectName && (
+          <Button variant="primary" size="md" onClick={onCreateDiagram}>
+            + 새 ERD
+          </Button>
+        )}
+      </div>
       {projectName && (
-        <Button variant="primary" size="md" onClick={onCreateDiagram}>
-          + 새 ERD
-        </Button>
+        <div className={filterRow}>
+          <button
+            className={[filterChip, activeFilter === "all" ? filterChipVariants.active : filterChipVariants.inactive].join(" ")}
+            onClick={() => setActiveFilter("all")}
+          >
+            전체
+          </button>
+          <button
+            className={[filterChip, activeFilter === "recent" ? filterChipVariants.active : filterChipVariants.inactive].join(" ")}
+            onClick={() => setActiveFilter("recent")}
+          >
+            최근 수정
+          </button>
+          <button
+            className={[filterChip, activeFilter === "mine" ? filterChipVariants.active : filterChipVariants.inactive].join(" ")}
+            onClick={() => setActiveFilter("mine")}
+          >
+            내가 만든
+          </button>
+        </div>
+      )}
+      {loading ? (
+        <div className={grid}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} height={140} />
+          ))}
+        </div>
+      ) : (
+        <div className={grid}>
+          {filtered.map((diagram) => (
+            <div key={diagram.id} className={diagramCardWrapper}>
+              <Link to={`/diagrams/${diagram.id}`} className={diagramCard}>
+                <DiagramCardPreview diagram={diagram} />
+                <div className={cardBody}>
+                  <div className={cardName}>{diagram.name}</div>
+                  <div className={cardMeta}>
+                    <span className={dialectBadge}>{diagram.content.dialect}</span>
+                    {formatDistanceToNow(new Date(diagram.updatedAt), { addSuffix: true, locale: ko })}
+                  </div>
+                </div>
+              </Link>
+              <button
+                className={cardDeleteBtn}
+                aria-label={`${diagram.name} 삭제`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (window.confirm(`"${diagram.name}" ERD를 삭제하시겠습니까?`)) {
+                    onDeleteDiagram(diagram.id);
+                  }
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <button className={newCard} onClick={onCreateDiagram}>
+            <div className={newCardIcon}>+</div>
+            새 ERD 만들기
+          </button>
+        </div>
       )}
     </div>
-    {projectName && (
-      <div className={filterRow}>
-        <button className={[filterChip, filterChipVariants.active].join(" ")}>전체</button>
-        <button className={[filterChip, filterChipVariants.inactive].join(" ")}>최근 수정</button>
-        <button className={[filterChip, filterChipVariants.inactive].join(" ")}>내가 만든</button>
-      </div>
-    )}
-    {loading ? (
-      <div className={grid}>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} height={140} />
-        ))}
-      </div>
-    ) : (
-      <div className={grid}>
-        {diagrams.map((diagram) => (
-          <Link key={diagram.id} to={`/diagrams/${diagram.id}`} className={diagramCard}>
-            <DiagramCardPreview diagram={diagram} />
-            <div className={cardBody}>
-              <div className={cardName}>{diagram.name}</div>
-              <div className={cardMeta}>
-                <span className={dialectBadge}>{diagram.content.dialect}</span>
-                {formatDistanceToNow(new Date(diagram.updatedAt), { addSuffix: true, locale: ko })}
-              </div>
-            </div>
-          </Link>
-        ))}
-        <button className={newCard} onClick={onCreateDiagram}>
-          <div className={newCardIcon}>+</div>
-          새 ERD 만들기
-        </button>
-      </div>
-    )}
-  </div>
-);
+  );
+};

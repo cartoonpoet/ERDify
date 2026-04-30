@@ -1,29 +1,54 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { listMyOrganizations } from "../../../shared/api/organizations.api";
-import { listProjects } from "../../../shared/api/projects.api";
-import { listDiagrams } from "../../../shared/api/diagrams.api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { FocusEvent } from "react";
+import { listMyOrganizations, deleteOrganization } from "../../../shared/api/organizations.api";
+import { listProjects, deleteProject } from "../../../shared/api/projects.api";
+import { listDiagrams, deleteDiagram } from "../../../shared/api/diagrams.api";
 import { useWorkspaceStore } from "../../../shared/stores/useWorkspaceStore";
+import { useAuthStore } from "../../../shared/stores/useAuthStore";
 import { OrgRail } from "../components/OrgRail";
 import { ProjectSidebar } from "../components/ProjectSidebar";
 import { DiagramGrid } from "../components/DiagramGrid";
 import { CreateOrgModal } from "../components/CreateOrgModal";
 import { CreateProjectModal } from "../components/CreateProjectModal";
 import { CreateDiagramModal } from "../components/CreateDiagramModal";
+import { ImportDiagramModal } from "../components/ImportDiagramModal";
 import {
-  shell, topbar, brand, brandAccent, topbarSpacer, avatar, body, emptySidebar,
+  shell, topbar, brand, brandAccent, topbarSpacer, avatar,
+  avatarWrapper, dropdown, dropdownHeader, dropdownEmail,
+  dropdownItem, dropdownItemDanger, body, emptySidebar,
 } from "./dashboard-page.css";
+
+function decodeJwt(token: string | null): { email?: string; sub?: string } {
+  if (!token) return {};
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return {};
+    return JSON.parse(atob(payload)) as { email?: string; sub?: string };
+  } catch {
+    return {};
+  }
+}
+
+function getInitial(email: string | undefined | null): string {
+  return (email?.split("@")[0]?.[0] ?? "?").toUpperCase();
+}
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { selectedOrganizationId, selectedProjectId, selectOrganization, selectProject } =
+  const { selectedOrganizationId, selectedProjectId, selectOrganization, selectProject, reset } =
     useWorkspaceStore();
+  const { token, clearToken } = useAuthStore();
 
   const [orgModalOpen, setOrgModalOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [diagramModalOpen, setDiagramModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const { email, sub: currentUserId } = decodeJwt(token);
 
   const { data: orgs = [] } = useQuery({
     queryKey: ["orgs"],
@@ -42,8 +67,68 @@ export const DashboardPage = () => {
     enabled: !!selectedProjectId,
   });
 
+  const deleteOrgMutation = useMutation({
+    mutationFn: (orgId: string) => deleteOrganization(orgId),
+    onSuccess: (_data, orgId) => {
+      if (selectedOrganizationId === orgId) reset();
+      void queryClient.invalidateQueries({ queryKey: ["orgs"] });
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: (projectId: string) => deleteProject(selectedOrganizationId!, projectId),
+    onSuccess: (_data, projectId) => {
+      if (selectedProjectId === projectId) selectOrganization(selectedOrganizationId!);
+      void queryClient.invalidateQueries({ queryKey: ["projects", selectedOrganizationId] });
+    },
+  });
+
+  const deleteDiagramMutation = useMutation({
+    mutationFn: (diagramId: string) => deleteDiagram(diagramId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["diagrams", selectedProjectId] });
+    },
+  });
+
   const selectedOrg = orgs.find((o) => o.id === selectedOrganizationId) ?? null;
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null;
+
+  function handleLogout() {
+    clearToken();
+    reset();
+    queryClient.clear();
+    navigate("/login");
+  }
+
+  function handleAvatarMenuBlur(e: FocusEvent<HTMLDivElement>) {
+    if (!e.currentTarget.contains(e.relatedTarget)) setMenuOpen(false);
+  }
+
+  function handleAvatarClick() {
+    setMenuOpen((v) => !v);
+  }
+
+  function handleOpenOrgModal() { setOrgModalOpen(true); }
+  function handleCloseOrgModal() { setOrgModalOpen(false); }
+  function handleOrgCreated() { void queryClient.invalidateQueries({ queryKey: ["orgs"] }); }
+
+  function handleOpenProjectModal() { setProjectModalOpen(true); }
+  function handleCloseProjectModal() { setProjectModalOpen(false); }
+  function handleProjectCreated() {
+    void queryClient.invalidateQueries({ queryKey: ["projects", selectedOrganizationId] });
+  }
+
+  function handleOpenDiagramModal() { setDiagramModalOpen(true); }
+  function handleCloseDiagramModal() { setDiagramModalOpen(false); }
+  function handleDiagramCreated(id: string) { navigate(`/diagrams/${id}`); }
+
+  function handleOpenImportModal() { setImportModalOpen(true); }
+  function handleCloseImportModal() { setImportModalOpen(false); }
+  function handleDiagramImported(id: string) { navigate(`/diagrams/${id}`); }
+
+  function handleDeleteOrg(id: string) { deleteOrgMutation.mutate(id); }
+  function handleDeleteProject(id: string) { deleteProjectMutation.mutate(id); }
+  function handleDeleteDiagram(id: string) { deleteDiagramMutation.mutate(id); }
 
   return (
     <div className={shell}>
@@ -52,7 +137,23 @@ export const DashboardPage = () => {
           ERD<span className={brandAccent}>ify</span>
         </div>
         <div className={topbarSpacer} />
-        <div className={avatar}>J</div>
+
+        <div className={avatarWrapper} tabIndex={-1} onBlur={handleAvatarMenuBlur}>
+          <div className={avatar} onClick={handleAvatarClick}>
+            {getInitial(email)}
+          </div>
+
+          {menuOpen && (
+            <div className={dropdown}>
+              <div className={dropdownHeader}>
+                <div className={dropdownEmail}>{email ?? "사용자"}</div>
+              </div>
+              <button className={`${dropdownItem} ${dropdownItemDanger}`} onClick={handleLogout}>
+                로그아웃
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className={body}>
@@ -60,7 +161,8 @@ export const DashboardPage = () => {
           orgs={orgs}
           selectedOrgId={selectedOrganizationId}
           onSelect={selectOrganization}
-          onCreateOrg={() => setOrgModalOpen(true)}
+          onDeleteOrg={handleDeleteOrg}
+          onCreateOrg={handleOpenOrgModal}
         />
 
         {selectedOrg ? (
@@ -69,7 +171,8 @@ export const DashboardPage = () => {
             projects={projects}
             selectedProjectId={selectedProjectId}
             onSelect={selectProject}
-            onCreateProject={() => setProjectModalOpen(true)}
+            onDeleteProject={handleDeleteProject}
+            onCreateProject={handleOpenProjectModal}
           />
         ) : (
           <div className={emptySidebar} />
@@ -78,22 +181,25 @@ export const DashboardPage = () => {
         <DiagramGrid
           diagrams={diagrams}
           {...(selectedProject?.name ? { projectName: selectedProject.name } : {})}
-          onCreateDiagram={() => setDiagramModalOpen(true)}
+          currentUserId={currentUserId ?? null}
+          onCreateDiagram={handleOpenDiagramModal}
+          {...(selectedProjectId ? { onImportDiagram: handleOpenImportModal } : {})}
+          onDeleteDiagram={handleDeleteDiagram}
           loading={diagramsLoading && !!selectedProjectId}
         />
       </div>
 
       <CreateOrgModal
         open={orgModalOpen}
-        onClose={() => setOrgModalOpen(false)}
-        onCreated={() => queryClient.invalidateQueries({ queryKey: ["orgs"] })}
+        onClose={handleCloseOrgModal}
+        onCreated={handleOrgCreated}
       />
 
       {selectedOrganizationId && (
         <CreateProjectModal
           open={projectModalOpen}
-          onClose={() => setProjectModalOpen(false)}
-          onCreated={() => queryClient.invalidateQueries({ queryKey: ["projects", selectedOrganizationId] })}
+          onClose={handleCloseProjectModal}
+          onCreated={handleProjectCreated}
           orgId={selectedOrganizationId}
         />
       )}
@@ -101,9 +207,18 @@ export const DashboardPage = () => {
       {selectedProjectId && (
         <CreateDiagramModal
           open={diagramModalOpen}
-          onClose={() => setDiagramModalOpen(false)}
-          onCreated={(id) => navigate(`/diagrams/${id}`)}
+          onClose={handleCloseDiagramModal}
+          onCreated={handleDiagramCreated}
           projectId={selectedProjectId}
+        />
+      )}
+
+      {selectedProjectId && (
+        <ImportDiagramModal
+          open={importModalOpen}
+          projectId={selectedProjectId}
+          onClose={handleCloseImportModal}
+          onImported={handleDiagramImported}
         />
       )}
     </div>

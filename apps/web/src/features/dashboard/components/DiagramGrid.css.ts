@@ -64,6 +64,10 @@ export const grid = style({
   flex: 1,
 });
 
+export const diagramCardWrapper = style({
+  position: "relative",
+});
+
 export const diagramCard = style({
   background: vars.color.surface,
   borderRadius: vars.radius.lg,
@@ -79,6 +83,32 @@ export const diagramCard = style({
       boxShadow: vars.shadow.md,
       transform: "translateY(-2px)",
     },
+  },
+});
+
+export const cardDeleteBtn = style({
+  position: "absolute",
+  top: vars.space["2"],
+  right: vars.space["2"],
+  width: "22px",
+  height: "22px",
+  borderRadius: "50%",
+  background: vars.color.error,
+  color: vars.color.surface,
+  border: `1.5px solid ${vars.color.surface}`,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "12px",
+  fontWeight: "700",
+  cursor: "pointer",
+  opacity: 0,
+  transition: "opacity 150ms ease",
+  lineHeight: 1,
+  padding: 0,
+  zIndex: 1,
+  selectors: {
+    [`${diagramCardWrapper}:hover &`]: { opacity: 1 },
   },
 });
 
@@ -151,10 +181,10 @@ export const newCard = style({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: vars.space["2"],
-  minHeight: "140px",
+  gap: vars.space["1"],
+  minHeight: "60px",
   color: vars.color.textSecondary,
-  fontSize: "13px",
+  fontSize: "12px",
   cursor: "pointer",
   fontFamily: vars.font.family,
   transition: "border-color 150ms ease, color 150ms ease",
@@ -167,14 +197,14 @@ export const newCard = style({
 });
 
 export const newCardIcon = style({
-  width: "32px",
-  height: "32px",
+  width: "24px",
+  height: "24px",
   borderRadius: "50%",
   background: vars.color.surfaceSecondary,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: "18px",
+  fontSize: "14px",
 });
 
 export const emptyState = style({
