@@ -29,7 +29,7 @@ export class CollaborationService {
     private readonly diagramRepo: Repository<Diagram>
   ) {}
 
-  async joinRoom(diagramId: string, userId: string, socketId: string): Promise<Uint8Array> {
+  async joinRoom(diagramId: string): Promise<Uint8Array> {
     let room = this.rooms.get(diagramId);
     if (!room) {
       const diagram = await this.diagramRepo.findOne({ where: { id: diagramId } });
@@ -61,7 +61,7 @@ export class CollaborationService {
       userId,
       socketId,
       selectedEntityId: null,
-      color: COLORS[colorIndex]
+      color: COLORS[colorIndex]!
     });
   }
 

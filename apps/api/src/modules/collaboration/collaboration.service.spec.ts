@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Diagram } from "@erdify/db";
@@ -39,20 +38,20 @@ describe("CollaborationService", () => {
   describe("joinRoom", () => {
     it("throws NotFoundException if diagram not found", async () => {
       mockRepo.findOne.mockResolvedValue(null);
-      await expect(service.joinRoom("d1", "u1", "socket1")).rejects.toThrow(NotFoundException);
+      await expect(service.joinRoom("d1")).rejects.toThrow(NotFoundException);
     });
 
     it("creates a Y.Doc room from DB content and returns Uint8Array", async () => {
       mockRepo.findOne.mockResolvedValue(mockDiagram);
-      const update = await service.joinRoom("d1", "u1", "socket1");
+      const update = await service.joinRoom("d1");
       expect(update).toBeInstanceOf(Uint8Array);
       expect(update.length).toBeGreaterThan(0);
     });
 
     it("reuses existing room on second join", async () => {
       mockRepo.findOne.mockResolvedValue(mockDiagram);
-      await service.joinRoom("d1", "u1", "socket1");
-      await service.joinRoom("d1", "u2", "socket2");
+      await service.joinRoom("d1");
+      await service.joinRoom("d1");
       // repo called only once (room already exists)
       expect(mockRepo.findOne).toHaveBeenCalledTimes(1);
     });
@@ -66,7 +65,7 @@ describe("CollaborationService", () => {
 
     it("applies update and returns Uint8Array", async () => {
       mockRepo.findOne.mockResolvedValue(mockDiagram);
-      await service.joinRoom("d1", "u1", "socket1");
+      await service.joinRoom("d1");
       // Create a valid Yjs update by encoding the state of a fresh Y.Doc
       const tmpDoc = new Y.Doc();
       const validUpdate = Y.encodeStateAsUpdate(tmpDoc);
@@ -78,7 +77,7 @@ describe("CollaborationService", () => {
   describe("presence", () => {
     beforeEach(async () => {
       mockRepo.findOne.mockResolvedValue(mockDiagram);
-      await service.joinRoom("d1", "u1", "socket1");
+      await service.joinRoom("d1");
     });
 
     it("getPresence returns empty array when no presence added", () => {
@@ -89,15 +88,14 @@ describe("CollaborationService", () => {
       service.addPresence("d1", "u1", "socket1");
       const presence = service.getPresence("d1");
       expect(presence).toHaveLength(1);
-      expect(presence[0]).toMatchObject({ userId: "u1", socketId: "socket1", selectedEntityId: null });
-      expect(presence[0].color).toMatch(/^#/);
+      expect(presence).toMatchObject([{ userId: "u1", socketId: "socket1", selectedEntityId: null, color: expect.stringMatching(/^#/) }]);
     });
 
     it("updatePresence updates selectedEntityId", () => {
       service.addPresence("d1", "u1", "socket1");
       service.updatePresence("d1", "u1", { selectedEntityId: "entity-1" });
       const presence = service.getPresence("d1");
-      expect(presence[0].selectedEntityId).toBe("entity-1");
+      expect(presence).toMatchObject([{ selectedEntityId: "entity-1" }]);
     });
 
     it("leaveRoom removes collaborator", () => {
@@ -111,7 +109,7 @@ describe("CollaborationService", () => {
       service.leaveRoom("d1", "u1");
       // Room is gone — next joinRoom must hit the DB
       mockRepo.findOne.mockResolvedValue(mockDiagram);
-      await service.joinRoom("d1", "u1", "socket1");
+      await service.joinRoom("d1");
       // findOne was called once in beforeEach, once again here after room deletion
       expect(mockRepo.findOne).toHaveBeenCalledTimes(2);
     });
@@ -121,7 +119,7 @@ describe("CollaborationService", () => {
     it("saves current Y.Doc content to DB", async () => {
       mockRepo.findOne.mockResolvedValue(mockDiagram);
       mockRepo.update.mockResolvedValue(undefined);
-      await service.joinRoom("d1", "u1", "socket1");
+      await service.joinRoom("d1");
       await service.persistNow("d1");
       expect(mockRepo.update).toHaveBeenCalledWith(
         { id: "d1" },
@@ -136,29 +134,33 @@ describe("CollaborationService", () => {
   });
 
   describe("schedulePersist", () => {
-    it("calls persistNow after 30 seconds", async () => {
+    beforeEach(() => {
       vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("calls persistNow after 30 seconds", async () => {
       mockRepo.findOne.mockResolvedValue(mockDiagram);
       mockRepo.update.mockResolvedValue(undefined);
-      await service.joinRoom("d1", "u1", "socket1");
+      await service.joinRoom("d1");
       service.schedulePersist("d1");
       expect(mockRepo.update).not.toHaveBeenCalled();
       await vi.advanceTimersByTimeAsync(30_000);
       expect(mockRepo.update).toHaveBeenCalledTimes(1);
-      vi.useRealTimers();
     });
 
     it("debounces — only persists once for multiple rapid calls", async () => {
-      vi.useFakeTimers();
       mockRepo.findOne.mockResolvedValue(mockDiagram);
       mockRepo.update.mockResolvedValue(undefined);
-      await service.joinRoom("d1", "u1", "socket1");
+      await service.joinRoom("d1");
       service.schedulePersist("d1");
       service.schedulePersist("d1");
       service.schedulePersist("d1");
       await vi.advanceTimersByTimeAsync(30_000);
       expect(mockRepo.update).toHaveBeenCalledTimes(1);
-      vi.useRealTimers();
     });
   });
 });
