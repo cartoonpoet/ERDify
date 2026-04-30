@@ -101,4 +101,15 @@ export class DiagramsService {
     await this.requireMember(orgId, userId);
     return this.versionRepo.find({ where: { diagramId }, order: { revision: "DESC" } });
   }
+
+  async restoreVersion(diagramId: string, versionId: string, userId: string): Promise<Diagram> {
+    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
+    await this.requireEditorOrOwner(orgId, userId);
+
+    const version = await this.versionRepo.findOne({ where: { id: versionId, diagramId } });
+    if (!version) throw new NotFoundException("Version not found");
+
+    diagram.content = version.content;
+    return this.diagramRepo.save(diagram);
+  }
 }

@@ -120,4 +120,52 @@ describe("DiagramsService", () => {
       expect(result.revision).toBe(1);
     });
   });
+
+  describe("restoreVersion", () => {
+    it("throws NotFoundException when diagram does not exist", async () => {
+      diagramRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.restoreVersion("missing-diag", "v1", "user-1")).rejects.toThrow(
+        NotFoundException
+      );
+    });
+
+    it("restores version content to current diagram", async () => {
+      const version = makeVersion({ content: { restored: true } as unknown as object });
+      const diagram = makeDiagram();
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.findOne.mockResolvedValue(diagram);
+      versionRepo.findOne.mockResolvedValue(version);
+      diagramRepo.save.mockImplementation((d: Diagram) => Promise.resolve(d));
+
+      const result = await service.restoreVersion("diag-1", "v1", "user-1");
+
+      expect(result.content).toEqual({ restored: true });
+      expect(diagramRepo.save).toHaveBeenCalled();
+    });
+
+    it("throws NotFoundException when version does not exist", async () => {
+      const diagram = makeDiagram();
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.findOne.mockResolvedValue(diagram);
+      versionRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.restoreVersion("diag-1", "missing", "user-1")).rejects.toThrow(
+        NotFoundException
+      );
+    });
+
+    it("throws ForbiddenException for viewer role", async () => {
+      const diagram = makeDiagram();
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+      diagramRepo.findOne.mockResolvedValue(diagram);
+
+      await expect(service.restoreVersion("diag-1", "v1", "user-1")).rejects.toThrow(
+        ForbiddenException
+      );
+    });
+  });
 });

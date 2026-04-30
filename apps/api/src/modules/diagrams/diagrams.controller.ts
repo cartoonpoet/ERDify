@@ -45,4 +45,14 @@ export class DiagramsController {
   findVersions(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
     return this.diagramsService.findVersions(id, user.sub);
   }
+
+  @Post("diagrams/:id/restore/:versionId")
+  @HttpCode(HttpStatus.OK)
+  restoreVersion(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("versionId") versionId: string
+  ) {
+    return this.diagramsService.restoreVersion(id, versionId, user.sub);
+  }
 }
