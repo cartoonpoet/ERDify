@@ -22,14 +22,15 @@ export function EditorPage() {
     enabled: !!diagramId
   });
 
+  const { collaborators, isConnected } = useRealtimeCollaboration(diagramId ?? "");
+
   useEffect(() => {
-    if (data) setDocument(data.content);
-  }, [data, setDocument]);
+    if (data && !isConnected) setDocument(data.content);
+  }, [data, setDocument, isConnected]);
 
   useDiagramAutosave(diagramId ?? "");
 
   const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "");
-  const { collaborators, isConnected } = useRealtimeCollaboration(diagramId ?? "");
 
   function handleAddTable() {
     applyCommand((doc) =>

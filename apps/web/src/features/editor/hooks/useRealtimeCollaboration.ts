@@ -67,6 +67,7 @@ export function useRealtimeCollaboration(diagramId: string): UseRealtimeCollabor
     return () => {
       socket.disconnect();
       socketRef.current = null;
+      ydocRef.current.destroy();
     };
   }, [diagramId, token, setDocument]);
 

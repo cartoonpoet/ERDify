@@ -7,6 +7,7 @@ import { DiagramsService } from "./diagrams.service";
 @Module({
   imports: [TypeOrmModule.forFeature([Diagram, DiagramVersion, Project, OrganizationMember])],
   controllers: [DiagramsController],
-  providers: [DiagramsService]
+  providers: [DiagramsService],
+  exports: [DiagramsService]
 })
 export class DiagramsModule {}

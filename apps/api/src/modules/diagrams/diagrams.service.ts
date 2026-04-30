@@ -76,6 +76,16 @@ export class DiagramsService {
     return diagram;
   }
 
+  async canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {
+    try {
+      const { orgId } = await this.getDiagramWithOrg(diagramId);
+      await this.requireMember(orgId, userId);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async update(diagramId: string, userId: string, dto: UpdateDiagramDto): Promise<Diagram> {
     const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
     await this.requireEditorOrOwner(orgId, userId);

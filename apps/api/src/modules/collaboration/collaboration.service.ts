@@ -72,12 +72,13 @@ export class CollaborationService {
     if (existing) room.presence.set(userId, { ...existing, ...data });
   }
 
-  leaveRoom(diagramId: string, userId: string): void {
+  async leaveRoom(diagramId: string, userId: string): Promise<void> {
     const room = this.rooms.get(diagramId);
     if (!room) return;
     room.presence.delete(userId);
     if (room.presence.size === 0) {
       clearTimeout(room.persistTimer);
+      await this.persistNow(diagramId);
       this.rooms.delete(diagramId);
     }
   }

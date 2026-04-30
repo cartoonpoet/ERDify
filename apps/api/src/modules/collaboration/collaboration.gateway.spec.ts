@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { JwtService } from "@nestjs/jwt";
 import { CollaborationGateway } from "./collaboration.gateway";
 import { CollaborationService } from "./collaboration.service";
+import { DiagramsService } from "../diagrams/diagrams.service";
 import type { Socket, Server } from "socket.io";
 
 function makeSocket(overrides: Partial<Record<string, unknown>> = {}): Socket {
@@ -32,6 +33,7 @@ describe("CollaborationGateway", () => {
     persistNow: vi.fn()
   };
   const mockJwt = { verify: vi.fn() };
+  const mockDiagramsService = { canAccessDiagram: vi.fn() };
   const mockServer = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as unknown as Server;
 
   beforeEach(async () => {
@@ -40,7 +42,8 @@ describe("CollaborationGateway", () => {
       providers: [
         CollaborationGateway,
         { provide: CollaborationService, useValue: mockService },
-        { provide: JwtService, useValue: mockJwt }
+        { provide: JwtService, useValue: mockJwt },
+        { provide: DiagramsService, useValue: mockDiagramsService }
       ]
     }).compile();
     gateway = module.get(CollaborationGateway);
@@ -73,6 +76,7 @@ describe("CollaborationGateway", () => {
   describe("handleJoin", () => {
     it("joins socket room, emits yjs:sync, broadcasts presence:state", async () => {
       const stateUpdate = new Uint8Array([1, 0]);
+      mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
       mockService.joinRoom.mockResolvedValue(stateUpdate);
       mockService.getPresence.mockReturnValue([]);
       const client = makeSocket();
@@ -86,6 +90,19 @@ describe("CollaborationGateway", () => {
       expect(mockService.addPresence).toHaveBeenCalledWith("d1", "user-1", "socket-1");
       expect(mockServer.to).toHaveBeenCalledWith("d1");
       expect(mockServer.emit).toHaveBeenCalledWith("presence:state", []);
+    });
+
+    it("disconnects if user has no access to diagram", async () => {
+      mockDiagramsService.canAccessDiagram.mockResolvedValue(false);
+      const client = makeSocket();
+      client.data.userId = "user-1";
+
+      await gateway.handleJoin(client, { diagramId: "d1" });
+
+      expect(client.emit).toHaveBeenCalledWith("error", { message: "Forbidden" });
+      expect(client.disconnect).toHaveBeenCalled();
+      expect(client.join).not.toHaveBeenCalled();
+      expect(mockService.joinRoom).not.toHaveBeenCalled();
     });
   });
 
@@ -105,7 +122,7 @@ describe("CollaborationGateway", () => {
   });
 
   describe("handlePresenceUpdate", () => {
-    it("updates presence and broadcasts presence:state to room", async () => {
+    it("updates presence and broadcasts presence:state to all in room", async () => {
       mockService.getPresence.mockReturnValue([]);
       const client = makeSocket();
       client.data = { userId: "user-1", diagramId: "d1" };
@@ -113,13 +130,14 @@ describe("CollaborationGateway", () => {
       await gateway.handlePresenceUpdate(client, { selectedEntityId: "e1" });
 
       expect(mockService.updatePresence).toHaveBeenCalledWith("d1", "user-1", { selectedEntityId: "e1" });
-      expect(client.to).toHaveBeenCalledWith("d1");
-      expect(client.emit).toHaveBeenCalledWith("presence:state", []);
+      expect(mockServer.to).toHaveBeenCalledWith("d1");
+      expect(mockServer.emit).toHaveBeenCalledWith("presence:state", []);
     });
   });
 
   describe("handleDisconnect", () => {
     it("leaves room and broadcasts updated presence", async () => {
+      mockService.leaveRoom.mockResolvedValue(undefined);
       mockService.getPresence.mockReturnValue([]);
       const client = makeSocket();
       client.data = { userId: "user-1", diagramId: "d1" };

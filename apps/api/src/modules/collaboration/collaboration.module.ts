@@ -3,12 +3,14 @@ import { JwtModule } from "@nestjs/jwt";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { Diagram } from "@erdify/db";
+import { DiagramsModule } from "../diagrams/diagrams.module";
 import { CollaborationService } from "./collaboration.service";
 import { CollaborationGateway } from "./collaboration.gateway";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Diagram]),
+    DiagramsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

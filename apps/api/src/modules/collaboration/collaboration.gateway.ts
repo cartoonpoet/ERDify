@@ -11,6 +11,7 @@ import { JwtService } from "@nestjs/jwt";
 import type { Server, Socket } from "socket.io";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import { CollaborationService } from "./collaboration.service";
+import { DiagramsService } from "../diagrams/diagrams.service";
 
 @WebSocketGateway({ namespace: "/collaboration", cors: { origin: true, credentials: true } })
 export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -18,7 +19,8 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
 
   constructor(
     private readonly collaborationService: CollaborationService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly diagramsService: DiagramsService
   ) {}
 
   async handleConnection(client: Socket): Promise<void> {
@@ -36,7 +38,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   async handleDisconnect(client: Socket): Promise<void> {
     const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
     if (!diagramId || !userId) return;
-    this.collaborationService.leaveRoom(diagramId, userId);
+    await this.collaborationService.leaveRoom(diagramId, userId);
     const presence = this.collaborationService.getPresence(diagramId);
     this.server.to(diagramId).emit("presence:state", presence);
   }
@@ -48,15 +50,29 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   ): Promise<void> {
     if (!client.data.userId) { client.disconnect(); return; }
     const { diagramId } = payload;
-    client.data.diagramId = diagramId;
-    client.join(diagramId);
 
-    const stateUpdate = await this.collaborationService.joinRoom(diagramId);
-    client.emit("yjs:sync", stateUpdate);
+    // Check membership before allowing access
+    const permitted = await this.diagramsService.canAccessDiagram(diagramId, client.data.userId as string);
+    if (!permitted) {
+      client.emit("error", { message: "Forbidden" });
+      client.disconnect();
+      return;
+    }
 
-    this.collaborationService.addPresence(diagramId, client.data.userId as string, client.id);
-    const presence = this.collaborationService.getPresence(diagramId);
-    this.server.to(diagramId).emit("presence:state", presence);
+    try {
+      client.data.diagramId = diagramId;
+      client.join(diagramId);
+
+      const stateUpdate = await this.collaborationService.joinRoom(diagramId);
+      client.emit("yjs:sync", stateUpdate);
+
+      this.collaborationService.addPresence(diagramId, client.data.userId as string, client.id);
+      const presence = this.collaborationService.getPresence(diagramId);
+      this.server.to(diagramId).emit("presence:state", presence);
+    } catch (err) {
+      client.emit("error", { message: "Failed to join diagram" });
+      client.disconnect();
+    }
   }
 
   @SubscribeMessage("yjs:update")
@@ -80,7 +96,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     if (!diagramId || !userId) return;
     this.collaborationService.updatePresence(diagramId, userId, data);
     const presence = this.collaborationService.getPresence(diagramId);
-    client.to(diagramId).emit("presence:state", presence);
+    this.server.to(diagramId).emit("presence:state", presence);
   }
 
   @SubscribeMessage("snapshot:request")

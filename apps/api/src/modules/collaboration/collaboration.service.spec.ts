@@ -98,20 +98,31 @@ describe("CollaborationService", () => {
       expect(presence).toMatchObject([{ selectedEntityId: "entity-1" }]);
     });
 
-    it("leaveRoom removes collaborator", () => {
+    it("leaveRoom removes collaborator", async () => {
+      mockRepo.update.mockResolvedValue(undefined);
       service.addPresence("d1", "u1", "socket1");
-      service.leaveRoom("d1", "u1");
-      expect(service.getPresence("d1")).toHaveLength(0);
+      // Add a second user so the room isn't deleted (no persist triggered)
+      service.addPresence("d1", "u2", "socket2");
+      await service.leaveRoom("d1", "u1");
+      expect(service.getPresence("d1")).toHaveLength(1);
     });
 
     it("leaveRoom deletes the room so re-join queries the DB again", async () => {
+      mockRepo.update.mockResolvedValue(undefined);
       service.addPresence("d1", "u1", "socket1");
-      service.leaveRoom("d1", "u1");
+      await service.leaveRoom("d1", "u1");
       // Room is gone — next joinRoom must hit the DB
       mockRepo.findOne.mockResolvedValue(mockDiagram);
       await service.joinRoom("d1");
       // findOne was called once in beforeEach, once again here after room deletion
       expect(mockRepo.findOne).toHaveBeenCalledTimes(2);
+    });
+
+    it("leaveRoom persists before deleting room when last user leaves", async () => {
+      mockRepo.update.mockResolvedValue(undefined);
+      service.addPresence("d1", "u1", "socket1");
+      await service.leaveRoom("d1", "u1");
+      expect(mockRepo.update).toHaveBeenCalledWith({ id: "d1" }, expect.objectContaining({ content: expect.any(Object) }));
     });
   });
 
