@@ -18,3 +18,7 @@ export function login(body: {
 }): Promise<AuthResponse> {
   return httpClient.post<AuthResponse>("/auth/login", body).then((r) => r.data);
 }
+
+export function generateApiKey(): Promise<{ apiKey: string }> {
+  return httpClient.post<{ apiKey: string }>("/auth/api-key").then((r) => r.data);
+}

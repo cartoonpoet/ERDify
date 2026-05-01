@@ -14,6 +14,7 @@ import { CreateOrgModal } from "../components/CreateOrgModal";
 import { CreateProjectModal } from "../components/CreateProjectModal";
 import { CreateDiagramModal } from "../components/CreateDiagramModal";
 import { ImportDiagramModal } from "../components/ImportDiagramModal";
+import { ApiKeyModal } from "../components/ApiKeyModal";
 import {
   shell, topbar, brand, brandAccent, topbarSpacer, avatar,
   avatarWrapper, dropdown, dropdownHeader, dropdownEmail,
@@ -46,6 +47,7 @@ export const DashboardPage = () => {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [diagramModalOpen, setDiagramModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const { email, sub: currentUserId } = decodeJwt(token);
@@ -148,6 +150,9 @@ export const DashboardPage = () => {
               <div className={dropdownHeader}>
                 <div className={dropdownEmail}>{email ?? "사용자"}</div>
               </div>
+              <button className={dropdownItem} onClick={() => { setMenuOpen(false); setApiKeyModalOpen(true); }}>
+                MCP API 키
+              </button>
               <button className={`${dropdownItem} ${dropdownItemDanger}`} onClick={handleLogout}>
                 로그아웃
               </button>
@@ -212,6 +217,11 @@ export const DashboardPage = () => {
           projectId={selectedProjectId}
         />
       )}
+
+      <ApiKeyModal
+        open={apiKeyModalOpen}
+        onClose={() => setApiKeyModalOpen(false)}
+      />
 
       {selectedProjectId && (
         <ImportDiagramModal
