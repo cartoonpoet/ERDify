@@ -10,11 +10,6 @@ import { useEditorStore } from "../stores/useEditorStore";
 
 const nodeTypes = { table: TableNode };
 
-const EDGE_STYLE = {
-  stroke: "#6366f1",
-  strokeWidth: 1.5,
-} as const;
-
 const EDGE_MARKER = {
   type: MarkerType.ArrowClosed,
   color: "#6366f1",
@@ -28,6 +23,7 @@ export const EditorCanvas = () => {
   const applyNodeChanges = useEditorStore((s) => s.applyNodeChanges);
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const setSelectedEntity = useEditorStore((s) => s.setSelectedEntity);
+  const setSelectedRelationship = useEditorStore((s) => s.setSelectedRelationship);
 
   if (!document) return null;
 
@@ -39,7 +35,11 @@ export const EditorCanvas = () => {
     label: rel.name || undefined,
     labelStyle: { fontSize: 11, fill: "#374151" },
     labelBgStyle: { fill: "#ffffff", fillOpacity: 0.85 },
-    style: EDGE_STYLE,
+    style: {
+      stroke: "#6366f1",
+      strokeWidth: 1.5,
+      ...(rel.identifying ? {} : { strokeDasharray: "6 3" }),
+    },
     markerEnd: EDGE_MARKER,
   }));
 
@@ -57,6 +57,7 @@ export const EditorCanvas = () => {
 
   function onPaneClick() {
     setSelectedEntity(null);
+    setSelectedRelationship(null);
   }
 
   function onConnect(connection: Connection) {
@@ -84,6 +85,10 @@ export const EditorCanvas = () => {
     applyCommand((doc) => addRelationship(doc, relationship));
   }
 
+  function onEdgeClick(_: MouseEvent, edge: Edge) {
+    setSelectedRelationship(edge.id);
+  }
+
   function onEdgesChange(changes: EdgeChange[]) {
     const removes = changes.filter((c): c is EdgeChange & { type: "remove" } => c.type === "remove");
     if (removes.length === 0) return;
@@ -99,6 +104,7 @@ export const EditorCanvas = () => {
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
+      onEdgeClick={onEdgeClick}
       onConnect={onConnect}
       onNodeDragStop={onNodeDragStop}
       onNodeClick={onNodeClick}
