@@ -61,12 +61,14 @@ interface EditorState {
   nodes: TableNodeType[];
   isDirty: boolean;
   selectedEntityId: string | null;
+  selectedRelationshipId: string | null;
   collaborators: Collaborator[];
 
   setDocument: (doc: DiagramDocument) => void;
   applyCommand: (fn: (doc: DiagramDocument) => DiagramDocument) => void;
   applyNodeChanges: (changes: NodeChange<TableNodeType>[]) => void;
   setSelectedEntity: (id: string | null) => void;
+  setSelectedRelationship: (id: string | null) => void;
   setCollaborators: (collaborators: Collaborator[]) => void;
   clearDirty: () => void;
 }
@@ -76,6 +78,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   nodes: [],
   isDirty: false,
   selectedEntityId: null,
+  selectedRelationshipId: null,
   collaborators: [],
 
   setDocument: (doc) =>
@@ -97,7 +100,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ nodes: applyNodeChanges(changes, nodes) });
   },
 
-  setSelectedEntity: (id) => set({ selectedEntityId: id }),
+  setSelectedEntity: (id) => set({ selectedEntityId: id, selectedRelationshipId: null }),
+
+  setSelectedRelationship: (id) => set({ selectedRelationshipId: id, selectedEntityId: null }),
 
   setCollaborators: (collaborators) =>
     set((state) => ({
