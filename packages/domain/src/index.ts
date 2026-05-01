@@ -17,3 +17,4 @@ export type {
   ReferentialAction,
   RelationshipCardinality
 } from "./types/index.js";
+export { generateDdl } from "./utils/ddl-generator.js";
