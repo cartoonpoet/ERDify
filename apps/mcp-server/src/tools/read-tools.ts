@@ -33,11 +33,25 @@ function formatDiagram(name: string, doc: DiagramDocument): string {
 
 export const registerReadTools = (server: McpServer): void => {
   server.tool(
-    "list_projects",
-    "List all ERDify projects accessible with the current API key",
+    "list_organizations",
+    "List all ERDify organizations accessible with the current API key",
     {},
     async () => {
-      const projects = await client.getProjects();
+      const orgs = await client.getOrganizations();
+      const text =
+        orgs.length === 0
+          ? "No organizations found."
+          : orgs.map((o) => `- ${o.name} (id: ${o.id})`).join("\n");
+      return { content: [{ type: "text", text }] };
+    }
+  );
+
+  server.tool(
+    "list_projects",
+    "List projects in an organization",
+    { organizationId: z.string().describe("Organization ID from list_organizations") },
+    async ({ organizationId }) => {
+      const projects = await client.getProjects(organizationId);
       const text =
         projects.length === 0
           ? "No projects found."

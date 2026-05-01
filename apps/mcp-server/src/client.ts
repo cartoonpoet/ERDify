@@ -3,6 +3,11 @@ import type { DiagramDocument } from "@erdify/domain";
 const API_URL = process.env.ERDIFY_API_URL ?? "http://localhost:3000";
 const API_KEY = process.env.ERDIFY_API_KEY ?? "";
 
+export interface OrganizationItem {
+  id: string;
+  name: string;
+}
+
 export interface ProjectItem {
   id: string;
   name: string;
@@ -41,7 +46,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 }
 
 export const client = {
-  getProjects: () => request<ProjectItem[]>("GET", "/projects"),
+  getOrganizations: () => request<OrganizationItem[]>("GET", "/organizations"),
+  getProjects: (organizationId: string) =>
+    request<ProjectItem[]>("GET", `/organizations/${organizationId}/projects`),
   getDiagrams: (projectId: string) =>
     request<DiagramItem[]>("GET", `/projects/${projectId}/diagrams`),
   getDiagram: (diagramId: string) =>

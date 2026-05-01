@@ -19,7 +19,7 @@ const columnInputSchema = z.object({
   nullable: z.boolean().optional().describe("Defaults to true"),
   primaryKey: z.boolean().optional().describe("Defaults to false"),
   unique: z.boolean().optional().describe("Defaults to false"),
-  defaultValue: z.string().optional().describe("SQL default expression"),
+  defaultValue: z.string().nullable().optional().describe("SQL default expression, set to null to remove"),
 });
 
 type ColumnInput = z.infer<typeof columnInputSchema>;
