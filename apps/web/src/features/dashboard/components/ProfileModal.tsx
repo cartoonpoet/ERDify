@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type ChangeEvent } from "react";
 import { Modal, Button, Input } from "../../../design-system";
-import { getMe, updateProfile, changePassword } from "../../../shared/api/auth.api";
+import { getMe, updateProfile, uploadAvatar, changePassword } from "../../../shared/api/auth.api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { form, footer } from "./modal-form.css";
 import * as css from "./ProfileModal.css";
@@ -45,67 +45,88 @@ export const ProfileModal = ({ open, onClose }: ProfileModalProps) => {
 
 const ProfileTab = ({ onClose }: { onClose: () => void }) => {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: me } = useQuery({
-    queryKey: ["me"],
-    queryFn: getMe,
-  });
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
 
   const [name, setName] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const currentName = name ?? me?.name ?? "";
-  const currentAvatarUrl = avatarUrl ?? me?.avatarUrl ?? "";
+  const displayAvatar = previewUrl ?? me?.avatarUrl ?? null;
+  const initial = (me?.name?.[0] ?? me?.email?.[0] ?? "?").toUpperCase();
 
-  const mutation = useMutation({
-    mutationFn: () =>
-      updateProfile({
-        ...(name !== null ? { name: name.trim() } : {}),
-        ...(avatarUrl !== null ? { avatarUrl: avatarUrl.trim() || null } : {}),
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["me"] });
+  const avatarMutation = useMutation({
+    mutationFn: (file: File) => uploadAvatar(file),
+    onSuccess: (updated) => {
+      void queryClient.setQueryData(["me"], updated);
+    },
+    onError: () => setError("이미지 업로드에 실패했습니다."),
+  });
+
+  const profileMutation = useMutation({
+    mutationFn: () => updateProfile({ name: currentName.trim() }),
+    onSuccess: (updated) => {
+      void queryClient.setQueryData(["me"], updated);
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 2500);
       setName(null);
-      setAvatarUrl(null);
+      setTimeout(() => setSuccess(false), 2500);
     },
     onError: () => setError("프로필 업데이트에 실패했습니다."),
   });
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    mutation.mutate();
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPendingFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
   };
 
-  const displayAvatarUrl = currentAvatarUrl || me?.avatarUrl;
-  const initial = (me?.name?.[0] ?? me?.email?.[0] ?? "?").toUpperCase();
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (pendingFile) {
+      await avatarMutation.mutateAsync(pendingFile);
+      setPendingFile(null);
+      setPreviewUrl(null);
+    }
+    if (name !== null && name.trim() !== me?.name) {
+      profileMutation.mutate();
+    } else {
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2500);
+    }
+  };
+
+  const isPending = avatarMutation.isPending || profileMutation.isPending;
 
   return (
     <form className={form} onSubmit={handleSubmit}>
       <div className={css.avatarRow}>
-        {displayAvatarUrl ? (
-          <img
-            src={displayAvatarUrl}
-            alt="프로필 사진"
-            className={css.avatarPreview}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          />
-        ) : (
-          <div className={css.avatarFallback}>{initial}</div>
-        )}
-        <div className={css.avatarUrlInput}>
-          <Input
-            id="avatar-url"
-            label="프로필 사진 URL"
-            placeholder="https://..."
-            value={currentAvatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-          />
-        </div>
+        <button type="button" className={css.avatarClickable} onClick={() => fileInputRef.current?.click()}>
+          {displayAvatar ? (
+            <img
+              src={displayAvatar}
+              alt="프로필 사진"
+              className={css.avatarPreview}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+          ) : (
+            <div className={css.avatarFallback}>{initial}</div>
+          )}
+          <div className={css.avatarOverlay}>변경</div>
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+        />
+        <span className={css.avatarHint}>클릭하여 사진 변경 (최대 5MB)</span>
       </div>
 
       <Input
@@ -114,7 +135,6 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
         value={currentName}
         onChange={(e) => setName(e.target.value)}
         required
-        autoFocus={!displayAvatarUrl}
       />
 
       <Input
@@ -124,13 +144,13 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
         disabled
       />
 
-      {success && <p className={css.successMsg}>프로필이 업데이트되었습니다.</p>}
+      {success && <p className={css.successMsg}>저장되었습니다.</p>}
       {error && <p className={css.errorMsg}>{error}</p>}
 
       <div className={footer}>
         <Button variant="secondary" size="md" type="button" onClick={onClose}>닫기</Button>
-        <Button variant="primary" size="md" type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? "저장 중..." : "저장"}
+        <Button variant="primary" size="md" type="submit" disabled={isPending}>
+          {isPending ? "저장 중..." : "저장"}
         </Button>
       </div>
     </form>

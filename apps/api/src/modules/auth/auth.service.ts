@@ -1,4 +1,6 @@
 import { randomUUID } from "crypto";
+import { extname, join } from "path";
+import { writeFile, unlink } from "fs/promises";
 import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -59,7 +61,6 @@ export class AuthService {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException("User not found");
     if (dto.name !== undefined) user.name = dto.name;
-    if (dto.avatarUrl !== undefined) user.avatarUrl = dto.avatarUrl ?? null;
     const saved = await this.userRepo.save(user);
     return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl };
   }
@@ -71,5 +72,26 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException("현재 비밀번호가 올바르지 않습니다.");
     user.passwordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.userRepo.save(user);
+  }
+
+  async uploadAvatar(userId: string, file: Express.Multer.File): Promise<UserProfile> {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException("User not found");
+
+    const ext = extname(file.originalname).toLowerCase() || ".jpg";
+    const filename = `${userId}${ext}`;
+    const uploadDir = join(process.cwd(), "uploads", "avatars");
+    await writeFile(join(uploadDir, filename), file.buffer);
+
+    if (user.avatarUrl) {
+      const oldFilename = user.avatarUrl.split("/").pop();
+      if (oldFilename && oldFilename !== filename) {
+        await unlink(join(uploadDir, oldFilename)).catch(() => undefined);
+      }
+    }
+
+    user.avatarUrl = `/uploads/avatars/${filename}`;
+    const saved = await this.userRepo.save(user);
+    return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl };
   }
 }

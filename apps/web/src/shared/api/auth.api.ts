@@ -34,8 +34,16 @@ export function getMe(): Promise<UserProfile> {
   return httpClient.get<UserProfile>("/auth/me").then((r) => r.data);
 }
 
-export function updateProfile(body: { name?: string; avatarUrl?: string | null }): Promise<UserProfile> {
+export function updateProfile(body: { name?: string }): Promise<UserProfile> {
   return httpClient.patch<UserProfile>("/auth/profile", body).then((r) => r.data);
+}
+
+export function uploadAvatar(file: File): Promise<UserProfile> {
+  const form = new FormData();
+  form.append("file", file);
+  return httpClient.post<UserProfile>("/auth/avatar", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }).then((r) => r.data);
 }
 
 export function changePassword(body: { currentPassword: string; newPassword: string }): Promise<void> {

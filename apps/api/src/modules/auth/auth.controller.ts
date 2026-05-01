@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { AuthService } from "./auth.service";
 import type { UserProfile } from "./auth.service";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
@@ -47,5 +48,15 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   changePassword(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasswordDto): Promise<void> {
     return this.authService.changePassword(user.sub, dto);
+  }
+
+  @Post("avatar")
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }))
+  uploadAvatar(
+    @CurrentUser() user: JwtPayload,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<UserProfile> {
+    return this.authService.uploadAvatar(user.sub, file);
   }
 }

@@ -39,35 +39,66 @@ export const tabActive = style({
 export const avatarRow = style({
   display: "flex",
   alignItems: "center",
-  gap: vars.space["4"],
+  gap: vars.space["3"],
+});
+
+export const avatarClickable = style({
+  position: "relative",
+  width: "64px",
+  height: "64px",
+  borderRadius: "50%",
+  border: "none",
+  padding: 0,
+  cursor: "pointer",
+  flexShrink: 0,
+  overflow: "hidden",
+  background: "none",
+  selectors: {
+    "&:hover > *:last-child": { opacity: 1 },
+  },
 });
 
 export const avatarPreview = style({
-  width: "56px",
-  height: "56px",
+  width: "64px",
+  height: "64px",
   borderRadius: "50%",
   objectFit: "cover",
-  border: `2px solid ${vars.color.border}`,
-  flexShrink: 0,
+  display: "block",
 });
 
 export const avatarFallback = style({
-  width: "56px",
-  height: "56px",
+  width: "64px",
+  height: "64px",
   borderRadius: "50%",
   background: vars.color.primary,
   color: "#fff",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: "22px",
+  fontSize: "24px",
   fontWeight: "700",
-  flexShrink: 0,
   userSelect: "none",
 });
 
-export const avatarUrlInput = style({
-  flex: 1,
+export const avatarOverlay = style({
+  position: "absolute",
+  inset: 0,
+  borderRadius: "50%",
+  background: "rgba(0,0,0,0.45)",
+  color: "#fff",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "12px",
+  fontWeight: "600",
+  opacity: 0,
+  transition: "opacity 150ms ease",
+});
+
+export const avatarHint = style({
+  fontSize: "12px",
+  color: vars.color.textSecondary,
+  lineHeight: "1.4",
 });
 
 export const successMsg = style({
