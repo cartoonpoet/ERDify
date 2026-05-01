@@ -35,4 +35,8 @@ export class AuthService {
 
     return { accessToken: this.jwtService.sign({ sub: user.id, email: user.email }) };
   }
+
+  generateApiKey(userId: string, email: string): { apiKey: string } {
+    return { apiKey: this.jwtService.sign({ sub: userId, email }, { expiresIn: "100y" }) };
+  }
 }

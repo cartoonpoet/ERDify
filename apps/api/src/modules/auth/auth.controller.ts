@@ -1,5 +1,8 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { CurrentUser } from "./decorators/current-user.decorator";
+import type { JwtPayload } from "./strategies/jwt.strategy";
 import type { LoginDto } from "./dto/login.dto";
 import type { RegisterDto } from "./dto/register.dto";
 
@@ -16,5 +19,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto): Promise<{ accessToken: string }> {
     return this.authService.login(dto);
+  }
+
+  @Post("api-key")
+  @UseGuards(JwtAuthGuard)
+  generateApiKey(@CurrentUser() user: JwtPayload): { apiKey: string } {
+    return this.authService.generateApiKey(user.sub, user.email);
   }
 }

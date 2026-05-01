@@ -77,4 +77,16 @@ describe("AuthService", () => {
       expect(result).toEqual({ accessToken: "token" });
     });
   });
+
+  describe("generateApiKey", () => {
+    it("signs jwt with 100y expiry and returns apiKey", () => {
+      jwtService.sign.mockReturnValue("long-lived-token");
+      const result = service.generateApiKey("user-1", "a@b.com");
+      expect(result).toEqual({ apiKey: "long-lived-token" });
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        { sub: "user-1", email: "a@b.com" },
+        { expiresIn: "100y" }
+      );
+    });
+  });
 });
