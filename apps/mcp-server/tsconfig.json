@@ -1,0 +1,7 @@
+{
+  "extends": "@erdify/config-typescript/node.json",
+  "compilerOptions": {
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts"]
+}
