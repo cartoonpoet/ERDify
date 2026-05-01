@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { addEntity } from "@erdify/domain";
+import { Share2 } from "lucide-react";
 import { getDiagram } from "../../../shared/api/diagrams.api";
 import { useEditorStore } from "../stores/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
@@ -10,6 +11,7 @@ import { VersionHistoryDrawer } from "../components/VersionHistoryDrawer";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceIndicator } from "../components/PresenceIndicator";
 import { ExportDdlModal } from "../components/ExportDdlModal";
+import { ShareDiagramModal } from "../components/ShareDiagramModal";
 import { useDiagramAutosave } from "../hooks/useDiagramAutosave";
 import { useVersionHistory } from "../hooks/useVersionHistory";
 import { useRealtimeCollaboration } from "../hooks/useRealtimeCollaboration";
@@ -22,6 +24,7 @@ export const EditorPage = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos } = useEditorStore();
 
@@ -71,6 +74,13 @@ export const EditorPage = () => {
         <span className={css.statusText}>{isDirty ? "수정됨" : "저장됨"}</span>
         <div className={css.spacer} />
         <PresenceIndicator />
+        <button
+          onClick={() => setShowShare(true)}
+          className={css.topbarBtn({ variant: "secondary" })}
+          style={{ display: "flex", alignItems: "center", gap: "4px" }}
+        >
+          <Share2 size={13} aria-hidden="true" /> 공유
+        </button>
         <button
           onClick={() => setShowExport(true)}
           className={css.topbarBtn({ variant: "secondary" })}
@@ -131,6 +141,14 @@ export const EditorPage = () => {
         open={showExport}
         diagramName={data?.name ?? "diagram"}
         onClose={() => setShowExport(false)}
+      />
+
+      <ShareDiagramModal
+        open={showShare}
+        diagramId={diagramId!}
+        initialShareToken={data?.shareToken ?? null}
+        initialExpiresAt={data?.shareExpiresAt ?? null}
+        onClose={() => setShowShare(false)}
       />
     </div>
   );
