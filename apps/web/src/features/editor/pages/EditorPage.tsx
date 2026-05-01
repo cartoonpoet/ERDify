@@ -6,6 +6,7 @@ import { getDiagram } from "../../../shared/api/diagrams.api";
 import { useEditorStore } from "../stores/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
 import { EntityPanel } from "../components/EntityPanel";
+import { RelationshipPanel } from "../components/RelationshipPanel";
 import { VersionHistoryDrawer } from "../components/VersionHistoryDrawer";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceIndicator } from "../components/PresenceIndicator";
@@ -22,7 +23,7 @@ export const EditorPage = () => {
   const [showInvite, setShowInvite] = useState(false);
   const [showExport, setShowExport] = useState(false);
 
-  const { document, isDirty, setDocument, applyCommand, selectedEntityId } = useEditorStore();
+  const { document, isDirty, setDocument, applyCommand, selectedEntityId, selectedRelationshipId } = useEditorStore();
 
   const { data, isLoading } = useQuery({
     queryKey: ["diagram", diagramId],
@@ -105,6 +106,7 @@ export const EditorPage = () => {
           <EditorCanvas />
         </div>
         {selectedEntityId && <EntityPanel entityId={selectedEntityId} />}
+        {selectedRelationshipId && <RelationshipPanel relationshipId={selectedRelationshipId} />}
         {showHistory && diagramId && (
           <VersionHistoryDrawer diagramId={diagramId} onClose={() => setShowHistory(false)} />
         )}
