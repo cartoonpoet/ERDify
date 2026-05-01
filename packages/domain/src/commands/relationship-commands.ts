@@ -19,3 +19,16 @@ export function removeRelationship(
     relationships: doc.relationships.filter((r) => r.id !== relationshipId)
   };
 }
+
+export function updateRelationship(
+  doc: DiagramDocument,
+  relationshipId: string,
+  patch: Partial<Omit<DiagramRelationship, "id">>
+): DiagramDocument {
+  return {
+    ...doc,
+    relationships: doc.relationships.map((r) =>
+      r.id === relationshipId ? { ...r, ...patch } : r
+    ),
+  };
+}
