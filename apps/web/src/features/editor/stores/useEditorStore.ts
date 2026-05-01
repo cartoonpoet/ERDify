@@ -1,8 +1,12 @@
 import { create } from "zustand";
-import type { DiagramDocument } from "@erdify/domain";
-import type { TableNodeType } from "@erdify/erd-ui";
+import type { Node, NodeChange } from "@xyflow/react";
 import { applyNodeChanges } from "@xyflow/react";
-import type { NodeChange } from "@xyflow/react";
+import type { DiagramDocument, DiagramEntity } from "@erdify/domain";
+
+export type EditableTableNodeType = Node<
+  { entity: DiagramEntity; collaboratorColor?: string },
+  "editableTable"
+>;
 
 export interface Collaborator {
   userId: string;
@@ -11,12 +15,12 @@ export interface Collaborator {
   selectedEntityId: string | null;
 }
 
-function docToNodes(doc: DiagramDocument, collaborators: Collaborator[] = []): TableNodeType[] {
+function docToNodes(doc: DiagramDocument, collaborators: Collaborator[] = []): EditableTableNodeType[] {
   return doc.entities.map((entity) => {
     const collab = collaborators.find((c) => c.selectedEntityId === entity.id);
     return {
       id: entity.id,
-      type: "table" as const,
+      type: "editableTable" as const,
       position: doc.layout.entityPositions[entity.id] ?? { x: 0, y: 0 },
       data: { entity, ...(collab ? { collaboratorColor: collab.color } : {}) },
     };
@@ -26,9 +30,9 @@ function docToNodes(doc: DiagramDocument, collaborators: Collaborator[] = []): T
 function updateNodes(
   prevDoc: DiagramDocument,
   nextDoc: DiagramDocument,
-  prevNodes: TableNodeType[],
+  prevNodes: EditableTableNodeType[],
   collaborators: Collaborator[]
-): TableNodeType[] {
+): EditableTableNodeType[] {
   const prevEntityMap = new Map(prevDoc.entities.map((e) => [e.id, e]));
   const prevNodeMap = new Map(prevNodes.map((n) => [n.id, n]));
 
@@ -49,7 +53,7 @@ function updateNodes(
 
     return {
       id: entity.id,
-      type: "table" as const,
+      type: "editableTable" as const,
       position: nextDoc.layout.entityPositions[entity.id] ?? { x: 0, y: 0 },
       data: { entity, ...(collaboratorColor ? { collaboratorColor } : {}) },
     };
@@ -58,17 +62,19 @@ function updateNodes(
 
 interface EditorState {
   document: DiagramDocument | null;
-  nodes: TableNodeType[];
+  nodes: EditableTableNodeType[];
   isDirty: boolean;
   selectedEntityId: string | null;
   selectedRelationshipId: string | null;
+  popoverPos: { x: number; y: number } | null;
   collaborators: Collaborator[];
 
   setDocument: (doc: DiagramDocument) => void;
   applyCommand: (fn: (doc: DiagramDocument) => DiagramDocument) => void;
-  applyNodeChanges: (changes: NodeChange<TableNodeType>[]) => void;
+  applyNodeChanges: (changes: NodeChange<EditableTableNodeType>[]) => void;
   setSelectedEntity: (id: string | null) => void;
   setSelectedRelationship: (id: string | null) => void;
+  setPopoverPos: (pos: { x: number; y: number } | null) => void;
   setCollaborators: (collaborators: Collaborator[]) => void;
   clearDirty: () => void;
 }
@@ -79,6 +85,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isDirty: false,
   selectedEntityId: null,
   selectedRelationshipId: null,
+  popoverPos: null,
   collaborators: [],
 
   setDocument: (doc) =>
@@ -100,9 +107,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ nodes: applyNodeChanges(changes, nodes) });
   },
 
-  setSelectedEntity: (id) => set({ selectedEntityId: id, selectedRelationshipId: null }),
+  setSelectedEntity: (id) => set({ selectedEntityId: id, selectedRelationshipId: null, popoverPos: null }),
 
   setSelectedRelationship: (id) => set({ selectedRelationshipId: id, selectedEntityId: null }),
+
+  setPopoverPos: (pos) => set({ popoverPos: pos }),
 
   setCollaborators: (collaborators) =>
     set((state) => ({
