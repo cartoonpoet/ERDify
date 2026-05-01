@@ -56,14 +56,16 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
 
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
 
-  const [name, setName] = useState<string | null>(null);
+  const [name, setName] = useState<string>(() => {
+    const cached = queryClient.getQueryData<Awaited<ReturnType<typeof getMe>>>(["me"]);
+    return cached?.name ?? "";
+  });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentName = name ?? me?.name ?? "";
   const displayAvatar = previewUrl ?? resolveUrl(me?.avatarUrl);
   const initial = (me?.name?.[0] ?? me?.email?.[0] ?? "?").toUpperCase();
 
@@ -74,10 +76,10 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
   });
 
   const profileMutation = useMutation({
-    mutationFn: () => updateProfile({ name: currentName.trim() }),
+    mutationFn: () => updateProfile({ name: name.trim() }),
     onSuccess: (updated) => {
       void queryClient.setQueryData(["me"], updated);
-      setName(null);
+      setName(updated.name);
     },
     onError: () => setError("프로필 업데이트에 실패했습니다."),
   });
@@ -111,7 +113,7 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
       setPendingFile(null);
       setPreviewUrl(null);
     }
-    if (name !== null && name.trim() !== me?.name) {
+    if (name.trim() !== me?.name) {
       profileMutation.mutate();
     }
     setSuccess(true);
@@ -171,7 +173,7 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
       <Input
         id="profile-name"
         label="이름"
-        value={currentName}
+        value={name}
         onChange={(e) => setName(e.target.value)}
         required
       />
