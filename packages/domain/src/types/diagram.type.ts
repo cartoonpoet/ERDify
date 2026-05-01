@@ -21,6 +21,7 @@ export interface DiagramEntity {
   name: string;
   logicalName: string | null;
   comment: string | null;
+  color: string | null;
   columns: DiagramColumn[];
 }
 

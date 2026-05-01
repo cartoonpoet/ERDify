@@ -243,6 +243,7 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
         name: result.tableName,
         logicalName: null,
         comment: null,
+        color: null,
         columns: result.columns.map((c) => ({ ...c, id: uuid() })),
       };
       entityMap.set(result.tableName, entity);

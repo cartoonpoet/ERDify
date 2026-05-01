@@ -9,6 +9,7 @@ export function addEntity(
     name: input.name,
     logicalName: null,
     comment: null,
+    color: null,
     columns: []
   };
   const entityPositions = input.position
@@ -29,6 +30,17 @@ export function renameEntity(
   return {
     ...doc,
     entities: doc.entities.map((e) => (e.id === entityId ? { ...e, name } : e))
+  };
+}
+
+export function updateEntityColor(
+  doc: DiagramDocument,
+  entityId: string,
+  color: string | null
+): DiagramDocument {
+  return {
+    ...doc,
+    entities: doc.entities.map((e) => (e.id === entityId ? { ...e, color } : e))
   };
 }
 

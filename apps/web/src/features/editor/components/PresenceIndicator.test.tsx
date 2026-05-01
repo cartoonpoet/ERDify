@@ -72,6 +72,7 @@ describe("PresenceIndicator", () => {
             name: "Users",
             logicalName: null,
             comment: null,
+            color: null,
             columns: [],
           },
         ],

@@ -8,11 +8,25 @@ import {
   removeEntity,
   renameEntity,
   updateColumn,
+  updateEntityColor,
 } from "@erdify/domain";
 import type { DiagramColumn } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
 import type { EditableTableNodeType } from "../stores/useEditorStore";
 import * as css from "./editable-table-node.css";
+
+const DEFAULT_HEADER_COLOR = "#0064E0";
+
+const PRESET_COLORS = [
+  "#374151", // dark gray
+  "#0064E0", // blue (default)
+  "#7c3aed", // purple
+  "#059669", // green
+  "#dc2626", // red
+  "#d97706", // amber
+  "#db2777", // pink
+  "#0891b2", // cyan
+];
 
 const COLUMN_TYPES = [
   "varchar(255)", "text", "int", "bigint", "boolean",
@@ -102,6 +116,42 @@ const TypeSelect = ({ value, onChange }: TypeSelectProps) => {
   );
 };
 
+type ColorPickerProps = {
+  value: string | null;
+  onChange: (color: string | null) => void;
+};
+
+const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
+  const [open, setOpen] = useState(false);
+  const current = value ?? DEFAULT_HEADER_COLOR;
+
+  return (
+    <div className={css.colorPickerWrapper}>
+      <button
+        type="button"
+        className={`${css.colorSwatch} nodrag`}
+        style={{ background: current }}
+        onClick={() => setOpen((o) => !o)}
+        title="헤더 색상 변경"
+      />
+      {open && (
+        <div className={`${css.colorDropdown} nodrag nopan`}>
+          {PRESET_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={css.colorOption}
+              style={{ background: c, outline: c === current ? "2px solid #fff" : "none" }}
+              onMouseDown={(e) => { e.preventDefault(); onChange(c); setOpen(false); }}
+              title={c}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNodeType>) => {
   const { entity, collaboratorColor } = data;
   const applyCommand = useEditorStore((s) => s.applyCommand);
@@ -141,7 +191,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
 
         <div
           style={{
-            background: collaboratorColor ?? "#374151",
+            background: collaboratorColor ?? entity.color ?? DEFAULT_HEADER_COLOR,
             color: "#ffffff",
             padding: "6px 10px",
             fontWeight: 700,
@@ -201,7 +251,11 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
       <Handle type="target" position={Position.Left} />
 
       {/* 헤더: nodrag을 컨테이너가 아닌 개별 요소에만 적용 → 헤더 여백에서 드래그 가능 */}
-      <div className={css.headerEditRow}>
+      <div className={css.headerEditRow} style={{ background: entity.color ?? DEFAULT_HEADER_COLOR }}>
+        <ColorPicker
+          value={entity.color ?? null}
+          onChange={(color) => applyCommand((doc) => updateEntityColor(doc, entity.id, color))}
+        />
         <input
           className={`${css.tableNameInput} nodrag`}
           value={entity.name}

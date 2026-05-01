@@ -48,7 +48,7 @@ function parseTable(el: Element): { entity: DiagramEntity; x: number | null; y: 
   const columns: DiagramColumn[] = columnEls.map((c, i) => parseColumn(c, i));
 
   return {
-    entity: { id: uuid(), name, logicalName, comment, columns },
+    entity: { id: uuid(), name, logicalName, comment, color: null, columns },
     x,
     y,
   };

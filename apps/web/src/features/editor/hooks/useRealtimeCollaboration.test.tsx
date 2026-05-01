@@ -112,7 +112,7 @@ describe("useRealtimeCollaboration", () => {
 
     const newDoc = Automerge.change(doc, (d) => {
       (d.entities as DiagramDocument["entities"]).push({
-        id: "e1", name: "Users", logicalName: null, comment: null, columns: []
+        id: "e1", name: "Users", logicalName: null, comment: null, color: null, columns: []
       });
     });
     const change = Automerge.getLastLocalChange(newDoc)!;

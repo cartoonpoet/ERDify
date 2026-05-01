@@ -201,6 +201,53 @@ export const addColumnWrapper = style({
   padding: "4px 8px",
 });
 
+export const colorPickerWrapper = style({
+  position: "relative",
+  flexShrink: 0,
+});
+
+export const colorSwatch = style({
+  width: 16,
+  height: 16,
+  borderRadius: 3,
+  border: "2px solid rgba(255,255,255,0.5)",
+  cursor: "pointer",
+  padding: 0,
+  flexShrink: 0,
+  selectors: {
+    "&:hover": { borderColor: "#ffffff" },
+  },
+});
+
+export const colorDropdown = style({
+  position: "absolute",
+  top: "calc(100% + 4px)",
+  left: 0,
+  background: "#1f2937",
+  border: "1px solid rgba(255,255,255,0.15)",
+  borderRadius: 6,
+  boxShadow: vars.shadow.lg,
+  zIndex: 9999,
+  padding: 6,
+  display: "flex",
+  gap: 4,
+  flexWrap: "wrap",
+  width: 116,
+});
+
+export const colorOption = style({
+  width: 20,
+  height: 20,
+  borderRadius: 4,
+  border: "2px solid transparent",
+  cursor: "pointer",
+  padding: 0,
+  flexShrink: 0,
+  selectors: {
+    "&:hover": { transform: "scale(1.2)" },
+  },
+});
+
 export const collaboratorDot = style({
   position: "absolute",
   top: -8,

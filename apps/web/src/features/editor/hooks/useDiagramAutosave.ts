@@ -21,4 +21,14 @@ export function useDiagramAutosave(diagramId: string, delayMs = 3000): void {
 
     return () => clearTimeout(timer);
   }, [isDirty, document, diagramId, delayMs, clearDirty]);
+
+  // 뒤로가기 등으로 언마운트 시 pending 변경사항 즉시 저장
+  useEffect(() => {
+    return () => {
+      const state = useEditorStore.getState();
+      if (state.isDirty && state.document && diagramId) {
+        void updateDiagram(diagramId, { content: state.document });
+      }
+    };
+  }, [diagramId]);
 }
