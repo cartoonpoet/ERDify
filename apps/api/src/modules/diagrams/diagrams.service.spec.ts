@@ -168,4 +168,65 @@ describe("DiagramsService", () => {
       );
     });
   });
+
+  describe("generateShareLink", () => {
+    it("generates shareToken and expiresAt for editor", async () => {
+      const diagram = makeDiagram({ shareToken: null, shareExpiresAt: null });
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      diagramRepo.findOne.mockResolvedValue(diagram);
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.generateShareLink("diag-1", "user-1", "1d");
+
+      expect(result.shareToken).toHaveLength(36);
+      expect(result.expiresAt.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it("throws ForbiddenException for viewer", async () => {
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      diagramRepo.findOne.mockResolvedValue(makeDiagram());
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+
+      await expect(service.generateShareLink("diag-1", "user-1", "1d")).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe("revokeShareLink", () => {
+    it("clears shareToken and shareExpiresAt", async () => {
+      const diagram = makeDiagram({ shareToken: "tok-abc", shareExpiresAt: new Date() });
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      diagramRepo.findOne.mockResolvedValue(diagram);
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      await service.revokeShareLink("diag-1", "user-1");
+
+      expect(diagramRepo.save).toHaveBeenCalledWith(expect.objectContaining({ shareToken: null, shareExpiresAt: null }));
+    });
+  });
+
+  describe("getPublicDiagram", () => {
+    it("returns id, name, content for valid token", async () => {
+      const future = new Date(Date.now() + 86400000);
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ shareToken: "tok-abc", shareExpiresAt: future, name: "ERD" }));
+
+      const result = await service.getPublicDiagram("tok-abc");
+
+      expect(result).toEqual({ id: "diag-1", name: "ERD", content: {} });
+    });
+
+    it("throws NotFoundException for unknown token", async () => {
+      diagramRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.getPublicDiagram("bad-tok")).rejects.toThrow(NotFoundException);
+    });
+
+    it("throws ForbiddenException for expired token", async () => {
+      const past = new Date(Date.now() - 1000);
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ shareToken: "tok-abc", shareExpiresAt: past }));
+
+      await expect(service.getPublicDiagram("tok-abc")).rejects.toThrow(ForbiddenException);
+    });
+  });
 });

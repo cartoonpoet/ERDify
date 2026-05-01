@@ -5,6 +5,7 @@ import { Diagram, DiagramVersion, OrganizationMember, Project } from "@erdify/db
 import type { Repository } from "typeorm";
 import type { CreateDiagramDto } from "./dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
+import type { SharePreset } from "./dto/share-diagram.dto";
 
 @Injectable()
 export class DiagramsService {
@@ -129,5 +130,47 @@ export class DiagramsService {
     const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
     await this.requireEditorOrOwner(orgId, userId);
     await this.diagramRepo.remove(diagram);
+  }
+
+  private static presetToMs: Record<SharePreset, number> = {
+    "1h": 3_600_000,
+    "1d": 86_400_000,
+    "7d": 604_800_000,
+    "30d": 2_592_000_000,
+  };
+
+  async generateShareLink(
+    diagramId: string,
+    userId: string,
+    preset: SharePreset
+  ): Promise<{ shareToken: string; expiresAt: Date }> {
+    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
+    await this.requireEditorOrOwner(orgId, userId);
+
+    const shareToken = randomUUID();
+    const expiresAt = new Date(Date.now() + DiagramsService.presetToMs[preset]);
+    diagram.shareToken = shareToken;
+    diagram.shareExpiresAt = expiresAt;
+    await this.diagramRepo.save(diagram);
+
+    return { shareToken, expiresAt };
+  }
+
+  async revokeShareLink(diagramId: string, userId: string): Promise<void> {
+    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
+    await this.requireEditorOrOwner(orgId, userId);
+
+    diagram.shareToken = null;
+    diagram.shareExpiresAt = null;
+    await this.diagramRepo.save(diagram);
+  }
+
+  async getPublicDiagram(shareToken: string): Promise<{ id: string; name: string; content: object }> {
+    const diagram = await this.diagramRepo.findOne({ where: { shareToken } });
+    if (!diagram) throw new NotFoundException("Share link not found");
+    if (!diagram.shareExpiresAt || diagram.shareExpiresAt < new Date()) {
+      throw new ForbiddenException("SHARE_LINK_EXPIRED");
+    }
+    return { id: diagram.id, name: diagram.name, content: diagram.content };
   }
 }
