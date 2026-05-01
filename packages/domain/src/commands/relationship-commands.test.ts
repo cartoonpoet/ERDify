@@ -7,7 +7,8 @@ const rel = (): DiagramRelationship => ({
   id: "r1", name: "fk_orders_users",
   sourceEntityId: "e2", sourceColumnIds: ["c_user_id"],
   targetEntityId: "e1", targetColumnIds: ["c_id"],
-  cardinality: "many-to-one", onDelete: "restrict", onUpdate: "no-action"
+  cardinality: "many-to-one", onDelete: "restrict", onUpdate: "no-action",
+  identifying: false,
 });
 
 const base = () => {

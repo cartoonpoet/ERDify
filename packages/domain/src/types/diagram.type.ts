@@ -34,6 +34,7 @@ export interface DiagramRelationship {
   cardinality: RelationshipCardinality;
   onDelete: ReferentialAction;
   onUpdate: ReferentialAction;
+  identifying: boolean;
 }
 
 export interface DiagramMetadata {
