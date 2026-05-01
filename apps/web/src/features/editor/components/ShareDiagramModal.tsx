@@ -46,6 +46,7 @@ export const ShareDiagramModal = ({
       setShareToken(data.shareToken);
       setExpiresAt(data.expiresAt);
       void queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
+      void queryClient.invalidateQueries({ queryKey: ["diagrams"] });
     },
     onError: () => setMutationError("링크 생성에 실패했습니다."),
   });
@@ -57,6 +58,7 @@ export const ShareDiagramModal = ({
       setShareToken(null);
       setExpiresAt(null);
       void queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
+      void queryClient.invalidateQueries({ queryKey: ["diagrams"] });
     },
     onError: () => setMutationError("링크 비활성화에 실패했습니다."),
   });

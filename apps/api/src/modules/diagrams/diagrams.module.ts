@@ -7,7 +7,10 @@ import { DiagramsService } from "./diagrams.service";
 
 @Module({
   imports: [TypeOrmModule.forFeature([Diagram, DiagramVersion, Project, OrganizationMember])],
-  controllers: [PublicDiagramsController, DiagramsController],
+  controllers: [
+    PublicDiagramsController, // MUST be before DiagramsController — public route takes priority over /:id
+    DiagramsController,
+  ],
   providers: [DiagramsService],
   exports: [DiagramsService]
 })
