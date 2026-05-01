@@ -5,8 +5,7 @@ import { addEntity } from "@erdify/domain";
 import { getDiagram } from "../../../shared/api/diagrams.api";
 import { useEditorStore } from "../stores/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
-import { EntityPanel } from "../components/EntityPanel";
-import { RelationshipPanel } from "../components/RelationshipPanel";
+import { RelationshipPopover } from "../components/RelationshipPopover";
 import { VersionHistoryDrawer } from "../components/VersionHistoryDrawer";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceIndicator } from "../components/PresenceIndicator";
@@ -23,7 +22,7 @@ export const EditorPage = () => {
   const [showInvite, setShowInvite] = useState(false);
   const [showExport, setShowExport] = useState(false);
 
-  const { document, isDirty, setDocument, applyCommand, selectedEntityId, selectedRelationshipId } = useEditorStore();
+  const { isDirty, setDocument, applyCommand, selectedRelationshipId, popoverPos } = useEditorStore();
 
   const { data, isLoading } = useQuery({
     queryKey: ["diagram", diagramId],
@@ -41,14 +40,14 @@ export const EditorPage = () => {
   useDiagramAutosave(diagramId ?? "");
   const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "");
 
-  function handleAddTable() {
+  const handleAddTable = () => {
     applyCommand((doc) =>
       addEntity(doc, {
         id: crypto.randomUUID(),
         name: `Table_${doc.entities.length + 1}`
       })
     );
-  }
+  };
 
   if (isLoading) {
     return <div className={css.loadingContainer}>Loading...</div>;
@@ -104,9 +103,13 @@ export const EditorPage = () => {
       <div className={css.content}>
         <div className={css.canvasArea}>
           <EditorCanvas />
+          {selectedRelationshipId && popoverPos && (
+            <RelationshipPopover
+              relationshipId={selectedRelationshipId}
+              pos={popoverPos}
+            />
+          )}
         </div>
-        {selectedEntityId && <EntityPanel entityId={selectedEntityId} />}
-        {selectedRelationshipId && <RelationshipPanel relationshipId={selectedRelationshipId} />}
         {showHistory && diagramId && (
           <VersionHistoryDrawer diagramId={diagramId} onClose={() => setShowHistory(false)} />
         )}
