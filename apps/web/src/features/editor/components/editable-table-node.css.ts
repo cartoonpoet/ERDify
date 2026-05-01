@@ -90,40 +90,22 @@ export const columnNameInput = style({
   },
 });
 
-export const typeSelectBtn = style({
-  display: "flex",
-  alignItems: "center",
-  width: 82,
+export const typeInput = style({
+  width: 88,
   fontSize: 10,
   border: `1px solid ${vars.color.border}`,
   borderRadius: 2,
   padding: "1px 4px",
-  color: vars.color.textSecondary,
+  color: vars.color.textPrimary,
   background: vars.color.surfaceTertiary,
   fontFamily: "monospace",
-  cursor: "pointer",
   outline: "none",
   height: 20,
-  gap: 2,
   flexShrink: 0,
   selectors: {
-    "&:hover": { borderColor: vars.color.primary, background: "#eff6ff" },
-    "&:focus": { borderColor: vars.color.primary },
+    "&:focus": { borderColor: vars.color.primary, background: "#ffffff" },
+    "&::placeholder": { color: "#94a3b8" },
   },
-});
-
-export const typeSelectLabel = style({
-  flex: 1,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-  textAlign: "left",
-});
-
-export const typeSelectArrow = style({
-  fontSize: 8,
-  flexShrink: 0,
-  color: "#94a3b8",
 });
 
 export const typeDropdown = style({

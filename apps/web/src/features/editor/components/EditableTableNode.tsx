@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import {
@@ -39,27 +39,59 @@ type TypeSelectProps = {
 };
 
 const TypeSelect = ({ value, onChange }: TypeSelectProps) => {
+  const [inputVal, setInputVal] = useState(value);
   const [open, setOpen] = useState(false);
-  const options = COLUMN_TYPES.includes(value) ? COLUMN_TYPES : [...COLUMN_TYPES, value];
+
+  const filtered = COLUMN_TYPES.filter((t) =>
+    t.toLowerCase().includes(inputVal.toLowerCase())
+  );
+  const showDropdown = open && filtered.length > 0;
+
+  const commit = (val: string) => {
+    const trimmed = val.trim();
+    if (trimmed) onChange(trimmed);
+    else setInputVal(value);
+    setOpen(false);
+  };
+
+  const handleFocus = () => {
+    setInputVal(value);
+    setOpen(true);
+  };
+
+  const handleBlur = () => commit(inputVal);
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") { e.preventDefault(); commit(inputVal); }
+    if (e.key === "Escape") { setInputVal(value); setOpen(false); }
+  };
+
+  const handleSelect = (t: string) => {
+    onChange(t);
+    setInputVal(t);
+    setOpen(false);
+  };
 
   return (
     <div className={css.typeSelectWrapper}>
-      <button
-        type="button"
-        className={`${css.typeSelectBtn} nodrag`}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span className={css.typeSelectLabel}>{value}</span>
-        <span className={css.typeSelectArrow}>{open ? "▴" : "▾"}</span>
-      </button>
-      {open && (
+      <input
+        className={`${css.typeInput} nodrag`}
+        value={inputVal}
+        onChange={(e) => { setInputVal(e.target.value); setOpen(true); }}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder="타입..."
+        spellCheck={false}
+      />
+      {showDropdown && (
         <div className={`${css.typeDropdown} nodrag nopan`}>
-          {options.map((t) => (
+          {filtered.map((t) => (
             <button
               key={t}
               type="button"
               className={`${css.typeOption}${t === value ? ` ${css.typeOptionActive}` : ""}`}
-              onClick={() => { onChange(t); setOpen(false); }}
+              onMouseDown={(e) => { e.preventDefault(); handleSelect(t); }}
             >
               {t}
             </button>
