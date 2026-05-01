@@ -128,7 +128,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
     >
       <Handle type="target" position={Position.Left} />
 
-      <div className={css.headerEditRow}>
+      <div className={`${css.headerEditRow} nodrag`}>
         <input
           className={css.tableNameInput}
           value={entity.name}

@@ -1,35 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { vars } from "../../../design-system/tokens.css";
 
-export const nodeView = style({
-  background: "#ffffff",
-  border: `2px solid ${vars.color.border}`,
-  borderRadius: 6,
-  minWidth: 180,
-  fontFamily: "monospace",
-  fontSize: 12,
-  boxShadow: vars.shadow.sm,
-  position: "relative",
-});
-
-export const nodeViewSelected = style({
-  border: `2px solid ${vars.color.primary}`,
-  boxShadow: `0 4px 20px rgba(0, 100, 224, 0.18)`,
-});
-
-export const header = style({
-  background: "#374151",
-  color: "#ffffff",
-  padding: "6px 10px",
-  fontWeight: 700,
-  borderRadius: "4px 4px 0 0",
-  fontSize: 13,
-});
-
-export const headerSelected = style({
-  background: vars.color.primary,
-});
-
 export const headerEditRow = style({
   background: vars.color.primary,
   padding: "5px 8px",
@@ -63,51 +34,6 @@ export const deleteEntityBtn = style({
   selectors: {
     "&:hover": { color: "#ffffff" },
   },
-});
-
-export const columnList = style({
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-});
-
-export const columnItem = style({
-  padding: "3px 10px",
-  borderBottom: "1px solid #f3f4f6",
-  display: "flex",
-  gap: 8,
-  alignItems: "center",
-});
-
-export const pkBadge = style({
-  color: "#f59e0b",
-  fontWeight: 700,
-  fontSize: 10,
-  minWidth: 16,
-});
-
-export const columnName = style({
-  flex: 1,
-  color: "#111827",
-});
-
-export const columnType = style({
-  color: "#6b7280",
-  fontSize: 10,
-});
-
-export const nullableBadge = style({
-  color: "#9ca3af",
-});
-
-export const emptyHint = style({
-  padding: "4px 10px",
-  color: "#9ca3af",
-  fontStyle: "italic",
-});
-
-export const editArea = style({
-  padding: 0,
 });
 
 export const colHeaderRow = style({
