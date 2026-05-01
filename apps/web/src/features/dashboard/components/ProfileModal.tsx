@@ -1,9 +1,16 @@
 import { useRef, useState, type FormEvent, type ChangeEvent, type DragEvent } from "react";
 import { Modal, Button, Input } from "../../../design-system";
 import { getMe, updateProfile, uploadAvatar, changePassword } from "../../../shared/api/auth.api";
+import { API_BASE_URL } from "../../../shared/api/httpClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { form, footer } from "./modal-form.css";
 import * as css from "./ProfileModal.css";
+
+function resolveUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${API_BASE_URL}${path}`;
+}
 
 interface ProfileModalProps {
   open: boolean;
@@ -57,7 +64,7 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
   const [error, setError] = useState<string | null>(null);
 
   const currentName = name ?? me?.name ?? "";
-  const displayAvatar = previewUrl ?? me?.avatarUrl ?? null;
+  const displayAvatar = previewUrl ?? resolveUrl(me?.avatarUrl);
   const initial = (me?.name?.[0] ?? me?.email?.[0] ?? "?").toUpperCase();
 
   const avatarMutation = useMutation({

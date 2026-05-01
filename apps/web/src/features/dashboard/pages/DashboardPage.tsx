@@ -6,6 +6,7 @@ import { listMyOrganizations, deleteOrganization } from "../../../shared/api/org
 import { listProjects, deleteProject } from "../../../shared/api/projects.api";
 import { listDiagrams, deleteDiagram } from "../../../shared/api/diagrams.api";
 import { getMe } from "../../../shared/api/auth.api";
+import { API_BASE_URL } from "../../../shared/api/httpClient";
 import { useWorkspaceStore } from "../../../shared/stores/useWorkspaceStore";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
 import { OrgRail } from "../components/OrgRail";
@@ -152,7 +153,7 @@ export const DashboardPage = () => {
         <div className={avatarWrapper} tabIndex={-1} onBlur={handleAvatarMenuBlur}>
           {me?.avatarUrl ? (
             <img
-              src={me.avatarUrl}
+              src={me.avatarUrl.startsWith("http") ? me.avatarUrl : `${API_BASE_URL}${me.avatarUrl}`}
               alt="프로필"
               className={avatarImg}
               onClick={handleAvatarClick}
