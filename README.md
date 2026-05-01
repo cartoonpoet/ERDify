@@ -1,112 +1,112 @@
 # ERDify
 
-ERDify is a collaborative, web-based ERD (Entity-Relationship Diagram) editor designed for software teams that need to design, document, and share database schemas across projects. It combines a visual canvas editor with an AI-native integration layer so that both humans and LLMs can read and modify diagrams.
+ERDify는 데이터베이스 스키마를 팀 단위로 설계·문서화·공유하기 위한 협업 웹 기반 ERD(Entity-Relationship Diagram) 편집기입니다. 시각적 캔버스 편집기에 AI 네이티브 연동 레이어를 결합해, 사람과 LLM 모두 다이어그램을 읽고 수정할 수 있습니다.
 
-## Background
+## 배경
 
-Managing database schemas across multiple client projects is a recurring pain point for product and engineering teams. Schemas live in migration files, ad-hoc SQL scripts, or outdated spreadsheets — none of which are easy to visualize, share, or keep in sync. ERDify centralises this into a single tool: a visual editor with a versioned document model, a REST API, and an MCP server that lets AI assistants (like Claude) read and write diagrams directly.
+여러 고객사 프로젝트에 걸쳐 데이터베이스 스키마를 관리하는 작업은 반복적인 고통을 수반합니다. 스키마는 마이그레이션 파일, 임시 SQL 스크립트, 혹은 오래된 스프레드시트에 흩어져 있어 시각화·공유·동기화가 모두 어렵습니다. ERDify는 이를 하나의 도구로 집중시킵니다. 버전 관리되는 문서 모델, REST API, 그리고 AI 어시스턴트(Claude 등)가 다이어그램을 직접 읽고 쓸 수 있는 MCP 서버까지 갖추고 있습니다.
 
-## Purpose
+## 목적
 
-- Give engineers a fast, keyboard-friendly ERD editor that works in the browser
-- Provide a structured, machine-readable schema format (`erdify.schema.v1`) that can be diffed, versioned, and operated on programmatically
-- Enable AI-assisted schema design through the Model Context Protocol (MCP), so an LLM can add tables, columns, and relationships on behalf of the user
-- Export DDL (CREATE TABLE + ALTER TABLE FK) for PostgreSQL, MySQL, and MariaDB at any time
+- 브라우저에서 바로 쓸 수 있는 빠르고 직관적인 ERD 편집기 제공
+- diff·버전 관리·프로그래밍적 조작이 가능한 구조화된 기계 판독 스키마 포맷(`erdify.schema.v1`) 정의
+- MCP(Model Context Protocol)를 통한 AI 보조 스키마 설계 — LLM이 사용자를 대신해 테이블·컬럼·관계를 추가 가능
+- PostgreSQL / MySQL / MariaDB용 DDL(`CREATE TABLE` + `ALTER TABLE FK`) 언제든 내보내기
 
-## Expected Outcomes
+## 기대 성과
 
-| Outcome | How ERDify delivers it |
-|---------|----------------------|
-| Single source of truth for DB schemas | Versioned `DiagramDocument` stored server-side, editable by team |
-| No context-switching for AI users | Claude Desktop can list orgs → projects → diagrams → mutate schema via MCP tools |
-| Portable SQL | `generateDdl()` turns any diagram into ready-to-run CREATE TABLE statements |
-| Real-time awareness | Collaborator presence and selection highlighted on the canvas |
+| 성과 | ERDify의 접근 방식 |
+|------|-------------------|
+| DB 스키마 단일 진실 원천 | 서버에 저장된 버전 관리 `DiagramDocument`, 팀 공동 편집 |
+| AI 사용자 컨텍스트 전환 없음 | Claude Desktop에서 조직 → 프로젝트 → 다이어그램 탐색 및 스키마 수정 가능 |
+| 이식 가능한 SQL | `generateDdl()`이 모든 다이어그램을 즉시 실행 가능한 CREATE TABLE 구문으로 변환 |
+| 실시간 협업 인식 | 협업자의 선택 상태가 캔버스에 표시 |
 
 ---
 
-## Architecture
+## 아키텍처
 
 ```
 apps/
-  web/          React + Vite frontend (editor canvas, dashboard)
-  api/          NestJS REST API (auth, orgs, projects, diagrams)
-  mcp-server/   stdio MCP server for Claude Desktop integration
+  web/          React + Vite 프론트엔드 (편집기 캔버스, 대시보드)
+  api/          NestJS REST API (인증, 조직, 프로젝트, 다이어그램)
+  mcp-server/   Claude Desktop 연동용 stdio MCP 서버
 
 packages/
-  domain/       Canonical DiagramDocument type + pure immutable commands
-  erd-ui/       React Flow–based canvas components (TableNode, edges)
-  db/           TypeORM entities + migrations
-  contracts/    Zod API schemas shared by web and api
+  domain/       DiagramDocument 타입 + 순수 불변 커맨드 함수
+  erd-ui/       React Flow 기반 캔버스 컴포넌트 (TableNode, 엣지)
+  db/           TypeORM 엔티티 + 마이그레이션
+  contracts/    web와 api가 공유하는 Zod API 스키마
 ```
 
-The `packages/domain` layer is the heart of the system. Both the web editor and the MCP server apply the same pure command functions (`addEntity`, `addColumn`, `addRelationship`, …) to the same `DiagramDocument` type — so schema mutations are consistent regardless of whether they come from a human clicking in the UI or an LLM calling an MCP tool.
+`packages/domain`이 시스템의 핵심입니다. 웹 편집기와 MCP 서버 양쪽 모두 동일한 순수 커맨드 함수(`addEntity`, `addColumn`, `addRelationship`, …)를 동일한 `DiagramDocument` 타입에 적용합니다. 사람이 UI를 클릭하든, LLM이 MCP 툴을 호출하든 스키마 변형 로직이 일치합니다.
 
-## Tech Stack
+## 기술 스택
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18, Vite, React Flow (`@xyflow/react`), Zustand, TanStack Query, vanilla-extract |
-| Backend | NestJS, TypeORM, PostgreSQL, JWT (via `@nestjs/jwt`) |
-| AI integration | `@modelcontextprotocol/sdk` (stdio transport) |
-| Monorepo | Turborepo + pnpm workspaces |
-| Testing | Vitest |
-
----
-
-## Features
-
-- **Visual ERD canvas** — drag-and-drop tables, draw relationships, zoom/pan
-- **Multi-dialect DDL export** — PostgreSQL, MySQL, MariaDB
-- **Organisation / Project / Diagram hierarchy** — mirrors real team structures
-- **Real-time collaborator presence** — see which entity a teammate has selected
-- **MCP AI integration** — Claude Desktop can read and write your diagrams
-- **API Key generation** — long-lived JWT key issued from the dashboard for MCP use
+| 레이어 | 기술 |
+|--------|------|
+| 프론트엔드 | React 19, Vite, React Flow (`@xyflow/react`), Zustand, TanStack Query, vanilla-extract |
+| 백엔드 | NestJS, TypeORM, PostgreSQL, JWT (`@nestjs/jwt`) |
+| AI 연동 | `@modelcontextprotocol/sdk` (stdio 트랜스포트) |
+| 모노레포 | Turborepo + pnpm workspaces |
+| 테스트 | Vitest |
 
 ---
 
-## Usage
+## 주요 기능
 
-### Local Development
+- **시각적 ERD 캔버스** — 테이블 드래그·드롭, 관계선 연결, 줌/팬
+- **다중 방언 DDL 내보내기** — PostgreSQL, MySQL, MariaDB
+- **조직 / 프로젝트 / 다이어그램 계층** — 실제 팀 구조에 맞는 구조
+- **실시간 협업자 표시** — 팀원이 선택한 엔티티를 캔버스에서 확인
+- **MCP AI 연동** — Claude Desktop에서 다이어그램을 읽고 수정
+- **API 키 발급** — 대시보드에서 MCP용 장기 JWT 키 발급
+
+---
+
+## 사용법
+
+### 로컬 개발 환경
 
 ```bash
-# Prerequisites: Node 20+, pnpm 9+, PostgreSQL 15+
+# 사전 조건: Node 20+, pnpm 9+, PostgreSQL 15+
 
 pnpm install
 
-# Copy and fill in the environment files
+# 환경 변수 파일 복사 후 값 입력
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 
-# Start API + Web (Turborepo runs both)
+# API + Web 동시 실행 (Turborepo가 둘 다 실행)
 pnpm dev
 
-# Or with Docker Compose (includes Postgres)
+# 또는 Docker Compose로 실행 (Postgres 포함)
 docker compose up
 ```
 
-The web app runs on **http://localhost:5173** and the API on **http://localhost:4000**.
+웹 앱은 **http://localhost:5173**, API는 **http://localhost:4000** 에서 실행됩니다.
 
-### Workspace commands
+### 워크스페이스 명령어
 
 ```bash
-pnpm lint          # ESLint across all packages
-pnpm typecheck     # tsc --noEmit across all packages
-pnpm test          # Vitest across all packages
-pnpm build         # Production build
-pnpm verify:workspace   # Verify pnpm workspace integrity
-pnpm verify:configs     # Verify shared tsconfig/eslint configs
+pnpm lint               # 전체 패키지 ESLint
+pnpm typecheck          # 전체 패키지 tsc --noEmit
+pnpm test               # 전체 패키지 Vitest
+pnpm build              # 프로덕션 빌드
+pnpm verify:workspace   # pnpm 워크스페이스 무결성 검사
+pnpm verify:configs     # 공유 tsconfig/eslint 설정 검사
 ```
 
-### Generating an API Key (for MCP)
+### API 키 발급 (MCP 연동용)
 
-1. Open the ERDify web app and sign in
-2. Click your avatar (top-right) → **MCP API 키**
-3. Click **API 키 생성** — the key is shown once; copy it immediately
-4. Use this key as `ERDIFY_API_KEY` in your Claude Desktop config
+1. ERDify 웹 앱에 로그인
+2. 우측 상단 아바타 클릭 → **MCP API 키**
+3. **API 키 생성** 클릭 — 키는 한 번만 표시되므로 즉시 복사
+4. 이 키를 Claude Desktop 설정의 `ERDIFY_API_KEY`에 입력
 
-### Claude Desktop MCP Integration
+### Claude Desktop MCP 연동
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+`~/Library/Application Support/Claude/claude_desktop_config.json`에 추가:
 
 ```json
 {
@@ -116,28 +116,28 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "args": ["/path/to/ERDify/apps/mcp-server/dist/index.js"],
       "env": {
         "ERDIFY_API_URL": "http://localhost:4000",
-        "ERDIFY_API_KEY": "<your-api-key>"
+        "ERDIFY_API_KEY": "<발급받은 API 키>"
       }
     }
   }
 }
 ```
 
-Then restart Claude Desktop. You can ask Claude:
+Claude Desktop을 재시작한 뒤 다음과 같이 요청할 수 있습니다:
 
-> "List my ERDify organizations"  
-> "Add a `payments` table to diagram `<id>` with columns: id (uuid, PK), amount (integer), created_at (timestamp)"  
-> "Generate the DDL for diagram `<id>`"
+> "내 ERDify 조직 목록 보여줘"  
+> "다이어그램 `<id>`에 `payments` 테이블 추가해줘. 컬럼은 id(uuid, PK), amount(integer), created_at(timestamp)"  
+> "다이어그램 `<id>`의 DDL 생성해줘"
 
-Available MCP tools: `list_organizations`, `list_projects`, `list_diagrams`, `get_diagram`, `get_ddl`, `add_table`, `remove_table`, `add_column`, `update_column`, `remove_column`, `add_relationship`, `remove_relationship`.
+사용 가능한 MCP 툴: `list_organizations`, `list_projects`, `list_diagrams`, `get_diagram`, `get_ddl`, `add_table`, `remove_table`, `add_column`, `update_column`, `remove_column`, `add_relationship`, `remove_relationship`
 
 ---
 
-## Core Logic
+## 핵심 로직
 
-### 1. Immutable Document Model (`packages/domain`)
+### 1. 불변 문서 모델 (`packages/domain`)
 
-Every diagram is a plain `DiagramDocument` object. All mutations are pure functions that return a new document — no classes, no mutation, no side effects.
+모든 다이어그램은 순수한 `DiagramDocument` 객체입니다. 모든 변형은 새로운 문서를 반환하는 순수 함수로 처리합니다. 클래스도 없고, 직접 변형도 없고, 사이드 이펙트도 없습니다.
 
 ```typescript
 // packages/domain/src/types/diagram.type.ts
@@ -155,7 +155,7 @@ export interface DiagramDocument {
 }
 ```
 
-Commands spread-update the document — existing entity references are preserved when they're not touched, which is critical for React's `memo` to work correctly:
+커맨드 함수는 스프레드로 문서를 업데이트합니다. 변경되지 않은 엔티티의 참조는 그대로 유지되며, 이는 React의 `memo`가 올바르게 동작하는 데 핵심적입니다.
 
 ```typescript
 // packages/domain/src/commands/entity-commands.ts
@@ -184,9 +184,9 @@ export function removeEntity(doc: DiagramDocument, entityId: string): DiagramDoc
 }
 ```
 
-### 2. Incremental React Flow Node Diffing (`apps/web`)
+### 2. 증분 React Flow 노드 비교 (`apps/web`)
 
-The editor canvas can hold hundreds of tables. Naively converting the full document to React Flow nodes on every command would re-render every `TableNode`. Instead, `updateNodes` does reference-equality diffing — it only creates new node objects for entities whose content or position actually changed. Unchanged entities return their previous node reference, so `React.memo` can skip them.
+편집기 캔버스에는 수백 개의 테이블이 올라올 수 있습니다. 커맨드를 실행할 때마다 전체 문서를 React Flow 노드로 변환하면 모든 `TableNode`가 다시 렌더링됩니다. `updateNodes`는 참조 동등성(reference equality) 비교를 통해 실제로 내용이나 위치가 변경된 엔티티에 대해서만 새 노드 객체를 생성합니다. 변경되지 않은 엔티티는 이전 노드 참조를 그대로 반환하므로 `React.memo`가 렌더링을 건너뜁니다.
 
 ```typescript
 // apps/web/src/features/editor/stores/useEditorStore.ts
@@ -200,15 +200,15 @@ function updateNodes(
   const prevNodeMap   = new Map(prevNodes.map((n) => [n.id, n]));
 
   return nextDoc.entities.map((entity) => {
-    const prevNode  = prevNodeMap.get(entity.id);
-    const collab    = collaborators.find((c) => c.selectedEntityId === entity.id);
+    const prevNode = prevNodeMap.get(entity.id);
+    const collab   = collaborators.find((c) => c.selectedEntityId === entity.id);
 
-    const entitySame   = prevEntityMap.get(entity.id) === entity;           // same object ref
+    const entitySame   = prevEntityMap.get(entity.id) === entity;           // 객체 참조 동일 여부
     const positionSame = prevDoc.layout.entityPositions[entity.id]
                       === nextDoc.layout.entityPositions[entity.id];
     const collabSame   = prevNode?.data.collaboratorColor === collab?.color;
 
-    if (prevNode && entitySame && positionSame && collabSame) return prevNode; // memo skips re-render
+    if (prevNode && entitySame && positionSame && collabSame) return prevNode; // memo가 렌더링 스킵
 
     return {
       id: entity.id,
@@ -220,11 +220,11 @@ function updateNodes(
 }
 ```
 
-Editing one table in a 300-table diagram triggers ~1 re-render instead of 300.
+300개 테이블 다이어그램에서 테이블 하나를 수정하면 ~1번의 리렌더링만 발생합니다.
 
-### 3. MCP Write Tool Pattern (`apps/mcp-server`)
+### 3. MCP 쓰기 툴 패턴 (`apps/mcp-server`)
 
-Every write tool follows the same three-step pattern: **GET the current diagram → apply a domain command → PATCH it back**. This means the MCP server reuses exactly the same pure functions as the web editor.
+모든 쓰기 툴은 동일한 3단계 패턴을 따릅니다: **현재 다이어그램 GET → 도메인 커맨드 적용 → PATCH로 저장**. MCP 서버가 웹 편집기와 정확히 동일한 순수 함수를 재사용합니다.
 
 ```typescript
 // apps/mcp-server/src/tools/write-tools.ts
@@ -239,7 +239,7 @@ server.tool(
   async ({ diagramId, name, columns }) => {
     const { content: doc } = await client.getDiagram(diagramId);   // GET
     const entityId = randomUUID();
-    let updated = addEntity(doc, { id: entityId, name });           // domain command
+    let updated = addEntity(doc, { id: entityId, name });           // 도메인 커맨드
     if (columns) {
       for (let i = 0; i < columns.length; i++) {
         updated = addColumn(updated, entityId, buildColumn(columns[i]!, i));
@@ -251,11 +251,11 @@ server.tool(
 );
 ```
 
-Because all commands are pure and the document is a plain JSON object, the MCP server needs no ORM, no database connection — it just talks to the ERDify REST API.
+모든 커맨드가 순수하고 문서가 단순한 JSON 객체이므로, MCP 서버는 ORM도, DB 연결도 필요 없습니다. ERDify REST API와만 통신합니다.
 
-### 4. DDL Generation (`packages/domain`)
+### 4. DDL 생성 (`packages/domain`)
 
-`generateDdl` converts a `DiagramDocument` into SQL. It handles multi-column primary keys, quoting differences between PostgreSQL (double-quotes) and MySQL/MariaDB (backticks), and emits `ALTER TABLE … ADD CONSTRAINT … FOREIGN KEY` statements after all `CREATE TABLE` statements.
+`generateDdl`은 `DiagramDocument`를 SQL로 변환합니다. 복합 기본 키, PostgreSQL(큰따옴표)과 MySQL/MariaDB(백틱) 간의 식별자 인용 차이를 처리하고, 모든 `CREATE TABLE` 구문 뒤에 `ALTER TABLE … ADD CONSTRAINT … FOREIGN KEY` 구문을 생성합니다.
 
 ```typescript
 // packages/domain/src/utils/ddl-generator.ts
@@ -266,7 +266,7 @@ export function generateDdl(doc: DiagramDocument): string {
   return [...tableParts, ...fkParts].join("\n\n\n");
 }
 
-// Example output (PostgreSQL):
+// 출력 예시 (PostgreSQL):
 // CREATE TABLE "users" (
 //   "id" uuid NOT NULL,
 //   "email" varchar NOT NULL UNIQUE,
@@ -281,9 +281,9 @@ export function generateDdl(doc: DiagramDocument): string {
 //   ON UPDATE NO ACTION;
 ```
 
-### 5. Long-Lived API Key via JWT (`apps/api`)
+### 5. JWT를 API 키로 활용 (`apps/api`)
 
-MCP clients need a stable credential that doesn't expire. Rather than a separate key table, ERDify issues a long-lived JWT (100-year expiry) signed with the same secret as regular access tokens. The `JwtAuthGuard` validates it identically — no special-casing required.
+MCP 클라이언트는 만료되지 않는 안정적인 인증 정보가 필요합니다. 별도의 키 테이블 대신, ERDify는 일반 액세스 토큰과 동일한 시크릿으로 서명된 장기 JWT(100년 만료)를 발급합니다. `JwtAuthGuard`가 동일하게 검증하므로 특별 처리가 필요 없습니다.
 
 ```typescript
 // apps/api/src/modules/auth/auth.service.ts
@@ -301,16 +301,16 @@ generateApiKey(@CurrentUser() user: JwtPayload): { apiKey: string } {
 
 ---
 
-## Apps & Packages
+## 앱 & 패키지
 
-| Path | Description |
-|------|-------------|
-| `apps/web` | React/Vite frontend — dashboard, ERD canvas editor |
-| `apps/api` | NestJS REST API — auth, organizations, projects, diagrams |
-| `apps/mcp-server` | stdio MCP server — 12 tools for Claude Desktop |
-| `packages/domain` | `DiagramDocument` type, pure commands, DDL generator, validation |
-| `packages/erd-ui` | React Flow canvas primitives (`TableNode`, edge types) |
-| `packages/db` | TypeORM entities + migration runner |
-| `packages/contracts` | Zod schemas for request/response validation (shared) |
-| `packages/config-typescript` | Shared `tsconfig` base files |
-| `packages/config-eslint` | Shared ESLint config |
+| 경로 | 설명 |
+|------|------|
+| `apps/web` | React/Vite 프론트엔드 — 대시보드, ERD 캔버스 편집기 |
+| `apps/api` | NestJS REST API — 인증, 조직, 프로젝트, 다이어그램 |
+| `apps/mcp-server` | stdio MCP 서버 — Claude Desktop용 12개 툴 |
+| `packages/domain` | `DiagramDocument` 타입, 순수 커맨드, DDL 생성기, 유효성 검사 |
+| `packages/erd-ui` | React Flow 캔버스 프리미티브 (`TableNode`, 엣지 타입) |
+| `packages/db` | TypeORM 엔티티 + 마이그레이션 러너 |
+| `packages/contracts` | 요청/응답 유효성 검사용 Zod 스키마 (공유) |
+| `packages/config-typescript` | 공유 `tsconfig` 베이스 파일 |
+| `packages/config-eslint` | 공유 ESLint 설정 |
