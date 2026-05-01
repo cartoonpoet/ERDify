@@ -11,6 +11,7 @@ function referentialAction(action: DiagramRelationship["onDelete"]): string {
     case "restrict": return "RESTRICT";
     case "set-null": return "SET NULL";
     case "no-action": return "NO ACTION";
+    default: return action;
   }
 }
 
