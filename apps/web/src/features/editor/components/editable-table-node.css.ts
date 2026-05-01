@@ -24,15 +24,22 @@ export const tableNameInput = style({
 });
 
 export const deleteEntityBtn = style({
-  background: "none",
-  border: "none",
-  color: "rgba(255,255,255,0.6)",
+  flexShrink: 0,
+  background: "rgba(255,255,255,0.15)",
+  border: "1px solid rgba(255,255,255,0.4)",
+  borderRadius: 4,
+  color: "#ffffff",
   cursor: "pointer",
-  fontSize: 14,
+  fontSize: 11,
+  fontWeight: 600,
   lineHeight: 1,
-  padding: 0,
+  padding: "2px 6px",
+  whiteSpace: "nowrap",
   selectors: {
-    "&:hover": { color: "#ffffff" },
+    "&:hover": {
+      background: vars.color.error,
+      borderColor: vars.color.error,
+    },
   },
 });
 
@@ -65,10 +72,12 @@ export const editPkBadge = style({
   fontWeight: 700,
   fontSize: 9,
   textAlign: "center",
+  flexShrink: 0,
 });
 
 export const columnNameInput = style({
   flex: 1,
+  minWidth: 0,
   fontSize: 11,
   border: `1px solid ${vars.color.border}`,
   borderRadius: 2,
@@ -81,16 +90,82 @@ export const columnNameInput = style({
   },
 });
 
-export const typeSelect = style({
+export const typeSelectBtn = style({
+  display: "flex",
+  alignItems: "center",
   width: 82,
   fontSize: 10,
   border: `1px solid ${vars.color.border}`,
   borderRadius: 2,
-  padding: "1px 2px",
+  padding: "1px 4px",
   color: vars.color.textSecondary,
   background: vars.color.surfaceTertiary,
   fontFamily: "monospace",
+  cursor: "pointer",
   outline: "none",
+  height: 20,
+  gap: 2,
+  flexShrink: 0,
+  selectors: {
+    "&:hover": { borderColor: vars.color.primary, background: "#eff6ff" },
+    "&:focus": { borderColor: vars.color.primary },
+  },
+});
+
+export const typeSelectLabel = style({
+  flex: 1,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  textAlign: "left",
+});
+
+export const typeSelectArrow = style({
+  fontSize: 8,
+  flexShrink: 0,
+  color: "#94a3b8",
+});
+
+export const typeDropdown = style({
+  position: "absolute",
+  top: "calc(100% + 2px)",
+  left: 0,
+  background: vars.color.surface,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.sm,
+  boxShadow: vars.shadow.lg,
+  zIndex: 9999,
+  minWidth: 130,
+  maxHeight: 200,
+  overflowY: "auto",
+  padding: "4px 0",
+});
+
+export const typeOption = style({
+  display: "block",
+  width: "100%",
+  padding: "5px 10px",
+  fontSize: 11,
+  fontFamily: "monospace",
+  textAlign: "left",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  color: vars.color.textPrimary,
+  selectors: {
+    "&:hover": { background: "#eff6ff", color: vars.color.primary },
+  },
+});
+
+export const typeOptionActive = style({
+  color: vars.color.primary,
+  fontWeight: 700,
+  background: "#eff6ff",
+});
+
+export const typeSelectWrapper = style({
+  position: "relative",
+  flexShrink: 0,
 });
 
 export const pkCheckbox = style({
@@ -98,19 +173,30 @@ export const pkCheckbox = style({
   height: 14,
   accentColor: vars.color.primary,
   cursor: "pointer",
+  flexShrink: 0,
 });
 
 export const deleteColBtn = style({
-  width: 16,
+  width: 18,
+  height: 18,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   background: "none",
-  border: "none",
-  color: vars.color.border,
+  border: `1px solid transparent`,
+  borderRadius: 3,
+  color: vars.color.borderStrong,
   cursor: "pointer",
   fontSize: 13,
   padding: 0,
   lineHeight: 1,
+  flexShrink: 0,
   selectors: {
-    "&:hover": { color: vars.color.error },
+    "&:hover": {
+      color: vars.color.error,
+      background: `${vars.color.error}14`,
+      borderColor: `${vars.color.error}40`,
+    },
   },
 });
 

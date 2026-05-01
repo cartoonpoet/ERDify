@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ChangeEvent } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
@@ -32,6 +33,43 @@ function makeColumn(ordinal: number): DiagramColumn {
   };
 }
 
+type TypeSelectProps = {
+  value: string;
+  onChange: (val: string) => void;
+};
+
+const TypeSelect = ({ value, onChange }: TypeSelectProps) => {
+  const [open, setOpen] = useState(false);
+  const options = COLUMN_TYPES.includes(value) ? COLUMN_TYPES : [...COLUMN_TYPES, value];
+
+  return (
+    <div className={css.typeSelectWrapper}>
+      <button
+        type="button"
+        className={`${css.typeSelectBtn} nodrag`}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className={css.typeSelectLabel}>{value}</span>
+        <span className={css.typeSelectArrow}>{open ? "▴" : "▾"}</span>
+      </button>
+      {open && (
+        <div className={`${css.typeDropdown} nodrag nopan`}>
+          {options.map((t) => (
+            <button
+              key={t}
+              type="button"
+              className={`${css.typeOption}${t === value ? ` ${css.typeOptionActive}` : ""}`}
+              onClick={() => { onChange(t); setOpen(false); }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNodeType>) => {
   const { entity, collaboratorColor } = data;
   const applyCommand = useEditorStore((s) => s.applyCommand);
@@ -45,6 +83,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
     ? "0 4px 20px rgba(0, 100, 224, 0.18)"
     : "0 1px 4px rgba(0,0,0,0.1)";
 
+  // 읽기 전용 모드
   if (!canEdit) {
     return (
       <div
@@ -113,14 +152,14 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
     );
   }
 
-  // 편집 모드 (canEdit = true)
+  // 편집 모드 (canEdit = true) — nodrag은 각 인터랙티브 요소에만 적용, 컨테이너 div에는 미적용
   return (
     <div
       style={{
         background: "#ffffff",
         border: `2px solid ${borderColor}`,
         borderRadius: 6,
-        minWidth: 220,
+        minWidth: 230,
         fontFamily: "monospace",
         fontSize: 12,
         boxShadow,
@@ -129,62 +168,58 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
     >
       <Handle type="target" position={Position.Left} />
 
-      <div className={`${css.headerEditRow} nodrag`}>
+      {/* 헤더: nodrag을 컨테이너가 아닌 개별 요소에만 적용 → 헤더 여백에서 드래그 가능 */}
+      <div className={css.headerEditRow}>
         <input
-          className={css.tableNameInput}
+          className={`${css.tableNameInput} nodrag`}
           value={entity.name}
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
             applyCommand((doc) => renameEntity(doc, entity.id, e.target.value))
           }
         />
         <button
-          className={css.deleteEntityBtn}
+          type="button"
+          className={`${css.deleteEntityBtn} nodrag`}
           onClick={() => {
             applyCommand((doc) => removeEntity(doc, entity.id));
             setSelectedEntity(null);
           }}
           title="테이블 삭제"
         >
-          🗑
+          삭제
         </button>
       </div>
 
-      <div className="nodrag">
+      {/* 컬럼 영역: 컨테이너에 nodrag 없음 → colHeaderRow와 행 간격에서 드래그 가능 */}
+      <div>
+        {/* 컬럼 레이블 행 — 인터랙티브 요소 없음, 완전히 드래그 가능 */}
         <div className={css.colHeaderRow}>
           <span style={{ width: 20 }} />
           <span style={{ flex: 1 }} className={css.colHeaderLabel}>컬럼명</span>
           <span style={{ width: 82 }} className={css.colHeaderLabel}>타입</span>
           <span style={{ width: 14, textAlign: "center" }} className={css.colHeaderLabel}>PK</span>
-          <span style={{ width: 16 }} />
+          <span style={{ width: 18 }} />
         </div>
 
         {entity.columns.map((col) => (
           <div key={col.id} className={css.editColumnItem}>
             <span className={css.editPkBadge}>{col.primaryKey ? "PK" : ""}</span>
             <input
-              className={css.columnNameInput}
+              className={`${css.columnNameInput} nodrag`}
               value={col.name}
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: e.target.value }))
               }
             />
-            <select
-              className={css.typeSelect}
+            <TypeSelect
               value={col.type}
-              onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                applyCommand((doc) => updateColumn(doc, entity.id, col.id, { type: e.target.value }))
+              onChange={(val) =>
+                applyCommand((doc) => updateColumn(doc, entity.id, col.id, { type: val }))
               }
-            >
-              {COLUMN_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-              {!COLUMN_TYPES.includes(col.type) && (
-                <option value={col.type}>{col.type}</option>
-              )}
-            </select>
+            />
             <input
               type="checkbox"
-              className={css.pkCheckbox}
+              className={`${css.pkCheckbox} nodrag`}
               checked={col.primaryKey}
               onChange={(e) =>
                 applyCommand((doc) =>
@@ -193,8 +228,10 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
               }
             />
             <button
-              className={css.deleteColBtn}
+              type="button"
+              className={`${css.deleteColBtn} nodrag`}
               onClick={() => applyCommand((doc) => removeColumn(doc, entity.id, col.id))}
+              title="컬럼 삭제"
             >
               ×
             </button>
@@ -203,7 +240,8 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
 
         <div className={css.addColumnWrapper}>
           <button
-            className={css.addColumnBtn}
+            type="button"
+            className={`${css.addColumnBtn} nodrag`}
             onClick={() =>
               applyCommand((doc) =>
                 addColumn(doc, entity.id, makeColumn(entity.columns.length))
