@@ -1,5 +1,6 @@
 import { useVersionHistory } from "../hooks/useVersionHistory";
 import { useEditorStore } from "../stores/useEditorStore";
+import { VersionHistoryDrawerSkeleton } from "./VersionHistoryDrawerSkeleton";
 import * as css from "./version-history-drawer.css";
 
 interface VersionHistoryDrawerProps {
@@ -23,7 +24,7 @@ export const VersionHistoryDrawer = ({ diagramId, onClose }: VersionHistoryDrawe
 
       <div className={css.drawerBody}>
         {isLoadingVersions ? (
-          <p className={css.emptyText}>불러오는 중...</p>
+          <VersionHistoryDrawerSkeleton />
         ) : versions.length === 0 ? (
           <p className={css.emptyText}>저장된 버전이 없습니다.</p>
         ) : (

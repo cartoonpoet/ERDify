@@ -13,6 +13,7 @@ import { ExportDdlModal } from "../components/ExportDdlModal";
 import { useDiagramAutosave } from "../hooks/useDiagramAutosave";
 import { useVersionHistory } from "../hooks/useVersionHistory";
 import { useRealtimeCollaboration } from "../hooks/useRealtimeCollaboration";
+import { EditorPageSkeleton } from "./EditorPageSkeleton";
 import * as css from "./editor-page.css";
 
 export const EditorPage = () => {
@@ -53,7 +54,7 @@ export const EditorPage = () => {
   };
 
   if (isLoading) {
-    return <div className={css.loadingContainer}>Loading...</div>;
+    return <EditorPageSkeleton />;
   }
 
   return (

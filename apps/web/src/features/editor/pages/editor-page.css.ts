@@ -102,12 +102,3 @@ export const canvasArea = style({
   flex: 1,
   position: "relative",
 });
-
-export const loadingContainer = style({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  height: "100vh",
-  color: vars.color.textSecondary,
-  fontSize: "14px",
-});
