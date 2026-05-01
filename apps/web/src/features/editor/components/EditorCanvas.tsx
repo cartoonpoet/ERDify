@@ -211,6 +211,8 @@ export const EditorCanvas = () => {
           });
         }}
         deleteKeyCode="Delete"
+        zoomOnScroll={false}
+        panOnScroll
         fitView
       >
         <Background />
