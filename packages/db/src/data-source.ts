@@ -10,6 +10,7 @@ import { CreateDiagramsTable1746000000004 } from "./migrations/1746000000004-Cre
 import { CreateDiagramVersionsTable1746000000005 } from "./migrations/1746000000005-CreateDiagramVersionsTable";
 import { AddCreatedByToDiagrams1746000000006 } from "./migrations/1746000000006-AddCreatedByToDiagrams";
 import { AddAvatarUrlToUsers1746000000007 } from "./migrations/1746000000007-AddAvatarUrlToUsers";
+import { AddShareTokenToDiagrams1746000000008 } from "./migrations/1746000000008-AddShareTokenToDiagrams";
 import { CreateOrganizationMembersTable1746000000002 } from "./migrations/1746000000002-CreateOrganizationMembersTable";
 import { CreateOrganizationsTable1746000000001 } from "./migrations/1746000000001-CreateOrganizationsTable";
 import { CreateProjectsTable1746000000003 } from "./migrations/1746000000003-CreateProjectsTable";
@@ -30,5 +31,6 @@ export const AppDataSource = new DataSource({
     CreateDiagramVersionsTable1746000000005,
     AddCreatedByToDiagrams1746000000006,
     AddAvatarUrlToUsers1746000000007,
+    AddShareTokenToDiagrams1746000000008,
   ]
 });

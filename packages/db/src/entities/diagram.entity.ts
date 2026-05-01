@@ -28,6 +28,12 @@ export class Diagram {
   @Column({ type: "varchar", name: "created_by", length: 36, nullable: true })
   createdBy!: string | null;
 
+  @Column({ type: "varchar", name: "share_token", length: 36, nullable: true, unique: true })
+  shareToken!: string | null;
+
+  @Column({ type: "timestamptz", name: "share_expires_at", nullable: true })
+  shareExpiresAt!: Date | null;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 
