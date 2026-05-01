@@ -36,75 +36,137 @@ export const tabActive = style({
   borderBottomColor: vars.color.primary,
 });
 
-export const avatarRow = style({
+/* ── 아바타 + 업로드 존 ── */
+
+export const avatarSection = style({
+  display: "grid",
+  gridTemplateColumns: "72px 1fr",
+  gap: vars.space["3"],
+  alignItems: "center",
+});
+
+export const avatarCircle = style({
+  width: "72px",
+  height: "72px",
+  borderRadius: "50%",
+  overflow: "hidden",
+  background: vars.color.primary,
+  flexShrink: 0,
   display: "flex",
   alignItems: "center",
-  gap: vars.space["3"],
+  justifyContent: "center",
 });
 
-export const avatarClickable = style({
-  position: "relative",
-  width: "64px",
-  height: "64px",
-  borderRadius: "50%",
-  border: "none",
-  padding: 0,
-  cursor: "pointer",
-  flexShrink: 0,
-  overflow: "hidden",
-  background: "none",
-  selectors: {
-    "&:hover > *:last-child": { opacity: 1 },
-  },
-});
-
-export const avatarPreview = style({
-  width: "64px",
-  height: "64px",
-  borderRadius: "50%",
+export const avatarImg = style({
+  width: "100%",
+  height: "100%",
   objectFit: "cover",
   display: "block",
 });
 
-export const avatarFallback = style({
-  width: "64px",
-  height: "64px",
-  borderRadius: "50%",
-  background: vars.color.primary,
-  color: "#fff",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "24px",
+export const avatarInitial = style({
+  fontSize: "28px",
   fontWeight: "700",
+  color: "#fff",
   userSelect: "none",
+  lineHeight: 1,
 });
 
-export const avatarOverlay = style({
-  position: "absolute",
-  inset: 0,
+export const dropZone = style({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "4px",
+  padding: `${vars.space["3"]} ${vars.space["4"]}`,
+  border: `1.5px dashed ${vars.color.border}`,
+  borderRadius: vars.radius.md,
+  cursor: "pointer",
+  transition: "border-color 150ms ease, background 150ms ease",
+  selectors: {
+    "&:hover": {
+      borderColor: vars.color.primary,
+      background: `${vars.color.primary}08`,
+    },
+  },
+});
+
+export const dropZoneActive = style({
+  borderColor: vars.color.primary,
+  background: `${vars.color.primary}10`,
+});
+
+export const dropIcon = style({
+  width: "22px",
+  height: "22px",
+  color: vars.color.textSecondary,
+  marginBottom: "2px",
+});
+
+export const dropLabel = style({
+  fontSize: "13px",
+  fontWeight: "500",
+  color: vars.color.textPrimary,
+});
+
+export const dropHint = style({
+  fontSize: "11px",
+  color: vars.color.textSecondary,
+});
+
+export const fileSelected = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space["2"],
+  padding: `${vars.space["3"]} ${vars.space["3"]}`,
+  border: `1.5px solid #86efac`,
+  borderRadius: vars.radius.md,
+  background: "#f0fdf4",
+});
+
+export const fileSelectedIcon = style({
+  fontSize: "14px",
+  color: "#16a34a",
+  flexShrink: 0,
+  fontWeight: "700",
+});
+
+export const fileSelectedName = style({
+  flex: 1,
+  fontSize: "13px",
+  color: vars.color.textPrimary,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+});
+
+export const fileClearBtn = style({
+  flexShrink: 0,
+  width: "20px",
+  height: "20px",
   borderRadius: "50%",
-  background: "rgba(0,0,0,0.45)",
-  color: "#fff",
+  border: "none",
+  background: "#bbf7d0",
+  color: "#15803d",
+  fontSize: "10px",
+  fontWeight: "700",
+  cursor: "pointer",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: "12px",
-  fontWeight: "600",
-  opacity: 0,
-  transition: "opacity 150ms ease",
+  fontFamily: vars.font.family,
+  transition: "background 150ms ease",
+  selectors: {
+    "&:hover": { background: "#86efac" },
+  },
 });
 
-export const avatarHint = style({
-  fontSize: "12px",
-  color: vars.color.textSecondary,
-  lineHeight: "1.4",
-});
+/* ── 메시지 ── */
 
 export const successMsg = style({
   fontSize: "13px",
   color: "#15803d",
-  background: "#dcfce7",
+  background: "#f0fdf4",
   border: "1px solid #86efac",
   borderRadius: vars.radius.md,
   padding: `${vars.space["2"]} ${vars.space["3"]}`,
@@ -114,7 +176,7 @@ export const successMsg = style({
 export const errorMsg = style({
   fontSize: "13px",
   color: "#b91c1c",
-  background: "#fee2e2",
+  background: "#fef2f2",
   border: "1px solid #fca5a5",
   borderRadius: vars.radius.md,
   padding: `${vars.space["2"]} ${vars.space["3"]}`,

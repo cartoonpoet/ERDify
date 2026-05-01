@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent, type ChangeEvent } from "react";
+import { useRef, useState, type FormEvent, type ChangeEvent, type DragEvent } from "react";
 import { Modal, Button, Input } from "../../../design-system";
 import { getMe, updateProfile, uploadAvatar, changePassword } from "../../../shared/api/auth.api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -52,6 +52,7 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
   const [name, setName] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,9 +62,7 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
 
   const avatarMutation = useMutation({
     mutationFn: (file: File) => uploadAvatar(file),
-    onSuccess: (updated) => {
-      void queryClient.setQueryData(["me"], updated);
-    },
+    onSuccess: (updated) => { void queryClient.setQueryData(["me"], updated); },
     onError: () => setError("이미지 업로드에 실패했습니다."),
   });
 
@@ -71,18 +70,30 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
     mutationFn: () => updateProfile({ name: currentName.trim() }),
     onSuccess: (updated) => {
       void queryClient.setQueryData(["me"], updated);
-      setSuccess(true);
       setName(null);
-      setTimeout(() => setSuccess(false), 2500);
     },
     onError: () => setError("프로필 업데이트에 실패했습니다."),
   });
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const pickFile = (file: File) => {
+    if (!file.type.startsWith("image/")) { setError("이미지 파일만 업로드할 수 있습니다."); return; }
+    if (file.size > 5 * 1024 * 1024) { setError("파일 크기는 5MB 이하여야 합니다."); return; }
+    setError(null);
     setPendingFile(file);
     setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) pickFile(file);
+    e.target.value = "";
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) pickFile(file);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -95,30 +106,52 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
     }
     if (name !== null && name.trim() !== me?.name) {
       profileMutation.mutate();
-    } else {
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2500);
     }
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 2500);
   };
 
   const isPending = avatarMutation.isPending || profileMutation.isPending;
 
   return (
     <form className={form} onSubmit={handleSubmit}>
-      <div className={css.avatarRow}>
-        <button type="button" className={css.avatarClickable} onClick={() => fileInputRef.current?.click()}>
+      <div className={css.avatarSection}>
+        <div className={css.avatarCircle}>
           {displayAvatar ? (
-            <img
-              src={displayAvatar}
-              alt="프로필 사진"
-              className={css.avatarPreview}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-            />
+            <img src={displayAvatar} alt="프로필" className={css.avatarImg} />
           ) : (
-            <div className={css.avatarFallback}>{initial}</div>
+            <span className={css.avatarInitial}>{initial}</span>
           )}
-          <div className={css.avatarOverlay}>변경</div>
-        </button>
+        </div>
+
+        {pendingFile ? (
+          <div className={css.fileSelected}>
+            <span className={css.fileSelectedIcon}>✓</span>
+            <span className={css.fileSelectedName}>{pendingFile.name}</span>
+            <button
+              type="button"
+              className={css.fileClearBtn}
+              onClick={() => { setPendingFile(null); setPreviewUrl(null); }}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div
+            className={`${css.dropZone} ${isDragging ? css.dropZoneActive : ""}`}
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+          >
+            <svg className={css.dropIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+            <span className={css.dropLabel}>드래그하거나 클릭해서 업로드</span>
+            <span className={css.dropHint}>JPG, PNG, GIF · 최대 5MB</span>
+          </div>
+        )}
+
         <input
           ref={fileInputRef}
           type="file"
@@ -126,7 +159,6 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
           style={{ display: "none" }}
           onChange={handleFileChange}
         />
-        <span className={css.avatarHint}>클릭하여 사진 변경 (최대 5MB)</span>
       </div>
 
       <Input
@@ -135,13 +167,6 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
         value={currentName}
         onChange={(e) => setName(e.target.value)}
         required
-      />
-
-      <Input
-        id="profile-email"
-        label="이메일"
-        value={me?.email ?? ""}
-        disabled
       />
 
       {success && <p className={css.successMsg}>저장되었습니다.</p>}
