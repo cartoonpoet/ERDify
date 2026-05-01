@@ -22,13 +22,13 @@ export const RelationshipPanel = ({ relationshipId }: { relationshipId: string }
     );
   }
 
-  function onOnDelete(e: ChangeEvent<HTMLSelectElement>) {
+  function onDeleteChange(e: ChangeEvent<HTMLSelectElement>) {
     applyCommand((doc) =>
       updateRelationship(doc, relationshipId, { onDelete: e.target.value as ReferentialAction })
     );
   }
 
-  function onOnUpdate(e: ChangeEvent<HTMLSelectElement>) {
+  function onUpdateChange(e: ChangeEvent<HTMLSelectElement>) {
     applyCommand((doc) =>
       updateRelationship(doc, relationshipId, { onUpdate: e.target.value as ReferentialAction })
     );
@@ -75,7 +75,7 @@ export const RelationshipPanel = ({ relationshipId }: { relationshipId: string }
 
       <div className={css.section}>
         <span className={css.label}>ON DELETE</span>
-        <select value={rel.onDelete} onChange={onOnDelete} className={css.select}>
+        <select value={rel.onDelete} onChange={onDeleteChange} className={css.select}>
           <option value="no-action">NO ACTION</option>
           <option value="cascade">CASCADE</option>
           <option value="restrict">RESTRICT</option>
@@ -85,7 +85,7 @@ export const RelationshipPanel = ({ relationshipId }: { relationshipId: string }
 
       <div className={css.section}>
         <span className={css.label}>ON UPDATE</span>
-        <select value={rel.onUpdate} onChange={onOnUpdate} className={css.select}>
+        <select value={rel.onUpdate} onChange={onUpdateChange} className={css.select}>
           <option value="no-action">NO ACTION</option>
           <option value="cascade">CASCADE</option>
           <option value="restrict">RESTRICT</option>

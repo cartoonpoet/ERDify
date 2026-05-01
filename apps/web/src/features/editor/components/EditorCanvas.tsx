@@ -93,7 +93,7 @@ export const EditorCanvas = () => {
     const removes = changes.filter((c): c is EdgeChange & { type: "remove" } => c.type === "remove");
     if (removes.length === 0) return;
     applyCommand((doc) =>
-      removes.reduce((d, change) => removeRelationship(d, (change as { id: string }).id), doc)
+      removes.reduce((d, change) => removeRelationship(d, change.id), doc)
     );
   }
 
