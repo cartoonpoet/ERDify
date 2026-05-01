@@ -72,10 +72,10 @@ export class DiagramsService {
     return this.diagramRepo.find({ where: { projectId } });
   }
 
-  async findOne(diagramId: string, userId: string): Promise<Diagram & { organizationId: string }> {
+  async findOne(diagramId: string, userId: string): Promise<Diagram & { organizationId: string; myRole: string }> {
     const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireMember(orgId, userId);
-    return { ...diagram, organizationId: orgId };
+    const member = await this.requireMember(orgId, userId);
+    return { ...diagram, organizationId: orgId, myRole: member.role };
   }
 
   async canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {

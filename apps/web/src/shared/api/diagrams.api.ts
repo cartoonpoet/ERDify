@@ -10,6 +10,7 @@ export interface DiagramResponse {
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
+  myRole: "owner" | "editor" | "viewer";
 }
 
 export interface DiagramVersionResponse {

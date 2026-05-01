@@ -22,7 +22,7 @@ export const EditorPage = () => {
   const [showInvite, setShowInvite] = useState(false);
   const [showExport, setShowExport] = useState(false);
 
-  const { isDirty, setDocument, applyCommand, selectedRelationshipId, popoverPos } = useEditorStore();
+  const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos } = useEditorStore();
 
   const { data, isLoading } = useQuery({
     queryKey: ["diagram", diagramId],
@@ -31,7 +31,10 @@ export const EditorPage = () => {
   });
 
   useEffect(() => {
-    if (data) setDocument(data.content);
+    if (data) {
+      setDocument(data.content);
+      setCanEdit(data.myRole !== "viewer");
+    }
   // data.id가 바뀔 때(다른 다이어그램으로 이동)만 재초기화, 백그라운드 refetch는 무시
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id]);

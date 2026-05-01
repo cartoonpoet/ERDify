@@ -64,7 +64,8 @@ describe("useVersionHistory", () => {
       content: doc,
       createdBy: "user-1",
       createdAt: "2026-04-30T00:00:00Z",
-      updatedAt: "2026-04-30T00:00:00Z"
+      updatedAt: "2026-04-30T00:00:00Z",
+      myRole: "editor" as const,
     };
     vi.mocked(diagramsApi.restoreVersion).mockResolvedValue(restored);
 

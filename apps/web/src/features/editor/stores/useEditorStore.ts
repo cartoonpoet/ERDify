@@ -64,6 +64,7 @@ interface EditorState {
   document: DiagramDocument | null;
   nodes: EditableTableNodeType[];
   isDirty: boolean;
+  canEdit: boolean;
   selectedEntityId: string | null;
   selectedRelationshipId: string | null;
   popoverPos: { x: number; y: number } | null;
@@ -72,6 +73,7 @@ interface EditorState {
   setDocument: (doc: DiagramDocument) => void;
   applyCommand: (fn: (doc: DiagramDocument) => DiagramDocument) => void;
   applyNodeChanges: (changes: NodeChange<EditableTableNodeType>[]) => void;
+  setCanEdit: (canEdit: boolean) => void;
   setSelectedEntity: (id: string | null) => void;
   setSelectedRelationship: (id: string | null) => void;
   setPopoverPos: (pos: { x: number; y: number } | null) => void;
@@ -83,6 +85,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   document: null,
   nodes: [],
   isDirty: false,
+  canEdit: false,
   selectedEntityId: null,
   selectedRelationshipId: null,
   popoverPos: null,
@@ -106,6 +109,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const { nodes } = get();
     set({ nodes: applyNodeChanges(changes, nodes) });
   },
+
+  setCanEdit: (canEdit) => set({ canEdit }),
 
   setSelectedEntity: (id) => set({ selectedEntityId: id, selectedRelationshipId: null, popoverPos: null }),
 

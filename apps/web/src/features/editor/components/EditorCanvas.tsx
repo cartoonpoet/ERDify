@@ -24,6 +24,7 @@ export const EditorCanvas = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const document = useEditorStore((s) => s.document);
   const nodes = useEditorStore((s) => s.nodes);
+  const canEdit = useEditorStore((s) => s.canEdit);
   const applyNodeChanges = useEditorStore((s) => s.applyNodeChanges);
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const setSelectedRelationship = useEditorStore((s) => s.setSelectedRelationship);
@@ -56,6 +57,7 @@ export const EditorCanvas = () => {
   }
 
   function onConnect(connection: Connection) {
+    if (!canEdit) return;
     if (!connection.source || !connection.target) return;
     if (connection.source === connection.target) return;
     if (!document) return;
@@ -81,6 +83,7 @@ export const EditorCanvas = () => {
   }
 
   function onEdgeClick(event: MouseEvent, edge: Edge) {
+    if (!canEdit) return;
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
       setPopoverPos({
@@ -92,6 +95,7 @@ export const EditorCanvas = () => {
   }
 
   function onEdgesChange(changes: EdgeChange[]) {
+    if (!canEdit) return;
     const removes = changes.filter((c): c is EdgeChange & { type: "remove" } => c.type === "remove");
     if (removes.length === 0) return;
     applyCommand((doc) =>

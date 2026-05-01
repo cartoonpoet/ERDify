@@ -36,6 +36,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
   const { entity, collaboratorColor } = data;
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const setSelectedEntity = useEditorStore((s) => s.setSelectedEntity);
+  const canEdit = useEditorStore((s) => s.canEdit);
 
   const borderColor = collaboratorColor ?? (selected ? "var(--color-primary, #0064E0)" : "#d1d5db");
   const boxShadow = collaboratorColor
@@ -44,7 +45,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
     ? "0 4px 20px rgba(0, 100, 224, 0.18)"
     : "0 1px 4px rgba(0,0,0,0.1)";
 
-  if (!selected) {
+  if (!canEdit) {
     return (
       <div
         style={{
@@ -112,7 +113,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
     );
   }
 
-  // 편집 모드 (selected = true)
+  // 편집 모드 (canEdit = true)
   return (
     <div
       style={{
