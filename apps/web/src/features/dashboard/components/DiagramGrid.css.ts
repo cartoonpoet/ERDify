@@ -86,30 +86,83 @@ export const diagramCard = style({
   },
 });
 
-export const cardDeleteBtn = style({
+export const ctxBtn = style({
   position: "absolute",
   top: vars.space["2"],
   right: vars.space["2"],
-  width: "22px",
-  height: "22px",
-  borderRadius: "50%",
-  background: vars.color.error,
-  color: vars.color.surface,
-  border: `1.5px solid ${vars.color.surface}`,
+  width: "24px",
+  height: "24px",
+  borderRadius: vars.radius.sm,
+  background: "rgba(0,0,0,0.45)",
+  color: "#fff",
+  border: "none",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: "12px",
-  fontWeight: "700",
   cursor: "pointer",
   opacity: 0,
   transition: "opacity 150ms ease",
-  lineHeight: 1,
   padding: 0,
   zIndex: 1,
   selectors: {
     [`${diagramCardWrapper}:hover &`]: { opacity: 1 },
+    [`${diagramCardWrapper}:focus-within &`]: { opacity: 1 },
   },
+});
+
+export const ctxMenu = style({
+  position: "absolute",
+  top: "34px",
+  right: vars.space["2"],
+  background: vars.color.surface,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.md,
+  boxShadow: vars.shadow.md,
+  zIndex: 20,
+  overflow: "hidden",
+  minWidth: "130px",
+});
+
+export const ctxItem = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  padding: `9px 14px`,
+  fontSize: "12px",
+  color: vars.color.primary,
+  fontWeight: "600",
+  cursor: "pointer",
+  background: "none",
+  border: "none",
+  width: "100%",
+  textAlign: "left",
+  fontFamily: vars.font.family,
+  selectors: {
+    "&:hover": { background: vars.color.surfaceSecondary },
+  },
+});
+
+export const ctxItemDanger = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  padding: `9px 14px`,
+  fontSize: "12px",
+  color: vars.color.error,
+  cursor: "pointer",
+  background: "none",
+  border: "none",
+  width: "100%",
+  textAlign: "left",
+  fontFamily: vars.font.family,
+  selectors: {
+    "&:hover": { background: "rgba(239, 68, 68, 0.06)" },
+  },
+});
+
+export const ctxDivider = style({
+  height: "1px",
+  background: vars.color.border,
 });
 
 export const cardPreview = style({
@@ -181,30 +234,36 @@ export const newCard = style({
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  gap: vars.space["1"],
-  minHeight: "60px",
+  gap: vars.space["2"],
   color: vars.color.textSecondary,
-  fontSize: "12px",
+  fontSize: "13px",
+  fontWeight: "500",
   cursor: "pointer",
   fontFamily: vars.font.family,
-  transition: "border-color 150ms ease, color 150ms ease",
+  transition: "border-color 200ms ease, color 200ms ease, background 200ms ease",
   selectors: {
     "&:hover": {
       borderColor: vars.color.primary,
       color: vars.color.primary,
+      background: vars.color.surfaceSecondary,
     },
   },
 });
 
 export const newCardIcon = style({
-  width: "24px",
-  height: "24px",
+  width: "36px",
+  height: "36px",
   borderRadius: "50%",
-  background: vars.color.surfaceSecondary,
+  border: `1.5px solid currentColor`,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: "14px",
+  fontSize: "20px",
+  lineHeight: 1,
+  transition: "transform 200ms ease",
+  selectors: {
+    [`${newCard}:hover &`]: { transform: "scale(1.1)" },
+  },
 });
 
 export const emptyState = style({
