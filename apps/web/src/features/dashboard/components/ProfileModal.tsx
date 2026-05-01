@@ -69,20 +69,8 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
   const displayAvatar = previewUrl ?? resolveUrl(me?.avatarUrl);
   const initial = (me?.name?.[0] ?? me?.email?.[0] ?? "?").toUpperCase();
 
-  const avatarMutation = useMutation({
-    mutationFn: (file: File) => uploadAvatar(file),
-    onSuccess: (updated) => { void queryClient.setQueryData(["me"], updated); },
-    onError: () => setError("이미지 업로드에 실패했습니다."),
-  });
-
-  const profileMutation = useMutation({
-    mutationFn: () => updateProfile({ name: name.trim() }),
-    onSuccess: (updated) => {
-      void queryClient.setQueryData(["me"], updated);
-      setName(updated.name);
-    },
-    onError: () => setError("프로필 업데이트에 실패했습니다."),
-  });
+  const avatarMutation = useMutation({ mutationFn: (file: File) => uploadAvatar(file) });
+  const profileMutation = useMutation({ mutationFn: (n: string) => updateProfile({ name: n }) });
 
   const pickFile = (file: File) => {
     if (!file.type.startsWith("image/")) { setError("이미지 파일만 업로드할 수 있습니다."); return; }
@@ -108,16 +96,24 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (pendingFile) {
-      await avatarMutation.mutateAsync(pendingFile);
-      setPendingFile(null);
-      setPreviewUrl(null);
+    setSuccess(false);
+    try {
+      if (pendingFile) {
+        const updated = await avatarMutation.mutateAsync(pendingFile);
+        queryClient.setQueryData(["me"], updated);
+        setPendingFile(null);
+        setPreviewUrl(null);
+      }
+      if (name.trim() !== me?.name) {
+        const updated = await profileMutation.mutateAsync(name.trim());
+        queryClient.setQueryData(["me"], updated);
+        setName(updated.name);
+      }
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2500);
+    } catch {
+      setError("저장에 실패했습니다. 다시 시도해 주세요.");
     }
-    if (name.trim() !== me?.name) {
-      profileMutation.mutate();
-    }
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 2500);
   };
 
   const isPending = avatarMutation.isPending || profileMutation.isPending;
