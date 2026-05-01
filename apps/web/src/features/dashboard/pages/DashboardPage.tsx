@@ -5,6 +5,7 @@ import type { FocusEvent } from "react";
 import { listMyOrganizations, deleteOrganization } from "../../../shared/api/organizations.api";
 import { listProjects, deleteProject } from "../../../shared/api/projects.api";
 import { listDiagrams, deleteDiagram } from "../../../shared/api/diagrams.api";
+import { getMe } from "../../../shared/api/auth.api";
 import { useWorkspaceStore } from "../../../shared/stores/useWorkspaceStore";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
 import { OrgRail } from "../components/OrgRail";
@@ -15,8 +16,9 @@ import { CreateProjectModal } from "../components/CreateProjectModal";
 import { CreateDiagramModal } from "../components/CreateDiagramModal";
 import { ImportDiagramModal } from "../components/ImportDiagramModal";
 import { ApiKeyModal } from "../components/ApiKeyModal";
+import { ProfileModal } from "../components/ProfileModal";
 import {
-  shell, topbar, brand, brandAccent, topbarSpacer, avatar,
+  shell, topbar, brand, brandAccent, topbarSpacer, avatar, avatarImg,
   avatarWrapper, dropdown, dropdownHeader, dropdownEmail,
   dropdownItem, dropdownItemDanger, body, emptySidebar,
 } from "./dashboard-page.css";
@@ -48,9 +50,16 @@ export const DashboardPage = () => {
   const [diagramModalOpen, setDiagramModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const { email, sub: currentUserId } = decodeJwt(token);
+
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: getMe,
+    enabled: !!token,
+  });
 
   const { data: orgs = [] } = useQuery({
     queryKey: ["orgs"],
@@ -141,15 +150,28 @@ export const DashboardPage = () => {
         <div className={topbarSpacer} />
 
         <div className={avatarWrapper} tabIndex={-1} onBlur={handleAvatarMenuBlur}>
-          <div className={avatar} onClick={handleAvatarClick}>
-            {getInitial(email)}
-          </div>
+          {me?.avatarUrl ? (
+            <img
+              src={me.avatarUrl}
+              alt="프로필"
+              className={avatarImg}
+              onClick={handleAvatarClick}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+          ) : (
+            <div className={avatar} onClick={handleAvatarClick}>
+              {getInitial(me?.name ?? email)}
+            </div>
+          )}
 
           {menuOpen && (
             <div className={dropdown}>
               <div className={dropdownHeader}>
-                <div className={dropdownEmail}>{email ?? "사용자"}</div>
+                <div className={dropdownEmail}>{me?.name ?? email ?? "사용자"}</div>
               </div>
+              <button className={dropdownItem} onClick={() => { setMenuOpen(false); setProfileModalOpen(true); }}>
+                회원정보 수정
+              </button>
               <button className={dropdownItem} onClick={() => { setMenuOpen(false); setApiKeyModalOpen(true); }}>
                 MCP API 키
               </button>
@@ -221,6 +243,11 @@ export const DashboardPage = () => {
       <ApiKeyModal
         open={apiKeyModalOpen}
         onClose={() => setApiKeyModalOpen(false)}
+      />
+
+      <ProfileModal
+        open={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
       />
 
       {selectedProjectId && (

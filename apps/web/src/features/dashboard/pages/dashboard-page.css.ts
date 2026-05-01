@@ -42,6 +42,15 @@ export const avatar = style({
   cursor: "pointer",
 });
 
+export const avatarImg = style({
+  width: "30px",
+  height: "30px",
+  borderRadius: "50%",
+  objectFit: "cover",
+  cursor: "pointer",
+  border: `1.5px solid ${vars.color.border}`,
+});
+
 export const body = style({
   display: "grid",
   gridTemplateColumns: "52px 220px 1fr",

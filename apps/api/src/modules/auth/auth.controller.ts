@@ -1,10 +1,13 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
+import type { UserProfile } from "./auth.service";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import type { JwtPayload } from "./strategies/jwt.strategy";
+import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { LoginDto } from "./dto/login.dto";
 import type { RegisterDto } from "./dto/register.dto";
+import type { UpdateProfileDto } from "./dto/update-profile.dto";
 
 @Controller("auth")
 export class AuthController {
@@ -25,5 +28,24 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   generateApiKey(@CurrentUser() user: JwtPayload): { apiKey: string } {
     return this.authService.generateApiKey(user.sub, user.email);
+  }
+
+  @Get("me")
+  @UseGuards(JwtAuthGuard)
+  getMe(@CurrentUser() user: JwtPayload): Promise<UserProfile> {
+    return this.authService.getMe(user.sub);
+  }
+
+  @Patch("profile")
+  @UseGuards(JwtAuthGuard)
+  updateProfile(@CurrentUser() user: JwtPayload, @Body() dto: UpdateProfileDto): Promise<UserProfile> {
+    return this.authService.updateProfile(user.sub, dto);
+  }
+
+  @Patch("password")
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  changePassword(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasswordDto): Promise<void> {
+    return this.authService.changePassword(user.sub, dto);
   }
 }
