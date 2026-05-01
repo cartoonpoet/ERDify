@@ -66,6 +66,8 @@ describe("useVersionHistory", () => {
       createdAt: "2026-04-30T00:00:00Z",
       updatedAt: "2026-04-30T00:00:00Z",
       myRole: "editor" as const,
+      shareToken: null,
+      shareExpiresAt: null,
     };
     vi.mocked(diagramsApi.restoreVersion).mockResolvedValue(restored);
 

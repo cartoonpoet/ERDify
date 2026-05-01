@@ -11,6 +11,8 @@ export interface DiagramResponse {
   createdAt: string;
   updatedAt: string;
   myRole: "owner" | "editor" | "viewer";
+  shareToken: string | null;
+  shareExpiresAt: string | null;
 }
 
 export interface DiagramVersionResponse {
@@ -70,4 +72,33 @@ export function restoreVersion(diagramId: string, versionId: string): Promise<Di
 
 export function deleteDiagram(diagramId: string): Promise<void> {
   return httpClient.delete(`/diagrams/${diagramId}`).then(() => undefined);
+}
+
+export type SharePreset = "1h" | "1d" | "7d" | "30d";
+
+export interface ShareLinkResponse {
+  shareToken: string;
+  expiresAt: string;
+}
+
+export interface PublicDiagramResponse {
+  id: string;
+  name: string;
+  content: DiagramDocument;
+}
+
+export function shareDiagram(diagramId: string, preset: SharePreset): Promise<ShareLinkResponse> {
+  return httpClient
+    .post<ShareLinkResponse>(`/diagrams/${diagramId}/share`, { preset })
+    .then((r) => r.data);
+}
+
+export function revokeDiagramShare(diagramId: string): Promise<void> {
+  return httpClient.delete(`/diagrams/${diagramId}/share`).then(() => undefined);
+}
+
+export function getPublicDiagram(shareToken: string): Promise<PublicDiagramResponse> {
+  return httpClient
+    .get<PublicDiagramResponse>(`/diagrams/public/${shareToken}`)
+    .then((r) => r.data);
 }
