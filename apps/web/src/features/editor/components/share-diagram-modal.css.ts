@@ -105,6 +105,12 @@ export const divider = style({
   background: vars.color.border,
 });
 
+export const errorText = style({
+  fontSize: "12px",
+  color: vars.color.error,
+  margin: 0,
+});
+
 export const revokeBtn = style({
   padding: `${vars.space["2"]} ${vars.space["3"]}`,
   borderRadius: vars.radius.sm,
@@ -118,7 +124,7 @@ export const revokeBtn = style({
   transition: "background 150ms ease",
   alignSelf: "flex-start",
   selectors: {
-    "&:hover": { background: "#fef2f2" },
+    "&:hover": { background: "rgba(239, 68, 68, 0.06)" },
     "&:disabled": { opacity: 0.5, cursor: "not-allowed" },
   },
 });

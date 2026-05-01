@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Copy, Check } from "lucide-react";
 import { Modal } from "../../../design-system";
@@ -34,32 +34,43 @@ export const ShareDiagramModal = ({
   const [shareToken, setShareToken] = useState(initialShareToken);
   const [expiresAt, setExpiresAt] = useState(initialExpiresAt);
   const [copied, setCopied] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const shareUrl = shareToken ? `${window.location.origin}/share/${shareToken}` : null;
 
   const shareMutation = useMutation({
     mutationFn: (preset: SharePreset) => shareDiagram(diagramId, preset),
     onSuccess: (data) => {
+      setMutationError(null);
       setShareToken(data.shareToken);
       setExpiresAt(data.expiresAt);
       void queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
     },
+    onError: () => setMutationError("링크 생성에 실패했습니다."),
   });
 
   const revokeMutation = useMutation({
     mutationFn: () => revokeDiagramShare(diagramId),
     onSuccess: () => {
+      setMutationError(null);
       setShareToken(null);
       setExpiresAt(null);
       void queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
     },
+    onError: () => setMutationError("링크 비활성화에 실패했습니다."),
   });
 
   const handleCopy = async () => {
     if (!shareUrl) return;
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      setCopied(true);
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard permission denied — do nothing
+    }
   };
 
   const isLoading = shareMutation.isPending || revokeMutation.isPending;
@@ -72,7 +83,7 @@ export const ShareDiagramModal = ({
             <div className={css.linkBox}>
               <input className={css.linkInput} value={shareUrl ?? ""} readOnly />
               <button className={css.copyBtn} onClick={handleCopy}>
-                {copied ? <Check size={13} /> : <Copy size={13} />}
+                {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
                 {copied ? "복사됨" : "복사"}
               </button>
             </div>
@@ -127,6 +138,9 @@ export const ShareDiagramModal = ({
               ))}
             </div>
           </>
+        )}
+        {mutationError && (
+          <p className={css.errorText}>{mutationError}</p>
         )}
       </div>
     </Modal>
