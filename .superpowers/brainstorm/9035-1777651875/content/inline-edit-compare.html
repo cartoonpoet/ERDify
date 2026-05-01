@@ -1,0 +1,134 @@
+<h2>테이블 편집 UX 비교</h2>
+<p class="subtitle">현재 방식(우측 사이드바)과 인라인 편집 방식 비교</p>
+
+<div class="split" style="gap:24px;margin-top:24px;">
+
+  <!-- 현재: 사이드바 방식 -->
+  <div class="mockup">
+    <div class="mockup-header">현재 — 우측 사이드바</div>
+    <div class="mockup-body" style="padding:0;overflow:hidden;position:relative;">
+      <!-- 캔버스 영역 -->
+      <div style="display:flex;height:320px;">
+        <div style="flex:1;background:#f8f9fa;padding:12px;position:relative;">
+          <!-- 테이블 노드들 -->
+          <div style="position:absolute;top:20px;left:20px;background:#fff;border:2px solid #2563eb;border-radius:6px;min-width:150px;font-family:monospace;font-size:11px;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+            <div style="background:#2563eb;color:#fff;padding:5px 8px;font-weight:700;border-radius:4px 4px 0 0;">users ✓선택됨</div>
+            <div style="padding:3px 8px;border-bottom:1px solid #f3f4f6;display:flex;gap:6px;"><span style="color:#f59e0b;font-weight:700;font-size:10px;">PK</span><span>id</span><span style="color:#6b7280;margin-left:auto">uuid</span></div>
+            <div style="padding:3px 8px;border-bottom:1px solid #f3f4f6;display:flex;gap:6px;"><span>email</span><span style="color:#6b7280;margin-left:auto">varchar</span></div>
+            <div style="padding:3px 8px;display:flex;gap:6px;"><span>created_at</span><span style="color:#6b7280;margin-left:auto">ts</span></div>
+          </div>
+          <div style="position:absolute;top:30px;left:220px;background:#fff;border:2px solid #d1d5db;border-radius:6px;min-width:150px;font-family:monospace;font-size:11px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+            <div style="background:#374151;color:#fff;padding:5px 8px;font-weight:700;border-radius:4px 4px 0 0;">orders</div>
+            <div style="padding:3px 8px;border-bottom:1px solid #f3f4f6;display:flex;gap:6px;"><span style="color:#f59e0b;font-weight:700;font-size:10px;">PK</span><span>id</span><span style="color:#6b7280;margin-left:auto">uuid</span></div>
+            <div style="padding:3px 8px;display:flex;gap:6px;"><span>user_id</span><span style="color:#6b7280;margin-left:auto">uuid</span></div>
+          </div>
+          <!-- 관계선 -->
+          <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
+            <line x1="170" y1="55" x2="220" y2="65" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arr)"/>
+            <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#6366f1"/></marker></defs>
+          </svg>
+          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:10px;color:#9ca3af;">캔버스 — 시선이 여기 있는데</div>
+        </div>
+        <!-- 사이드바 -->
+        <div style="width:200px;background:#fff;border-left:1px solid #e5e7eb;display:flex;flex-direction:column;font-size:11px;">
+          <div style="padding:8px 10px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:6px;">
+            <input value="users" style="flex:1;font-weight:700;font-size:12px;border:1px solid #6366f1;border-radius:3px;padding:2px 4px;"/>
+            <button style="color:#ef4444;background:none;border:none;font-size:14px;cursor:pointer;">×</button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:4px 0;">
+            <div style="padding:4px 10px;border-bottom:1px solid #f9fafb;">
+              <div style="display:flex;gap:4px;align-items:center;">
+                <input value="id" style="flex:1;font-size:11px;border:1px solid #d1d5db;border-radius:2px;padding:1px 3px;"/>
+                <button style="color:#9ca3af;background:none;border:none;cursor:pointer;font-size:12px;">×</button>
+              </div>
+              <select style="font-size:10px;color:#6b7280;border:1px solid #d1d5db;margin-top:2px;width:100%;padding:1px;">
+                <option>uuid</option>
+              </select>
+              <div style="display:flex;gap:8px;margin-top:2px;">
+                <label style="font-size:10px;color:#6b7280;display:flex;align-items:center;gap:2px;"><input type="checkbox" checked/> PK</label>
+                <label style="font-size:10px;color:#6b7280;display:flex;align-items:center;gap:2px;"><input type="checkbox"/> Null</label>
+              </div>
+            </div>
+            <div style="padding:4px 10px;border-bottom:1px solid #f9fafb;">
+              <div style="display:flex;gap:4px;align-items:center;">
+                <input value="email" style="flex:1;font-size:11px;border:1px solid #d1d5db;border-radius:2px;padding:1px 3px;"/>
+                <button style="color:#9ca3af;background:none;border:none;cursor:pointer;font-size:12px;">×</button>
+              </div>
+              <select style="font-size:10px;color:#6b7280;border:1px solid #d1d5db;margin-top:2px;width:100%;padding:1px;">
+                <option>varchar(255)</option>
+              </select>
+            </div>
+          </div>
+          <div style="padding:6px 10px;border-top:1px solid #e5e7eb;">
+            <button style="width:100%;font-size:10px;padding:4px;background:#f3f4f6;border:1px dashed #9ca3af;border-radius:3px;cursor:pointer;">+ 컬럼 추가</button>
+          </div>
+          <div style="text-align:center;padding:4px;font-size:9px;color:#ef4444;">← 시선이 여기로 이동</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 원하는: 인라인 편집 -->
+  <div class="mockup" data-choice="inline" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="mockup-header">목표 — 캔버스 위 인라인 편집</div>
+    <div class="mockup-body" style="padding:0;overflow:hidden;position:relative;">
+      <div style="background:#f8f9fa;padding:12px;height:320px;position:relative;">
+        <!-- 편집 중인 테이블 노드 (확장됨) -->
+        <div style="position:absolute;top:14px;left:16px;background:#fff;border:2px solid #2563eb;border-radius:6px;min-width:210px;font-family:monospace;font-size:11px;box-shadow:0 4px 16px rgba(37,99,235,.18);">
+          <div style="background:#2563eb;color:#fff;padding:5px 8px;font-weight:700;border-radius:4px 4px 0 0;display:flex;align-items:center;gap:4px;">
+            <input value="users" style="background:transparent;border:none;color:#fff;font-weight:700;font-size:12px;font-family:monospace;flex:1;outline:none;border-bottom:1px solid rgba(255,255,255,.4);"/>
+            <button style="background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:12px;">🗑</button>
+          </div>
+          <!-- 컬럼 행 (인라인 편집) -->
+          <div style="padding:3px 6px;border-bottom:1px solid #f3f4f6;display:flex;gap:4px;align-items:center;">
+            <span style="color:#f59e0b;font-weight:700;font-size:9px;min-width:14px;">PK</span>
+            <input value="id" style="flex:1;font-size:11px;border:1px solid #d1d5db;border-radius:2px;padding:1px 3px;font-family:monospace;"/>
+            <select style="font-size:10px;border:1px solid #d1d5db;border-radius:2px;padding:1px;color:#6b7280;background:#f9fafb;">
+              <option>uuid</option>
+            </select>
+            <label style="font-size:9px;color:#6b7280;display:flex;align-items:center;gap:1px;"><input type="checkbox" checked style="width:10px;height:10px;"/>PK</label>
+            <button style="color:#d1d5db;background:none;border:none;cursor:pointer;font-size:11px;padding:0;">×</button>
+          </div>
+          <div style="padding:3px 6px;border-bottom:1px solid #f3f4f6;display:flex;gap:4px;align-items:center;">
+            <span style="min-width:14px;"></span>
+            <input value="email" style="flex:1;font-size:11px;border:1px solid #d1d5db;border-radius:2px;padding:1px 3px;font-family:monospace;"/>
+            <select style="font-size:10px;border:1px solid #d1d5db;border-radius:2px;padding:1px;color:#6b7280;background:#f9fafb;">
+              <option>varchar(255)</option>
+            </select>
+            <label style="font-size:9px;color:#6b7280;display:flex;align-items:center;gap:1px;"><input type="checkbox" style="width:10px;height:10px;"/>PK</label>
+            <button style="color:#d1d5db;background:none;border:none;cursor:pointer;font-size:11px;padding:0;">×</button>
+          </div>
+          <div style="padding:3px 6px;border-bottom:1px solid #f3f4f6;display:flex;gap:4px;align-items:center;">
+            <span style="min-width:14px;"></span>
+            <input value="created_at" style="flex:1;font-size:11px;border:1px solid #d1d5db;border-radius:2px;padding:1px 3px;font-family:monospace;"/>
+            <select style="font-size:10px;border:1px solid #d1d5db;border-radius:2px;padding:1px;color:#6b7280;background:#f9fafb;">
+              <option>timestamp</option>
+            </select>
+            <label style="font-size:9px;color:#6b7280;display:flex;align-items:center;gap:1px;"><input type="checkbox" style="width:10px;height:10px;"/>PK</label>
+            <button style="color:#d1d5db;background:none;border:none;cursor:pointer;font-size:11px;padding:0;">×</button>
+          </div>
+          <div style="padding:4px 6px;">
+            <button style="width:100%;font-size:10px;padding:2px;background:#f3f4f6;border:1px dashed #9ca3af;border-radius:3px;cursor:pointer;font-family:monospace;">+ 컬럼 추가</button>
+          </div>
+        </div>
+
+        <!-- 일반 테이블 (비선택) -->
+        <div style="position:absolute;top:30px;left:270px;background:#fff;border:2px solid #d1d5db;border-radius:6px;min-width:150px;font-family:monospace;font-size:11px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+          <div style="background:#374151;color:#fff;padding:5px 8px;font-weight:700;border-radius:4px 4px 0 0;">orders</div>
+          <div style="padding:3px 8px;border-bottom:1px solid #f3f4f6;display:flex;gap:6px;"><span style="color:#f59e0b;font-weight:700;font-size:10px;">PK</span><span>id</span><span style="color:#6b7280;margin-left:auto">uuid</span></div>
+          <div style="padding:3px 8px;display:flex;gap:6px;"><span>user_id</span><span style="color:#6b7280;margin-left:auto">uuid</span></div>
+        </div>
+        <!-- 관계선 -->
+        <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
+          <line x1="228" y1="55" x2="270" y2="65" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <defs><marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#6366f1"/></marker></defs>
+        </svg>
+
+        <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:10px;color:#22c55e;font-weight:600;">✓ 시선이 캔버스 위에서만 움직임</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;text-align:center;">우측 목업을 클릭하면 선택됩니다 — 트리거 방식(더블클릭 vs 단순 클릭)은 다음에 결정합니다</p>
