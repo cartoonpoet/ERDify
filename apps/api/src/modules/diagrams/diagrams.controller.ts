@@ -5,6 +5,7 @@ import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import type { CreateDiagramDto } from "./dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
 import { DiagramsService } from "./diagrams.service";
+import type { ShareDiagramDto } from "./dto/share-diagram.dto";
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -60,5 +61,20 @@ export class DiagramsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
     return this.diagramsService.remove(id, user.sub);
+  }
+
+  @Post("diagrams/:id/share")
+  shareLink(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() dto: ShareDiagramDto
+  ) {
+    return this.diagramsService.generateShareLink(id, user.sub, dto.preset);
+  }
+
+  @Delete("diagrams/:id/share")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  revokeLink(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
+    return this.diagramsService.revokeShareLink(id, user.sub);
   }
 }
