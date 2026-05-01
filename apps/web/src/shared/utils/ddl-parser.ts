@@ -287,6 +287,7 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
       cardinality: "many-to-one",
       onDelete: fk.onDelete,
       onUpdate: fk.onUpdate,
+      identifying: false,
     });
   }
 

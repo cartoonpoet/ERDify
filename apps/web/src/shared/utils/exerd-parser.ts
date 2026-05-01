@@ -127,6 +127,7 @@ export function parseExerd(
       cardinality: "many-to-one",
       onDelete: "no-action",
       onUpdate: "no-action",
+      identifying: false,
     });
   }
 

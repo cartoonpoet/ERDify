@@ -173,6 +173,7 @@ export const registerWriteTools = (server: McpServer): void => {
         cardinality: cardinality as RelationshipCardinality,
         onDelete: "no-action",
         onUpdate: "no-action",
+        identifying: false,
       };
       const updated = addRelationship(doc, relationship);
       await client.updateDiagram(diagramId, updated);

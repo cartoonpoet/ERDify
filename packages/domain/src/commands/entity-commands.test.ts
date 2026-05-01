@@ -55,7 +55,7 @@ describe("removeEntity", () => {
     const rel: DiagramRelationship = {
       id: "r1", name: "fk", sourceEntityId: "e1", sourceColumnIds: [],
       targetEntityId: "e2", targetColumnIds: [], cardinality: "one-to-many",
-      onDelete: "cascade", onUpdate: "no-action"
+      onDelete: "cascade", onUpdate: "no-action", identifying: false
     };
     doc = { ...doc, relationships: [rel] };
     doc = removeEntity(doc, "e1");

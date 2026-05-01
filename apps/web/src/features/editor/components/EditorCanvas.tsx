@@ -78,6 +78,7 @@ export const EditorCanvas = () => {
       cardinality: "many-to-one",
       onDelete: "no-action",
       onUpdate: "no-action",
+      identifying: false,
     };
 
     applyCommand((doc) => addRelationship(doc, relationship));
