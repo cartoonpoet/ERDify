@@ -44,6 +44,17 @@ export function updateEntityColor(
   };
 }
 
+export function updateEntityComment(
+  doc: DiagramDocument,
+  entityId: string,
+  comment: string | null
+): DiagramDocument {
+  return {
+    ...doc,
+    entities: doc.entities.map((e) => (e.id === entityId ? { ...e, comment } : e))
+  };
+}
+
 export function removeEntity(doc: DiagramDocument, entityId: string): DiagramDocument {
   const { [entityId]: _removed, ...remainingPositions } = doc.layout.entityPositions;
   return {
@@ -52,6 +63,7 @@ export function removeEntity(doc: DiagramDocument, entityId: string): DiagramDoc
     relationships: doc.relationships.filter(
       (r) => r.sourceEntityId !== entityId && r.targetEntityId !== entityId
     ),
+    indexes: doc.indexes.filter((i) => i.entityId !== entityId),
     layout: { ...doc.layout, entityPositions: remainingPositions }
   };
 }

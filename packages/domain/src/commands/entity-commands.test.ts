@@ -1,5 +1,6 @@
 import { createEmptyDiagram } from "../schema/create-empty-diagram.js";
-import { addEntity, removeEntity, renameEntity } from "./entity-commands.js";
+import { addEntity, removeEntity, renameEntity, updateEntityComment } from "./entity-commands.js";
+import { addIndex } from "./index-commands.js";
 import type { DiagramRelationship } from "../types/index.js";
 
 const base = () => createEmptyDiagram({ id: "d1", name: "Test", dialect: "postgresql" });
@@ -60,5 +61,32 @@ describe("removeEntity", () => {
     doc = { ...doc, relationships: [rel] };
     doc = removeEntity(doc, "e1");
     expect(doc.relationships).toHaveLength(0);
+  });
+});
+
+describe("updateEntityComment", () => {
+  it("sets comment on entity", () => {
+    let doc = addEntity(base(), { id: "e1", name: "users" });
+    doc = updateEntityComment(doc, "e1", "사용자 테이블");
+    expect(doc.entities[0].comment).toBe("사용자 테이블");
+  });
+
+  it("clears comment when null", () => {
+    let doc = addEntity(base(), { id: "e1", name: "users" });
+    doc = updateEntityComment(doc, "e1", "some comment");
+    doc = updateEntityComment(doc, "e1", null);
+    expect(doc.entities[0].comment).toBeNull();
+  });
+});
+
+describe("removeEntity — index cleanup", () => {
+  it("removes indexes belonging to the deleted entity", () => {
+    let doc = addEntity(base(), { id: "e1", name: "users" });
+    doc = addEntity(doc, { id: "e2", name: "orders" });
+    doc = addIndex(doc, { id: "i1", entityId: "e1", name: "idx_users_email", columnIds: ["c1"], unique: false });
+    doc = addIndex(doc, { id: "i2", entityId: "e2", name: "idx_orders_user", columnIds: ["c2"], unique: false });
+    doc = removeEntity(doc, "e1");
+    expect(doc.indexes).toHaveLength(1);
+    expect(doc.indexes[0].id).toBe("i2");
   });
 });
