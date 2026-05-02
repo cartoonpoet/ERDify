@@ -17,6 +17,7 @@ export function removeIndex(
 export function updateIndex(
   doc: DiagramDocument,
   indexId: string,
+  // entityId is immutable: use removeIndex + addIndex to re-parent an index
   changes: Partial<Omit<DiagramIndex, "id" | "entityId">>
 ): DiagramDocument {
   return {

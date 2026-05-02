@@ -51,4 +51,16 @@ describe("updateIndex", () => {
     expect(doc.indexes[0].name).toBe("uq_users_email");
     expect(doc.indexes[0].columnIds).toEqual(["c1"]);
   });
+
+  it("does not mutate original", () => {
+    const doc = addIndex(base(), idx({ id: "i1", unique: false }));
+    updateIndex(doc, "i1", { unique: true });
+    expect(doc.indexes[0].unique).toBe(false);
+  });
+
+  it("does not change the document for unknown id", () => {
+    const doc = addIndex(base(), idx({ id: "i1" }));
+    const result = updateIndex(doc, "nonexistent", { unique: true });
+    expect(result.indexes[0].unique).toBe(false);
+  });
 });
