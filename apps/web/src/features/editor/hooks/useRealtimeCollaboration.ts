@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import type { Socket } from "socket.io-client";
 import * as Automerge from "@automerge/automerge";
-import type { DiagramDocument, DiagramEntity, DiagramColumn } from "@erdify/domain";
+import type { DiagramDocument, DiagramEntity, DiagramColumn, DiagramIndex } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
 import type { Collaborator } from "../stores/useEditorStore";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
@@ -95,6 +95,28 @@ function applyDiff(
   }
   for (const rel of next.relationships) {
     if (!prevRelIds.has(rel.id)) draftRels.push({ ...rel });
+  }
+
+  const prevIdxIds = new Set(prev.indexes.map((i) => i.id));
+  const nextIdxIds = new Set(next.indexes.map((i) => i.id));
+  const draftIdxs = draft.indexes as DiagramIndex[];
+
+  for (let i = draftIdxs.length - 1; i >= 0; i--) {
+    const idx = draftIdxs[i];
+    if (idx && !nextIdxIds.has(idx.id)) draftIdxs.splice(i, 1);
+  }
+  for (const idx of next.indexes) {
+    if (!prevIdxIds.has(idx.id)) draftIdxs.push({ ...idx, columnIds: [...idx.columnIds] });
+  }
+  for (const nextIdx of next.indexes) {
+    if (!prevIdxIds.has(nextIdx.id)) continue;
+    const draftIdx = draftIdxs.find((i) => i.id === nextIdx.id);
+    if (!draftIdx) continue;
+    if (draftIdx.name !== nextIdx.name) draftIdx.name = nextIdx.name;
+    if (draftIdx.unique !== nextIdx.unique) draftIdx.unique = nextIdx.unique;
+    if (JSON.stringify(draftIdx.columnIds) !== JSON.stringify(nextIdx.columnIds)) {
+      draftIdx.columnIds = [...nextIdx.columnIds];
+    }
   }
 }
 

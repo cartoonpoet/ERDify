@@ -37,21 +37,19 @@ const COLUMN_TYPES = [
   "timestamp", "uuid", "decimal(10,2)", "json", "jsonb",
 ];
 
-function makeColumn(ordinal: number): DiagramColumn {
-  return {
-    id: crypto.randomUUID(),
-    name: "column",
-    type: "varchar(255)",
-    nullable: true,
-    primaryKey: false,
-    unique: false,
-    defaultValue: null,
-    comment: null,
-    ordinal,
-  };
-}
+const makeColumn = (ordinal: number): DiagramColumn => ({
+  id: crypto.randomUUID(),
+  name: "column",
+  type: "varchar(255)",
+  nullable: true,
+  primaryKey: false,
+  unique: false,
+  defaultValue: null,
+  comment: null,
+  ordinal,
+});
 
-function makeIndex(entityId: string, entityName: string): DiagramIndex {
+const makeIndex = (entityId: string, entityName: string): DiagramIndex => {
   const safeName = entityName.replace(/\s+/g, "_").toLowerCase();
   return {
     id: crypto.randomUUID(),
@@ -60,7 +58,7 @@ function makeIndex(entityId: string, entityName: string): DiagramIndex {
     columnIds: [],
     unique: false,
   };
-}
+};
 
 const TypeSelect = ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
   const [inputVal, setInputVal] = useState(value);
