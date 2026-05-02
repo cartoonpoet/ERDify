@@ -19,10 +19,12 @@ export const ProtectedRoute = () => {
   });
 
   // /auth/me 실패 or 명시적 로그아웃 → 로그인 페이지
-  if (isError || isAuthenticated === false) return <Navigate to="/login" replace />;
+  // 로그인 완료 확인 → 즉시 렌더 (isError 캐시 무시)
+  if (isAuthenticated === true) return <Outlet />;
 
   // 쿠키 검증 중 (첫 진입)
-  if (isAuthenticated === null && isPending) return null;
+  if (isPending) return null;
 
-  return <Outlet />;
+  // 검증 실패 or 명시적 로그아웃
+  return <Navigate to="/login" replace />;
 };
