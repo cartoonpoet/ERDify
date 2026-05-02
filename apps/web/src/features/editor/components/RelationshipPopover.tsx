@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import { updateRelationship, removeRelationship } from "@erdify/domain";
+import { updateRelationship, removeRelationship, updateColumn } from "@erdify/domain";
 import type { RelationshipCardinality, ReferentialAction } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
 import * as css from "./relationship-popover.css";
@@ -14,6 +14,7 @@ export const RelationshipPopover = ({ relationshipId, pos }: Props) => {
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const setSelectedRelationship = useEditorStore((s) => s.setSelectedRelationship);
   const setPopoverPos = useEditorStore((s) => s.setPopoverPos);
+  const setPendingRelDelete = useEditorStore((s) => s.setPendingRelDelete);
 
   const rel = document?.relationships.find((r) => r.id === relationshipId);
   if (!rel) return null;
@@ -24,7 +25,23 @@ export const RelationshipPopover = ({ relationshipId, pos }: Props) => {
   };
 
   const onToggleIdentifying = (identifying: boolean) => {
-    applyCommand((doc) => updateRelationship(doc, relationshipId, { identifying }));
+    applyCommand((doc) => {
+      const r = doc.relationships.find((x) => x.id === relationshipId);
+      if (!r) return doc;
+
+      let next = updateRelationship(doc, relationshipId, { identifying });
+
+      // FK 컬럼 속성 동기화
+      // 식별: FK 컬럼은 NOT NULL + PK (자식 행이 부모 없이 존재 불가)
+      // 비식별: FK 컬럼은 nullable, non-PK
+      for (const colId of r.sourceColumnIds) {
+        next = updateColumn(next, r.sourceEntityId, colId, {
+          nullable: !identifying,
+          primaryKey: identifying,
+        });
+      }
+      return next;
+    });
   };
 
   const onCardinality = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -46,8 +63,22 @@ export const RelationshipPopover = ({ relationshipId, pos }: Props) => {
   };
 
   const onDelete = () => {
-    applyCommand((doc) => removeRelationship(doc, relationshipId));
-    close();
+    if (rel.sourceColumnIds.length > 0) {
+      const sourceEntity = document?.entities.find((e) => e.id === rel.sourceEntityId);
+      const fkColNames = rel.sourceColumnIds.map(
+        (id) => sourceEntity?.columns.find((c) => c.id === id)?.name ?? id
+      );
+      setPendingRelDelete({
+        relId: rel.id,
+        srcEntityId: rel.sourceEntityId,
+        fkColIds: rel.sourceColumnIds,
+        fkColNames,
+      });
+      close();
+    } else {
+      applyCommand((doc) => removeRelationship(doc, relationshipId));
+      close();
+    }
   };
 
   return (

@@ -12,6 +12,8 @@ import { InviteModal } from "../components/InviteModal";
 import { PresenceIndicator } from "../components/PresenceIndicator";
 import { ExportDdlModal } from "../components/ExportDdlModal";
 import { ShareDiagramModal } from "../components/ShareDiagramModal";
+import { FkSetupModal } from "../components/FkSetupModal";
+import { RelDeleteConfirmModal } from "../components/RelDeleteConfirmModal";
 import { useDiagramAutosave } from "../hooks/useDiagramAutosave";
 import { useVersionHistory } from "../hooks/useVersionHistory";
 import { useRealtimeCollaboration } from "../hooks/useRealtimeCollaboration";
@@ -26,7 +28,7 @@ export const EditorPage = () => {
   const [showExport, setShowExport] = useState(false);
   const [showShare, setShowShare] = useState(false);
 
-  const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos } = useEditorStore();
+  const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen } = useEditorStore();
 
   const { data, isLoading } = useQuery({
     queryKey: ["diagram", diagramId],
@@ -42,6 +44,17 @@ export const EditorPage = () => {
   // data.id가 바뀔 때(다른 다이어그램으로 이동)만 재초기화, 백그라운드 refetch는 무시
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [setSearchOpen]);
 
   useRealtimeCollaboration(diagramId ?? "");
   useDiagramAutosave(diagramId ?? "");
@@ -74,6 +87,14 @@ export const EditorPage = () => {
         <span className={css.diagramName}>{data?.name}</span>
         <span className={css.statusText}>{isDirty ? "수정됨" : "저장됨"}</span>
         <div className={css.spacer} />
+        <button
+          onClick={() => setSearchOpen(true)}
+          className={css.topbarBtn({ variant: "secondary" })}
+          title="테이블 검색 (Ctrl+F)"
+          aria-label="테이블 검색"
+        >
+          🔍 검색
+        </button>
         <PresenceIndicator />
         <button
           onClick={() => setShowShare(true)}
@@ -151,6 +172,8 @@ export const EditorPage = () => {
         initialExpiresAt={data?.shareExpiresAt ?? null}
         onClose={() => setShowShare(false)}
       />
+      <FkSetupModal />
+      <RelDeleteConfirmModal />
     </div>
   );
 };

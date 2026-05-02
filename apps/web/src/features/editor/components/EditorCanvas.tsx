@@ -4,14 +4,74 @@ import { ReactFlow, Background, Controls, useReactFlow } from "@xyflow/react";
 import type { Edge, EdgeChange, NodeChange, Connection } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { updateEntityPosition, addRelationship, removeRelationship, addEntity } from "@erdify/domain";
-import type { DiagramRelationship } from "@erdify/domain";
+import type { DiagramRelationship, DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
-import type { EditableTableNodeType } from "../stores/useEditorStore";
+import type { EditableTableNodeType, UnmatchedPkInput } from "../stores/useEditorStore";
 import { EditableTableNode } from "./EditableTableNode";
 import { CardinalityEdge } from "./CardinalityEdge";
+import { SearchPanel } from "./SearchPanel";
 
 const nodeTypes = { editableTable: EditableTableNode };
 const edgeTypes = { cardinality: CardinalityEdge };
+
+const toSnake = (s: string) =>
+  s.replace(/\s+/g, "_").replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+
+const uniqueColName = (base: string, taken: Set<string>): string => {
+  if (!taken.has(base)) return base;
+  let i = 2;
+  while (taken.has(`${base}_${i}`)) i++;
+  return `${base}_${i}`;
+};
+
+type FkAnalysis = {
+  autoMatchedCols: Array<{ fkColId: string; pkColId: string }>;
+  unmatchedPks: UnmatchedPkInput[];
+};
+
+const analyzeFkMatch = (doc: DiagramDocument, srcId: string, tgtId: string): FkAnalysis => {
+  const sourceEntity = doc.entities.find((e) => e.id === srcId)!;
+  const targetEntity = doc.entities.find((e) => e.id === tgtId)!;
+  const pkCols = targetEntity.columns.filter((c) => c.primaryKey);
+  const targetName = toSnake(targetEntity.name);
+  const taken = new Set(sourceEntity.columns.map((c) => c.name));
+
+  const autoMatchedCols: Array<{ fkColId: string; pkColId: string }> = [];
+  const unmatchedPks: UnmatchedPkInput[] = [];
+
+  if (pkCols.length === 0) {
+    unmatchedPks.push({
+      pkColId: "",
+      pkColName: "(PK 없음)",
+      pkColType: "bigint",
+      suggestedName: uniqueColName(`${targetName}_id`, taken),
+    });
+  } else {
+    for (const pkCol of pkCols) {
+      const baseName =
+        pkCols.length === 1 && pkCol.name === "id"
+          ? `${targetName}_id`
+          : `${targetName}_${pkCol.name}`;
+      const existing = sourceEntity.columns.find(
+        (c) => c.name === baseName && c.type === pkCol.type
+      );
+      if (existing) {
+        autoMatchedCols.push({ fkColId: existing.id, pkColId: pkCol.id });
+      } else {
+        const colName = uniqueColName(baseName, taken);
+        taken.add(colName);
+        unmatchedPks.push({
+          pkColId: pkCol.id,
+          pkColName: pkCol.name,
+          pkColType: pkCol.type,
+          suggestedName: colName,
+        });
+      }
+    }
+  }
+
+  return { autoMatchedCols, unmatchedPks };
+};
 
 type ContextMenuState = {
   menuX: number;
@@ -99,12 +159,15 @@ export const EditorCanvas = () => {
   const document = useEditorStore((s) => s.document);
   const nodes = useEditorStore((s) => s.nodes);
   const edges = useEditorStore((s) => s.edges);
+  const searchOpen = useEditorStore((s) => s.searchOpen);
+  const setSearchOpen = useEditorStore((s) => s.setSearchOpen);
   const canEdit = useEditorStore((s) => s.canEdit);
   const applyNodeChanges = useEditorStore((s) => s.applyNodeChanges);
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const setSelectedRelationship = useEditorStore((s) => s.setSelectedRelationship);
   const setPopoverPos = useEditorStore((s) => s.setPopoverPos);
   const setSelectedEntity = useEditorStore((s) => s.setSelectedEntity);
+  const setPendingConnection = useEditorStore((s) => s.setPendingConnection);
 
   if (!document) return null;
 
@@ -129,24 +192,34 @@ export const EditorCanvas = () => {
     if (connection.source === connection.target) return;
     if (!document) return;
 
-    const sourceEntity = document.entities.find((e) => e.id === connection.source);
-    const targetEntity = document.entities.find((e) => e.id === connection.target);
-    if (!sourceEntity || !targetEntity) return;
+    const srcId = connection.source;
+    const tgtId = connection.target;
 
-    const relationship: DiagramRelationship = {
-      id: crypto.randomUUID(),
-      name: "",
-      sourceEntityId: connection.source,
-      sourceColumnIds: [],
-      targetEntityId: connection.target,
-      targetColumnIds: [],
-      cardinality: "many-to-one",
-      onDelete: "no-action",
-      onUpdate: "no-action",
-      identifying: false,
-    };
+    if (!document.entities.find((e) => e.id === srcId) || !document.entities.find((e) => e.id === tgtId)) return;
 
-    applyCommand((doc) => addRelationship(doc, relationship));
+    const { autoMatchedCols, unmatchedPks } = analyzeFkMatch(document, srcId, tgtId);
+
+    if (unmatchedPks.length === 0) {
+      applyCommand((doc) => {
+        const src = doc.entities.find((e) => e.id === srcId)!;
+        const tgt = doc.entities.find((e) => e.id === tgtId)!;
+        const relationship: DiagramRelationship = {
+          id: crypto.randomUUID(),
+          name: `fk_${toSnake(src.name)}_${toSnake(tgt.name)}`,
+          sourceEntityId: srcId,
+          sourceColumnIds: autoMatchedCols.map((m) => m.fkColId),
+          targetEntityId: tgtId,
+          targetColumnIds: autoMatchedCols.map((m) => m.pkColId),
+          cardinality: "many-to-one",
+          onDelete: "no-action",
+          onUpdate: "no-action",
+          identifying: false,
+        };
+        return addRelationship(doc, relationship);
+      });
+    } else {
+      setPendingConnection({ sourceEntityId: srcId, targetEntityId: tgtId, autoMatchedCols, unmatchedPks });
+    }
   }
 
   function onEdgeClick(event: MouseEvent, edge: Edge) {
@@ -203,6 +276,7 @@ export const EditorCanvas = () => {
       >
         <Background />
         <Controls />
+        {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
         {contextMenu && (
           <ContextMenuInner
             state={contextMenu}

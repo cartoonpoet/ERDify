@@ -3,6 +3,27 @@ import type { Node, NodeChange, Edge } from "@xyflow/react";
 import { applyNodeChanges, MarkerType } from "@xyflow/react";
 import type { DiagramDocument, DiagramEntity } from "@erdify/domain";
 
+export type UnmatchedPkInput = {
+  pkColId: string;
+  pkColName: string;
+  pkColType: string;
+  suggestedName: string;
+};
+
+export type PendingConnection = {
+  sourceEntityId: string;
+  targetEntityId: string;
+  autoMatchedCols: Array<{ fkColId: string; pkColId: string }>;
+  unmatchedPks: UnmatchedPkInput[];
+};
+
+export type PendingRelDelete = {
+  relId: string;
+  srcEntityId: string;
+  fkColIds: string[];
+  fkColNames: string[];
+};
+
 export type EditableTableNodeType = Node<
   { entity: DiagramEntity; collaboratorColor?: string },
   "editableTable"
@@ -88,6 +109,8 @@ interface EditorState {
   selectedRelationshipId: string | null;
   popoverPos: { x: number; y: number } | null;
   collaborators: Collaborator[];
+  pendingConnection: PendingConnection | null;
+  pendingRelDelete: PendingRelDelete | null;
 
   setDocument: (doc: DiagramDocument) => void;
   applyCommand: (fn: (doc: DiagramDocument) => DiagramDocument) => void;
@@ -98,6 +121,10 @@ interface EditorState {
   setPopoverPos: (pos: { x: number; y: number } | null) => void;
   setCollaborators: (collaborators: Collaborator[]) => void;
   clearDirty: () => void;
+  searchOpen: boolean;
+  setSearchOpen: (open: boolean) => void;
+  setPendingConnection: (p: PendingConnection | null) => void;
+  setPendingRelDelete: (p: PendingRelDelete | null) => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -110,6 +137,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectedRelationshipId: null,
   popoverPos: null,
   collaborators: [],
+  pendingConnection: null,
+  pendingRelDelete: null,
 
   setDocument: (doc) =>
     set((state) => ({
@@ -153,4 +182,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     })),
 
   clearDirty: () => set({ isDirty: false }),
+
+  searchOpen: false,
+  setSearchOpen: (open) => set({ searchOpen: open }),
+
+  setPendingConnection: (p) => set({ pendingConnection: p }),
+  setPendingRelDelete: (p) => set({ pendingRelDelete: p }),
 }));
