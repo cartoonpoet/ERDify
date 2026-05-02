@@ -52,10 +52,11 @@ function makeColumn(ordinal: number): DiagramColumn {
 }
 
 function makeIndex(entityId: string, entityName: string): DiagramIndex {
+  const safeName = entityName.replace(/\s+/g, "_").toLowerCase();
   return {
     id: crypto.randomUUID(),
     entityId,
-    name: `idx_${entityName}`,
+    name: `idx_${safeName}`,
     columnIds: [],
     unique: false,
   };
@@ -174,22 +175,28 @@ const IndexColumnSelect = ({
         {label}
       </button>
       {open && (
-        <div className={`${css.indexColsDropdown} nodrag nopan`}>
-          {entityColumns.map((col) => (
-            <label key={col.id} className={css.indexColOption}>
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(col.id)}
-                onChange={() => toggle(col.id)}
-                style={{ width: 12, height: 12, accentColor: "#6366f1" }}
-              />
-              {col.name}
-            </label>
-          ))}
-          {entityColumns.length === 0 && (
-            <div style={{ padding: "6px 10px", fontSize: 10, color: "#9ca3af" }}>컬럼 없음</div>
-          )}
-        </div>
+        <>
+          <div
+            className={`${css.indexColsBackdrop} nodrag nopan`}
+            onClick={() => setOpen(false)}
+          />
+          <div className={`${css.indexColsDropdown} nodrag nopan`}>
+            {entityColumns.map((col) => (
+              <label key={col.id} className={css.indexColOption}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(col.id)}
+                  onChange={() => toggle(col.id)}
+                  style={{ width: 12, height: 12, accentColor: "#6366f1" }}
+                />
+                {col.name}
+              </label>
+            ))}
+            {entityColumns.length === 0 && (
+              <div style={{ padding: "6px 10px", fontSize: 10, color: "#9ca3af" }}>컬럼 없음</div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

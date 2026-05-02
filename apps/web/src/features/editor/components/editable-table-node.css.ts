@@ -66,14 +66,6 @@ export const editColumnItem = style({
   alignItems: "center",
 });
 
-export const editPkBadge = style({
-  width: 20,
-  color: "#f59e0b",
-  fontWeight: 700,
-  fontSize: 9,
-  textAlign: "center",
-  flexShrink: 0,
-});
 
 export const columnNameInput = style({
   flex: 1,
@@ -150,13 +142,6 @@ export const typeSelectWrapper = style({
   flexShrink: 0,
 });
 
-export const pkCheckbox = style({
-  width: 14,
-  height: 14,
-  accentColor: vars.color.primary,
-  cursor: "pointer",
-  flexShrink: 0,
-});
 
 export const deleteColBtn = style({
   width: 18,
@@ -411,6 +396,12 @@ export const indexColsDropdown = style({
   zIndex: 9999,
   minWidth: 140,
   padding: "4px 0",
+});
+
+export const indexColsBackdrop = style({
+  position: "fixed",
+  inset: 0,
+  zIndex: 9998,
 });
 
 export const indexColOption = style({
