@@ -13,7 +13,15 @@ import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import { CollaborationService } from "./collaboration.service";
 import { DiagramsService } from "../diagrams/diagrams.service";
 
-@WebSocketGateway({ namespace: "/collaboration", cors: { origin: true, credentials: true } })
+@WebSocketGateway({
+  namespace: "/collaboration",
+  cors: {
+    origin: process.env["NODE_ENV"] === "production"
+      ? (process.env["CORS_ORIGINS"]?.split(",") ?? [])
+      : true,
+    credentials: true,
+  },
+})
 export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server!: Server;
 

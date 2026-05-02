@@ -16,8 +16,10 @@ async function bootstrap() {
   app.useWebSocketAdapter(new IoAdapter(app));
 
   app.enableCors({
-    origin: true,
-    credentials: true
+    origin: process.env["NODE_ENV"] === "production"
+      ? (process.env["CORS_ORIGINS"]?.split(",") ?? [])
+      : true,
+    credentials: true,
   });
 
   app.useStaticAssets(join(__dirname, "..", "uploads"), { prefix: "/uploads" });
