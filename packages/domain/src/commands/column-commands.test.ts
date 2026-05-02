@@ -1,6 +1,7 @@
 import { createEmptyDiagram } from "../schema/create-empty-diagram.js";
 import { addEntity } from "./entity-commands.js";
 import { addColumn, removeColumn, updateColumn } from "./column-commands.js";
+import { addIndex } from "./index-commands.js";
 import type { DiagramColumn } from "../types/index.js";
 
 const base = () => {
@@ -59,5 +60,20 @@ describe("removeColumn", () => {
     };
     doc = removeColumn(doc, "e1", "c_id");
     expect(doc.relationships[0].targetColumnIds).toHaveLength(0);
+  });
+});
+
+describe("removeColumn — index cleanup", () => {
+  it("removes columnId from indexes and deletes empty indexes", () => {
+    let doc = addColumn(base(), "e1", col({ id: "c1" }));
+    doc = addColumn(doc, "e1", col({ id: "c2", name: "email" }));
+    // composite index on c1+c2, simple index on c2
+    doc = addIndex(doc, { id: "i1", entityId: "e1", name: "idx_composite", columnIds: ["c1", "c2"], unique: false });
+    doc = addIndex(doc, { id: "i2", entityId: "e1", name: "idx_simple", columnIds: ["c1"], unique: false });
+    doc = removeColumn(doc, "e1", "c1");
+    // i1 should still exist with only c2 remaining
+    expect(doc.indexes.find((i) => i.id === "i1")?.columnIds).toEqual(["c2"]);
+    // i2 had only c1, so it should be deleted
+    expect(doc.indexes.find((i) => i.id === "i2")).toBeUndefined();
   });
 });

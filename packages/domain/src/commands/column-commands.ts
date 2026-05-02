@@ -37,6 +37,10 @@ export function removeColumn(
   entityId: string,
   columnId: string
 ): DiagramDocument {
+  const updatedIndexes = doc.indexes
+    .map((idx) => ({ ...idx, columnIds: idx.columnIds.filter((id) => id !== columnId) }))
+    .filter((idx) => idx.columnIds.length > 0);
+
   return {
     ...doc,
     entities: doc.entities.map((e) =>
@@ -46,6 +50,7 @@ export function removeColumn(
       ...r,
       sourceColumnIds: r.sourceColumnIds.filter((id) => id !== columnId),
       targetColumnIds: r.targetColumnIds.filter((id) => id !== columnId)
-    }))
+    })),
+    indexes: updatedIndexes
   };
 }
