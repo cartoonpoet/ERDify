@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>단일 행 레이아웃 + Comment</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body { background: #f0f2f5; padding: 28px; }
+
+h1 { font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; text-align: center; }
+.subtitle { font-size: 12px; color: #6c757d; text-align: center; margin-bottom: 24px; }
+
+.comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1100px; margin: 0 auto; }
+
+.option-wrap {
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: border-color 200ms, box-shadow 200ms;
+}
+.option-wrap:hover { border-color: #6366f1; box-shadow: 0 8px 32px rgba(99,102,241,0.15); }
+.option-wrap.selected { border-color: #6366f1; box-shadow: 0 8px 32px rgba(99,102,241,0.2); }
+
+.option-label {
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8f9fa;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.option-letter {
+  display: inline-flex;
+  width: 24px; height: 24px;
+  background: #6366f1;
+  color: white;
+  border-radius: 6px;
+  font-size: 13px; font-weight: 700;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.option-meta { }
+.option-title { font-size: 14px; font-weight: 700; color: #1a1a2e; display: block; }
+.option-desc { font-size: 11px; color: #6c757d; margin-top: 3px; line-height: 1.5; }
+
+.option-content { padding: 18px; }
+
+/* ─── 테이블 노드 공통 ─── */
+.table-node {
+  border-radius: 6px;
+  border: 2px solid #6366f1;
+  font-family: monospace;
+  font-size: 11px;
+  background: white;
+  box-shadow: 0 4px 20px rgba(99,102,241,0.15);
+  width: 100%;
+}
+.t-header {
+  background: #6366f1;
+  color: white;
+  padding: 7px 10px;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 4px 4px 0 0;
+}
+.t-header input {
+  background: rgba(255,255,255,0.2);
+  border: none; color: white;
+  font-weight: 700; font-size: 12px; font-family: monospace;
+  flex: 1; border-radius: 3px; padding: 2px 5px;
+}
+
+/* 컬럼 헤더 레이블 행 */
+.col-header {
+  display: flex; align-items: center;
+  padding: 3px 8px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e2e8f0;
+  gap: 4px;
+}
+.col-header span {
+  font-size: 9px; font-weight: 600; color: #9ca3af;
+  text-transform: uppercase; letter-spacing: 0.3px;
+  text-align: center;
+}
+
+/* 컬럼 행 */
+.col-row {
+  display: flex; align-items: center;
+  padding: 4px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 4px;
+}
+.col-row:hover { background: #fafafe; }
+
+/* 체크박스 셀 */
+.cell-check {
+  width: 28px; text-align: center; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.cell-check input[type=checkbox] { width: 12px; height: 12px; accent-color: #6366f1; }
+
+/* 배지 셀 */
+.cell-badge {
+  width: 24px; text-align: center; flex-shrink: 0;
+  font-size: 9px; font-weight: 700;
+}
+.pk-badge { color: #f59e0b; }
+.fk-badge { color: #3b82f6; }
+
+/* 텍스트 입력 셀 */
+.cell-input {
+  flex: 1; min-width: 0;
+}
+.cell-input input {
+  width: 100%; border: none; background: transparent;
+  font-size: 11px; font-family: monospace; color: #111827;
+  outline: none; padding: 1px 2px;
+  border-bottom: 1px solid transparent;
+}
+.cell-input input:focus { border-bottom-color: #6366f1; }
+.cell-input input.logical { color: #6b7280; font-style: italic; }
+
+/* 타입 셀 */
+.cell-type {
+  width: 88px; flex-shrink: 0;
+}
+.cell-type input {
+  width: 100%; border: none; background: transparent;
+  font-size: 10px; font-family: monospace; color: #6b7280;
+  outline: none; padding: 1px 2px;
+  border-bottom: 1px solid transparent;
+}
+.cell-type input:focus { border-bottom-color: #6366f1; }
+
+/* comment 셀 */
+.cell-comment {
+  flex: 1; min-width: 0;
+}
+.cell-comment input {
+  width: 100%; border: none; background: transparent;
+  font-size: 10px; font-family: monospace; color: #9ca3af;
+  outline: none; padding: 1px 2px;
+  border-bottom: 1px dashed transparent;
+  font-style: italic;
+}
+.cell-comment input:focus { border-bottom-color: #6366f1; color: #374151; }
+.cell-comment input::placeholder { color: #d1d5db; }
+.cell-comment input.has-value { color: #6b7280; }
+
+/* 삭제 버튼 */
+.cell-del {
+  width: 18px; flex-shrink: 0; text-align: center;
+}
+.del-btn {
+  border: none; background: none;
+  color: #d1d5db; font-size: 13px; cursor: pointer;
+  padding: 0; line-height: 1;
+}
+.del-btn:hover { color: #ef4444; }
+
+/* comment 아이콘 */
+.cell-icon {
+  width: 20px; flex-shrink: 0; text-align: center;
+}
+.icon-btn {
+  border: none; background: none;
+  font-size: 11px; cursor: pointer; padding: 0;
+  color: #d1d5db;
+}
+.icon-btn.active { color: #6366f1; }
+
+/* 확장 comment 행 */
+.comment-expand {
+  padding: 3px 8px 5px;
+  background: #fafafe;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: center; gap: 4px;
+}
+.comment-expand-prefix {
+  font-size: 9px; color: #c4c9d4; width: 28px; text-align: right; flex-shrink: 0;
+}
+.comment-expand input {
+  flex: 1; border: none; background: transparent;
+  font-size: 10px; font-family: sans-serif; color: #6b7280;
+  font-style: italic; outline: none;
+  border-bottom: 1px dashed #e2e8f0; padding: 1px 2px;
+}
+.comment-expand input:focus { border-bottom-color: #6366f1; }
+
+/* 테이블 comment */
+.table-comment-bar {
+  padding: 5px 10px;
+  background: #fafafa;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: center; gap: 6px;
+}
+.table-comment-bar .tc-label { font-size: 9px; color: #c4c9d4; flex-shrink: 0; }
+.table-comment-bar input {
+  flex: 1; border: none; background: transparent;
+  font-size: 10px; font-family: sans-serif; color: #6b7280;
+  font-style: italic; outline: none;
+  border-bottom: 1px dashed #e2e8f0; padding: 1px 2px;
+}
+
+.add-col { padding: 6px 10px; font-size: 11px; color: #6366f1; cursor: pointer; background: none; border: none; font-family: monospace; }
+
+.note {
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: #f8f9fa;
+  border-radius: 7px;
+  font-size: 11px;
+  color: #6c757d;
+  line-height: 1.6;
+}
+
+/* 헤더 레이블 너비 */
+.w-check { width: 28px; }
+.w-badge { width: 24px; }
+.w-name { flex: 1; }
+.w-logical { flex: 1; }
+.w-type { width: 88px; }
+.w-comment { flex: 1; }
+.w-icon { width: 20px; }
+.w-del { width: 18px; }
+</style>
+</head>
+<body>
+
+<h1>단일 행 레이아웃 — Comment 통합 방식</h1>
+<p class="subtitle">PK · FK · NULL · 논리명 · 이름 · 타입을 한 줄로 — comment는 어떻게?</p>
+
+<div class="comparison">
+
+  <!-- ─── A: comment도 같은 행에 ─── -->
+  <div class="option-wrap" onclick="toggle(this, 'A')">
+    <div class="option-label">
+      <span class="option-letter">A</span>
+      <div class="option-meta">
+        <span class="option-title">모두 한 행에 — comment 포함</span>
+        <div class="option-desc">PK · FK · NULL · 논리명 · 이름 · 타입 · comment · 삭제 — 전부 한 줄</div>
+      </div>
+    </div>
+    <div class="option-content">
+      <div class="table-node">
+        <div class="t-header">
+          <div style="width:14px;height:14px;background:rgba(255,255,255,0.25);border-radius:3px;flex-shrink:0"></div>
+          <input value="users" />
+          <span style="font-size:9px;color:rgba(255,255,255,0.7);cursor:pointer">× 삭제</span>
+        </div>
+        <!-- 테이블 comment -->
+        <div class="table-comment-bar">
+          <span class="tc-label">테이블 설명</span>
+          <input value="사용자 기본 정보 테이블" />
+        </div>
+        <!-- 컬럼 헤더 -->
+        <div class="col-header">
+          <span class="w-check">PK</span>
+          <span class="w-check">FK</span>
+          <span class="w-check">NULL</span>
+          <span class="w-logical">논리명</span>
+          <span class="w-name">컬럼명</span>
+          <span class="w-type">타입</span>
+          <span class="w-comment">comment</span>
+          <span class="w-del"></span>
+        </div>
+        <!-- 컬럼 행 -->
+        <div class="col-row">
+          <div class="cell-check"><input type="checkbox" checked /></div>
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-input"><input class="logical" value="사용자ID" /></div>
+          <div class="cell-input"><input value="id" /></div>
+          <div class="cell-type"><input value="uuid" /></div>
+          <div class="cell-comment"><input class="has-value" value="사용자 고유 식별자" /></div>
+          <div class="cell-del"><button class="del-btn">×</button></div>
+        </div>
+        <div class="col-row">
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-input"><input class="logical" value="이메일" /></div>
+          <div class="cell-input"><input value="email" /></div>
+          <div class="cell-type"><input value="varchar(255)" /></div>
+          <div class="cell-comment"><input placeholder="comment..." /></div>
+          <div class="cell-del"><button class="del-btn">×</button></div>
+        </div>
+        <div class="col-row">
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-check"><input type="checkbox" checked /></div>
+          <div class="cell-check"><input type="checkbox" checked /></div>
+          <div class="cell-input"><input class="logical" value="프로젝트ID" /></div>
+          <div class="cell-input"><input value="project_id" /></div>
+          <div class="cell-type"><input value="uuid" /></div>
+          <div class="cell-comment"><input class="has-value" value="소속 프로젝트" /></div>
+          <div class="cell-del"><button class="del-btn">×</button></div>
+        </div>
+        <div style="padding: 2px 0;"><button class="add-col">+ 컬럼 추가</button></div>
+      </div>
+      <div class="note">
+        <strong>특징:</strong> 모든 속성이 한 줄에. 스프레드시트 느낌.<br>
+        노드가 가로로 넓어짐. 캔버스에서 작은 화면엔 다소 빡빡.
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── B: 💬 아이콘 → 바로 아래 행에 comment ─── -->
+  <div class="option-wrap" onclick="toggle(this, 'B')">
+    <div class="option-label">
+      <span class="option-letter">B</span>
+      <div class="option-meta">
+        <span class="option-title">한 행 + 💬 토글</span>
+        <div class="option-desc">PK · FK · NULL · 논리명 · 이름 · 타입 한 줄. comment는 💬 클릭 시 바로 아래 서브행으로 펼침</div>
+      </div>
+    </div>
+    <div class="option-content">
+      <div class="table-node">
+        <div class="t-header">
+          <div style="width:14px;height:14px;background:rgba(255,255,255,0.25);border-radius:3px;flex-shrink:0"></div>
+          <input value="users" />
+          <button style="border:none;background:rgba(255,255,255,0.2);color:white;border-radius:3px;font-size:10px;padding:2px 6px;cursor:pointer;">💬</button>
+          <span style="font-size:9px;color:rgba(255,255,255,0.7);cursor:pointer">× 삭제</span>
+        </div>
+        <!-- 테이블 comment 펼쳐진 상태 -->
+        <div class="table-comment-bar">
+          <span class="tc-label">테이블 설명</span>
+          <input value="사용자 기본 정보 테이블" />
+        </div>
+        <!-- 컬럼 헤더 -->
+        <div class="col-header">
+          <span class="w-check">PK</span>
+          <span class="w-check">FK</span>
+          <span class="w-check">NULL</span>
+          <span class="w-logical">논리명</span>
+          <span class="w-name">컬럼명</span>
+          <span class="w-type">타입</span>
+          <span class="w-icon">💬</span>
+          <span class="w-del"></span>
+        </div>
+        <!-- 컬럼 행 + 펼쳐진 comment -->
+        <div class="col-row">
+          <div class="cell-check"><input type="checkbox" checked /></div>
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-input"><input class="logical" value="사용자ID" /></div>
+          <div class="cell-input"><input value="id" /></div>
+          <div class="cell-type"><input value="uuid" /></div>
+          <div class="cell-icon"><button class="icon-btn active">💬</button></div>
+          <div class="cell-del"><button class="del-btn">×</button></div>
+        </div>
+        <!-- id comment 서브행 -->
+        <div class="comment-expand">
+          <span class="comment-expand-prefix">↳</span>
+          <input value="사용자 고유 식별자" />
+        </div>
+
+        <div class="col-row">
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-input"><input class="logical" value="이메일" /></div>
+          <div class="cell-input"><input value="email" /></div>
+          <div class="cell-type"><input value="varchar(255)" /></div>
+          <div class="cell-icon"><button class="icon-btn">💬</button></div>
+          <div class="cell-del"><button class="del-btn">×</button></div>
+        </div>
+
+        <div class="col-row">
+          <div class="cell-check"><input type="checkbox" /></div>
+          <div class="cell-check"><input type="checkbox" checked /></div>
+          <div class="cell-check"><input type="checkbox" checked /></div>
+          <div class="cell-input"><input class="logical" value="프로젝트ID" /></div>
+          <div class="cell-input"><input value="project_id" /></div>
+          <div class="cell-type"><input value="uuid" /></div>
+          <div class="cell-icon"><button class="icon-btn active">💬</button></div>
+          <div class="cell-del"><button class="del-btn">×</button></div>
+        </div>
+        <!-- project_id comment 서브행 -->
+        <div class="comment-expand">
+          <span class="comment-expand-prefix">↳</span>
+          <input value="소속 프로젝트" />
+        </div>
+
+        <div style="padding: 2px 0;"><button class="add-col">+ 컬럼 추가</button></div>
+      </div>
+      <div class="note">
+        <strong>특징:</strong> 기본 행은 컴팩트. comment 있는 컬럼만 서브행 추가.<br>
+        💬 아이콘 색상으로 comment 여부 한눈에 확인.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggle(el, choice) {
+  const wasSelected = el.classList.contains('selected');
+  document.querySelectorAll('.option-wrap').forEach(e => e.classList.remove('selected'));
+  if (!wasSelected) {
+    el.classList.add('selected');
+    if (window.recordChoice) recordChoice(choice, el.querySelector('.option-title').textContent.trim());
+  }
+}
+</script>
+</body>
+</html>
