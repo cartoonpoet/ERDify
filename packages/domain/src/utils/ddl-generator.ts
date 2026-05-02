@@ -1,4 +1,4 @@
-import type { DiagramColumn, DiagramDocument, DiagramEntity, DiagramRelationship } from "../types/index.js";
+import type { DiagramColumn, DiagramDocument, DiagramEntity, DiagramIndex, DiagramRelationship } from "../types/index.js";
 
 function quote(name: string, dialect: DiagramDocument["dialect"]): string {
   if (dialect === "postgresql") return `"${name}"`;
@@ -15,11 +15,18 @@ function referentialAction(action: DiagramRelationship["onDelete"]): string {
   }
 }
 
+function escapeComment(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
 function columnDdl(col: DiagramColumn, dialect: DiagramDocument["dialect"]): string {
   const parts: string[] = [quote(col.name, dialect), col.type];
   if (!col.nullable) parts.push("NOT NULL");
   if (col.unique && !col.primaryKey) parts.push("UNIQUE");
   if (col.defaultValue !== null) parts.push(`DEFAULT ${col.defaultValue}`);
+  if (col.comment && dialect !== "postgresql") {
+    parts.push(`COMMENT '${escapeComment(col.comment)}'`);
+  }
   return `  ${parts.join(" ")}`;
 }
 
@@ -37,12 +44,48 @@ function entityDdl(entity: DiagramEntity, dialect: DiagramDocument["dialect"]): 
   });
 
   if (pkCols.length > 0) {
-    const pkList = pkCols.map((c) => quote(c.name, dialect)).join(", ");
-    lines.push(`  PRIMARY KEY (${pkList})`);
+    lines.push(`  PRIMARY KEY (${pkCols.map((c) => quote(c.name, dialect)).join(", ")})`);
   }
 
-  lines.push(");");
+  if (entity.comment && dialect !== "postgresql") {
+    lines.push(`) COMMENT='${escapeComment(entity.comment)}';`);
+  } else {
+    lines.push(");");
+  }
+
   return lines.join("\n");
+}
+
+function commentsDdl(entity: DiagramEntity, dialect: DiagramDocument["dialect"]): string {
+  if (dialect === "postgresql") {
+    const parts: string[] = [];
+    if (entity.comment) {
+      parts.push(`COMMENT ON TABLE ${quote(entity.name, dialect)} IS '${escapeComment(entity.comment)}';`);
+    }
+    for (const col of entity.columns) {
+      if (col.comment) {
+        parts.push(
+          `COMMENT ON COLUMN ${quote(entity.name, dialect)}.${quote(col.name, dialect)} IS '${escapeComment(col.comment)}';`
+        );
+      }
+    }
+    return parts.join("\n");
+  }
+  return "";
+}
+
+function indexDdl(index: DiagramIndex, entity: DiagramEntity, dialect: DiagramDocument["dialect"]): string {
+  if (index.columnIds.length === 0) return "";
+  const cols = index.columnIds
+    .map((id) => {
+      const col = entity.columns.find((c) => c.id === id);
+      return col ? quote(col.name, dialect) : null;
+    })
+    .filter(Boolean)
+    .join(", ");
+  if (!cols) return "";
+  const keyword = index.unique ? "CREATE UNIQUE INDEX" : "CREATE INDEX";
+  return `${keyword} ${quote(index.name, dialect)} ON ${quote(entity.name, dialect)} (${cols});`;
 }
 
 function fkDdl(
@@ -81,10 +124,27 @@ function fkDdl(
 }
 
 export function generateDdl(doc: DiagramDocument): string {
-  const { dialect, entities, relationships } = doc;
-  const tableParts = entities.map((e) => entityDdl(e, dialect));
+  const { dialect, entities, relationships, indexes } = doc;
+  const parts: string[] = [];
+
+  for (const entity of entities) {
+    const table = entityDdl(entity, dialect);
+    const comments = commentsDdl(entity, dialect);
+    const entityIndexes = indexes
+      .filter((idx) => idx.entityId === entity.id)
+      .map((idx) => indexDdl(idx, entity, dialect))
+      .filter(Boolean);
+
+    parts.push(table);
+    if (comments) parts.push(comments);
+    if (entityIndexes.length > 0) parts.push(entityIndexes.join("\n"));
+  }
+
   const fkParts = relationships
     .map((r) => fkDdl(r, entities, dialect))
     .filter(Boolean);
-  return [...tableParts, ...fkParts].join("\n\n\n");
+
+  if (fkParts.length > 0) parts.push(fkParts.join("\n\n"));
+
+  return parts.join("\n\n");
 }
