@@ -258,3 +258,211 @@ export const collaboratorDot = style({
   border: "2px solid #ffffff",
   zIndex: 1,
 });
+
+export const tableCommentInput = style({
+  flex: 1,
+  background: "transparent",
+  border: "none",
+  borderBottom: "1px solid rgba(255,255,255,0.3)",
+  color: "rgba(255,255,255,0.8)",
+  fontStyle: "italic",
+  fontSize: 10,
+  fontFamily: "sans-serif",
+  outline: "none",
+  padding: "1px 2px",
+  selectors: {
+    "&::placeholder": { color: "rgba(255,255,255,0.4)" },
+  },
+});
+
+export const checkboxCell = style({
+  width: 26,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+});
+
+export const rowCheckbox = style({
+  width: 12,
+  height: 12,
+  accentColor: vars.color.primary,
+  cursor: "pointer",
+  margin: 0,
+});
+
+export const fkDotCell = style({
+  width: 26,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+});
+
+export const fkDot = style({
+  width: 7,
+  height: 7,
+  borderRadius: "50%",
+  background: "#3b82f6",
+  flexShrink: 0,
+});
+
+export const logicalNameInput = style({
+  flex: 1,
+  minWidth: 0,
+  fontSize: 10,
+  border: "none",
+  borderBottom: `1px solid transparent`,
+  background: "transparent",
+  color: vars.color.textSecondary,
+  fontStyle: "italic",
+  fontFamily: "monospace",
+  outline: "none",
+  padding: "1px 2px",
+  selectors: {
+    "&:focus": { borderBottomColor: vars.color.primary },
+    "&::placeholder": { color: vars.color.borderStrong },
+  },
+});
+
+export const indexSection = style({
+  borderTop: `1px dashed ${vars.color.border}`,
+  padding: "5px 8px 6px",
+});
+
+export const indexSectionHeader = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  marginBottom: 4,
+});
+
+export const indexSectionLabel = style({
+  fontSize: 9,
+  fontWeight: 700,
+  color: vars.color.textSecondary,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  flex: 1,
+});
+
+export const indexAddBtn = style({
+  fontSize: 9,
+  color: vars.color.primary,
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  fontFamily: "monospace",
+  padding: 0,
+  selectors: {
+    "&:hover": { textDecoration: "underline" },
+  },
+});
+
+export const indexRow = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 4,
+  marginBottom: 3,
+  padding: "2px 4px",
+  background: vars.color.surfaceTertiary,
+  borderRadius: 3,
+  border: `1px solid ${vars.color.border}`,
+});
+
+export const indexNameInput = style({
+  flex: 1,
+  minWidth: 0,
+  fontSize: 10,
+  border: "none",
+  background: "transparent",
+  color: vars.color.textPrimary,
+  fontFamily: "monospace",
+  outline: "none",
+  padding: "1px 2px",
+});
+
+export const indexColsBtn = style({
+  fontSize: 9,
+  color: vars.color.textSecondary,
+  background: vars.color.surfaceSecondary,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: 3,
+  padding: "1px 5px",
+  cursor: "pointer",
+  fontFamily: "monospace",
+  whiteSpace: "nowrap",
+  maxWidth: 100,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  selectors: {
+    "&:hover": { borderColor: vars.color.primary },
+  },
+});
+
+export const indexColsDropdown = style({
+  position: "absolute",
+  top: "calc(100% + 2px)",
+  left: 0,
+  background: vars.color.surface,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.sm,
+  boxShadow: vars.shadow.lg,
+  zIndex: 9999,
+  minWidth: 140,
+  padding: "4px 0",
+});
+
+export const indexColOption = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "4px 10px",
+  fontSize: 11,
+  fontFamily: "monospace",
+  cursor: "pointer",
+  color: vars.color.textPrimary,
+  selectors: {
+    "&:hover": { background: vars.color.surfaceSecondary },
+  },
+});
+
+export const indexUniqueToggle = style({
+  fontSize: 9,
+  fontWeight: 700,
+  padding: "1px 5px",
+  borderRadius: 3,
+  border: `1px solid ${vars.color.border}`,
+  background: "none",
+  cursor: "pointer",
+  fontFamily: "monospace",
+  whiteSpace: "nowrap",
+  flexShrink: 0,
+  selectors: {
+    "&:hover": { borderColor: vars.color.primary, color: vars.color.primary },
+  },
+});
+
+export const indexUniqueActive = style({
+  background: vars.color.primary,
+  color: "#fff",
+  borderColor: vars.color.primary,
+});
+
+export const indexDeleteBtn = style({
+  width: 16,
+  height: 16,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "none",
+  border: "none",
+  color: vars.color.borderStrong,
+  cursor: "pointer",
+  fontSize: 12,
+  padding: 0,
+  flexShrink: 0,
+  selectors: {
+    "&:hover": { color: vars.color.error },
+  },
+});
