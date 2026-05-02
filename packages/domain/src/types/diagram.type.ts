@@ -38,6 +38,14 @@ export interface DiagramRelationship {
   identifying: boolean;
 }
 
+export interface DiagramIndex {
+  id: string;
+  entityId: string;
+  name: string;
+  columnIds: string[];
+  unique: boolean;
+}
+
 export interface DiagramMetadata {
   revision: number;
   stableObjectIds: true;
@@ -61,7 +69,7 @@ export interface DiagramDocument {
   dialect: DiagramDialect;
   entities: DiagramEntity[];
   relationships: DiagramRelationship[];
-  indexes: [];
+  indexes: DiagramIndex[];
   views: [];
   layout: DiagramLayout;
   metadata: DiagramMetadata;

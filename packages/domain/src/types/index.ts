@@ -3,6 +3,7 @@ export type {
   DiagramDialect,
   DiagramDocument,
   DiagramEntity,
+  DiagramIndex,
   DiagramLayout,
   DiagramMetadata,
   DiagramRelationship,
