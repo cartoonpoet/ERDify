@@ -11,6 +11,7 @@ import { VersionHistoryDrawer } from "../components/VersionHistoryDrawer";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceIndicator } from "../components/PresenceIndicator";
 import { ExportDdlModal } from "../components/ExportDdlModal";
+import { ExportOrmModal } from "../components/ExportOrmModal";
 import { ShareDiagramModal } from "../components/ShareDiagramModal";
 import { FkSetupModal } from "../components/FkSetupModal";
 import { RelDeleteConfirmModal } from "../components/RelDeleteConfirmModal";
@@ -27,6 +28,7 @@ export const EditorPage = () => {
   const [showInvite, setShowInvite] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showOrmExport, setShowOrmExport] = useState(false);
 
   const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen } = useEditorStore();
 
@@ -110,6 +112,12 @@ export const EditorPage = () => {
           DDL 내보내기
         </button>
         <button
+          onClick={() => setShowOrmExport(true)}
+          className={css.topbarBtn({ variant: "secondary" })}
+        >
+          ORM 내보내기
+        </button>
+        <button
           onClick={() => setShowInvite(true)}
           className={css.topbarBtn({ variant: "secondary" })}
         >
@@ -172,6 +180,7 @@ export const EditorPage = () => {
         initialExpiresAt={data?.shareExpiresAt ?? null}
         onClose={() => setShowShare(false)}
       />
+      <ExportOrmModal open={showOrmExport} onClose={() => setShowOrmExport(false)} />
       <FkSetupModal />
       <RelDeleteConfirmModal />
     </div>

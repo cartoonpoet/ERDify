@@ -20,3 +20,5 @@ export type {
   RelationshipCardinality
 } from "./types/index.js";
 export { generateDdl } from "./utils/ddl-generator.js";
+export { generateOrm } from "./utils/orm-generator.js";
+export type { OrmType } from "./utils/orm-generator.js";

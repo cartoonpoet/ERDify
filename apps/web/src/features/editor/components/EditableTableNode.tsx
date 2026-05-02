@@ -281,18 +281,44 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
                 />
               )}
               {col.unique && !col.primaryKey && <span style={{ color: "#6366f1", fontSize: 9, fontWeight: 700 }}>UQ</span>}
-              <span style={{ flex: 1, color: "#111827" }}>{col.name}</span>
+              <span style={{ flex: 1, color: "#111827" }}>
+                {col.comment && (
+                  <span style={{ display: "block", fontSize: 9, color: "#6366f1", marginBottom: 1 }}>{col.comment}</span>
+                )}
+                {col.name}
+              </span>
               <span style={{ color: "#6b7280", fontSize: 10 }}>{col.type}</span>
               {col.nullable && <span style={{ color: "#9ca3af" }}>?</span>}
-              {col.comment && (
-                <span style={{ color: "#9ca3af", fontSize: 9, fontStyle: "italic" }}>{col.comment}</span>
-              )}
             </li>
           ))}
           {entity.columns.length === 0 && (
             <li style={{ padding: "4px 10px", color: "#9ca3af", fontStyle: "italic" }}>컬럼 없음</li>
           )}
         </ul>
+        {entityIndexes.length > 0 && (
+          <div className={css.indexSection}>
+            <div className={css.indexSectionLabel}>Indexes</div>
+            {entityIndexes.map((idx) => {
+              const colNames = idx.columnIds
+                .map((id) => entity.columns.find((c) => c.id === id)?.name ?? id)
+                .join(", ");
+              return (
+                <div key={idx.id} style={{ display: "flex", gap: 5, alignItems: "center", padding: "2px 0", fontSize: 10 }}>
+                  <span style={{
+                    fontSize: 8, fontWeight: 700, flexShrink: 0,
+                    color: idx.unique ? "#6366f1" : "#6b7280",
+                    background: idx.unique ? "#eef2ff" : "#f3f4f6",
+                    borderRadius: 3, padding: "1px 4px",
+                  }}>
+                    {idx.unique ? "UQ" : "IDX"}
+                  </span>
+                  <span style={{ color: "#374151" }}>{idx.name}</span>
+                  {colNames && <span style={{ color: "#9ca3af", fontSize: 9 }}>({colNames})</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
         <Handle type="source" position={Position.Right} />
       </div>
     );
