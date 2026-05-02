@@ -184,43 +184,71 @@ export function removeEntity(doc: DiagramDocument, entityId: string): DiagramDoc
 }
 ```
 
-### 2. 증분 React Flow 노드 비교 (`apps/web`)
+### 2. 대규모 다이어그램 드래그 성능 (`apps/web`)
 
-편집기 캔버스에는 수백 개의 테이블이 올라올 수 있습니다. 커맨드를 실행할 때마다 전체 문서를 React Flow 노드로 변환하면 모든 `TableNode`가 다시 렌더링됩니다. `updateNodes`는 참조 동등성(reference equality) 비교를 통해 실제로 내용이나 위치가 변경된 엔티티에 대해서만 새 노드 객체를 생성합니다. 변경되지 않은 엔티티는 이전 노드 참조를 그대로 반환하므로 `React.memo`가 렌더링을 건너뜁니다.
+100개 이상의 테이블을 다룰 때 드래그 성능을 확보하기 위해 세 가지 최적화를 적용했습니다.
+
+**① Automerge 구독 조기 종료**
+
+`useRealtimeCollaboration`은 zustand store 전체를 구독합니다. 드래그 중에는 `nodes`(위치 배열)만 바뀌고 `document`는 동일한 참조를 유지합니다. 이를 이용해 `document`가 실제로 바뀌지 않은 경우 `Automerge.change()` 실행 자체를 차단합니다.
+
+```typescript
+// apps/web/src/features/editor/hooks/useRealtimeCollaboration.ts
+const unsubDoc = useEditorStore.subscribe((state, prevState) => {
+  if (state.document === prevState.document) return; // drag-move 프레임은 여기서 즉시 종료
+  // ...Automerge.change() 실행
+});
+```
+
+드래그 MOVE(초당 ~60회) 시 Automerge CRDT 연산이 실행되지 않아, 100테이블 문서에서도 블로킹이 사라집니다.
+
+**② applyDiff 참조 동등 단락(short-circuit)**
+
+드래그 STOP 시 `Automerge.change()` 내부의 `applyDiff`가 실행됩니다. 기존에는 엔티티/관계/인덱스 전체를 순회하며 Automerge draft proxy에 O(n²)으로 접근했습니다. 불변 커맨드 함수는 변경되지 않은 섹션의 참조를 그대로 유지하므로, 참조가 같은 섹션은 전체 루프를 스킵합니다.
+
+```typescript
+function applyDiff(draft, prev, next) {
+  // 위치 이동 시 prev.entities === next.entities → 엔티티 루프 전체 스킵
+  if (prev.entities !== next.entities) { /* 엔티티 diff */ }
+  if (prev.layout.entityPositions !== next.layout.entityPositions) { /* 위치만 반영 */ }
+  if (prev.relationships !== next.relationships) { /* 관계 diff */ }
+  if (prev.indexes !== next.indexes) { /* 인덱스 diff */ }
+}
+```
+
+테이블 이동 한 번에 Automerge 연산이 O(n²) → O(1)로 줄어듭니다.
+
+**③ edges 안정 참조**
+
+`edges` 배열을 매 렌더마다 `document.relationships.map()`으로 생성하면, 드래그 중 EditorCanvas가 리렌더될 때마다 새 객체 100개가 생성되어 ReactFlow가 전체 엣지를 재처리합니다. `edges`를 zustand store에서 관리하고 `document.relationships` 참조가 실제로 바뀔 때만 재계산합니다.
+
+```typescript
+// useEditorStore — applyCommand
+edges: next.relationships !== document.relationships ? docToEdges(next) : edges,
+```
+
+드래그 중 `edges` 배열 참조가 변하지 않아 ReactFlow가 엣지 처리를 건너뜁니다.
+
+---
+
+**노드 증분 비교 (`updateNodes`)**
+
+커맨드를 실행할 때마다 전체 문서를 React Flow 노드로 변환하면 모든 노드가 다시 렌더링됩니다. `updateNodes`는 참조 동등성 비교를 통해 실제로 변경된 엔티티에 대해서만 새 노드 객체를 생성합니다.
 
 ```typescript
 // apps/web/src/features/editor/stores/useEditorStore.ts
-function updateNodes(
-  prevDoc: DiagramDocument,
-  nextDoc: DiagramDocument,
-  prevNodes: TableNodeType[],
-  collaborators: Collaborator[]
-): TableNodeType[] {
-  const prevEntityMap = new Map(prevDoc.entities.map((e) => [e.id, e]));
-  const prevNodeMap   = new Map(prevNodes.map((n) => [n.id, n]));
-
+function updateNodes(prevDoc, nextDoc, prevNodes, collaborators) {
   return nextDoc.entities.map((entity) => {
-    const prevNode = prevNodeMap.get(entity.id);
-    const collab   = collaborators.find((c) => c.selectedEntityId === entity.id);
-
-    const entitySame   = prevEntityMap.get(entity.id) === entity;           // 객체 참조 동일 여부
+    const entitySame   = prevEntityMap.get(entity.id) === entity;
     const positionSame = prevDoc.layout.entityPositions[entity.id]
                       === nextDoc.layout.entityPositions[entity.id];
     const collabSame   = prevNode?.data.collaboratorColor === collab?.color;
 
-    if (prevNode && entitySame && positionSame && collabSame) return prevNode; // memo가 렌더링 스킵
-
-    return {
-      id: entity.id,
-      type: "table" as const,
-      position: nextDoc.layout.entityPositions[entity.id] ?? { x: 0, y: 0 },
-      data: { entity, ...(collab ? { collaboratorColor: collab.color } : {}) },
-    };
+    if (prevNode && entitySame && positionSame && collabSame) return prevNode; // 리렌더 스킵
+    return { /* 새 노드 객체 생성 */ };
   });
 }
 ```
-
-300개 테이블 다이어그램에서 테이블 하나를 수정하면 ~1번의 리렌더링만 발생합니다.
 
 ### 3. MCP 쓰기 툴 패턴 (`apps/mcp-server`)
 

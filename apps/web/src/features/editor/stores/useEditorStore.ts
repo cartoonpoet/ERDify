@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import type { Node, NodeChange } from "@xyflow/react";
-import { applyNodeChanges } from "@xyflow/react";
+import type { Node, NodeChange, Edge } from "@xyflow/react";
+import { applyNodeChanges, MarkerType } from "@xyflow/react";
 import type { DiagramDocument, DiagramEntity } from "@erdify/domain";
 
 export type EditableTableNodeType = Node<
@@ -13,6 +13,24 @@ export interface Collaborator {
   email: string;
   color: string;
   selectedEntityId: string | null;
+}
+
+const EDGE_MARKER = {
+  type: MarkerType.ArrowClosed,
+  color: "#6366f1",
+  width: 16,
+  height: 16,
+} as const;
+
+function docToEdges(doc: DiagramDocument): Edge[] {
+  return doc.relationships.map((rel) => ({
+    id: rel.id,
+    source: rel.sourceEntityId,
+    target: rel.targetEntityId,
+    type: "cardinality" as const,
+    markerEnd: EDGE_MARKER,
+    data: { cardinality: rel.cardinality, identifying: rel.identifying },
+  }));
 }
 
 function docToNodes(doc: DiagramDocument, collaborators: Collaborator[] = []): EditableTableNodeType[] {
@@ -63,6 +81,7 @@ function updateNodes(
 interface EditorState {
   document: DiagramDocument | null;
   nodes: EditableTableNodeType[];
+  edges: Edge[];
   isDirty: boolean;
   canEdit: boolean;
   selectedEntityId: string | null;
@@ -84,6 +103,7 @@ interface EditorState {
 export const useEditorStore = create<EditorState>((set, get) => ({
   document: null,
   nodes: [],
+  edges: [],
   isDirty: false,
   canEdit: false,
   selectedEntityId: null,
@@ -95,14 +115,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((state) => ({
       document: doc,
       nodes: docToNodes(doc, state.collaborators),
+      edges: docToEdges(doc),
       isDirty: false,
     })),
 
   applyCommand: (fn) => {
-    const { document, nodes, collaborators } = get();
+    const { document, nodes, collaborators, edges } = get();
     if (!document) return;
     const next = fn(document);
-    set({ document: next, nodes: updateNodes(document, next, nodes, collaborators), isDirty: true });
+    set({
+      document: next,
+      nodes: updateNodes(document, next, nodes, collaborators),
+      edges: next.relationships !== document.relationships ? docToEdges(next) : edges,
+      isDirty: true,
+    });
   },
 
   applyNodeChanges: (changes) => {

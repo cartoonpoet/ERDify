@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { MouseEvent } from "react";
-import { ReactFlow, Background, Controls, MarkerType, useReactFlow } from "@xyflow/react";
+import { ReactFlow, Background, Controls, useReactFlow } from "@xyflow/react";
 import type { Edge, EdgeChange, NodeChange, Connection } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { updateEntityPosition, addRelationship, removeRelationship, addEntity } from "@erdify/domain";
@@ -12,13 +12,6 @@ import { CardinalityEdge } from "./CardinalityEdge";
 
 const nodeTypes = { editableTable: EditableTableNode };
 const edgeTypes = { cardinality: CardinalityEdge };
-
-const EDGE_MARKER = {
-  type: MarkerType.ArrowClosed,
-  color: "#6366f1",
-  width: 16,
-  height: 16,
-} as const;
 
 type ContextMenuState = {
   menuX: number;
@@ -105,6 +98,7 @@ export const EditorCanvas = () => {
 
   const document = useEditorStore((s) => s.document);
   const nodes = useEditorStore((s) => s.nodes);
+  const edges = useEditorStore((s) => s.edges);
   const canEdit = useEditorStore((s) => s.canEdit);
   const applyNodeChanges = useEditorStore((s) => s.applyNodeChanges);
   const applyCommand = useEditorStore((s) => s.applyCommand);
@@ -113,15 +107,6 @@ export const EditorCanvas = () => {
   const setSelectedEntity = useEditorStore((s) => s.setSelectedEntity);
 
   if (!document) return null;
-
-  const edges: Edge[] = document.relationships.map((rel) => ({
-    id: rel.id,
-    source: rel.sourceEntityId,
-    target: rel.targetEntityId,
-    type: "cardinality",
-    markerEnd: EDGE_MARKER,
-    data: { cardinality: rel.cardinality, identifying: rel.identifying },
-  }));
 
   function onNodesChange(changes: NodeChange<EditableTableNodeType>[]) {
     applyNodeChanges(changes);
