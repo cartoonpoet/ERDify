@@ -1,9 +1,5 @@
 import { httpClient } from "./httpClient";
 
-export interface AuthResponse {
-  accessToken: string;
-}
-
 export interface UserProfile {
   id: string;
   email: string;
@@ -15,15 +11,19 @@ export function register(body: {
   email: string;
   password: string;
   name: string;
-}): Promise<AuthResponse> {
-  return httpClient.post<AuthResponse>("/auth/register", body).then((r) => r.data);
+}): Promise<void> {
+  return httpClient.post("/auth/register", body).then(() => undefined);
 }
 
 export function login(body: {
   email: string;
   password: string;
-}): Promise<AuthResponse> {
-  return httpClient.post<AuthResponse>("/auth/login", body).then((r) => r.data);
+}): Promise<void> {
+  return httpClient.post("/auth/login", body).then(() => undefined);
+}
+
+export function logout(): Promise<void> {
+  return httpClient.post("/auth/logout").then(() => undefined);
 }
 
 export function generateApiKey(): Promise<{ apiKey: string }> {

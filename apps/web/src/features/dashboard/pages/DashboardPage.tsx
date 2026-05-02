@@ -5,7 +5,7 @@ import type { FocusEvent } from "react";
 import { listMyOrganizations, deleteOrganization } from "../../../shared/api/organizations.api";
 import { listProjects, deleteProject } from "../../../shared/api/projects.api";
 import { listDiagrams, deleteDiagram } from "../../../shared/api/diagrams.api";
-import { getMe } from "../../../shared/api/auth.api";
+import { getMe, logout } from "../../../shared/api/auth.api";
 import { API_BASE_URL } from "../../../shared/api/httpClient";
 import { useWorkspaceStore } from "../../../shared/stores/useWorkspaceStore";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
@@ -24,17 +24,6 @@ import {
   dropdownItem, dropdownItemDanger, body, emptySidebar,
 } from "./dashboard-page.css";
 
-function decodeJwt(token: string | null): { email?: string; sub?: string } {
-  if (!token) return {};
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) return {};
-    return JSON.parse(atob(payload)) as { email?: string; sub?: string };
-  } catch {
-    return {};
-  }
-}
-
 function getInitial(email: string | undefined | null): string {
   return (email?.split("@")[0]?.[0] ?? "?").toUpperCase();
 }
@@ -44,7 +33,7 @@ export const DashboardPage = () => {
   const queryClient = useQueryClient();
   const { selectedOrganizationId, selectedProjectId, selectOrganization, selectProject, reset } =
     useWorkspaceStore();
-  const { token, clearToken } = useAuthStore();
+  const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
 
   const [orgModalOpen, setOrgModalOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
@@ -54,12 +43,9 @@ export const DashboardPage = () => {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const { email, sub: currentUserId } = decodeJwt(token);
-
   const { data: me } = useQuery({
     queryKey: ["me"],
     queryFn: getMe,
-    enabled: !!token,
   });
 
   const { data: orgs = [] } = useQuery({
@@ -105,8 +91,9 @@ export const DashboardPage = () => {
   const selectedOrg = orgs.find((o) => o.id === selectedOrganizationId) ?? null;
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null;
 
-  function handleLogout() {
-    clearToken();
+  async function handleLogout() {
+    await logout().catch(() => undefined);
+    setAuthenticated(false);
     reset();
     queryClient.clear();
     navigate("/login");
@@ -161,14 +148,14 @@ export const DashboardPage = () => {
             />
           ) : (
             <div className={avatar} onClick={handleAvatarClick}>
-              {getInitial(me?.name ?? email)}
+              {getInitial(me?.name ?? me?.email)}
             </div>
           )}
 
           {menuOpen && (
             <div className={dropdown}>
               <div className={dropdownHeader}>
-                <div className={dropdownEmail}>{me?.name ?? email ?? "사용자"}</div>
+                <div className={dropdownEmail}>{me?.name ?? me?.email ?? "사용자"}</div>
               </div>
               <button className={dropdownItem} onClick={() => { setMenuOpen(false); setProfileModalOpen(true); }}>
                 회원정보 수정
@@ -209,7 +196,7 @@ export const DashboardPage = () => {
         <DiagramGrid
           diagrams={diagrams}
           {...(selectedProject?.name ? { projectName: selectedProject.name } : {})}
-          currentUserId={currentUserId ?? null}
+          currentUserId={me?.id ?? null}
           onCreateDiagram={handleOpenDiagramModal}
           {...(selectedProjectId ? { onImportDiagram: handleOpenImportModal } : {})}
           onDeleteDiagram={handleDeleteDiagram}

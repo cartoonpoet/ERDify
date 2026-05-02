@@ -1,19 +1,11 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 interface AuthState {
-  token: string | null;
-  setToken: (token: string) => void;
-  clearToken: () => void;
+  isAuthenticated: boolean | null; // null = 확인 중
+  setAuthenticated: (v: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      token: null,
-      setToken: (token) => set({ token }),
-      clearToken: () => set({ token: null })
-    }),
-    { name: "erdify-auth" }
-  )
-);
+export const useAuthStore = create<AuthState>()((set) => ({
+  isAuthenticated: null,
+  setAuthenticated: (v) => set({ isAuthenticated: v }),
+}));

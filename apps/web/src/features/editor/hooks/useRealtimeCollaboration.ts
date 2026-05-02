@@ -5,7 +5,6 @@ import * as Automerge from "@automerge/automerge";
 import type { DiagramDocument, DiagramEntity, DiagramColumn, DiagramIndex } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
 import type { Collaborator } from "../stores/useEditorStore";
-import { useAuthStore } from "../../../shared/stores/useAuthStore";
 
 export type { Collaborator };
 
@@ -134,15 +133,14 @@ export const useRealtimeCollaboration = (diagramId: string) => {
   const socketRef = useRef<Socket | null>(null);
   const isRemoteRef = useRef(false);
 
-  const token = useAuthStore((s) => s.token);
   const setDocument = useEditorStore((s) => s.setDocument);
   const setCollaborators = useEditorStore((s) => s.setCollaborators);
 
   useEffect(() => {
-    if (!diagramId || !token) return;
+    if (!diagramId) return;
 
     const socket = io(`${API_BASE}/collaboration`, {
-      auth: { token: `Bearer ${token}` },
+      withCredentials: true, // httpOnly 쿠키 자동 첨부
       transports: ["websocket"],
     });
     socketRef.current = socket;
@@ -203,5 +201,5 @@ export const useRealtimeCollaboration = (diagramId: string) => {
       amDocRef.current = null;
       setCollaborators([]);
     };
-  }, [diagramId, token, setDocument, setCollaborators]);
+  }, [diagramId, setDocument, setCollaborators]);
 };

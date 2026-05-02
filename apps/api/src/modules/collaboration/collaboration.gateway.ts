@@ -31,11 +31,20 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     private readonly diagramsService: DiagramsService
   ) {}
 
+  private extractToken(client: Socket): string | null {
+    // 쿠키 우선 (웹 브라우저), Bearer 폴백 (MCP/API key)
+    const cookieHeader = client.handshake.headers.cookie ?? "";
+    const cookieMatch = cookieHeader.match(/(?:^|;\s*)access_token=([^;]+)/);
+    if (cookieMatch?.[1]) return cookieMatch[1];
+
+    const bearer = client.handshake.auth?.token as string | undefined;
+    return bearer ? bearer.replace("Bearer ", "") : null;
+  }
+
   async handleConnection(client: Socket): Promise<void> {
     try {
-      const raw: string | undefined = client.handshake.auth?.token;
-      if (!raw) throw new Error("no token");
-      const token = raw.replace("Bearer ", "");
+      const token = this.extractToken(client);
+      if (!token) throw new Error("no token");
       const payload = this.jwtService.verify<JwtPayload>(token);
       client.data.userId = payload.sub;
       client.data.email = payload.email;

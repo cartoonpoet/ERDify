@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { join } from "path";
+import cookieParser = require("cookie-parser");
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
@@ -13,6 +14,7 @@ async function bootstrap() {
   app.useBodyParser("json", { limit: "50mb" });
   app.useBodyParser("urlencoded", { limit: "50mb", extended: true } as Parameters<typeof app.useBodyParser>[1]);
 
+  app.use(cookieParser());
   app.useWebSocketAdapter(new IoAdapter(app));
 
   app.enableCors({

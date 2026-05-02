@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import type { Response } from "express";
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { AuthService } from "./auth.service";
 import type { UserProfile } from "./auth.service";
@@ -10,19 +11,43 @@ import type { LoginDto } from "./dto/login.dto";
 import type { RegisterDto } from "./dto/register.dto";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env["NODE_ENV"] === "production",
+  sameSite: "strict" as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
+  path: "/",
+};
+
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post("register")
-  register(@Body() dto: RegisterDto): Promise<{ accessToken: string }> {
-    return this.authService.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ ok: true }> {
+    const { accessToken } = await this.authService.register(dto);
+    res.cookie("access_token", accessToken, COOKIE_OPTIONS);
+    return { ok: true };
   }
 
   @Post("login")
   @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginDto): Promise<{ accessToken: string }> {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ ok: true }> {
+    const { accessToken } = await this.authService.login(dto);
+    res.cookie("access_token", accessToken, COOKIE_OPTIONS);
+    return { ok: true };
+  }
+
+  @Post("logout")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  logout(@Res({ passthrough: true }) res: Response): void {
+    res.clearCookie("access_token", { path: "/" });
   }
 
   @Post("api-key")

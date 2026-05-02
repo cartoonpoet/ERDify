@@ -22,7 +22,7 @@ export const RegisterPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const setToken = useAuthStore((s) => s.setToken);
+  const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
   const navigate = useNavigate();
 
   const strength = getStrength(password);
@@ -32,8 +32,8 @@ export const RegisterPage = () => {
     setError(null);
     setLoading(true);
     try {
-      const { accessToken } = await register({ name, email, password });
-      setToken(accessToken);
+      await register({ name, email, password });
+      setAuthenticated(true);
       navigate("/");
     } catch {
       setError("회원가입에 실패했습니다. 이미 사용 중인 이메일일 수 있습니다.");

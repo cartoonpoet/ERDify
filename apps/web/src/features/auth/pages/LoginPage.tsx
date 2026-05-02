@@ -12,7 +12,7 @@ export const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const setToken = useAuthStore((s) => s.setToken);
+  const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
@@ -20,8 +20,8 @@ export const LoginPage = () => {
     setError(null);
     setLoading(true);
     try {
-      const { accessToken } = await login({ email, password });
-      setToken(accessToken);
+      await login({ email, password });
+      setAuthenticated(true);
       navigate("/");
     } catch {
       setError("이메일 또는 비밀번호가 올바르지 않습니다.");
