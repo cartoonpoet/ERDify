@@ -60,7 +60,7 @@ const makeIndex = (entityId: string, entityName: string): DiagramIndex => {
   };
 };
 
-const TypeSelect = ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
+const TypeSelect = ({ value, onChange, label }: { value: string; onChange: (val: string) => void; label?: string }) => {
   const [inputVal, setInputVal] = useState(value);
   const [open, setOpen] = useState(false);
 
@@ -89,6 +89,7 @@ const TypeSelect = ({ value, onChange }: { value: string; onChange: (val: string
         }}
         placeholder="타입..."
         spellCheck={false}
+        aria-label={label ?? "컬럼 타입"}
       />
       {open && filtered.length > 0 && (
         <div className={`${css.typeDropdown} nodrag nopan`}>
@@ -119,7 +120,9 @@ const ColorPicker = ({ value, onChange }: { value: string | null; onChange: (c: 
         className={`${css.colorSwatch} nodrag`}
         style={{ background: current }}
         onClick={() => setOpen((o) => !o)}
-        title="헤더 색상 변경"
+        aria-label="헤더 색상 변경"
+        aria-expanded={open}
+        aria-haspopup="listbox"
       />
       {open && (
         <div className={`${css.colorDropdown} nodrag nopan`}>
@@ -168,7 +171,9 @@ const IndexColumnSelect = ({
         type="button"
         className={`${css.indexColsBtn} nodrag`}
         onClick={() => setOpen((o) => !o)}
-        title={label}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label={`컬럼 선택: ${label}`}
       >
         {label}
       </button>
@@ -269,7 +274,11 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
             >
               {col.primaryKey && <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: 10 }}>PK</span>}
               {fkColumnIds.has(col.id) && (
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3b82f6", display: "inline-block", flexShrink: 0 }} />
+                <span
+                  style={{ width: 7, height: 7, borderRadius: "50%", background: "#3b82f6", display: "inline-block", flexShrink: 0 }}
+                  aria-label="FK"
+                  title="Foreign Key"
+                />
               )}
               {col.unique && !col.primaryKey && <span style={{ color: "#6366f1", fontSize: 9, fontWeight: 700 }}>UQ</span>}
               <span style={{ flex: 1, color: "#111827" }}>{col.name}</span>
@@ -314,6 +323,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
         <input
           className={`${css.tableNameInput} nodrag`}
           value={entity.name}
+          aria-label="테이블명"
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
             applyCommand((doc) => renameEntity(doc, entity.id, e.target.value))
           }
@@ -322,6 +332,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           className={`${css.tableCommentInput} nodrag`}
           value={entity.comment ?? ""}
           placeholder="논리명 (선택)"
+          aria-label="테이블 논리명"
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
             applyCommand((doc) => updateEntityComment(doc, entity.id, e.target.value || null))
           }
@@ -333,6 +344,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
             applyCommand((doc) => removeEntity(doc, entity.id));
             setSelectedEntity(null);
           }}
+          aria-label={`${entity.name} 테이블 삭제`}
           title="테이블 삭제"
         >
           삭제
@@ -360,6 +372,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
               type="checkbox"
               className={`${css.rowCheckbox} nodrag`}
               checked={col.primaryKey}
+              aria-label={`${col.name} PK`}
               onChange={(e) =>
                 applyCommand((doc) => updateColumn(doc, entity.id, col.id, { primaryKey: e.target.checked }))
               }
@@ -367,7 +380,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           </div>
           {/* FK (read-only) */}
           <div className={css.fkDotCell}>
-            {fkColumnIds.has(col.id) && <span className={css.fkDot} />}
+            {fkColumnIds.has(col.id) && <span className={css.fkDot} aria-label="FK" title="Foreign Key" />}
           </div>
           {/* NULL */}
           <div className={css.checkboxCell}>
@@ -375,6 +388,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
               type="checkbox"
               className={`${css.rowCheckbox} nodrag`}
               checked={col.nullable}
+              aria-label={`${col.name} NULL 허용`}
               onChange={(e) =>
                 applyCommand((doc) => updateColumn(doc, entity.id, col.id, { nullable: e.target.checked }))
               }
@@ -386,6 +400,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
               type="checkbox"
               className={`${css.rowCheckbox} nodrag`}
               checked={col.unique}
+              aria-label={`${col.name} UNIQUE`}
               onChange={(e) =>
                 applyCommand((doc) => updateColumn(doc, entity.id, col.id, { unique: e.target.checked }))
               }
@@ -396,6 +411,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
             className={`${css.logicalNameInput} nodrag`}
             value={col.comment ?? ""}
             placeholder="논리명..."
+            aria-label={`${col.name} 논리명`}
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               applyCommand((doc) => updateColumn(doc, entity.id, col.id, { comment: e.target.value || null }))
             }
@@ -404,6 +420,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           <input
             className={`${css.columnNameInput} nodrag`}
             value={col.name}
+            aria-label="컬럼명"
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: e.target.value }))
             }
@@ -414,12 +431,14 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
             onChange={(val) =>
               applyCommand((doc) => updateColumn(doc, entity.id, col.id, { type: val }))
             }
+            label={`${col.name} 타입`}
           />
           {/* 삭제 */}
           <button
             type="button"
             className={`${css.deleteColBtn} nodrag`}
             onClick={() => applyCommand((doc) => removeColumn(doc, entity.id, col.id))}
+            aria-label={`${col.name} 컬럼 삭제`}
             title="컬럼 삭제"
           >
             ×
@@ -435,6 +454,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           onClick={() =>
             applyCommand((doc) => addColumn(doc, entity.id, makeColumn(entity.columns.length)))
           }
+          aria-label={`${entity.name} 테이블에 컬럼 추가`}
         >
           + 컬럼 추가
         </button>
@@ -450,6 +470,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
             onClick={() =>
               applyCommand((doc) => addIndex(doc, makeIndex(entity.id, entity.name)))
             }
+            aria-label="인덱스 추가"
           >
             + 추가
           </button>
@@ -461,6 +482,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
               className={`${css.indexNameInput} nodrag`}
               value={idx.name}
               placeholder="인덱스명..."
+              aria-label="인덱스명"
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 applyCommand((doc) => updateIndex(doc, idx.id, { name: e.target.value }))
               }
@@ -474,6 +496,8 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
               type="button"
               className={`${css.indexUniqueToggle}${idx.unique ? ` ${css.indexUniqueActive}` : ""} nodrag`}
               onClick={() => applyCommand((doc) => updateIndex(doc, idx.id, { unique: !idx.unique }))}
+              aria-pressed={idx.unique}
+              aria-label={idx.unique ? "UNIQUE 인덱스 (클릭하면 일반 인덱스로 변경)" : "일반 인덱스 (클릭하면 UNIQUE로 변경)"}
             >
               {idx.unique ? "UNIQUE" : "INDEX"}
             </button>
@@ -481,6 +505,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
               type="button"
               className={`${css.indexDeleteBtn} nodrag`}
               onClick={() => applyCommand((doc) => removeIndex(doc, idx.id))}
+              aria-label={`${idx.name || "인덱스"} 삭제`}
               title="인덱스 삭제"
             >
               ×

@@ -40,6 +40,10 @@ export const deleteEntityBtn = style({
       background: vars.color.error,
       borderColor: vars.color.error,
     },
+    "&:focus-visible": {
+      outline: `2px solid #fff`,
+      outlineOffset: 2,
+    },
   },
 });
 
@@ -97,6 +101,10 @@ export const typeInput = style({
   selectors: {
     "&:focus": { borderColor: vars.color.primary, background: "#ffffff" },
     "&::placeholder": { color: "#94a3b8" },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.primary}`,
+      outlineOffset: 1,
+    },
   },
 });
 
@@ -164,6 +172,10 @@ export const deleteColBtn = style({
       background: `${vars.color.error}14`,
       borderColor: `${vars.color.error}40`,
     },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.error}`,
+      outlineOffset: 1,
+    },
   },
 });
 
@@ -201,6 +213,10 @@ export const colorSwatch = style({
   flexShrink: 0,
   selectors: {
     "&:hover": { borderColor: "#ffffff" },
+    "&:focus-visible": {
+      outline: `2px solid #fff`,
+      outlineOffset: 2,
+    },
   },
 });
 
@@ -230,6 +246,10 @@ export const colorOption = style({
   flexShrink: 0,
   selectors: {
     "&:hover": { transform: "scale(1.2)" },
+    "&:focus-visible": {
+      outline: "2px solid #fff",
+      outlineOffset: 2,
+    },
   },
 });
 
@@ -341,6 +361,11 @@ export const indexAddBtn = style({
   padding: 0,
   selectors: {
     "&:hover": { textDecoration: "underline" },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.primary}`,
+      outlineOffset: 2,
+      borderRadius: 2,
+    },
   },
 });
 
@@ -382,6 +407,10 @@ export const indexColsBtn = style({
   textOverflow: "ellipsis",
   selectors: {
     "&:hover": { borderColor: vars.color.primary },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.primary}`,
+      outlineOffset: 1,
+    },
   },
 });
 
@@ -431,6 +460,10 @@ export const indexUniqueToggle = style({
   flexShrink: 0,
   selectors: {
     "&:hover": { borderColor: vars.color.primary, color: vars.color.primary },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.primary}`,
+      outlineOffset: 1,
+    },
   },
 });
 
@@ -455,5 +488,10 @@ export const indexDeleteBtn = style({
   flexShrink: 0,
   selectors: {
     "&:hover": { color: vars.color.error },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.error}`,
+      outlineOffset: 1,
+      borderRadius: 2,
+    },
   },
 });

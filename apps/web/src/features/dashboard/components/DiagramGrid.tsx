@@ -81,18 +81,21 @@ export const DiagramGrid = ({ diagrams, projectName, currentUserId, onCreateDiag
         <div className={filterRow}>
           <button
             className={[filterChip, activeFilter === "all" ? filterChipVariants.active : filterChipVariants.inactive].join(" ")}
+            aria-pressed={activeFilter === "all"}
             onClick={() => setActiveFilter("all")}
           >
             전체
           </button>
           <button
             className={[filterChip, activeFilter === "recent" ? filterChipVariants.active : filterChipVariants.inactive].join(" ")}
+            aria-pressed={activeFilter === "recent"}
             onClick={() => setActiveFilter("recent")}
           >
             최근 수정
           </button>
           <button
             className={[filterChip, activeFilter === "mine" ? filterChipVariants.active : filterChipVariants.inactive].join(" ")}
+            aria-pressed={activeFilter === "mine"}
             onClick={() => setActiveFilter("mine")}
           >
             내가 만든
@@ -116,7 +119,7 @@ export const DiagramGrid = ({ diagrams, projectName, currentUserId, onCreateDiag
                 if (!e.currentTarget.contains(e.relatedTarget)) setMenuOpenId(null);
               }}
             >
-              <Link to={`/diagrams/${diagram.id}`} className={diagramCard}>
+              <Link to={`/diagrams/${diagram.id}`} className={diagramCard} aria-label={`${diagram.name} 다이어그램 열기`}>
                 <DiagramCardPreview diagram={diagram} />
                 <div className={cardBody}>
                   <div className={cardName}>{diagram.name}</div>
@@ -129,6 +132,8 @@ export const DiagramGrid = ({ diagrams, projectName, currentUserId, onCreateDiag
               <button
                 className={ctxBtn}
                 aria-label="더보기"
+                aria-expanded={menuOpenId === diagram.id}
+                aria-haspopup="menu"
                 onClick={(e) => {
                   e.preventDefault();
                   setMenuOpenId(menuOpenId === diagram.id ? null : diagram.id);

@@ -30,6 +30,11 @@ export const backBtn = style({
   borderRadius: vars.radius.sm,
   selectors: {
     "&:hover": { background: vars.color.surfaceSecondary },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.primary}`,
+      outlineOffset: 2,
+      borderRadius: 4,
+    },
   },
 });
 

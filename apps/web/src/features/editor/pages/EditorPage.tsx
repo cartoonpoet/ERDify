@@ -67,6 +67,7 @@ export const EditorPage = () => {
           onClick={() => navigate(-1)}
           className={css.backBtn}
           title="뒤로가기"
+          aria-label="뒤로가기"
         >
           ←
         </button>
