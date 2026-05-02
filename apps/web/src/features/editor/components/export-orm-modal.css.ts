@@ -5,7 +5,6 @@ export const body = style({
   display: "flex",
   flexDirection: "column",
   gap: vars.space["3"],
-  minWidth: 560,
 });
 
 export const tabRow = style({

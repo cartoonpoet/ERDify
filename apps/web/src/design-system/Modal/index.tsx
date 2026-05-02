@@ -6,9 +6,10 @@ interface ModalProps extends PropsWithChildren {
   open: boolean;
   onClose: () => void;
   title: string;
+  maxWidth?: string;
 }
 
-export const Modal = ({ open, onClose, title, children }: ModalProps) => {
+export const Modal = ({ open, onClose, title, maxWidth = "440px", children }: ModalProps) => {
   if (!open) return null;
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
@@ -31,6 +32,7 @@ export const Modal = ({ open, onClose, title, children }: ModalProps) => {
         tabIndex={-1}
         autoFocus
         onKeyDown={onKeyDown}
+        style={{ maxWidth }}
       >
         <div className={header}>
           <span className={titleStyle}>{title}</span>

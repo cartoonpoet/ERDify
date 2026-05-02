@@ -27,7 +27,6 @@ export const panel = style({
   borderRadius: vars.radius.xl,
   boxShadow: vars.shadow.xl,
   width: "100%",
-  maxWidth: "440px",
   padding: vars.space["6"],
   animation: `${slideUp} 200ms ease`,
 });
