@@ -10,7 +10,8 @@ import {
   field, fieldLabel, textInput, selectInput,
   dropzone, dropzoneActive, dropzoneIcon, dropzoneHint,
   fileChosen, fileChosenName, fileClearBtn,
-  textarea, errorText, footer, cancelBtn, submitBtn,
+  textarea, textareaDragOver, errorText, footer, cancelBtn, submitBtn,
+  ddlLabelRow, sqlUploadBtn,
 } from "./ImportDiagramModal.css";
 
 type TabType = "exerd" | "ddl";
@@ -29,9 +30,11 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
   const [exerdFile, setExerdFile] = useState<File | null>(null);
   const [ddlText, setDdlText] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isDdlDragOver, setIsDdlDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sqlFileInputRef = useRef<HTMLInputElement>(null);
 
   function handleTabSwitch(tab: TabType) {
     setActiveTab(tab);
@@ -68,6 +71,37 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
   function handleDragLeave() {
     setIsDragOver(false);
   }
+
+  const acceptSqlFile = async (file: File) => {
+    if (!file.name.endsWith(".sql")) {
+      setError(".sql 파일만 지원합니다.");
+      return;
+    }
+    const text = await file.text();
+    setDdlText(text);
+    if (!name) setName(file.name.replace(/\.sql$/, ""));
+    setError(null);
+  };
+
+  const handleSqlFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) acceptSqlFile(file);
+    e.target.value = "";
+  };
+
+  const handleDdlDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDdlDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) acceptSqlFile(file);
+  };
+
+  const handleDdlDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDdlDragOver(true);
+  };
+
+  const handleDdlDragLeave = () => setIsDdlDragOver(false);
 
   function handleClearFile() {
     setExerdFile(null);
@@ -187,14 +221,36 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
 
       {activeTab === "ddl" ? (
         <div className={field}>
-          <label className={fieldLabel} htmlFor="import-ddl">DDL SQL</label>
-          <textarea
-            id="import-ddl"
-            className={textarea}
-            placeholder={"CREATE TABLE users (\n  id SERIAL PRIMARY KEY,\n  name VARCHAR(100) NOT NULL\n);"}
-            value={ddlText}
-            onChange={(e) => setDdlText(e.target.value)}
-            spellCheck={false}
+          <div className={ddlLabelRow}>
+            <label className={fieldLabel} htmlFor="import-ddl">DDL SQL</label>
+            <button
+              type="button"
+              className={sqlUploadBtn}
+              onClick={() => sqlFileInputRef.current?.click()}
+            >
+              📂 .sql 파일 불러오기
+            </button>
+          </div>
+          <div
+            onDrop={handleDdlDrop}
+            onDragOver={handleDdlDragOver}
+            onDragLeave={handleDdlDragLeave}
+          >
+            <textarea
+              id="import-ddl"
+              className={[textarea, isDdlDragOver ? textareaDragOver : ""].join(" ")}
+              placeholder={"CREATE TABLE users (\n  id SERIAL PRIMARY KEY,\n  name VARCHAR(100) NOT NULL\n);"}
+              value={ddlText}
+              onChange={(e) => setDdlText(e.target.value)}
+              spellCheck={false}
+            />
+          </div>
+          <input
+            ref={sqlFileInputRef}
+            type="file"
+            accept=".sql"
+            style={{ display: "none" }}
+            onChange={handleSqlFileChange}
           />
         </div>
       ) : (

@@ -292,11 +292,22 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
     });
   }
 
+  // Pack entities into columns, accounting for variable table heights
+  const NODE_W = 280;
+  const COL_GAP = 48;
+  const ROW_GAP = 36;
+  const N_COLS = Math.min(8, Math.max(4, Math.ceil(Math.sqrt(entities.length))));
+  const estimateH = (e: { columns: unknown[] }) =>
+    38 + 28 + e.columns.length * 30 + ROW_GAP;
+
+  const colHeights = Array<number>(N_COLS).fill(0);
   const entityPositions: Record<string, { x: number; y: number }> = {};
-  entities.forEach((e, i) => {
-    const col = i % 4;
-    const row = Math.floor(i / 4);
-    entityPositions[e.id] = { x: col * 280, y: row * 320 };
+  entities.forEach((e) => {
+    const minH = Math.min(...colHeights);
+    const col = colHeights.indexOf(minH);
+    const y = colHeights[col] ?? 0;
+    entityPositions[e.id] = { x: col * (NODE_W + COL_GAP), y };
+    colHeights[col] = y + estimateH(e);
   });
 
   const now = new Date().toISOString();

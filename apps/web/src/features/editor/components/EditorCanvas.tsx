@@ -214,6 +214,7 @@ export const EditorCanvas = () => {
         zoomOnScroll={false}
         panOnScroll
         fitView
+        onlyRenderVisibleElements
       >
         <Background />
         <Controls />

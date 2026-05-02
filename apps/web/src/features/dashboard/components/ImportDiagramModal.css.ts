@@ -138,6 +138,32 @@ export const fileClearBtn = style({
   selectors: { "&:hover": { color: vars.color.error } },
 });
 
+export const ddlLabelRow = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: vars.space["1"],
+});
+
+export const sqlUploadBtn = style({
+  fontSize: "11px",
+  fontWeight: "500",
+  color: vars.color.primary,
+  background: "none",
+  border: `1px solid ${vars.color.primary}44`,
+  borderRadius: vars.radius.sm,
+  padding: `2px ${vars.space["2"]}`,
+  cursor: "pointer",
+  fontFamily: vars.font.family,
+  display: "flex",
+  alignItems: "center",
+  gap: 4,
+  selectors: {
+    "&:hover": { background: `${vars.color.primary}0f`, borderColor: vars.color.primary },
+    "&:focus-visible": { outline: `2px solid ${vars.color.primary}`, outlineOffset: 2 },
+  },
+});
+
 export const textarea = style({
   width: "100%",
   minHeight: "180px",
@@ -151,9 +177,16 @@ export const textarea = style({
   resize: "vertical",
   outline: "none",
   boxSizing: "border-box",
+  transition: "border-color 150ms ease, box-shadow 150ms ease",
   selectors: {
     "&:focus": { borderColor: vars.color.primary, boxShadow: `0 0 0 3px ${vars.color.primary}22` },
   },
+});
+
+export const textareaDragOver = style({
+  borderColor: vars.color.primary,
+  boxShadow: `0 0 0 3px ${vars.color.primary}22`,
+  background: `${vars.color.primary}08`,
 });
 
 export const errorText = style({
