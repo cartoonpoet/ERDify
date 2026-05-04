@@ -347,20 +347,20 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           onChange={(color) => applyCommand((doc) => updateEntityColor(doc, entity.id, color))}
         />
         <input
-          className={`${css.tableNameInput} nodrag`}
-          value={entity.name}
-          aria-label="테이블명"
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            applyCommand((doc) => renameEntity(doc, entity.id, e.target.value))
-          }
-        />
-        <input
           className={`${css.tableCommentInput} nodrag`}
           value={entity.comment ?? ""}
           placeholder="논리명 (선택)"
           aria-label="테이블 논리명"
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
             applyCommand((doc) => updateEntityComment(doc, entity.id, e.target.value || null))
+          }
+        />
+        <input
+          className={`${css.tableNameInput} nodrag`}
+          value={entity.name}
+          aria-label="테이블명"
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            applyCommand((doc) => renameEntity(doc, entity.id, e.target.value))
           }
         />
         <button
