@@ -1,0 +1,40 @@
+services:
+  api:
+    image: ghcr.io/cartoonpoet/erdify-api:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_PORT: 4000
+      DATABASE_URL: postgres://${DB_USER:-erdify}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-erdify}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+    volumes:
+      - erdify_uploads:/app/uploads
+    networks:
+      - erdify-proxy
+      - erdify-db
+
+  web:
+    image: ghcr.io/cartoonpoet/erdify-web:latest
+    restart: unless-stopped
+    networks:
+      - erdify-proxy
+
+  landing:
+    image: ghcr.io/cartoonpoet/erdify-landing:latest
+    restart: unless-stopped
+    networks:
+      - erdify-proxy
+
+volumes:
+  erdify_uploads:
+    external: true
+    name: erdify_uploads
+
+networks:
+  erdify-proxy:
+    external: true
+    name: erdify-proxy
+  erdify-db:
+    external: true
+    name: erdify-db

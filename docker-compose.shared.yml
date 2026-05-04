@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-erdify}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-erdify}
+    volumes:
+      - erdify_postgres_data:/var/lib/postgresql/data
+    networks:
+      - erdify-db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-erdify}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/00-main.conf:ro
+      - /opt/erdify/active-slot:/etc/nginx/conf.d/slot:ro
+    networks:
+      - erdify-proxy
+
+volumes:
+  erdify_postgres_data:
+    name: erdify_postgres_data
+  erdify_uploads:
+    name: erdify_uploads
+
+networks:
+  erdify-proxy:
+    name: erdify-proxy
+  erdify-db:
+    name: erdify-db
