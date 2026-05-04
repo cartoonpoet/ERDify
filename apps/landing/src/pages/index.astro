@@ -127,25 +127,14 @@ const APP_URL = 'https://app.erdify.com';
         <p>복잡한 ERD도 쉽고 빠르게 편집하세요.</p>
       </div>
       <div class="screenshots-grid">
-        <!-- 실제 스크린샷 이미지로 교체하세요 -->
         <div class="screenshot screenshot--main">
-          <div class="screenshot-placeholder">
-            <span>에디터 메인 화면</span>
-            <small>스크린샷을 추가하세요<br />public/ 폴더에 이미지를 넣고 src 교체</small>
-          </div>
-          <!-- <img src="/screenshots/editor.png" alt="ERDify 에디터" /> -->
+          <img src="/screenshots/editor.svg" alt="ERDify 에디터 — 테이블, 컬럼, 관계선을 직관적으로 편집" />
         </div>
         <div class="screenshot">
-          <div class="screenshot-placeholder">
-            <span>실시간 협업</span>
-          </div>
-          <!-- <img src="/screenshots/collaboration.png" alt="실시간 협업" /> -->
+          <img src="/screenshots/collaboration.svg" alt="실시간 협업 — 팀원 커서와 편집 내용이 실시간으로 반영" />
         </div>
         <div class="screenshot">
-          <div class="screenshot-placeholder">
-            <span>DDL 가져오기</span>
-          </div>
-          <!-- <img src="/screenshots/import.png" alt="DDL 가져오기" /> -->
+          <img src="/screenshots/import-ddl.svg" alt="DDL 가져오기 — CREATE TABLE SQL을 붙여넣으면 ERD 자동 생성" />
         </div>
       </div>
     </div>
@@ -507,7 +496,7 @@ const APP_URL = 'https://app.erdify.com';
     align-items: start;
   }
   .screenshot { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-  .screenshot img { width: 100%; border-radius: 12px; }
+  .screenshot img { width: 100%; border-radius: 12px; display: block; }
   .screenshot-placeholder {
     background: var(--surface);
     aspect-ratio: 16/10;

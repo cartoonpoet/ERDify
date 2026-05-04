@@ -1,0 +1,217 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <pattern id="dots" patternUnits="userSpaceOnUse" width="24" height="24">
+      <circle cx="0.5" cy="0.5" r="0.8" fill="#BCC0C4" opacity="0.45"/>
+    </pattern>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#1C2B33" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#0064E0" stroke-width="1.5" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arr-v" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#7C3AED" stroke-width="1.5" stroke-linejoin="round"/>
+    </marker>
+    <clipPath id="cu"><rect x="80" y="164" width="215" height="140" rx="8"/></clipPath>
+    <clipPath id="cp"><rect x="460" y="144" width="235" height="166" rx="8"/></clipPath>
+    <clipPath id="cc"><rect x="230" y="440" width="225" height="166" rx="8"/></clipPath>
+  </defs>
+
+  <!-- Canvas background -->
+  <rect width="1280" height="720" fill="#F8F9FB"/>
+  <rect y="44" width="1280" height="676" fill="url(#dots)"/>
+
+  <!-- ── TOPBAR ── -->
+  <rect width="1280" height="44" fill="white"/>
+  <line x1="0" y1="44" x2="1280" y2="44" stroke="#DEE3E9" stroke-width="1"/>
+
+  <!-- back btn -->
+  <rect x="8" y="8" width="28" height="28" rx="6" fill="#F1F4F7"/>
+  <text x="22" y="27" text-anchor="middle" font-size="15" fill="#5D6C7B" font-family="sans-serif">←</text>
+
+  <!-- Logo -->
+  <text x="46" y="28" font-size="16" font-weight="800" fill="#0064E0" font-family="sans-serif">⬡</text>
+  <text x="63" y="28" font-size="14" font-weight="800" fill="#1C2B33" font-family="sans-serif">ERDify</text>
+
+  <!-- separator + name -->
+  <text x="111" y="28" font-size="13" fill="#DEE3E9" font-family="sans-serif">/</text>
+  <text x="122" y="28" font-size="13" font-weight="600" fill="#1C2B33" font-family="sans-serif">ecommerce_db</text>
+  <text x="241" y="28" font-size="11" fill="#BCC0C4" font-family="sans-serif">저장됨</text>
+
+  <!-- 검색 -->
+  <rect x="684" y="8" width="64" height="28" rx="6" fill="#F1F4F7" stroke="#DEE3E9" stroke-width="1"/>
+  <text x="716" y="27" text-anchor="middle" font-size="11" fill="#1C2B33" font-family="sans-serif">🔍 검색</text>
+
+  <!-- Presence avatars -->
+  <circle cx="768" cy="22" r="12" fill="#E41E3F"/>
+  <text x="768" y="27" text-anchor="middle" font-size="10" font-weight="700" fill="white" font-family="sans-serif">SY</text>
+  <circle cx="792" cy="22" r="12" fill="#31A24C"/>
+  <text x="792" y="27" text-anchor="middle" font-size="10" font-weight="700" fill="white" font-family="sans-serif">KM</text>
+  <circle cx="816" cy="22" r="12" fill="#0064E0"/>
+  <text x="816" y="27" text-anchor="middle" font-size="10" font-weight="700" fill="white" font-family="sans-serif">JH</text>
+
+  <!-- 공유 -->
+  <rect x="836" y="8" width="48" height="28" rx="6" fill="#F1F4F7" stroke="#DEE3E9" stroke-width="1"/>
+  <text x="860" y="27" text-anchor="middle" font-size="11" fill="#1C2B33" font-family="sans-serif">공유</text>
+
+  <!-- DDL 내보내기 -->
+  <rect x="892" y="8" width="94" height="28" rx="6" fill="#F1F4F7" stroke="#DEE3E9" stroke-width="1"/>
+  <text x="939" y="27" text-anchor="middle" font-size="11" fill="#1C2B33" font-family="sans-serif">DDL 내보내기</text>
+
+  <!-- ORM 내보내기 -->
+  <rect x="994" y="8" width="94" height="28" rx="6" fill="#F1F4F7" stroke="#DEE3E9" stroke-width="1"/>
+  <text x="1041" y="27" text-anchor="middle" font-size="11" fill="#1C2B33" font-family="sans-serif">ORM 내보내기</text>
+
+  <!-- + 테이블 -->
+  <rect x="1096" y="8" width="74" height="28" rx="6" fill="#1C2B33"/>
+  <text x="1133" y="27" text-anchor="middle" font-size="11" font-weight="600" fill="white" font-family="sans-serif">+ 테이블</text>
+
+  <!-- 버전 저장 -->
+  <rect x="1178" y="8" width="70" height="28" rx="6" fill="#31A24C"/>
+  <text x="1213" y="27" text-anchor="middle" font-size="11" font-weight="600" fill="white" font-family="sans-serif">버전 저장</text>
+
+  <!-- ── RELATIONSHIP ARROWS (drawn under tables) ── -->
+  <!-- users.id → posts.user_id -->
+  <path d="M295,213 C378,213 378,219 460,219" fill="none" stroke="#0064E0" stroke-width="1.5" opacity="0.55" marker-end="url(#arr)"/>
+  <!-- users → comments (user_id) -->
+  <path d="M188,304 C188,372 230,372 230,545" fill="none" stroke="#0064E0" stroke-width="1.5" opacity="0.55" marker-end="url(#arr)"/>
+  <!-- posts → comments (post_id) -->
+  <path d="M577,310 C577,376 342,376 342,440" fill="none" stroke="#7C3AED" stroke-width="1.5" opacity="0.55" marker-end="url(#arr-v)"/>
+
+  <!-- ── TABLE: users ── -->
+  <rect x="80" y="164" width="215" height="140" rx="8" fill="white" stroke="#DEE3E9" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="80" y="164" width="215" height="36" fill="#0064E0" clip-path="url(#cu)"/>
+  <circle cx="96" cy="182" r="5" fill="rgba(255,255,255,0.25)"/>
+  <text x="108" y="187" font-size="12" font-weight="700" fill="white" font-family="sans-serif">users</text>
+  <text x="291" y="186" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.55)" font-family="sans-serif">4 cols</text>
+  <!-- id row -->
+  <line x1="80" y1="200" x2="295" y2="200" stroke="#DEE3E9" stroke-width="0.5"/>
+  <rect x="80" y="200" width="3" height="26" fill="#FBBF24"/>
+  <text x="90" y="217" font-size="9" font-weight="700" fill="#D97706" font-family="sans-serif">PK</text>
+  <text x="107" y="217" font-size="12" fill="#1C2B33" font-family="sans-serif">id</text>
+  <text x="291" y="217" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">INT</text>
+  <!-- name row -->
+  <line x1="80" y1="226" x2="295" y2="226" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="90" y="243" font-size="12" fill="#1C2B33" font-family="sans-serif">name</text>
+  <text x="291" y="243" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">VARCHAR(100)</text>
+  <!-- email row -->
+  <line x1="80" y1="252" x2="295" y2="252" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="90" y="269" font-size="12" fill="#1C2B33" font-family="sans-serif">email</text>
+  <text x="291" y="269" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">VARCHAR(255)</text>
+  <!-- created_at row -->
+  <line x1="80" y1="278" x2="295" y2="278" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="90" y="295" font-size="12" fill="#1C2B33" font-family="sans-serif">created_at</text>
+  <text x="291" y="295" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">TIMESTAMP</text>
+
+  <!-- ── TABLE: posts (selected) ── -->
+  <rect x="456" y="140" width="243" height="174" rx="10" fill="none" stroke="#0064E0" stroke-width="2" opacity="0.3"/>
+  <rect x="460" y="144" width="235" height="166" rx="8" fill="white" stroke="#0064E0" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="460" y="144" width="235" height="36" fill="#7C3AED" clip-path="url(#cp)"/>
+  <circle cx="476" cy="162" r="5" fill="rgba(255,255,255,0.25)"/>
+  <text x="488" y="167" font-size="12" font-weight="700" fill="white" font-family="sans-serif">posts</text>
+  <text x="691" y="166" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.55)" font-family="sans-serif">5 cols</text>
+  <!-- id row -->
+  <line x1="460" y1="180" x2="695" y2="180" stroke="#DEE3E9" stroke-width="0.5"/>
+  <rect x="460" y="180" width="3" height="26" fill="#FBBF24"/>
+  <text x="470" y="197" font-size="9" font-weight="700" fill="#D97706" font-family="sans-serif">PK</text>
+  <text x="487" y="197" font-size="12" fill="#1C2B33" font-family="sans-serif">id</text>
+  <text x="691" y="197" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">INT</text>
+  <!-- user_id row (FK, highlighted) -->
+  <rect x="460" y="206" width="235" height="26" fill="#EEF4FF"/>
+  <line x1="460" y1="206" x2="695" y2="206" stroke="#DEE3E9" stroke-width="0.5"/>
+  <rect x="460" y="206" width="3" height="26" fill="#0064E0"/>
+  <text x="470" y="223" font-size="9" font-weight="700" fill="#0064E0" font-family="sans-serif">FK</text>
+  <text x="487" y="223" font-size="12" fill="#1C2B33" font-family="sans-serif">user_id</text>
+  <text x="691" y="223" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">INT</text>
+  <!-- title row -->
+  <line x1="460" y1="232" x2="695" y2="232" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="470" y="249" font-size="12" fill="#1C2B33" font-family="sans-serif">title</text>
+  <text x="691" y="249" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">VARCHAR(200)</text>
+  <!-- content row -->
+  <line x1="460" y1="258" x2="695" y2="258" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="470" y="275" font-size="12" fill="#1C2B33" font-family="sans-serif">content</text>
+  <text x="691" y="275" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">TEXT</text>
+  <!-- created_at row -->
+  <line x1="460" y1="284" x2="695" y2="284" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="470" y="301" font-size="12" fill="#1C2B33" font-family="sans-serif">created_at</text>
+  <text x="691" y="301" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">TIMESTAMP</text>
+
+  <!-- ── TABLE: comments ── -->
+  <rect x="230" y="440" width="225" height="166" rx="8" fill="white" stroke="#DEE3E9" stroke-width="1" filter="url(#shadow)"/>
+  <rect x="230" y="440" width="225" height="36" fill="#0891B2" clip-path="url(#cc)"/>
+  <circle cx="246" cy="458" r="5" fill="rgba(255,255,255,0.25)"/>
+  <text x="258" y="463" font-size="12" font-weight="700" fill="white" font-family="sans-serif">comments</text>
+  <text x="451" y="462" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.55)" font-family="sans-serif">5 cols</text>
+  <!-- id row -->
+  <line x1="230" y1="476" x2="455" y2="476" stroke="#DEE3E9" stroke-width="0.5"/>
+  <rect x="230" y="476" width="3" height="26" fill="#FBBF24"/>
+  <text x="240" y="493" font-size="9" font-weight="700" fill="#D97706" font-family="sans-serif">PK</text>
+  <text x="257" y="493" font-size="12" fill="#1C2B33" font-family="sans-serif">id</text>
+  <text x="451" y="493" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">INT</text>
+  <!-- post_id row (FK) -->
+  <line x1="230" y1="502" x2="455" y2="502" stroke="#DEE3E9" stroke-width="0.5"/>
+  <rect x="230" y="502" width="3" height="26" fill="#7C3AED"/>
+  <text x="240" y="519" font-size="9" font-weight="700" fill="#7C3AED" font-family="sans-serif">FK</text>
+  <text x="257" y="519" font-size="12" fill="#1C2B33" font-family="sans-serif">post_id</text>
+  <text x="451" y="519" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">INT</text>
+  <!-- user_id row (FK) -->
+  <line x1="230" y1="528" x2="455" y2="528" stroke="#DEE3E9" stroke-width="0.5"/>
+  <rect x="230" y="528" width="3" height="26" fill="#0064E0"/>
+  <text x="240" y="545" font-size="9" font-weight="700" fill="#0064E0" font-family="sans-serif">FK</text>
+  <text x="257" y="545" font-size="12" fill="#1C2B33" font-family="sans-serif">user_id</text>
+  <text x="451" y="545" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">INT</text>
+  <!-- body row -->
+  <line x1="230" y1="554" x2="455" y2="554" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="240" y="571" font-size="12" fill="#1C2B33" font-family="sans-serif">body</text>
+  <text x="451" y="571" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">TEXT</text>
+  <!-- created_at row -->
+  <line x1="230" y1="580" x2="455" y2="580" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="240" y="597" font-size="12" fill="#1C2B33" font-family="sans-serif">created_at</text>
+  <text x="451" y="597" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">TIMESTAMP</text>
+
+  <!-- ── 4th table: orders (partial, right side) ── -->
+  <rect x="820" y="180" width="220" height="192" rx="8" fill="white" stroke="#DEE3E9" stroke-width="1" filter="url(#shadow)"/>
+  <defs><clipPath id="co"><rect x="820" y="180" width="220" height="192" rx="8"/></clipPath></defs>
+  <rect x="820" y="180" width="220" height="36" fill="#D97706" clip-path="url(#co)"/>
+  <circle cx="836" cy="198" r="5" fill="rgba(255,255,255,0.25)"/>
+  <text x="848" y="203" font-size="12" font-weight="700" fill="white" font-family="sans-serif">orders</text>
+  <text x="1036" y="202" text-anchor="end" font-size="10" fill="rgba(255,255,255,0.55)" font-family="sans-serif">6 cols</text>
+  <line x1="820" y1="216" x2="1040" y2="216" stroke="#DEE3E9" stroke-width="0.5"/>
+  <rect x="820" y="216" width="3" height="26" fill="#FBBF24"/>
+  <text x="830" y="233" font-size="9" font-weight="700" fill="#D97706" font-family="sans-serif">PK</text>
+  <text x="847" y="233" font-size="12" fill="#1C2B33" font-family="sans-serif">id</text>
+  <text x="1036" y="233" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">INT</text>
+  <line x1="820" y1="242" x2="1040" y2="242" stroke="#DEE3E9" stroke-width="0.5"/>
+  <rect x="820" y="242" width="3" height="26" fill="#0064E0"/>
+  <text x="830" y="259" font-size="9" font-weight="700" fill="#0064E0" font-family="sans-serif">FK</text>
+  <text x="847" y="259" font-size="12" fill="#1C2B33" font-family="sans-serif">user_id</text>
+  <text x="1036" y="259" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">INT</text>
+  <line x1="820" y1="268" x2="1040" y2="268" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="830" y="285" font-size="12" fill="#1C2B33" font-family="sans-serif">status</text>
+  <text x="1036" y="285" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">VARCHAR(20)</text>
+  <line x1="820" y1="294" x2="1040" y2="294" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="830" y="311" font-size="12" fill="#1C2B33" font-family="sans-serif">total_amount</text>
+  <text x="1036" y="311" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">DECIMAL(10,2)</text>
+  <line x1="820" y1="320" x2="1040" y2="320" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="830" y="337" font-size="12" fill="#1C2B33" font-family="sans-serif">shipped_at</text>
+  <text x="1036" y="337" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">TIMESTAMP</text>
+  <line x1="820" y1="346" x2="1040" y2="346" stroke="#DEE3E9" stroke-width="0.5"/>
+  <text x="830" y="363" font-size="12" fill="#1C2B33" font-family="sans-serif">created_at</text>
+  <text x="1036" y="363" text-anchor="end" font-size="10" fill="#5D6C7B" font-family="sans-serif">TIMESTAMP</text>
+
+  <!-- users → orders (user_id) -->
+  <path d="M295,213 C560,213 560,233 820,233" fill="none" stroke="#0064E0" stroke-width="1.5" opacity="0.4" marker-end="url(#arr)" stroke-dasharray="5,3"/>
+
+  <!-- ── ZOOM CONTROLS ── -->
+  <rect x="24" y="660" width="88" height="28" rx="8" fill="white" stroke="#DEE3E9" stroke-width="1" filter="url(#shadow)"/>
+  <text x="41" y="679" text-anchor="middle" font-size="16" fill="#5D6C7B" font-family="sans-serif">−</text>
+  <line x1="54" y1="664" x2="54" y2="684" stroke="#DEE3E9" stroke-width="1"/>
+  <text x="68" y="678" text-anchor="middle" font-size="11" fill="#5D6C7B" font-family="sans-serif">100%</text>
+  <line x1="82" y1="664" x2="82" y2="684" stroke="#DEE3E9" stroke-width="1"/>
+  <text x="99" y="679" text-anchor="middle" font-size="16" fill="#5D6C7B" font-family="sans-serif">+</text>
+
+  <!-- ── STATUS BADGE ── -->
+  <rect x="24" y="620" width="108" height="28" rx="8" fill="white" stroke="#DEE3E9" stroke-width="1" filter="url(#shadow)"/>
+  <circle cx="40" cy="634" r="5" fill="#31A24C"/>
+  <text x="52" y="638" font-size="11" fill="#1C2B33" font-family="sans-serif">4 tables · 20 cols</text>
+</svg>
