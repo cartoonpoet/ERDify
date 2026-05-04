@@ -11,8 +11,7 @@ const APP_URL = 'https://app.erdify.com';
   <nav class="nav">
     <div class="container nav-inner">
       <a href="/" class="logo">
-        <span class="logo-icon">⬡</span>
-        ERDify
+        <img src="/logo.svg" alt="ERDify" class="logo-image" />
       </a>
       <div class="nav-links">
         <a href="#features">기능</a>
@@ -41,7 +40,7 @@ const APP_URL = 'https://app.erdify.com';
         <a href="#demo" class="btn-outline btn-lg">데모 보기</a>
       </div>
       <div class="hero-stats">
-        <div class="stat"><strong>MySQL · PostgreSQL · MariaDB</strong><span>지원 방언</span></div>
+        <div class="stat"><strong>MySQL · PostgreSQL · MariaDB</strong><span>지원 데이터베이스</span></div>
         <div class="stat-divider"></div>
         <div class="stat"><strong>실시간</strong><span>팀 협업</span></div>
         <div class="stat-divider"></div>
@@ -265,8 +264,7 @@ const APP_URL = 'https://app.erdify.com';
     <div class="container footer-inner">
       <div class="footer-brand">
         <a href="/" class="logo">
-          <span class="logo-icon">⬡</span>
-          ERDify
+          <img src="/logo.svg" alt="ERDify" class="logo-image" />
         </a>
         <p>실시간 협업 ERD 도구</p>
       </div>
@@ -317,13 +315,13 @@ const APP_URL = 'https://app.erdify.com';
   .logo {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-weight: 800;
-    font-size: 18px;
-    color: var(--text);
     flex-shrink: 0;
   }
-  .logo-icon { color: var(--primary); font-size: 20px; }
+  .logo-image {
+    display: block;
+    width: 138px;
+    height: 36px;
+  }
   .nav-links {
     display: flex;
     gap: 28px;
