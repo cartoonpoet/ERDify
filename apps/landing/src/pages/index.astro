@@ -15,6 +15,7 @@ const APP_URL = 'https://app.erdify.com';
       </a>
       <div class="nav-links">
         <a href="#features">기능</a>
+        <a href="#integrations">연동</a>
         <a href="#pricing">가격</a>
       </div>
       <div class="nav-cta">
@@ -27,20 +28,20 @@ const APP_URL = 'https://app.erdify.com';
   <!-- HERO -->
   <section class="hero">
     <div class="container">
-      <div class="badge">✦ Claude MCP 공식 연동</div>
+      <div class="badge">✦ MCP 지원 — Cursor · Claude · Windsurf · Continue</div>
       <h1 class="hero-title">
         AI가 팀 스키마를<br /><span class="highlight">직접 관리</span>합니다
       </h1>
       <p class="hero-sub">
-        Claude에게 말하면 ERD가 바뀝니다.<br />
+        사용하는 AI 도구에서 ERDify MCP를 연결하세요.<br />
         스키마 설계부터 DDL·ORM 생성, 팀 실시간 협업까지 — AI 시대의 데이터베이스 도구.
       </p>
       <div class="hero-actions">
         <a href={`${APP_URL}/register`} class="btn-primary btn-lg">무료로 시작하기 →</a>
-        <a href="#ai-workflow" class="btn-outline btn-lg">AI 연동 보기</a>
+        <a href="#integrations" class="btn-outline btn-lg">연동 가이드 보기</a>
       </div>
       <div class="hero-stats">
-        <div class="stat"><strong>Claude MCP</strong><span>AI 직접 연동</span></div>
+        <div class="stat"><strong>Cursor · Claude · Windsurf</strong><span>지원 AI 도구</span></div>
         <div class="stat-divider"></div>
         <div class="stat"><strong>실시간</strong><span>팀 협업</span></div>
         <div class="stat-divider"></div>
@@ -54,8 +55,8 @@ const APP_URL = 'https://app.erdify.com';
     <div class="container">
       <div class="section-header">
         <div class="badge">AI-Native ERD</div>
-        <h2>Claude에게 말하면 ERD가 바뀝니다</h2>
-        <p>MCP(Model Context Protocol)로 연결된 Claude가 팀의 스키마를<br />직접 읽고, 수정하고, 팀 전체에 동기화합니다.</p>
+        <h2>AI에게 말하면 ERD가 바뀝니다</h2>
+        <p>MCP(Model Context Protocol)로 연결된 AI가 팀의 스키마를<br />직접 읽고, 수정하고, 팀 전체에 동기화합니다.</p>
       </div>
 
       <div class="workflow-demo">
@@ -65,14 +66,14 @@ const APP_URL = 'https://app.erdify.com';
             <span class="chat-dot" style="background:#FF5F57"></span>
             <span class="chat-dot" style="background:#FEBC2E"></span>
             <span class="chat-dot" style="background:#28C840"></span>
-            <span class="chat-app-name">Claude</span>
+            <span class="chat-app-name">Cursor — AI Chat</span>
           </div>
           <div class="chat-body">
             <div class="chat-msg chat-msg--user">
               결제 시스템 추가해줘. orders랑 order_items 테이블 필요해
             </div>
             <div class="chat-msg chat-msg--ai">
-              <div class="chat-ai-label">Claude</div>
+              <div class="chat-ai-label">AI (ERDify MCP 연결됨)</div>
               ERDify MCP로 현재 스키마를 확인했습니다.<br />
               <code>orders</code>, <code>order_items</code> 테이블과 <code>users</code>와의 관계를 추가하겠습니다.
               <div class="tool-calls">
@@ -195,6 +196,112 @@ const APP_URL = 'https://app.erdify.com';
           <h3>공유 링크</h3>
           <p>읽기 전용 링크로 팀 외부와 공유하세요. 만료 시간을 설정해 보안을 유지합니다.</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTEGRATIONS -->
+  <section class="integrations" id="integrations">
+    <div class="container">
+      <div class="section-header">
+        <div class="badge">연동 가이드</div>
+        <h2>사용하는 AI 도구에 바로 연결</h2>
+        <p>MCP를 지원하는 AI라면 설정 한 줄로 ERDify와 연결됩니다.</p>
+      </div>
+
+      <!-- Tool tabs -->
+      <div class="it-tabs" role="tablist">
+        <button class="it-tab it-tab--active" data-tool="cursor">
+          <span class="it-tool-name">Cursor</span>
+        </button>
+        <button class="it-tab" data-tool="claude">
+          <span class="it-tool-name">Claude Desktop</span>
+        </button>
+        <button class="it-tab" data-tool="gemini">
+          <span class="it-tool-name">Gemini CLI</span>
+        </button>
+        <button class="it-tab" data-tool="codex">
+          <span class="it-tool-name">Codex CLI</span>
+        </button>
+      </div>
+
+      <!-- Config panels -->
+      <div class="it-panel" data-panel="cursor">
+        <div class="it-meta">
+          <div class="it-file-badge">📄 .cursor/mcp.json</div>
+          <button class="it-copy" data-copy="cursor">복사</button>
+        </div>
+        <pre class="it-code" id="code-cursor">{`{
+  "mcpServers": {
+    "erdify": {
+      "command": "npx",
+      "args": ["-y", "@erdify/mcp-server@latest"],
+      "env": {
+        "ERDIFY_API_KEY": "erd_your_api_key_here"
+      }
+    }
+  }
+}`}</pre>
+      </div>
+
+      <div class="it-panel it-panel--hidden" data-panel="claude">
+        <div class="it-meta">
+          <div class="it-file-badge">📄 ~/Library/Application Support/Claude/claude_desktop_config.json</div>
+          <button class="it-copy" data-copy="claude">복사</button>
+        </div>
+        <pre class="it-code" id="code-claude">{`{
+  "mcpServers": {
+    "erdify": {
+      "command": "npx",
+      "args": ["-y", "@erdify/mcp-server@latest"],
+      "env": {
+        "ERDIFY_API_KEY": "erd_your_api_key_here"
+      }
+    }
+  }
+}`}</pre>
+      </div>
+
+      <div class="it-panel it-panel--hidden" data-panel="gemini">
+        <div class="it-meta">
+          <div class="it-file-badge">📄 ~/.gemini/settings.json</div>
+          <button class="it-copy" data-copy="gemini">복사</button>
+        </div>
+        <pre class="it-code" id="code-gemini">{`{
+  "mcpServers": {
+    "erdify": {
+      "command": "npx",
+      "args": ["-y", "@erdify/mcp-server@latest"],
+      "env": {
+        "ERDIFY_API_KEY": "erd_your_api_key_here"
+      }
+    }
+  }
+}`}</pre>
+      </div>
+
+      <div class="it-panel it-panel--hidden" data-panel="codex">
+        <div class="it-meta">
+          <div class="it-file-badge">📄 ~/.codex/config.yaml (또는 --mcp-server 플래그)</div>
+          <button class="it-copy" data-copy="codex">복사</button>
+        </div>
+        <pre class="it-code" id="code-codex">{`# codex --mcp-server npx:-y:@erdify/mcp-server@latest 실행
+# 또는 config.yaml에 추가:
+mcp_servers:
+  erdify:
+    command: npx
+    args:
+      - -y
+      - "@erdify/mcp-server@latest"
+    env:
+      ERDIFY_API_KEY: erd_your_api_key_here`}</pre>
+      </div>
+
+      <!-- API key note -->
+      <div class="it-note">
+        <span>🔑</span>
+        <span>API 키는 ERDify 앱 <strong>설정 → API</strong>에서 발급받을 수 있습니다.</span>
+        <a href={`${APP_URL}/settings/api`} class="it-note-link">키 발급하기 →</a>
       </div>
     </div>
   </section>
@@ -758,6 +865,102 @@ const APP_URL = 'https://app.erdify.com';
   .feature-card p { font-size: 14px; line-height: 1.7; opacity: 0.75; }
   .feature-card--accent p { opacity: 0.85; }
 
+  /* ── Integrations ── */
+  .integrations { padding: 100px 0; background: var(--surface); }
+
+  .it-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+  .it-tab {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+    font-family: var(--font, sans-serif);
+  }
+  .it-tab:hover { color: var(--text); }
+  .it-tab--active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  .it-panel {
+    background: #0f1923;
+    border-radius: 0 12px 12px 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-top: none;
+  }
+  .it-panel--hidden { display: none; }
+
+  .it-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #1a2733;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .it-file-badge {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.45);
+    font-family: monospace;
+  }
+  .it-copy {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: sans-serif;
+  }
+  .it-copy:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .it-copy--copied { border-color: #34d399; color: #34d399; }
+
+  .it-code {
+    margin: 0;
+    padding: 20px 24px;
+    font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #e2e8f0;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .it-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #EEF4FF;
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .it-note-link {
+    margin-left: auto;
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
   /* ── Screenshots ── */
   .screenshots { padding: 100px 0; }
 
@@ -1079,6 +1282,33 @@ const APP_URL = 'https://app.erdify.com';
 </style>
 
 <script>
+  // ── Integration tabs ──
+  const itTabs = document.querySelectorAll<HTMLButtonElement>('.it-tab');
+  const itPanels = document.querySelectorAll<HTMLElement>('.it-panel');
+
+  itTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const tool = tab.dataset.tool!;
+      itTabs.forEach(t => t.classList.remove('it-tab--active'));
+      itPanels.forEach(p => p.classList.add('it-panel--hidden'));
+      tab.classList.add('it-tab--active');
+      document.querySelector<HTMLElement>(`[data-panel="${tool}"]`)?.classList.remove('it-panel--hidden');
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.it-copy').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tool = btn.dataset.copy!;
+      const code = document.getElementById(`code-${tool}`)?.textContent ?? '';
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '✓ 복사됨';
+        btn.classList.add('it-copy--copied');
+        setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('it-copy--copied'); }, 2000);
+      });
+    });
+  });
+
+  // ── Screenshot tabs ──
   const tabs = document.querySelectorAll<HTMLButtonElement>('.ss-tab');
   const imgs = document.querySelectorAll<HTMLImageElement>('.ss-img');
   const dots = document.querySelectorAll<HTMLButtonElement>('.ss-dot');
