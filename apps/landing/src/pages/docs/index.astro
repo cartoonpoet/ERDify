@@ -1,285 +1,275 @@
 ---
+import DocsLayout from '../../layouts/DocsLayout.astro';
 const APP_URL = 'https://app.erdify.com';
 ---
 
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="ERDify Developer Center — MCP 연동, REST API, SDK 레퍼런스" />
-  <title>Developer Center — ERDify</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --blue: #0064E0;
-      --blue-hover: #0143B5;
-      --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
-      --bg:    #080f1a;
-      --bg2:   #0d1726;
-      --bg3:   #111f33;
-      --border: rgba(255,255,255,0.08);
-      --text:  #ffffff;
-      --sub:   rgba(255,255,255,0.5);
-    }
-    html { scroll-behavior: smooth; }
-    body { font-family: var(--font); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
-    a { color: inherit; text-decoration: none; }
-    img { max-width: 100%; display: block; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
-  </style>
-</head>
-<body>
+<DocsLayout title="Developer Center — ERDify" activePage="overview"
+  description="ERDify MCP 연동, REST API, SDK 레퍼런스">
 
-<!-- NAV -->
-<nav class="nav">
-  <div class="container nav-inner">
-    <a href="/" class="logo"><img src="/logo-white.svg" alt="ERDify" style="width:138px;height:36px;display:block;" /></a>
-    <div class="nav-links">
-      <a href="/docs/mcp-integration">MCP 연동</a>
-      <a href="/docs/api-reference">REST API</a>
-    </div>
-    <div class="nav-right">
-      <a href="/" class="nav-ghost">← 사이트로</a>
-      <a href={`${APP_URL}/settings/api`} class="nav-btn">API 키 발급</a>
-    </div>
+  <!-- Hero -->
+  <div class="dc-hero">
+    <div class="dc-badge">Developer Center</div>
+    <h1>ERDify를 코드와 AI에 연결하세요</h1>
+    <p>MCP로 AI 도구에 ERDify를 붙이거나, REST API로 직접 통합하세요.<br />
+    스키마 조회·수정·DDL 내보내기를 자동화할 수 있습니다.</p>
   </div>
-</nav>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-glow"></div>
-  <div class="container hero-inner">
-    <div class="hero-text">
-      <div class="eyebrow">Developer Center</div>
-      <h1>ERDify와<br />함께 빌드하세요</h1>
-      <p>MCP로 AI 도구에 연결하거나, REST API로 직접 통합하세요.<br />API 키 하나로 모든 연동을 시작할 수 있습니다.</p>
-      <div class="hero-btns">
-        <a href="/docs/mcp-integration" class="btn-primary">MCP 연동 시작하기 →</a>
-        <a href="/docs/api-reference" class="btn-outline">API 레퍼런스</a>
+  <!-- Quick start cards -->
+  <div class="dc-cards">
+    <a href="/docs/mcp-integration" class="dc-card">
+      <div class="dc-card-icon">🤖</div>
+      <div class="dc-card-body">
+        <h3>MCP 연동 가이드</h3>
+        <p>Cursor, Claude Desktop, Gemini CLI, Codex CLI에서 ERDify MCP 서버를 설정하는 방법</p>
       </div>
-    </div>
+      <span class="dc-card-arrow">→</span>
+    </a>
+    <a href="/docs/api-reference" class="dc-card">
+      <div class="dc-card-icon">⚡</div>
+      <div class="dc-card-body">
+        <h3>REST API 레퍼런스</h3>
+        <p>HTTP 요청으로 스키마를 조회·수정하고 DDL을 내보내는 완전한 API 레퍼런스</p>
+      </div>
+      <span class="dc-card-arrow">→</span>
+    </a>
+  </div>
 
-    <div class="chat-window">
-      <div class="cw-bar">
-        <span class="dot" style="background:#FF5F57"></span>
-        <span class="dot" style="background:#FEBC2E"></span>
-        <span class="dot" style="background:#28C840"></span>
-        <span class="cw-title">Cursor — AI Chat</span>
-      </div>
-      <div class="cw-body">
-        <div class="cw-msg cw-msg--user">결제 관련 테이블 추가해줘. orders랑 order_items 필요해</div>
-        <div class="cw-msg cw-msg--ai">
-          <span class="cw-label">AI (ERDify MCP)</span>
-          현재 스키마를 확인하고 테이블을 추가하겠습니다.
+  <!-- What you can do -->
+  <section class="dc-section">
+    <h2>무엇을 할 수 있나요?</h2>
+    <div class="dc-capabilities">
+      <div class="dc-cap">
+        <span class="dc-cap-icon">📋</span>
+        <div>
+          <h4>스키마 조회</h4>
+          <p>현재 ERD의 테이블, 컬럼, 관계를 프로그래밍 방식으로 읽어옵니다.</p>
         </div>
-        <div class="cw-tool"><span class="cw-t-dot"></span><span class="cw-t-fn">add_entity</span><span class="cw-t-arg">"orders"</span><span class="cw-t-ok">✓</span></div>
-        <div class="cw-tool"><span class="cw-t-dot"></span><span class="cw-t-fn">add_entity</span><span class="cw-t-arg">"order_items"</span><span class="cw-t-ok">✓</span></div>
-        <div class="cw-tool"><span class="cw-t-dot"></span><span class="cw-t-fn">add_relationship</span><span class="cw-t-arg">orders → users</span><span class="cw-t-ok">✓</span></div>
-        <div class="cw-msg cw-msg--ai">완료됐습니다. ERD에 반영되었습니다.</div>
+      </div>
+      <div class="dc-cap">
+        <span class="dc-cap-icon">✏️</span>
+        <div>
+          <h4>스키마 수정</h4>
+          <p>테이블 추가, 컬럼 변경, FK 설정을 API 또는 AI 대화로 처리합니다.</p>
+        </div>
+      </div>
+      <div class="dc-cap">
+        <span class="dc-cap-icon">⬇️</span>
+        <div>
+          <h4>DDL 내보내기</h4>
+          <p>MySQL, PostgreSQL, MariaDB DDL을 CI/CD 파이프라인에서 자동으로 추출합니다.</p>
+        </div>
+      </div>
+      <div class="dc-cap">
+        <span class="dc-cap-icon">🔄</span>
+        <div>
+          <h4>자동화 통합</h4>
+          <p>스크립트, GitHub Actions, 내부 도구 등에서 ERDify 워크플로우를 자동화합니다.</p>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- QUICK START -->
-<section class="section">
-  <div class="container">
-    <p class="eyebrow">연동 방법 선택</p>
-    <h2 class="sec-title">두 가지 방법으로 연결하세요</h2>
-    <div class="qs-grid">
-      <a href="/docs/mcp-integration" class="qs-card qs-card--hl">
-        <span class="qs-icon">🤖</span>
-        <h3>MCP 연동</h3>
-        <p>Cursor, Claude Desktop, Gemini CLI, Codex CLI에서 자연어로 ERD를 읽고 수정합니다.</p>
-        <div class="qs-tags"><span>Cursor</span><span>Claude Desktop</span><span>Gemini CLI</span><span>Codex CLI</span></div>
-        <span class="qs-link">가이드 보기 →</span>
-      </a>
-      <a href="/docs/api-reference" class="qs-card">
-        <span class="qs-icon">⚡</span>
-        <h3>REST API</h3>
-        <p>HTTP 요청으로 스키마를 조회·수정하고 DDL을 내보냅니다. JS·Python SDK를 지원합니다.</p>
-        <div class="qs-tags"><span>cURL</span><span>JavaScript</span><span>Python</span></div>
-        <span class="qs-link">레퍼런스 보기 →</span>
-      </a>
+  <!-- Supported tools -->
+  <section class="dc-section">
+    <h2>지원 AI 도구</h2>
+    <p class="dc-section-sub">MCP Server를 통해 아래 AI 도구와 연결할 수 있습니다.</p>
+    <div class="dc-tools">
+      <div class="dc-tool">
+        <span class="dc-tool-name">Cursor</span>
+        <span class="dc-tool-badge">MCP</span>
+      </div>
+      <div class="dc-tool">
+        <span class="dc-tool-name">Claude Desktop</span>
+        <span class="dc-tool-badge">MCP</span>
+      </div>
+      <div class="dc-tool">
+        <span class="dc-tool-name">Gemini CLI</span>
+        <span class="dc-tool-badge">MCP</span>
+      </div>
+      <div class="dc-tool">
+        <span class="dc-tool-name">Codex CLI</span>
+        <span class="dc-tool-badge">MCP</span>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- TOOLS -->
-<section class="section">
-  <div class="container">
-    <p class="eyebrow">개발자 도구</p>
-    <h2 class="sec-title">필요한 모든 것이 준비돼 있습니다</h2>
-    <div class="tools-grid">
-      <div class="tool">
-        <span class="tool-icon">📐</span>
-        <h4>MCP 서버</h4>
-        <p>npx 한 줄로 실행. 별도 설치 없이 바로 연결됩니다.</p>
-        <code>npx @erdify/mcp-server@latest</code>
-      </div>
-      <div class="tool">
-        <span class="tool-icon">📦</span>
-        <h4>JavaScript SDK</h4>
-        <p>TypeScript 지원 공식 JS SDK. Node.js·브라우저 모두 지원.</p>
-        <code>npm install @erdify/sdk</code>
-      </div>
-      <div class="tool">
-        <span class="tool-icon">🐍</span>
-        <h4>Python SDK</h4>
-        <p>Python 3.8+ 공식 SDK. pip으로 설치하세요.</p>
-        <code>pip install erdify</code>
-      </div>
-      <div class="tool">
-        <span class="tool-icon">🔑</span>
-        <h4>API 키</h4>
-        <p>모든 연동에 사용하는 단일 키. 앱 설정에서 발급합니다.</p>
-        <a href={`${APP_URL}/settings/api`} class="tool-link">키 발급하기 →</a>
-      </div>
-      <div class="tool">
-        <span class="tool-icon">⬇</span>
-        <h4>DDL 내보내기</h4>
-        <p>MySQL·PostgreSQL·MariaDB DDL을 API로 바로 내보냅니다.</p>
-        <a href="/docs/api-reference" class="tool-link">API 보기 →</a>
-      </div>
-      <div class="tool">
-        <span class="tool-icon">📡</span>
-        <h4>Webhook</h4>
-        <p>ERD 변경 이벤트를 Webhook으로 수신합니다.</p>
-        <span class="coming-soon">Coming Soon</span>
-      </div>
+  <!-- API Key CTA -->
+  <div class="dc-cta">
+    <div class="dc-cta-text">
+      <h3>API 키가 필요하신가요?</h3>
+      <p>ERDify 앱 → 설정 → API에서 바로 발급받을 수 있습니다.</p>
     </div>
+    <a href={`${APP_URL}/settings/api`} class="dc-cta-btn">API 키 발급하기 →</a>
   </div>
-</section>
 
-<!-- CTA -->
-<section class="cta-wrap">
-  <div class="container">
-    <div class="cta-box">
-      <div>
-        <h2>API 키 하나로 시작하세요</h2>
-        <p>MCP든 REST API든, 모두 같은 키로 연결됩니다.</p>
-      </div>
-      <a href={`${APP_URL}/settings/api`} class="btn-primary">API 키 발급하기 →</a>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="container footer-inner">
-    <span class="footer-copy">© 2026 ERDify. All rights reserved.</span>
-    <div class="footer-links">
-      <a href="/docs/mcp-integration">MCP 연동</a>
-      <a href="/docs/api-reference">REST API</a>
-      <a href="/">사이트로</a>
-    </div>
-  </div>
-</footer>
+</DocsLayout>
 
 <style>
-  /* Nav */
-  .nav { position:sticky; top:0; z-index:100; height:60px; background:rgba(8,15,26,0.88); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); }
-  .nav-inner { height:100%; display:flex; align-items:center; gap:32px; }
-  .logo { flex-shrink:0; }
-  .nav-links { display:flex; gap:28px; flex:1; }
-  .nav-links a { font-size:14px; font-weight:500; color:var(--sub); transition:color .15s; }
-  .nav-links a:hover { color:#fff; }
-  .nav-right { display:flex; gap:10px; align-items:center; }
-  .nav-ghost { font-size:14px; font-weight:500; color:rgba(255,255,255,.4); padding:9px 14px; border-radius:8px; transition:background .15s,color .15s; }
-  .nav-ghost:hover { background:rgba(255,255,255,.07); color:rgba(255,255,255,.8); }
-  .nav-btn { font-size:14px; font-weight:600; color:#fff; background:var(--blue); padding:9px 18px; border-radius:8px; transition:background .15s; }
-  .nav-btn:hover { background:var(--blue-hover); }
-
-  /* Buttons */
-  .btn-primary { display:inline-block; font-size:15px; font-weight:600; color:#fff; background:var(--blue); padding:12px 24px; border-radius:10px; transition:background .15s; }
-  .btn-primary:hover { background:var(--blue-hover); }
-  .btn-outline { display:inline-block; font-size:15px; font-weight:600; color:rgba(255,255,255,.7); border:1.5px solid rgba(255,255,255,.2); padding:12px 24px; border-radius:10px; transition:border-color .15s,color .15s; }
-  .btn-outline:hover { border-color:rgba(255,255,255,.5); color:#fff; }
-
   /* Hero */
-  .hero { padding:100px 0 80px; position:relative; overflow:hidden; }
-  .hero-glow { position:absolute; top:-200px; left:50%; transform:translateX(-50%); width:800px; height:600px; background:radial-gradient(ellipse at center, rgba(0,100,224,.18) 0%, transparent 70%); pointer-events:none; }
-  .hero-inner { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; position:relative; z-index:1; }
-  .eyebrow { display:inline-block; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--blue); background:rgba(0,100,224,.15); border:1px solid rgba(0,100,224,.3); padding:5px 12px; border-radius:20px; margin-bottom:20px; }
-  h1 { font-size:48px; font-weight:800; line-height:1.15; margin-bottom:20px; }
-  .hero-text p { font-size:16px; line-height:1.75; color:var(--sub); margin-bottom:32px; }
-  .hero-btns { display:flex; gap:12px; flex-wrap:wrap; }
+  .dc-hero {
+    margin-bottom: 48px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dc-badge {
+    display: inline-block;
+    background: #EEF4FF;
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .dc-hero h1 {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+    line-height: 1.2;
+  }
+  .dc-hero p {
+    font-size: 15px;
+    color: var(--text-sub);
+    line-height: 1.75;
+  }
 
-  /* Chat window */
-  .chat-window { background:var(--bg2); border-radius:14px; border:1px solid var(--border); overflow:hidden; box-shadow:0 24px 64px rgba(0,0,0,.5); }
-  .cw-bar { display:flex; align-items:center; gap:6px; padding:12px 16px; background:var(--bg3); border-bottom:1px solid var(--border); }
-  .dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-  .cw-title { font-size:12px; color:var(--sub); margin-left:8px; font-family:monospace; }
-  .cw-body { padding:20px; display:flex; flex-direction:column; gap:10px; }
-  .cw-msg { font-size:13px; line-height:1.6; padding:10px 14px; border-radius:8px; }
-  .cw-msg--user { background:rgba(0,100,224,.15); color:rgba(255,255,255,.85); align-self:flex-end; max-width:90%; }
-  .cw-msg--ai { background:rgba(255,255,255,.05); color:rgba(255,255,255,.75); font-size:12.5px; }
-  .cw-label { display:block; font-size:10px; font-weight:700; color:var(--blue); margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em; }
-  .cw-tool { display:flex; align-items:center; gap:6px; padding:6px 10px; background:rgba(0,100,224,.08); border:1px solid rgba(0,100,224,.15); border-radius:6px; font-size:11.5px; font-family:monospace; }
-  .cw-t-dot { width:5px; height:5px; border-radius:50%; background:var(--blue); flex-shrink:0; }
-  .cw-t-fn { color:#60a5fa; font-weight:600; }
-  .cw-t-arg { color:var(--sub); flex:1; }
-  .cw-t-ok { color:#34d399; font-weight:700; }
+  /* Quick start cards */
+  .dc-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 52px;
+  }
+  .dc-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 22px 24px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--white);
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .dc-card:hover {
+    border-color: var(--primary);
+    background: #FAFCFF;
+    box-shadow: 0 4px 16px rgba(0,100,224,0.08);
+  }
+  .dc-card-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #EEF4FF;
+    border-radius: 12px;
+  }
+  .dc-card-body { flex: 1; }
+  .dc-card-body h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .dc-card-body p { font-size: 13px; color: var(--text-sub); line-height: 1.6; }
+  .dc-card-arrow { color: var(--text-sub); font-size: 18px; flex-shrink: 0; transition: transform 0.15s, color 0.15s; }
+  .dc-card:hover .dc-card-arrow { transform: translateX(4px); color: var(--primary); }
 
   /* Sections */
-  .section { padding:80px 0; border-top:1px solid var(--border); }
-  .sec-title { font-size:30px; font-weight:800; margin-bottom:40px; }
+  .dc-section { margin-bottom: 48px; }
+  .dc-section h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dc-section-sub { font-size: 14px; color: var(--text-sub); margin-bottom: 16px; }
 
-  /* Quick start */
-  .qs-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  .qs-card { display:flex; flex-direction:column; gap:12px; padding:32px; background:var(--bg2); border:1px solid var(--border); border-radius:16px; transition:border-color .18s,box-shadow .18s; }
-  .qs-card:hover { border-color:rgba(0,100,224,.4); box-shadow:0 4px 32px rgba(0,100,224,.1); }
-  .qs-card--hl { border-color:rgba(0,100,224,.3); background:rgba(0,100,224,.06); }
-  .qs-icon { font-size:28px; }
-  .qs-card h3 { font-size:20px; font-weight:700; }
-  .qs-card p { font-size:14px; color:var(--sub); line-height:1.7; }
-  .qs-tags { display:flex; flex-wrap:wrap; gap:6px; }
-  .qs-tags span { font-size:11px; font-weight:600; color:rgba(255,255,255,.5); background:rgba(255,255,255,.07); padding:3px 10px; border-radius:20px; }
-  .qs-link { font-size:14px; font-weight:700; color:var(--blue); margin-top:auto; }
+  /* Capabilities */
+  .dc-capabilities {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .dc-cap {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .dc-cap-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    border-radius: 8px;
+    margin-top: 2px;
+  }
+  .dc-cap h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .dc-cap p { font-size: 13px; color: var(--text-sub); line-height: 1.65; }
 
-  /* Tools */
-  .tools-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-  .tool { padding:28px; background:var(--bg2); border:1px solid var(--border); border-radius:14px; display:flex; flex-direction:column; gap:10px; transition:border-color .15s; }
-  .tool:hover { border-color:rgba(255,255,255,.15); }
-  .tool-icon { font-size:24px; }
-  .tool h4 { font-size:16px; font-weight:700; }
-  .tool p { font-size:13px; color:var(--sub); line-height:1.65; flex:1; }
-  .tool code { font-family:monospace; font-size:12px; color:#60a5fa; background:rgba(96,165,250,.1); padding:6px 10px; border-radius:6px; }
-  .tool-link { font-size:13px; font-weight:600; color:var(--blue); }
-  .tool-link:hover { text-decoration:underline; }
-  .coming-soon { display:inline-block; font-size:11px; font-weight:700; color:rgba(255,255,255,.3); background:rgba(255,255,255,.06); padding:3px 10px; border-radius:20px; }
+  /* Tools grid */
+  .dc-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .dc-tool {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--white);
+  }
+  .dc-tool-name { font-size: 14px; font-weight: 600; }
+  .dc-tool-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: #EEF4FF;
+    color: var(--primary);
+    letter-spacing: 0.04em;
+  }
 
   /* CTA */
-  .cta-wrap { padding:60px 0 80px; border-top:1px solid var(--border); }
-  .cta-box { display:flex; align-items:center; justify-content:space-between; gap:32px; background:linear-gradient(135deg,rgba(0,100,224,.15),rgba(0,100,224,.05)); border:1px solid rgba(0,100,224,.25); border-radius:20px; padding:48px 56px; }
-  .cta-box h2 { font-size:26px; font-weight:800; margin-bottom:8px; }
-  .cta-box p { font-size:15px; color:var(--sub); }
-
-  /* Footer */
-  .footer { border-top:1px solid var(--border); padding:24px 0; }
-  .footer-inner { display:flex; align-items:center; justify-content:space-between; }
-  .footer-copy { font-size:12px; color:rgba(255,255,255,.25); }
-  .footer-links { display:flex; gap:24px; }
-  .footer-links a { font-size:13px; color:rgba(255,255,255,.35); transition:color .15s; }
-  .footer-links a:hover { color:rgba(255,255,255,.7); }
-
-  /* Responsive */
-  @media (max-width:900px) {
-    .hero-inner { grid-template-columns:1fr; }
-    .chat-window { display:none; }
-    .qs-grid { grid-template-columns:1fr; }
-    .tools-grid { grid-template-columns:1fr 1fr; }
-    .cta-box { flex-direction:column; text-align:center; padding:40px 28px; }
-    .nav-links,.nav-ghost { display:none; }
+  .dc-cta {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    justify-content: space-between;
+    padding: 24px 28px;
+    border: 1px solid rgba(0,100,224,0.2);
+    border-radius: 14px;
+    background: #F5F8FF;
+    margin-top: 12px;
   }
-  @media (max-width:600px) {
-    h1 { font-size:34px; }
-    .tools-grid { grid-template-columns:1fr; }
+  .dc-cta-text h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .dc-cta-text p { font-size: 13px; color: var(--text-sub); }
+  .dc-cta-btn {
+    display: inline-block;
+    flex-shrink: 0;
+    background: var(--primary);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .dc-cta-btn:hover { background: var(--primary-hover); }
+
+  @media (max-width: 600px) {
+    .dc-cta { flex-direction: column; align-items: flex-start; }
+    .dc-hero h1 { font-size: 24px; }
   }
 </style>
-</body>
-</html>

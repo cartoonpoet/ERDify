@@ -51,12 +51,12 @@ const nav = [
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       :root {
         --primary: #0064E0;
-        --primary-hover: #0143B5;
-        --text: #F0F4F8;
-        --text-sub: rgba(240,244,248,0.5);
-        --border: rgba(255,255,255,0.08);
-        --surface: #0d1726;
-        --white: #080f1a;
+        --primary-hover: #0052C2;
+        --text: #111827;
+        --text-sub: #6B7280;
+        --border: #E5E7EB;
+        --surface: #F9FAFB;
+        --white: #FFFFFF;
         --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
         --sidebar-w: 240px;
         --header-h: 60px;
@@ -65,7 +65,7 @@ const nav = [
       body {
         font-family: var(--font);
         color: var(--text);
-        background: #080f1a;
+        background: var(--white);
         -webkit-font-smoothing: antialiased;
       }
       img { max-width: 100%; display: block; }
@@ -79,7 +79,7 @@ const nav = [
     <header class="dh">
       <div class="dh-inner">
         <a href="/" class="dh-logo">
-          <img src="/logo-white.svg" alt="ERDify" class="dh-logo-img" />
+          <img src="/logo.svg" alt="ERDify" class="dh-logo-img" />
         </a>
 
         <nav class="dh-nav">
@@ -137,7 +137,7 @@ const nav = [
         top: 0;
         z-index: 100;
         height: var(--header-h);
-        background: rgba(8,15,26,0.88);
+        background: rgba(255,255,255,0.92);
         backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--border);
       }
@@ -230,7 +230,7 @@ const nav = [
       .sb-item:hover { color: var(--text); background: var(--surface); }
       .sb-item--active {
         color: var(--primary);
-        background: rgba(0,100,224,0.12);
+        background: #EEF4FF;
         font-weight: 600;
       }
       .sb-item--active::before {
@@ -251,12 +251,12 @@ const nav = [
         color: var(--primary);
         padding: 9px 12px;
         border-radius: 8px;
-        border: 1px solid rgba(0,100,224,0.25);
-        background: rgba(0,100,224,0.1);
+        border: 1px solid rgba(0,100,224,0.2);
+        background: #EEF4FF;
         text-align: center;
         transition: background 0.15s;
       }
-      .sb-key-btn:hover { background: rgba(0,100,224,0.18); }
+      .sb-key-btn:hover { background: #dce8fc; }
 
       /* ── Main ── */
       .ds-main { padding: 52px 0 96px 60px; }

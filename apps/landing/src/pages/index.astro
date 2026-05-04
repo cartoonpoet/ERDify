@@ -11,7 +11,7 @@ const APP_URL = 'https://app.erdify.com';
   <nav class="nav">
     <div class="container nav-inner">
       <a href="/" class="logo">
-        <img src="/logo-white.svg" alt="ERDify" class="logo-image" />
+        <img src="/logo.svg" alt="ERDify" class="logo-image" />
       </a>
       <div class="nav-links">
         <a href="#features">기능</a>
@@ -652,7 +652,7 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
     <div class="container footer-inner">
       <div class="footer-brand">
         <a href="/" class="logo">
-          <img src="/logo-white.svg" alt="ERDify" class="logo-image" />
+          <img src="/logo.svg" alt="ERDify" class="logo-image" style="filter: brightness(0) invert(1);" />
         </a>
         <p>실시간 협업 ERD 도구</p>
       </div>
@@ -690,7 +690,7 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(8,15,26,0.88);
+    background: rgba(255,255,255,0.92);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
   }
@@ -816,10 +816,10 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
   /* ── Demo Video ── */
   .demo { padding: 0 0 100px; }
   .demo-wrapper {
-    background: linear-gradient(135deg, rgba(0,100,224,0.12) 0%, rgba(13,23,38,0.8) 100%);
+    background: linear-gradient(135deg, #EEF4FF 0%, #F0F4FF 100%);
     border-radius: 20px;
     padding: 24px;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(0,100,224,0.12);
     box-shadow: 0 24px 64px rgba(0,100,224,0.08), 0 4px 12px rgba(0,0,0,0.04);
   }
   .demo-video {
@@ -1075,17 +1075,18 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
     flex: 1;
     padding: 18px 24px;
     border-radius: 14px;
-    border: 2px solid var(--border);
-    background: var(--surface);
+    border: 1.5px solid var(--border);
+    background: var(--white);
     cursor: pointer;
     transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
     text-align: left;
     font-family: var(--font, sans-serif);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
-  .ac-mode:hover { border-color: var(--primary); }
+  .ac-mode:hover { border-color: var(--primary); background: #F5F8FF; }
   .ac-mode--active {
     border-color: var(--primary);
-    background: rgba(0,100,224,0.12);
+    background: #EEF4FF;
     box-shadow: 0 0 0 3px rgba(0,100,224,0.10);
   }
   .ac-mode-icon { font-size: 24px; flex-shrink: 0; }
@@ -1103,28 +1104,30 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
     gap: 0;
     border-radius: 12px;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
   }
   .api-endpoints {
-    background: #141e28;
+    background: var(--surface);
     padding: 20px 0;
-    border-right: 1px solid rgba(255,255,255,0.06);
+    border-right: 1px solid var(--border);
   }
   .api-ep-title {
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.1em;
-    color: rgba(255,255,255,0.3);
+    color: var(--text-sub);
     text-transform: uppercase;
     padding: 0 16px 8px;
   }
   .api-base {
     font-size: 10px;
     font-family: monospace;
-    color: rgba(255,255,255,0.25);
+    color: var(--text-sub);
     padding: 0 16px 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid var(--border);
     margin-bottom: 8px;
+    opacity: 0.7;
   }
   .api-ep-list { list-style: none; padding: 0; margin: 0; }
   .api-ep {
@@ -1136,9 +1139,9 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
     transition: background 0.12s;
     border-left: 2px solid transparent;
   }
-  .api-ep:hover { background: rgba(255,255,255,0.04); }
+  .api-ep:hover { background: rgba(0,100,224,0.04); }
   .api-ep--active {
-    background: rgba(0,100,224,0.12);
+    background: rgba(0,100,224,0.08);
     border-left-color: var(--primary);
   }
   .api-method {
@@ -1149,19 +1152,19 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
     border-radius: 4px;
     flex-shrink: 0;
   }
-  .api-method--get { background: rgba(52,211,153,0.15); color: #34d399; }
-  .api-method--post { background: rgba(96,165,250,0.15); color: #60a5fa; }
-  .api-method--patch { background: rgba(251,191,36,0.15); color: #fbbf24; }
-  .api-method--delete { background: rgba(248,113,113,0.15); color: #f87171; }
+  .api-method--get { background: rgba(5,150,105,0.1); color: #059669; }
+  .api-method--post { background: rgba(37,99,235,0.1); color: #2563eb; }
+  .api-method--patch { background: rgba(217,119,6,0.1); color: #d97706; }
+  .api-method--delete { background: rgba(220,38,38,0.1); color: #dc2626; }
   .api-path {
     font-size: 11px;
     font-family: monospace;
-    color: rgba(255,255,255,0.6);
+    color: var(--text-sub);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .api-ep--active .api-path { color: #fff; }
+  .api-ep--active .api-path { color: var(--primary); font-weight: 600; }
 
   .api-code-area {
     background: #0f1923;
@@ -1175,7 +1178,7 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
   }
   .api-code-area .it-tab { color: rgba(255,255,255,0.45); }
   .api-code-area .it-tab:hover { color: #fff; }
-  .api-code-area .it-tab--active { color: var(--primary); border-bottom-color: var(--primary); }
+  .api-code-area .it-tab--active { color: #60a5fa; border-bottom-color: #60a5fa; }
 
   .api-snippet { flex: 1; display: flex; flex-direction: column; }
   .api-snippet--hidden { display: none; }
@@ -1214,9 +1217,9 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
 
   .it-panel {
     background: #0f1923;
-    border-radius: 0 12px 12px 12px;
+    border-radius: 0 0 12px 12px;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
     border-top: none;
   }
   .it-panel--hidden { display: none; }
@@ -1266,7 +1269,8 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
     gap: 8px;
     margin-top: 16px;
     padding: 12px 16px;
-    background: rgba(0,100,224,0.12);
+    background: #EEF4FF;
+    border: 1px solid rgba(0,100,224,0.15);
     border-radius: 10px;
     font-size: 13px;
     color: var(--text);
@@ -1339,8 +1343,8 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
   .ss-display {
     border-radius: 20px;
     padding: 20px;
-    background: linear-gradient(135deg, rgba(0,100,224,0.12) 0%, rgba(13,23,38,0.8) 100%);
-    border: 1px solid var(--border);
+    background: linear-gradient(135deg, #EEF4FF 0%, #F0F4FF 100%);
+    border: 1px solid rgba(0,100,224,0.12);
     box-shadow: 0 24px 64px rgba(0,100,224,0.07), 0 4px 12px rgba(0,0,0,0.04);
     display: flex;
     align-items: center;
