@@ -27,7 +27,7 @@ export function logout(): Promise<void> {
 }
 
 export function generateApiKey(): Promise<{ apiKey: string }> {
-  return httpClient.post<{ apiKey: string }>("/auth/api-key").then((r) => r.data);
+  return httpClient.post<{ apiKey: string }>("/auth/api-keys").then((r) => r.data);
 }
 
 export function getMe(): Promise<UserProfile> {
