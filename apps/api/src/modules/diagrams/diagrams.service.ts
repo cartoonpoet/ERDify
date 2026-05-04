@@ -6,15 +6,6 @@ import type { Repository } from "typeorm";
 import type { CreateDiagramDto } from "./dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
 import type { SharePreset } from "./dto/share-diagram.dto";
-import {
-  addEntity, renameEntity, updateEntityColor, updateEntityComment, removeEntity,
-  addColumn as domainAddColumn,
-  updateColumn as domainUpdateColumn,
-  removeColumn as domainRemoveColumn,
-  addRelationship as domainAddRelationship,
-  updateRelationship as domainUpdateRelationship,
-  removeRelationship as domainRemoveRelationship,
-} from "@erdify/domain";
 import type { DiagramColumn, DiagramDocument, DiagramRelationship } from "@erdify/domain";
 import type { AddTableDto } from "./dto/add-table.dto";
 import type { UpdateTableDto } from "./dto/update-table.dto";
@@ -22,6 +13,19 @@ import type { AddColumnDto } from "./dto/add-column.dto";
 import type { UpdateColumnDto } from "./dto/update-column.dto";
 import type { AddRelationshipDto } from "./dto/add-relationship.dto";
 import type { UpdateRelationshipDto } from "./dto/update-relationship.dto";
+
+type DomainModule = typeof import("@erdify/domain");
+
+const importEsm = new Function("specifier", "return import(specifier)") as (
+  specifier: string
+) => Promise<DomainModule>;
+
+let domainModulePromise: Promise<DomainModule> | undefined;
+
+function loadDomainModule(): Promise<DomainModule> {
+  domainModulePromise ??= importEsm("@erdify/domain");
+  return domainModulePromise;
+}
 
 @Injectable()
 export class DiagramsService {
@@ -206,10 +210,11 @@ export class DiagramsService {
   }
 
   async addTable(diagramId: string, userId: string, dto: AddTableDto): Promise<Diagram> {
+    const domain = await loadDomainModule();
     const entityId = randomUUID();
     const hasPosition = dto.x !== undefined && dto.y !== undefined;
     return this.applySchemaCommand(diagramId, userId, (doc) =>
-      addEntity(doc, {
+      domain.addEntity(doc, {
         id: entityId,
         name: dto.name,
         ...(hasPosition ? { position: { x: dto.x!, y: dto.y! } } : {}),
@@ -223,20 +228,22 @@ export class DiagramsService {
     userId: string,
     dto: UpdateTableDto
   ): Promise<Diagram> {
+    const domain = await loadDomainModule();
     return this.applySchemaCommand(diagramId, userId, (doc) => {
       if (!doc.entities.some((e) => e.id === tableId)) throw new NotFoundException("Table not found");
       let updated = doc;
-      if (dto.name !== undefined) updated = renameEntity(updated, tableId, dto.name);
-      if (dto.color !== undefined) updated = updateEntityColor(updated, tableId, dto.color ?? null);
-      if (dto.comment !== undefined) updated = updateEntityComment(updated, tableId, dto.comment ?? null);
+      if (dto.name !== undefined) updated = domain.renameEntity(updated, tableId, dto.name);
+      if (dto.color !== undefined) updated = domain.updateEntityColor(updated, tableId, dto.color ?? null);
+      if (dto.comment !== undefined) updated = domain.updateEntityComment(updated, tableId, dto.comment ?? null);
       return updated;
     });
   }
 
   async removeTable(diagramId: string, tableId: string, userId: string): Promise<void> {
+    const domain = await loadDomainModule();
     await this.applySchemaCommand(diagramId, userId, (doc) => {
       if (!doc.entities.some((e) => e.id === tableId)) throw new NotFoundException("Table not found");
-      return removeEntity(doc, tableId);
+      return domain.removeEntity(doc, tableId);
     });
   }
 
@@ -246,6 +253,7 @@ export class DiagramsService {
     userId: string,
     dto: AddColumnDto
   ): Promise<Diagram> {
+    const domain = await loadDomainModule();
     return this.applySchemaCommand(diagramId, userId, (doc) => {
       const entity = doc.entities.find((e) => e.id === tableId);
       if (!entity) throw new NotFoundException("Table not found");
@@ -260,7 +268,7 @@ export class DiagramsService {
         comment: null,
         ordinal: entity.columns.length,
       };
-      return domainAddColumn(doc, tableId, column);
+      return domain.addColumn(doc, tableId, column);
     });
   }
 
@@ -271,6 +279,7 @@ export class DiagramsService {
     userId: string,
     dto: UpdateColumnDto
   ): Promise<Diagram> {
+    const domain = await loadDomainModule();
     return this.applySchemaCommand(diagramId, userId, (doc) => {
       const entity = doc.entities.find((e) => e.id === tableId);
       if (!entity) throw new NotFoundException("Table not found");
@@ -283,7 +292,7 @@ export class DiagramsService {
       if (dto.unique !== undefined) changes.unique = dto.unique;
       if (dto.defaultValue !== undefined) changes.defaultValue = dto.defaultValue ?? null;
       if (dto.comment !== undefined) changes.comment = dto.comment ?? null;
-      return domainUpdateColumn(doc, tableId, columnId, changes);
+      return domain.updateColumn(doc, tableId, columnId, changes);
     });
   }
 
@@ -293,11 +302,12 @@ export class DiagramsService {
     columnId: string,
     userId: string
   ): Promise<void> {
+    const domain = await loadDomainModule();
     await this.applySchemaCommand(diagramId, userId, (doc) => {
       const entity = doc.entities.find((e) => e.id === tableId);
       if (!entity) throw new NotFoundException("Table not found");
       if (!entity.columns.some((c) => c.id === columnId)) throw new NotFoundException("Column not found");
-      return domainRemoveColumn(doc, tableId, columnId);
+      return domain.removeColumn(doc, tableId, columnId);
     });
   }
 
@@ -306,6 +316,7 @@ export class DiagramsService {
     userId: string,
     dto: AddRelationshipDto
   ): Promise<Diagram> {
+    const domain = await loadDomainModule();
     const relationship: DiagramRelationship = {
       id: randomUUID(),
       name: "",
@@ -319,7 +330,7 @@ export class DiagramsService {
       identifying: dto.identifying ?? false,
     };
     return this.applySchemaCommand(diagramId, userId, (doc) =>
-      domainAddRelationship(doc, relationship)
+      domain.addRelationship(doc, relationship)
     );
   }
 
@@ -329,6 +340,7 @@ export class DiagramsService {
     userId: string,
     dto: UpdateRelationshipDto
   ): Promise<Diagram> {
+    const domain = await loadDomainModule();
     return this.applySchemaCommand(diagramId, userId, (doc) => {
       if (!doc.relationships.some((r) => r.id === relId))
         throw new NotFoundException("Relationship not found");
@@ -339,15 +351,16 @@ export class DiagramsService {
       if (dto.onDelete !== undefined) changes.onDelete = dto.onDelete;
       if (dto.onUpdate !== undefined) changes.onUpdate = dto.onUpdate;
       if (dto.identifying !== undefined) changes.identifying = dto.identifying;
-      return domainUpdateRelationship(doc, relId, changes);
+      return domain.updateRelationship(doc, relId, changes);
     });
   }
 
   async removeRelationship(diagramId: string, relId: string, userId: string): Promise<void> {
+    const domain = await loadDomainModule();
     await this.applySchemaCommand(diagramId, userId, (doc) => {
       if (!doc.relationships.some((r) => r.id === relId))
         throw new NotFoundException("Relationship not found");
-      return domainRemoveRelationship(doc, relId);
+      return domain.removeRelationship(doc, relId);
     });
   }
 }
