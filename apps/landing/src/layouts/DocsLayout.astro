@@ -74,43 +74,40 @@ const nav = [
     </style>
   </head>
   <body>
-    <!-- Header -->
+
+    <!-- ── Header (랜딩과 동일한 스타일) ── -->
     <header class="dh">
       <div class="dh-inner">
-        <!-- Left: logo + breadcrumb -->
-        <div class="dh-left">
-          <a href="/" class="dh-logo">
-            <img src="/logo-white.svg" alt="ERDify" class="dh-logo-img" />
-          </a>
-          <span class="dh-sep">/</span>
-          <a href="/docs" class="dh-product">Developer Center</a>
-        </div>
+        <a href="/" class="dh-logo">
+          <img src="/logo.svg" alt="ERDify" class="dh-logo-img" />
+        </a>
 
-        <!-- Center: nav -->
         <nav class="dh-nav">
-          <a href="/docs/mcp-integration" class:list={['dh-link', activePage === 'mcp' ? 'dh-link--active' : '']}>MCP 연동</a>
-          <a href="/docs/api-reference" class:list={['dh-link', activePage === 'api' ? 'dh-link--active' : '']}>REST API</a>
+          <a href="/docs/mcp-integration"
+            class:list={['dh-link', activePage === 'mcp' ? 'dh-link--active' : '']}>MCP 연동</a>
+          <a href="/docs/api-reference"
+            class:list={['dh-link', activePage === 'api' ? 'dh-link--active' : '']}>REST API</a>
         </nav>
 
-        <!-- Right: CTA -->
-        <div class="dh-right">
-          <a href="/" class="dh-back">← 랜딩으로</a>
-          <a href={`${APP_URL}/settings/api`} class="dh-cta">API 키 발급</a>
+        <div class="dh-cta-group">
+          <a href="/" class="dh-ghost">← 사이트로</a>
+          <a href={`${APP_URL}/settings/api`} class="dh-btn">API 키 발급</a>
         </div>
       </div>
     </header>
 
-    <!-- Shell -->
-    <div class="ds">
+    <!-- ── Body ── -->
+    <div class="ds-shell">
+
       <!-- Sidebar -->
       <aside class="ds-sidebar">
         {nav.map((section) => (
-          <div class="sb-group">
-            <div class="sb-group-label">{section.group}</div>
+          <div class="sb-section">
+            <p class="sb-section-title">{section.group}</p>
             {section.items.map((item) => (
               <a
                 href={item.href}
-                class:list={['sb-link', item.key === activePage ? 'sb-link--active' : '']}
+                class:list={['sb-item', item.key === activePage ? 'sb-item--active' : '']}
               >
                 {item.label}
               </a>
@@ -118,14 +115,14 @@ const nav = [
           </div>
         ))}
 
-        <div class="sb-divider" />
+        <div class="sb-sep" />
 
-        <a href={`${APP_URL}/settings/api`} class="sb-api-btn">
+        <a href={`${APP_URL}/settings/api`} class="sb-key-btn">
           🔑 API 키 발급하기 →
         </a>
       </aside>
 
-      <!-- Main -->
+      <!-- Main content -->
       <main class="ds-main">
         <div class="ds-content">
           <slot />
@@ -140,8 +137,9 @@ const nav = [
         top: 0;
         z-index: 100;
         height: var(--header-h);
-        background: #0f1923;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
       }
       .dh-inner {
         max-width: 1280px;
@@ -150,90 +148,51 @@ const nav = [
         height: 100%;
         display: flex;
         align-items: center;
-        gap: 0;
+        gap: 32px;
       }
-
-      /* Logo + breadcrumb */
-      .dh-left {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-shrink: 0;
-      }
-      .dh-logo { display: flex; align-items: center; }
+      .dh-logo { display: flex; align-items: center; flex-shrink: 0; }
       .dh-logo-img { width: 138px; height: 36px; display: block; }
-      .dh-sep {
-        color: rgba(255,255,255,0.2);
-        font-size: 18px;
-        font-weight: 300;
-        line-height: 1;
-        margin: 0 2px;
-      }
-      .dh-product {
-        font-size: 14px;
-        font-weight: 600;
-        color: rgba(255,255,255,0.55);
-        transition: color 0.15s;
-        white-space: nowrap;
-      }
-      .dh-product:hover { color: #fff; }
 
-      /* Nav */
-      .dh-nav {
-        display: flex;
-        gap: 4px;
-        margin-left: 40px;
-        flex: 1;
-      }
+      .dh-nav { display: flex; gap: 28px; flex: 1; }
       .dh-link {
         font-size: 14px;
         font-weight: 500;
-        color: rgba(255,255,255,0.55);
-        padding: 6px 12px;
-        border-radius: 6px;
-        transition: color 0.15s, background 0.15s;
-        white-space: nowrap;
+        color: var(--text-sub);
+        transition: color 0.15s;
       }
-      .dh-link:hover { color: #fff; background: rgba(255,255,255,0.07); }
-      .dh-link--active { color: #fff; font-weight: 600; }
+      .dh-link:hover { color: var(--text); }
+      .dh-link--active { color: var(--primary); font-weight: 600; }
 
-      /* Right */
-      .dh-right {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-shrink: 0;
-      }
-      .dh-back {
-        font-size: 13px;
+      .dh-cta-group { display: flex; gap: 10px; align-items: center; }
+      .dh-ghost {
+        font-size: 14px;
         font-weight: 500;
-        color: rgba(255,255,255,0.4);
-        padding: 6px 10px;
-        border-radius: 6px;
-        transition: color 0.15s, background 0.15s;
+        color: var(--text-sub);
+        padding: 9px 14px;
+        border-radius: 8px;
+        transition: background 0.15s;
       }
-      .dh-back:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.06); }
-      .dh-cta {
-        font-size: 13px;
+      .dh-ghost:hover { background: var(--surface); color: var(--text); }
+      .dh-btn {
+        font-size: 14px;
         font-weight: 600;
         color: #fff;
         background: var(--primary);
-        padding: 7px 16px;
+        padding: 9px 18px;
         border-radius: 8px;
         transition: background 0.15s;
         white-space: nowrap;
       }
-      .dh-cta:hover { background: var(--primary-hover); }
+      .dh-btn:hover { background: var(--primary-hover); }
 
       /* ── Shell ── */
-      .ds {
+      .ds-shell {
         max-width: 1280px;
         margin: 0 auto;
         padding: 0 24px;
         display: grid;
         grid-template-columns: var(--sidebar-w) 1fr;
         min-height: calc(100vh - var(--header-h));
-        gap: 0;
       }
 
       /* ── Sidebar ── */
@@ -242,22 +201,22 @@ const nav = [
         top: var(--header-h);
         height: calc(100vh - var(--header-h));
         overflow-y: auto;
-        padding: 32px 20px 32px 0;
+        padding: 32px 16px 40px 0;
         border-right: 1px solid var(--border);
         scrollbar-width: thin;
         scrollbar-color: var(--border) transparent;
       }
-      .sb-group { margin-bottom: 32px; }
-      .sb-group-label {
-        font-size: 10.5px;
+      .sb-section { margin-bottom: 28px; }
+      .sb-section-title {
+        font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.09em;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--text-sub);
         padding: 0 12px;
         margin-bottom: 4px;
       }
-      .sb-link {
+      .sb-item {
         display: flex;
         align-items: center;
         font-size: 14px;
@@ -266,39 +225,38 @@ const nav = [
         padding: 8px 12px;
         border-radius: 8px;
         transition: color 0.12s, background 0.12s;
-        line-height: 1.4;
+        position: relative;
       }
-      .sb-link:hover { color: var(--text); background: var(--surface); }
-      .sb-link--active {
+      .sb-item:hover { color: var(--text); background: var(--surface); }
+      .sb-item--active {
         color: var(--primary);
         background: #EEF4FF;
         font-weight: 600;
-        position: relative;
       }
-      .sb-link--active::before {
+      .sb-item--active::before {
         content: '';
         position: absolute;
         left: 0;
-        top: 6px;
-        bottom: 6px;
+        top: 8px;
+        bottom: 8px;
         width: 2px;
         background: var(--primary);
-        border-radius: 1px;
+        border-radius: 2px;
       }
-      .sb-divider { border-top: 1px solid var(--border); margin: 8px 12px 20px; }
-      .sb-api-btn {
+      .sb-sep { border-top: 1px solid var(--border); margin: 8px 12px 20px; }
+      .sb-key-btn {
         display: block;
         font-size: 12.5px;
         font-weight: 600;
         color: var(--primary);
         padding: 9px 12px;
         border-radius: 8px;
-        border: 1px solid rgba(0,100,224,0.25);
+        border: 1px solid rgba(0,100,224,0.2);
         background: #EEF4FF;
-        transition: background 0.15s;
         text-align: center;
+        transition: background 0.15s;
       }
-      .sb-api-btn:hover { background: #dce8fc; }
+      .sb-key-btn:hover { background: #dce8fc; }
 
       /* ── Main ── */
       .ds-main { padding: 52px 0 96px 60px; }
@@ -306,14 +264,11 @@ const nav = [
 
       /* ── Responsive ── */
       @media (max-width: 900px) {
-        .ds { grid-template-columns: 1fr; padding: 0 20px; }
+        .ds-shell { grid-template-columns: 1fr; padding: 0 20px; }
         .ds-sidebar { display: none; }
         .ds-main { padding: 32px 0 64px 0; }
         .dh-nav { display: none; }
-        .dh-back { display: none; }
-      }
-      @media (max-width: 600px) {
-        .dh-sep, .dh-product { display: none; }
+        .dh-ghost { display: none; }
       }
     </style>
   </body>
