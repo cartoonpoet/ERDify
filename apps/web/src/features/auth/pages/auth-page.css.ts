@@ -23,14 +23,16 @@ export const card = style({
 });
 
 export const brand = style({
-  fontSize: "22px",
-  fontWeight: "700",
-  color: vars.color.textPrimary,
-  letterSpacing: "-0.5px",
+  display: "flex",
+  alignItems: "center",
   marginBottom: "4px",
 });
 
-export const brandAccent = style({ color: vars.color.primary });
+export const brandLogo = style({
+  display: "block",
+  width: "138px",
+  height: "36px",
+});
 
 export const tagline = style({
   fontSize: "13px",

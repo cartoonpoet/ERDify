@@ -19,7 +19,7 @@ import { ImportDiagramModal } from "../components/ImportDiagramModal";
 import { ApiKeyModal } from "../components/ApiKeyModal";
 import { ProfileModal } from "../components/ProfileModal";
 import {
-  shell, topbar, brand, brandAccent, topbarSpacer, avatar, avatarImg,
+  shell, topbar, brand, brandLogo, topbarSpacer, avatar, avatarImg,
   avatarWrapper, dropdown, dropdownHeader, dropdownEmail,
   dropdownItem, dropdownItemDanger, body, emptySidebar,
 } from "./dashboard-page.css";
@@ -133,7 +133,7 @@ export const DashboardPage = () => {
     <div className={shell}>
       <header className={topbar}>
         <div className={brand}>
-          ERD<span className={brandAccent}>ify</span>
+          <img src="/logo.svg" alt="ERDify" className={brandLogo} />
         </div>
         <div className={topbarSpacer} />
 

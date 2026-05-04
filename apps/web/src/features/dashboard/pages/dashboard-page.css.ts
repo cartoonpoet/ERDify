@@ -18,13 +18,16 @@ export const topbar = style({
 });
 
 export const brand = style({
-  fontSize: "16px",
-  fontWeight: "700",
-  color: vars.color.textPrimary,
-  letterSpacing: "-0.3px",
+  display: "flex",
+  alignItems: "center",
+  flexShrink: 0,
 });
 
-export const brandAccent = style({ color: vars.color.primary });
+export const brandLogo = style({
+  display: "block",
+  width: "123px",
+  height: "32px",
+});
 
 export const topbarSpacer = style({ flex: 1 });
 

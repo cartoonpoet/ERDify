@@ -4,7 +4,7 @@ import { register } from "../../../shared/api/auth.api";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
 import { Button, Input } from "../../../design-system";
 import {
-  page, card, brand, brandAccent, tagline, form,
+  page, card, brand, brandLogo, tagline, form,
   authLink, authLinkAnchor, strengthBars, strengthBar, strengthBarFilled,
 } from "./auth-page.css";
 
@@ -46,7 +46,7 @@ export const RegisterPage = () => {
     <div className={page}>
       <div className={card}>
         <div className={brand}>
-          ERD<span className={brandAccent}>ify</span>
+          <img src="/logo.svg" alt="ERDify" className={brandLogo} />
         </div>
         <div className={tagline}>팀과 함께 스키마를 관리하세요</div>
         <form className={form} onSubmit={handleSubmit} aria-label="회원가입">
