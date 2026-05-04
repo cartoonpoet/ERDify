@@ -268,8 +268,8 @@ const APP_URL = 'https://app.erdify.com';
     <div class="container">
       <div class="section-header">
         <div class="badge">가격 정책</div>
-        <h2>팀 규모에 맞게</h2>
-        <p>혼자 시작해서 팀으로 성장하세요. 언제든 플랜을 변경할 수 있습니다.</p>
+        <h2>AI 연동부터 팀 협업까지</h2>
+        <p>무료로 시작하고, AI가 필요할 때 Pro로. 팀이 생기면 Team으로.</p>
       </div>
       <div class="pricing-grid">
         <!-- FREE -->
@@ -277,13 +277,14 @@ const APP_URL = 'https://app.erdify.com';
           <div class="plan-header">
             <span class="plan-name">Free</span>
             <div class="plan-price"><span class="price">₩0</span><span class="period">/월</span></div>
-            <p class="plan-desc">개인 프로젝트에 최적</p>
+            <p class="plan-desc">ERD 편집 시작하기</p>
           </div>
           <ul class="plan-features">
             <li>✓ 다이어그램 10개</li>
             <li>✓ DDL 가져오기 / 내보내기</li>
             <li>✓ ORM 코드 생성</li>
             <li>✓ 공유 링크 (최대 1시간)</li>
+            <li class="disabled">✗ AI (Claude MCP) 연동</li>
             <li class="disabled">✗ 실시간 협업</li>
             <li class="disabled">✗ 버전 히스토리</li>
           </ul>
@@ -292,11 +293,11 @@ const APP_URL = 'https://app.erdify.com';
 
         <!-- PRO -->
         <div class="plan-card plan-card--featured">
-          <div class="plan-badge">인기</div>
+          <div class="plan-badge">추천</div>
           <div class="plan-header">
             <span class="plan-name">Pro</span>
             <div class="plan-price"><span class="price">₩9,900</span><span class="period">/월</span></div>
-            <p class="plan-desc">개인 전문가용</p>
+            <p class="plan-desc">AI와 함께 스키마 설계</p>
           </div>
           <ul class="plan-features">
             <li>✓ 무제한 다이어그램</li>
@@ -304,9 +305,10 @@ const APP_URL = 'https://app.erdify.com';
             <li>✓ ORM 코드 생성</li>
             <li>✓ 공유 링크 (최대 30일)</li>
             <li>✓ 버전 히스토리 30개</li>
-            <li class="disabled">✗ 실시간 협업</li>
+            <li class="plan-feature--highlight">🤖 Claude MCP 연동</li>
+            <li class="disabled">✗ 실시간 팀 협업</li>
           </ul>
-          <a href={`${APP_URL}/register?plan=pro`} class="plan-cta plan-cta--primary">시작하기</a>
+          <a href={`${APP_URL}/register?plan=pro`} class="plan-cta plan-cta--primary">AI와 시작하기</a>
         </div>
 
         <!-- TEAM -->
@@ -314,17 +316,17 @@ const APP_URL = 'https://app.erdify.com';
           <div class="plan-header">
             <span class="plan-name">Team</span>
             <div class="plan-price"><span class="price">₩29,000</span><span class="period">/월</span></div>
-            <p class="plan-desc">팀 협업에 최적</p>
+            <p class="plan-desc">AI + 팀이 함께</p>
           </div>
           <ul class="plan-features">
             <li>✓ 무제한 다이어그램</li>
             <li>✓ DDL 가져오기 / 내보내기</li>
             <li>✓ ORM 코드 생성</li>
             <li>✓ 공유 링크 (최대 30일)</li>
-            <li>✓ <strong>실시간 협업</strong></li>
             <li>✓ 버전 히스토리 무제한</li>
+            <li class="plan-feature--highlight">🤖 Claude MCP 연동</li>
+            <li class="plan-feature--highlight">⚡ 실시간 팀 협업</li>
             <li>✓ 멤버 역할 관리 (RBAC)</li>
-            <li>✓ AI(MCP) 연동</li>
           </ul>
           <a href={`${APP_URL}/register?plan=team`} class="plan-cta plan-cta--outline">팀 시작하기</a>
         </div>
@@ -335,9 +337,12 @@ const APP_URL = 'https://app.erdify.com';
   <!-- CTA BANNER -->
   <section class="cta-banner">
     <div class="container">
-      <h2>지금 바로 시작하세요</h2>
-      <p>신용카드 없이 무료로 시작할 수 있습니다.</p>
-      <a href={`${APP_URL}/register`} class="btn-primary btn-lg btn-white">무료로 시작하기 →</a>
+      <h2>Claude가 당신의 ERD를 읽습니다</h2>
+      <p>지금 무료로 시작하고, AI 연동이 필요하면 Pro로 업그레이드하세요.</p>
+      <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
+        <a href={`${APP_URL}/register`} class="btn-primary btn-lg btn-white">무료로 시작하기 →</a>
+        <a href={`${APP_URL}/register?plan=pro`} class="btn-lg" style="border:2px solid rgba(255,255,255,0.4); color:#fff; border-radius:10px; padding:14px 28px; font-size:16px; font-weight:600;">AI 연동 Pro 보기</a>
+      </div>
     </div>
   </section>
 
@@ -1009,6 +1014,10 @@ const APP_URL = 'https://app.erdify.com';
     line-height: 1.5;
   }
   .plan-features li.disabled { color: var(--text-sub); opacity: 0.5; }
+  .plan-features li.plan-feature--highlight {
+    color: var(--primary);
+    font-weight: 600;
+  }
   .plan-cta {
     display: block;
     text-align: center;
