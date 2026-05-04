@@ -1,12 +1,13 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Diagram, DiagramVersion, OrganizationMember, Project } from "@erdify/db";
+import { AuthModule } from "../auth/auth.module";
 import { PublicDiagramsController } from "./public-diagrams.controller";
 import { DiagramsController } from "./diagrams.controller";
 import { DiagramsService } from "./diagrams.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Diagram, DiagramVersion, Project, OrganizationMember])],
+  imports: [TypeOrmModule.forFeature([Diagram, DiagramVersion, Project, OrganizationMember]), AuthModule],
   controllers: [
     PublicDiagramsController, // MUST be before DiagramsController — public route takes priority over /:id
     DiagramsController,

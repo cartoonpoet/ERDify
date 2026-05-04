@@ -1,8 +1,9 @@
 import type { Response } from "express";
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
-import type { UserProfile } from "./auth.service";
+import type { UserProfile, ApiKeyInfo } from "./auth.service";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import type { JwtPayload } from "./strategies/jwt.strategy";
@@ -15,14 +16,18 @@ const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env["NODE_ENV"] === "production",
   sameSite: "strict" as const,
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
+  maxAge: 7 * 24 * 60 * 60 * 1000,
   path: "/",
 };
+
+const ALLOWED_AVATAR_MIMES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
 
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // 회원가입: 1분에 5회
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post("register")
   async register(
     @Body() dto: RegisterDto,
@@ -33,6 +38,8 @@ export class AuthController {
     return { ok: true };
   }
 
+  // 로그인: 1분에 10회 (브루트포스 방어)
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post("login")
   @HttpCode(HttpStatus.OK)
   async login(
@@ -50,11 +57,31 @@ export class AuthController {
     res.clearCookie("access_token", { path: "/" });
   }
 
-  @Post("api-key")
+  // ── API Keys ────────────────────────────────────────────────────────────────
+
+  @Post("api-keys")
   @UseGuards(JwtAuthGuard)
-  generateApiKey(@CurrentUser() user: JwtPayload): { apiKey: string } {
-    return this.authService.generateApiKey(user.sub, user.email);
+  generateApiKey(@CurrentUser() user: JwtPayload): Promise<{ apiKey: string }> {
+    return this.authService.generateApiKey(user.sub);
   }
+
+  @Get("api-keys")
+  @UseGuards(JwtAuthGuard)
+  listApiKeys(@CurrentUser() user: JwtPayload): Promise<ApiKeyInfo[]> {
+    return this.authService.listApiKeys(user.sub);
+  }
+
+  @Delete("api-keys/:id")
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  revokeApiKey(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.authService.revokeApiKey(user.sub, id);
+  }
+
+  // ── Profile ─────────────────────────────────────────────────────────────────
 
   @Get("me")
   @UseGuards(JwtAuthGuard)
@@ -77,7 +104,16 @@ export class AuthController {
 
   @Post("avatar")
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor("file", {
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      if (ALLOWED_AVATAR_MIMES.has(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error("이미지 파일만 업로드할 수 있습니다 (JPEG, PNG, GIF, WebP)"), false);
+      }
+    },
+  }))
   uploadAvatar(
     @CurrentUser() user: JwtPayload,
     @UploadedFile() file: Express.Multer.File,

@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from "@nestjs/common";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import type { CreateDiagramDto } from "./dto/create-diagram.dto";
@@ -8,7 +8,7 @@ import { DiagramsService } from "./diagrams.service";
 import type { ShareDiagramDto } from "./dto/share-diagram.dto";
 
 @Controller()
-@UseGuards(JwtAuthGuard)
+@UseGuards(FlexAuthGuard)
 export class DiagramsController {
   constructor(private readonly diagramsService: DiagramsService) {}
 

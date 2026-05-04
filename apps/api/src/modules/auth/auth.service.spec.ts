@@ -1,7 +1,7 @@
 import * as bcrypt from "bcryptjs";
 import { ConflictException, UnauthorizedException } from "@nestjs/common";
 import type { JwtService } from "@nestjs/jwt";
-import type { User } from "@erdify/db";
+import type { ApiKey, User } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { AuthService } from "./auth.service";
 
@@ -10,22 +10,26 @@ vi.mock("bcryptjs", () => ({
   compare: vi.fn()
 }));
 
-type MockRepo = {
+type MockRepo<T> = {
   findOne: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
   save: ReturnType<typeof vi.fn>;
+  find: ReturnType<typeof vi.fn>;
 };
 
 describe("AuthService", () => {
   let service: AuthService;
-  let userRepo: MockRepo;
+  let userRepo: MockRepo<User>;
+  let apiKeyRepo: MockRepo<ApiKey>;
   let jwtService: { sign: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn() };
+    userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn() };
+    apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn() };
     jwtService = { sign: vi.fn() };
     service = new AuthService(
       userRepo as unknown as Repository<User>,
+      apiKeyRepo as unknown as Repository<ApiKey>,
       jwtService as unknown as JwtService
     );
   });
@@ -79,14 +83,17 @@ describe("AuthService", () => {
   });
 
   describe("generateApiKey", () => {
-    it("signs jwt with 100y expiry and returns apiKey", () => {
-      jwtService.sign.mockReturnValue("long-lived-token");
-      const result = service.generateApiKey("user-1", "a@b.com");
-      expect(result).toEqual({ apiKey: "long-lived-token" });
-      expect(jwtService.sign).toHaveBeenCalledWith(
-        { sub: "user-1", email: "a@b.com" },
-        { expiresIn: "100y" }
+    it("creates DB entry and returns erd_ prefixed key", async () => {
+      vi.mocked(apiKeyRepo.create).mockReturnValue({} as ApiKey);
+      vi.mocked(apiKeyRepo.save).mockResolvedValue({} as ApiKey);
+
+      const result = await service.generateApiKey("user-1");
+
+      expect(result.apiKey).toMatch(/^erd_[a-f0-9]{64}$/);
+      expect(apiKeyRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: "user-1", prefix: expect.stringMatching(/^erd_/) })
       );
+      expect(apiKeyRepo.save).toHaveBeenCalled();
     });
   });
 });

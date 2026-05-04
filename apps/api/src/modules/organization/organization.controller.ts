@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards
 } from "@nestjs/common";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import type { CreateOrganizationDto } from "./dto/create-organization.dto";
@@ -19,7 +19,7 @@ import type { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { OrganizationService } from "./organization.service";
 
 @Controller("organizations")
-@UseGuards(JwtAuthGuard)
+@UseGuards(FlexAuthGuard)
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 

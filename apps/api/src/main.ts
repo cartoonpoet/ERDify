@@ -25,11 +25,12 @@ async function bootstrap() {
   });
 
   app.useStaticAssets(join(__dirname, "..", "uploads"), { prefix: "/uploads" });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true
+      transform: true,
     })
   );
 

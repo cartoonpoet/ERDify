@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards
 } from "@nestjs/common";
-import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import type { CreateProjectDto } from "./dto/create-project.dto";
@@ -18,7 +18,7 @@ import type { UpdateProjectDto } from "./dto/update-project.dto";
 import { ProjectService } from "./project.service";
 
 @Controller("organizations/:orgId/projects")
-@UseGuards(JwtAuthGuard)
+@UseGuards(FlexAuthGuard)
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 

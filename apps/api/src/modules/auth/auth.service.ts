@@ -1,16 +1,17 @@
-import { randomUUID } from "crypto";
+import { createHash, randomBytes, randomUUID } from "crypto";
 import { extname, join } from "path";
 import { writeFile, unlink } from "fs/promises";
 import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
-import { User } from "@erdify/db";
+import { ApiKey, User } from "@erdify/db";
 import * as bcrypt from "bcryptjs";
-import type { Repository } from "typeorm";
+import { IsNull, type Repository } from "typeorm";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { LoginDto } from "./dto/login.dto";
 import type { RegisterDto } from "./dto/register.dto";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
+import type { JwtPayload } from "./strategies/jwt.strategy";
 
 export interface UserProfile {
   id: string;
@@ -19,11 +20,19 @@ export interface UserProfile {
   avatarUrl: string | null;
 }
 
+export interface ApiKeyInfo {
+  id: string;
+  prefix: string;
+  createdAt: Date;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(ApiKey)
+    private readonly apiKeyRepo: Repository<ApiKey>,
     private readonly jwtService: JwtService
   ) {}
 
@@ -47,8 +56,42 @@ export class AuthService {
     return { accessToken: this.jwtService.sign({ sub: user.id, email: user.email }) };
   }
 
-  generateApiKey(userId: string, email: string): { apiKey: string } {
-    return { apiKey: this.jwtService.sign({ sub: userId, email }, { expiresIn: "100y" }) };
+  // Generate a random erd_* key, store only its SHA-256 hash in DB
+  async generateApiKey(userId: string): Promise<{ apiKey: string }> {
+    const rawKey = `erd_${randomBytes(32).toString("hex")}`;
+    const keyHash = createHash("sha256").update(rawKey).digest("hex");
+    const prefix = rawKey.slice(0, 16); // "erd_" + 12 hex chars
+
+    const entry = this.apiKeyRepo.create({ id: randomUUID(), userId, keyHash, prefix, revokedAt: null });
+    await this.apiKeyRepo.save(entry);
+
+    return { apiKey: rawKey };
+  }
+
+  // Validate a raw erd_* key against stored hashes — returns JwtPayload shape on success
+  async validateApiKey(rawKey: string): Promise<JwtPayload | null> {
+    const keyHash = createHash("sha256").update(rawKey).digest("hex");
+    const entry = await this.apiKeyRepo.findOne({
+      where: { keyHash, revokedAt: IsNull() },
+      relations: ["user"],
+    });
+    if (!entry) return null;
+    return { sub: entry.userId, email: entry.user.email };
+  }
+
+  async listApiKeys(userId: string): Promise<ApiKeyInfo[]> {
+    const keys = await this.apiKeyRepo.find({
+      where: { userId, revokedAt: IsNull() },
+      order: { createdAt: "DESC" },
+    });
+    return keys.map(k => ({ id: k.id, prefix: k.prefix, createdAt: k.createdAt }));
+  }
+
+  async revokeApiKey(userId: string, keyId: string): Promise<void> {
+    const entry = await this.apiKeyRepo.findOne({ where: { id: keyId, userId, revokedAt: IsNull() } });
+    if (!entry) throw new NotFoundException("API key not found");
+    entry.revokedAt = new Date();
+    await this.apiKeyRepo.save(entry);
   }
 
   async getMe(userId: string): Promise<UserProfile> {
