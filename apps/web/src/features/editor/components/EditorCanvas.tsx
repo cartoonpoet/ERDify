@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import type { MouseEvent } from "react";
+import type { MouseEvent, CSSProperties } from "react";
 import { ReactFlow, Background, Controls, useReactFlow } from "@xyflow/react";
 import type { Edge, EdgeChange, NodeChange, Connection } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -80,6 +80,37 @@ type ContextMenuState = {
   clientY: number;
 };
 
+function computeAutoLayout(doc: DiagramDocument, measuredSizes: Map<string, { w: number; h: number }>) {
+  const NODE_W = 280;
+  const COL_GAP = 56;
+  const ROW_GAP = 40;
+  const N_COLS = Math.min(8, Math.max(3, Math.ceil(Math.sqrt(doc.entities.length))));
+
+  const estimateH = (entityId: string, colCount: number) => {
+    const m = measuredSizes.get(entityId);
+    return (m?.h ?? (38 + 28 + colCount * 30)) + ROW_GAP;
+  };
+  const estimateW = (entityId: string) => {
+    const m = measuredSizes.get(entityId);
+    return (m?.w ?? NODE_W) + COL_GAP;
+  };
+
+  const colWidths = Array<number>(N_COLS).fill(0);
+  const colHeights = Array<number>(N_COLS).fill(0);
+  const positions: Record<string, { x: number; y: number }> = {};
+
+  for (const entity of doc.entities) {
+    const minH = Math.min(...colHeights);
+    const col = colHeights.indexOf(minH);
+    const x = colWidths.slice(0, col).reduce((acc, w) => acc + w, 0);
+    positions[entity.id] = { x, y: colHeights[col]! };
+    colHeights[col] = colHeights[col]! + estimateH(entity.id, entity.columns.length);
+    colWidths[col] = Math.max(colWidths[col]!, estimateW(entity.id));
+  }
+
+  return positions;
+}
+
 // ReactFlow 내부 컴포넌트 — useReactFlow 사용 가능
 const ContextMenuInner = ({
   state,
@@ -88,7 +119,7 @@ const ContextMenuInner = ({
   state: ContextMenuState;
   onClose: () => void;
 }) => {
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView, getNodes } = useReactFlow();
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const document = useEditorStore((s) => s.document);
 
@@ -105,7 +136,47 @@ const ContextMenuInner = ({
     onClose();
   };
 
+  const handleAutoLayout = () => {
+    if (!document) return;
+    const measuredSizes = new Map(
+      getNodes().map((n) => [n.id, { w: n.measured?.width ?? 280, h: n.measured?.height ?? 120 }])
+    );
+    const positions = computeAutoLayout(document, measuredSizes);
+    applyCommand((doc) => {
+      let next = doc;
+      for (const entity of doc.entities) {
+        const pos = positions[entity.id];
+        if (pos) next = updateEntityPosition(next, entity.id, pos);
+      }
+      return next;
+    });
+    setTimeout(() => fitView({ duration: 400, padding: 0.08 }), 50);
+    onClose();
+  };
+
   if (!document) return null;
+
+  const menuItemStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    width: "100%",
+    padding: "9px 14px",
+    background: "none",
+    border: "none",
+    textAlign: "left",
+    cursor: "pointer",
+    color: "#374151",
+    fontSize: 12,
+    fontFamily: "monospace",
+  };
+
+  const onEnter = (e: MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.background = "#f1f5f9";
+  };
+  const onLeave = (e: MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.background = "none";
+  };
 
   return (
     <div
@@ -119,34 +190,20 @@ const ContextMenuInner = ({
         borderRadius: 8,
         boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06)",
         zIndex: 1000,
-        minWidth: 150,
+        minWidth: 160,
         fontSize: 12,
         fontFamily: "monospace",
         overflow: "hidden",
       }}
     >
-      <button
-        type="button"
-        onClick={handleAddTable}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          width: "100%",
-          padding: "9px 14px",
-          background: "none",
-          border: "none",
-          textAlign: "left",
-          cursor: "pointer",
-          color: "#374151",
-          fontSize: 12,
-          fontFamily: "monospace",
-        }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9"; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
-      >
+      <button type="button" onClick={handleAddTable} style={menuItemStyle} onMouseEnter={onEnter} onMouseLeave={onLeave}>
         <span style={{ fontSize: 14 }}>+</span>
         테이블 추가
+      </button>
+      <div style={{ height: 1, background: "#f1f5f9", margin: "0 8px" }} />
+      <button type="button" onClick={handleAutoLayout} style={menuItemStyle} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+        <span style={{ fontSize: 13 }}>⊞</span>
+        테이블 자동 정렬
       </button>
     </div>
   );
