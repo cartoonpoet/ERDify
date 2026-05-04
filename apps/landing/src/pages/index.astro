@@ -200,30 +200,48 @@ const APP_URL = 'https://app.erdify.com';
     </div>
   </section>
 
-  <!-- INTEGRATIONS -->
+  <!-- API CENTER -->
   <section class="integrations" id="integrations">
     <div class="container">
       <div class="section-header">
-        <div class="badge">연동 가이드</div>
-        <h2>사용하는 AI 도구에 바로 연결</h2>
-        <p>MCP를 지원하는 AI라면 설정 한 줄로 ERDify와 연결됩니다.</p>
+        <div class="badge">API Center</div>
+        <h2>ERDify에 연결하는 두 가지 방법</h2>
+        <p>AI 도구와 MCP로 연결하거나, REST API로 직접 통합하세요.</p>
       </div>
 
-      <!-- Tool tabs -->
-      <div class="it-tabs" role="tablist">
-        <button class="it-tab it-tab--active" data-tool="cursor">Cursor</button>
-        <button class="it-tab" data-tool="claude">Claude Desktop</button>
-        <button class="it-tab" data-tool="gemini">Gemini CLI</button>
-        <button class="it-tab" data-tool="codex">Codex CLI</button>
+      <!-- Mode switcher -->
+      <div class="ac-modes">
+        <button class="ac-mode ac-mode--active" data-mode="mcp">
+          <span class="ac-mode-icon">🤖</span>
+          <div class="ac-mode-text">
+            <span class="ac-mode-title">MCP 연동</span>
+            <span class="ac-mode-desc">AI 도구에서 자연어로 스키마 관리</span>
+          </div>
+        </button>
+        <button class="ac-mode" data-mode="api">
+          <span class="ac-mode-icon">⚡</span>
+          <div class="ac-mode-text">
+            <span class="ac-mode-title">REST API</span>
+            <span class="ac-mode-desc">직접 통합 · 자동화 · CI/CD</span>
+          </div>
+        </button>
       </div>
 
-      <!-- Config panels -->
-      <div class="it-panel" data-panel="cursor">
-        <div class="it-meta">
-          <div class="it-file-badge">📄 .cursor/mcp.json</div>
-          <button class="it-copy" data-copy="cursor">복사</button>
+      <!-- ── MCP mode ── -->
+      <div class="ac-content" data-content="mcp">
+        <div class="it-tabs" role="tablist">
+          <button class="it-tab it-tab--active" data-tool="cursor">Cursor</button>
+          <button class="it-tab" data-tool="claude">Claude Desktop</button>
+          <button class="it-tab" data-tool="gemini">Gemini CLI</button>
+          <button class="it-tab" data-tool="codex">Codex CLI</button>
         </div>
-        <pre class="it-code" id="code-cursor">{`{
+
+        <div class="it-panel" data-panel="cursor">
+          <div class="it-meta">
+            <div class="it-file-badge">📄 .cursor/mcp.json</div>
+            <button class="it-copy" data-copy="cursor">복사</button>
+          </div>
+          <pre class="it-code" id="code-cursor">{`{
   "mcpServers": {
     "erdify": {
       "command": "npx",
@@ -234,14 +252,14 @@ const APP_URL = 'https://app.erdify.com';
     }
   }
 }`}</pre>
-      </div>
-
-      <div class="it-panel it-panel--hidden" data-panel="claude">
-        <div class="it-meta">
-          <div class="it-file-badge">📄 ~/Library/Application Support/Claude/claude_desktop_config.json</div>
-          <button class="it-copy" data-copy="claude">복사</button>
         </div>
-        <pre class="it-code" id="code-claude">{`{
+
+        <div class="it-panel it-panel--hidden" data-panel="claude">
+          <div class="it-meta">
+            <div class="it-file-badge">📄 ~/Library/Application Support/Claude/claude_desktop_config.json</div>
+            <button class="it-copy" data-copy="claude">복사</button>
+          </div>
+          <pre class="it-code" id="code-claude">{`{
   "mcpServers": {
     "erdify": {
       "command": "npx",
@@ -252,14 +270,14 @@ const APP_URL = 'https://app.erdify.com';
     }
   }
 }`}</pre>
-      </div>
-
-      <div class="it-panel it-panel--hidden" data-panel="gemini">
-        <div class="it-meta">
-          <div class="it-file-badge">📄 ~/.gemini/settings.json</div>
-          <button class="it-copy" data-copy="gemini">복사</button>
         </div>
-        <pre class="it-code" id="code-gemini">{`{
+
+        <div class="it-panel it-panel--hidden" data-panel="gemini">
+          <div class="it-meta">
+            <div class="it-file-badge">📄 ~/.gemini/settings.json</div>
+            <button class="it-copy" data-copy="gemini">복사</button>
+          </div>
+          <pre class="it-code" id="code-gemini">{`{
   "mcpServers": {
     "erdify": {
       "command": "npx",
@@ -270,14 +288,14 @@ const APP_URL = 'https://app.erdify.com';
     }
   }
 }`}</pre>
-      </div>
-
-      <div class="it-panel it-panel--hidden" data-panel="codex">
-        <div class="it-meta">
-          <div class="it-file-badge">📄 ~/.codex/config.yaml</div>
-          <button class="it-copy" data-copy="codex">복사</button>
         </div>
-        <pre class="it-code" id="code-codex">{`mcp_servers:
+
+        <div class="it-panel it-panel--hidden" data-panel="codex">
+          <div class="it-meta">
+            <div class="it-file-badge">📄 ~/.codex/config.yaml</div>
+            <button class="it-copy" data-copy="codex">복사</button>
+          </div>
+          <pre class="it-code" id="code-codex">{`mcp_servers:
   erdify:
     command: npx
     args:
@@ -285,13 +303,198 @@ const APP_URL = 'https://app.erdify.com';
       - "@erdify/mcp-server@latest"
     env:
       ERDIFY_API_KEY: erd_your_api_key_here`}</pre>
+        </div>
+
+        <div class="it-note">
+          <span>🔑</span>
+          <span>API 키는 ERDify 앱 <strong>설정 → API</strong>에서 발급받을 수 있습니다.</span>
+          <a href={`${APP_URL}/settings/api`} class="it-note-link">키 발급하기 →</a>
+        </div>
       </div>
 
-      <!-- API key note -->
-      <div class="it-note">
-        <span>🔑</span>
-        <span>API 키는 ERDify 앱 <strong>설정 → API</strong>에서 발급받을 수 있습니다.</span>
-        <a href={`${APP_URL}/settings/api`} class="it-note-link">키 발급하기 →</a>
+      <!-- ── REST API mode ── -->
+      <div class="ac-content ac-content--hidden" data-content="api">
+        <div class="api-layout">
+          <!-- Left: endpoint reference -->
+          <div class="api-endpoints">
+            <div class="api-ep-title">엔드포인트</div>
+            <div class="api-base">https://api.erdify.com/v1</div>
+            <ul class="api-ep-list">
+              <li class="api-ep api-ep--active" data-ep="schema">
+                <span class="api-method api-method--get">GET</span>
+                <span class="api-path">/projects/{`{id}`}/schema</span>
+              </li>
+              <li class="api-ep" data-ep="create">
+                <span class="api-method api-method--post">POST</span>
+                <span class="api-path">/projects/{`{id}`}/entities</span>
+              </li>
+              <li class="api-ep" data-ep="ddl">
+                <span class="api-method api-method--get">GET</span>
+                <span class="api-path">/projects/{`{id}`}/ddl</span>
+              </li>
+              <li class="api-ep" data-ep="projects">
+                <span class="api-method api-method--get">GET</span>
+                <span class="api-path">/projects</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Right: code examples -->
+          <div class="api-code-area">
+            <div class="it-tabs" role="tablist">
+              <button class="it-tab it-tab--active" data-lang="curl">cURL</button>
+              <button class="it-tab" data-lang="js">JavaScript</button>
+              <button class="it-tab" data-lang="python">Python</button>
+            </div>
+
+            <!-- schema -->
+            <div class="api-snippet" data-ep="schema" data-lang="curl">
+              <div class="it-meta">
+                <div class="it-file-badge">GET /projects/{`{id}`}/schema — 스키마 전체 조회</div>
+                <button class="it-copy" data-copy="api-schema-curl">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-schema-curl">{`curl https://api.erdify.com/v1/projects/proj_abc/schema \\
+  -H "Authorization: Bearer erd_your_api_key_here"`}</pre>
+            </div>
+            <div class="api-snippet api-snippet--hidden" data-ep="schema" data-lang="js">
+              <div class="it-meta">
+                <div class="it-file-badge">GET /projects/{`{id}`}/schema — 스키마 전체 조회</div>
+                <button class="it-copy" data-copy="api-schema-js">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-schema-js">{`import { ERDifyClient } from '@erdify/sdk';
+
+const client = new ERDifyClient({ apiKey: 'erd_your_api_key_here' });
+
+const schema = await client.projects.getSchema('proj_abc');
+console.log(schema.entities); // 테이블 배열`}</pre>
+            </div>
+            <div class="api-snippet api-snippet--hidden" data-ep="schema" data-lang="python">
+              <div class="it-meta">
+                <div class="it-file-badge">GET /projects/{`{id}`}/schema — 스키마 전체 조회</div>
+                <button class="it-copy" data-copy="api-schema-python">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-schema-python">{`from erdify import ERDifyClient
+
+client = ERDifyClient(api_key="erd_your_api_key_here")
+
+schema = client.projects.get_schema("proj_abc")
+print(schema.entities)  # 테이블 목록`}</pre>
+            </div>
+
+            <!-- create entity -->
+            <div class="api-snippet api-snippet--hidden" data-ep="create" data-lang="curl">
+              <div class="it-meta">
+                <div class="it-file-badge">POST /projects/{`{id}`}/entities — 테이블 추가</div>
+                <button class="it-copy" data-copy="api-create-curl">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-create-curl">{`curl -X POST https://api.erdify.com/v1/projects/proj_abc/entities \\
+  -H "Authorization: Bearer erd_your_api_key_here" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "orders",
+    "columns": [
+      { "name": "id",         "type": "INT",           "primaryKey": true },
+      { "name": "user_id",    "type": "INT" },
+      { "name": "total",      "type": "DECIMAL(10,2)" },
+      { "name": "created_at", "type": "TIMESTAMP" }
+    ]
+  }'`}</pre>
+            </div>
+            <div class="api-snippet api-snippet--hidden" data-ep="create" data-lang="js">
+              <div class="it-meta">
+                <div class="it-file-badge">POST /projects/{`{id}`}/entities — 테이블 추가</div>
+                <button class="it-copy" data-copy="api-create-js">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-create-js">{`const entity = await client.entities.create('proj_abc', {
+  name: 'orders',
+  columns: [
+    { name: 'id',         type: 'INT',           primaryKey: true },
+    { name: 'user_id',    type: 'INT' },
+    { name: 'total',      type: 'DECIMAL(10,2)' },
+    { name: 'created_at', type: 'TIMESTAMP' },
+  ],
+});`}</pre>
+            </div>
+            <div class="api-snippet api-snippet--hidden" data-ep="create" data-lang="python">
+              <div class="it-meta">
+                <div class="it-file-badge">POST /projects/{`{id}`}/entities — 테이블 추가</div>
+                <button class="it-copy" data-copy="api-create-python">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-create-python">{`entity = client.entities.create("proj_abc", {
+    "name": "orders",
+    "columns": [
+        {"name": "id",         "type": "INT",           "primaryKey": True},
+        {"name": "user_id",    "type": "INT"},
+        {"name": "total",      "type": "DECIMAL(10,2)"},
+        {"name": "created_at", "type": "TIMESTAMP"},
+    ],
+})`}</pre>
+            </div>
+
+            <!-- ddl export -->
+            <div class="api-snippet api-snippet--hidden" data-ep="ddl" data-lang="curl">
+              <div class="it-meta">
+                <div class="it-file-badge">GET /projects/{`{id}`}/ddl — DDL 내보내기</div>
+                <button class="it-copy" data-copy="api-ddl-curl">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-ddl-curl">{`curl "https://api.erdify.com/v1/projects/proj_abc/ddl?dialect=postgresql" \\
+  -H "Authorization: Bearer erd_your_api_key_here"`}</pre>
+            </div>
+            <div class="api-snippet api-snippet--hidden" data-ep="ddl" data-lang="js">
+              <div class="it-meta">
+                <div class="it-file-badge">GET /projects/{`{id}`}/ddl — DDL 내보내기</div>
+                <button class="it-copy" data-copy="api-ddl-js">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-ddl-js">{`const ddl = await client.projects.exportDDL('proj_abc', {
+  dialect: 'postgresql', // 'mysql' | 'postgresql' | 'mariadb'
+});
+console.log(ddl); // CREATE TABLE ...`}</pre>
+            </div>
+            <div class="api-snippet api-snippet--hidden" data-ep="ddl" data-lang="python">
+              <div class="it-meta">
+                <div class="it-file-badge">GET /projects/{`{id}`}/ddl — DDL 내보내기</div>
+                <button class="it-copy" data-copy="api-ddl-python">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-ddl-python">{`ddl = client.projects.export_ddl(
+    "proj_abc",
+    dialect="postgresql"  # "mysql" | "postgresql" | "mariadb"
+)
+print(ddl)  # CREATE TABLE ...`}</pre>
+            </div>
+
+            <!-- projects list -->
+            <div class="api-snippet api-snippet--hidden" data-ep="projects" data-lang="curl">
+              <div class="it-meta">
+                <div class="it-file-badge">GET /projects — 프로젝트 목록</div>
+                <button class="it-copy" data-copy="api-projects-curl">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-projects-curl">{`curl https://api.erdify.com/v1/projects \\
+  -H "Authorization: Bearer erd_your_api_key_here"`}</pre>
+            </div>
+            <div class="api-snippet api-snippet--hidden" data-ep="projects" data-lang="js">
+              <div class="it-meta">
+                <div class="it-file-badge">GET /projects — 프로젝트 목록</div>
+                <button class="it-copy" data-copy="api-projects-js">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-projects-js">{`const projects = await client.projects.list();
+console.log(projects); // [{ id, name, updatedAt }, ...]`}</pre>
+            </div>
+            <div class="api-snippet api-snippet--hidden" data-ep="projects" data-lang="python">
+              <div class="it-meta">
+                <div class="it-file-badge">GET /projects — 프로젝트 목록</div>
+                <button class="it-copy" data-copy="api-projects-python">복사</button>
+              </div>
+              <pre class="it-code" id="code-api-projects-python">{`projects = client.projects.list()
+print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="it-note">
+          <span>🔑</span>
+          <span>API 키는 ERDify 앱 <strong>설정 → API</strong>에서 발급받을 수 있습니다.</span>
+          <a href={`${APP_URL}/settings/api`} class="it-note-link">키 발급하기 →</a>
+        </div>
       </div>
     </div>
   </section>
@@ -855,8 +1058,132 @@ const APP_URL = 'https://app.erdify.com';
   .feature-card p { font-size: 14px; line-height: 1.7; opacity: 0.75; }
   .feature-card--accent p { opacity: 0.85; }
 
-  /* ── Integrations ── */
+  /* ── API Center ── */
   .integrations { padding: 100px 0; background: var(--surface); }
+
+  /* Mode switcher */
+  .ac-modes {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .ac-mode {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    padding: 18px 24px;
+    border-radius: 14px;
+    border: 2px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+    text-align: left;
+    font-family: var(--font, sans-serif);
+  }
+  .ac-mode:hover { border-color: var(--primary); }
+  .ac-mode--active {
+    border-color: var(--primary);
+    background: #EEF4FF;
+    box-shadow: 0 0 0 3px rgba(0,100,224,0.10);
+  }
+  .ac-mode-icon { font-size: 24px; flex-shrink: 0; }
+  .ac-mode-text { display: flex; flex-direction: column; gap: 2px; }
+  .ac-mode-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .ac-mode-desc { font-size: 12px; color: var(--text-sub); }
+
+  /* Content panels */
+  .ac-content--hidden { display: none; }
+
+  /* API layout */
+  .api-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .api-endpoints {
+    background: #141e28;
+    padding: 20px 0;
+    border-right: 1px solid rgba(255,255,255,0.06);
+  }
+  .api-ep-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    padding: 0 16px 8px;
+  }
+  .api-base {
+    font-size: 10px;
+    font-family: monospace;
+    color: rgba(255,255,255,0.25);
+    padding: 0 16px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 8px;
+  }
+  .api-ep-list { list-style: none; padding: 0; margin: 0; }
+  .api-ep {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.12s;
+    border-left: 2px solid transparent;
+  }
+  .api-ep:hover { background: rgba(255,255,255,0.04); }
+  .api-ep--active {
+    background: rgba(0,100,224,0.12);
+    border-left-color: var(--primary);
+  }
+  .api-method {
+    font-size: 10px;
+    font-weight: 800;
+    font-family: monospace;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .api-method--get { background: rgba(52,211,153,0.15); color: #34d399; }
+  .api-method--post { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .api-method--patch { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .api-method--delete { background: rgba(248,113,113,0.15); color: #f87171; }
+  .api-path {
+    font-size: 11px;
+    font-family: monospace;
+    color: rgba(255,255,255,0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .api-ep--active .api-path { color: #fff; }
+
+  .api-code-area {
+    background: #0f1923;
+    display: flex;
+    flex-direction: column;
+  }
+  .api-code-area .it-tabs {
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-radius: 0;
+    padding: 0 16px;
+  }
+  .api-code-area .it-tab { color: rgba(255,255,255,0.45); }
+  .api-code-area .it-tab:hover { color: #fff; }
+  .api-code-area .it-tab--active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .api-snippet { flex: 1; display: flex; flex-direction: column; }
+  .api-snippet--hidden { display: none; }
+  .api-snippet .it-panel {
+    border-radius: 0;
+    border: none;
+    flex: 1;
+  }
+  .api-snippet .it-meta { border-radius: 0; }
 
   .it-tabs {
     display: flex;
@@ -1262,34 +1589,89 @@ const APP_URL = 'https://app.erdify.com';
     .screenshots-grid { grid-template-columns: 1fr; }
     .footer-inner { flex-direction: column; gap: 40px; }
     .nav-links { display: none; }
+    .api-layout { grid-template-columns: 1fr; }
+    .api-endpoints { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 16px 0; }
+    .api-ep-list { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px; }
+    .api-ep { border-left: none; border-radius: 8px; padding: 8px 12px; }
+    .api-ep--active { border-left: none; }
   }
   @media (max-width: 600px) {
     .features-grid { grid-template-columns: 1fr; }
     .hero { padding: 72px 0 60px; }
     .hero-stats { gap: 20px; }
     .stat-divider { display: none; }
+    .ac-modes { flex-direction: column; }
   }
 </style>
 
 <script>
-  // ── Integration tabs ──
-  const itTabs = document.querySelectorAll<HTMLButtonElement>('.it-tab');
-  const itPanels = document.querySelectorAll<HTMLElement>('.it-panel');
+  // ── API Center: mode switcher ──
+  const acModes = document.querySelectorAll<HTMLButtonElement>('.ac-mode');
+  const acContents = document.querySelectorAll<HTMLElement>('.ac-content');
 
-  itTabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      const tool = tab.dataset.tool!;
-      itTabs.forEach(t => t.classList.remove('it-tab--active'));
-      itPanels.forEach(p => p.classList.add('it-panel--hidden'));
-      tab.classList.add('it-tab--active');
-      document.querySelector<HTMLElement>(`[data-panel="${tool}"]`)?.classList.remove('it-panel--hidden');
+  acModes.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode!;
+      acModes.forEach(b => b.classList.remove('ac-mode--active'));
+      acContents.forEach(c => c.classList.add('ac-content--hidden'));
+      btn.classList.add('ac-mode--active');
+      document.querySelector<HTMLElement>(`[data-content="${mode}"]`)?.classList.remove('ac-content--hidden');
     });
   });
 
+  // ── MCP tool tabs ──
+  const mcpContent = document.querySelector<HTMLElement>('[data-content="mcp"]')!;
+  const mcpTabs = mcpContent.querySelectorAll<HTMLButtonElement>('.it-tab');
+  const mcpPanels = mcpContent.querySelectorAll<HTMLElement>('.it-panel');
+
+  mcpTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const tool = tab.dataset.tool!;
+      mcpTabs.forEach(t => t.classList.remove('it-tab--active'));
+      mcpPanels.forEach(p => p.classList.add('it-panel--hidden'));
+      tab.classList.add('it-tab--active');
+      mcpContent.querySelector<HTMLElement>(`[data-panel="${tool}"]`)?.classList.remove('it-panel--hidden');
+    });
+  });
+
+  // ── API mode: endpoint + language tabs ──
+  const apiContent = document.querySelector<HTMLElement>('[data-content="api"]')!;
+  const apiEps = apiContent.querySelectorAll<HTMLElement>('.api-ep');
+  const apiLangTabs = apiContent.querySelectorAll<HTMLButtonElement>('.it-tab');
+
+  let currentEp = 'schema';
+  let currentLang = 'curl';
+
+  function updateApiSnippets() {
+    apiContent.querySelectorAll<HTMLElement>('.api-snippet').forEach((s) => {
+      const match = s.dataset.ep === currentEp && s.dataset.lang === currentLang;
+      s.classList.toggle('api-snippet--hidden', !match);
+    });
+  }
+
+  apiEps.forEach((ep) => {
+    ep.addEventListener('click', () => {
+      currentEp = ep.dataset.ep!;
+      apiEps.forEach(e => e.classList.remove('api-ep--active'));
+      ep.classList.add('api-ep--active');
+      updateApiSnippets();
+    });
+  });
+
+  apiLangTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      currentLang = tab.dataset.lang!;
+      apiLangTabs.forEach(t => t.classList.remove('it-tab--active'));
+      tab.classList.add('it-tab--active');
+      updateApiSnippets();
+    });
+  });
+
+  // ── Copy buttons (all) ──
   document.querySelectorAll<HTMLButtonElement>('.it-copy').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const tool = btn.dataset.copy!;
-      const code = document.getElementById(`code-${tool}`)?.textContent ?? '';
+      const key = btn.dataset.copy!;
+      const code = document.getElementById(`code-${key}`)?.textContent ?? '';
       navigator.clipboard.writeText(code).then(() => {
         btn.textContent = '✓ 복사됨';
         btn.classList.add('it-copy--copied');
