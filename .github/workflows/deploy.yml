@@ -171,9 +171,9 @@ jobs:
 
       - name: Prepare commit subject
         id: commit
-        run: |
-          subject=$(git log -1 --format=%s)
-          echo "subject=${subject}" >> $GITHUB_OUTPUT
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+        run: echo "subject=${MSG%%$'\n'*}" >> $GITHUB_OUTPUT
 
       - name: Telegram — 배포 성공
         if: success()
