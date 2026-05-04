@@ -37,6 +37,21 @@ const makeVersion = (o: Partial<DiagramVersion> = {}): DiagramVersion =>
 const makeMember = (role = "editor"): OrganizationMember =>
   ({ organizationId: "org-1", userId: "user-1", role }) as OrganizationMember;
 
+const makeEntity = (id = "ent-1", columns: DiagramDocument["entities"][number]["columns"] = []) =>
+  ({ id, name: "users", logicalName: null, comment: null, color: null, columns });
+
+const makeColumn = (id = "col-1"): DiagramDocument["entities"][number]["columns"][number] => ({
+  id,
+  name: "id",
+  type: "uuid",
+  nullable: false,
+  primaryKey: true,
+  unique: true,
+  defaultValue: null,
+  comment: null,
+  ordinal: 0,
+});
+
 describe("DiagramsService", () => {
   let service: DiagramsService;
   let diagramRepo: MockRepo<Diagram>;
@@ -341,6 +356,96 @@ describe("DiagramsService", () => {
       memberRepo.findOne.mockResolvedValue(makeMember("editor"));
 
       await expect(service.removeTable("diag-1", "bad-id", "user-1")).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("addColumn", () => {
+    it("adds column to entity", async () => {
+      const doc = makeDoc({ entities: [makeEntity()] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.addColumn("diag-1", "ent-1", "user-1", {
+        name: "email",
+        type: "varchar",
+      });
+
+      const resultDoc = result.content as unknown as DiagramDocument;
+      expect(resultDoc.entities[0]!.columns).toHaveLength(1);
+      expect(resultDoc.entities[0]!.columns[0]!.name).toBe("email");
+    });
+
+    it("throws NotFoundException for unknown tableId", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(
+        service.addColumn("diag-1", "bad-id", "user-1", { name: "email", type: "varchar" })
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("updateColumn", () => {
+    it("updates column properties", async () => {
+      const col = makeColumn();
+      const doc = makeDoc({ entities: [makeEntity("ent-1", [col])] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.updateColumn("diag-1", "ent-1", "col-1", "user-1", {
+        name: "user_id",
+      });
+
+      const resultDoc = result.content as unknown as DiagramDocument;
+      expect(resultDoc.entities[0]!.columns[0]!.name).toBe("user_id");
+    });
+
+    it("throws NotFoundException for unknown columnId", async () => {
+      const doc = makeDoc({ entities: [makeEntity("ent-1", [])] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(
+        service.updateColumn("diag-1", "ent-1", "bad-col", "user-1", { name: "x" })
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("removeColumn", () => {
+    it("removes column from entity", async () => {
+      const col = makeColumn();
+      const doc = makeDoc({ entities: [makeEntity("ent-1", [col])] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      await service.removeColumn("diag-1", "ent-1", "col-1", "user-1");
+
+      expect(diagramRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.objectContaining({
+            entities: [expect.objectContaining({ columns: [] })],
+          }),
+        })
+      );
+    });
+
+    it("throws NotFoundException for unknown columnId", async () => {
+      const doc = makeDoc({ entities: [makeEntity("ent-1", [])] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(service.removeColumn("diag-1", "ent-1", "bad-col", "user-1")).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 });

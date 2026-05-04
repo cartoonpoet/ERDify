@@ -8,10 +8,15 @@ import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
 import type { SharePreset } from "./dto/share-diagram.dto";
 import {
   addEntity, renameEntity, updateEntityColor, updateEntityComment, removeEntity,
+  addColumn as domainAddColumn,
+  updateColumn as domainUpdateColumn,
+  removeColumn as domainRemoveColumn,
 } from "@erdify/domain";
-import type { DiagramDocument } from "@erdify/domain";
+import type { DiagramColumn, DiagramDocument } from "@erdify/domain";
 import type { AddTableDto } from "./dto/add-table.dto";
 import type { UpdateTableDto } from "./dto/update-table.dto";
+import type { AddColumnDto } from "./dto/add-column.dto";
+import type { UpdateColumnDto } from "./dto/update-column.dto";
 
 @Injectable()
 export class DiagramsService {
@@ -227,6 +232,59 @@ export class DiagramsService {
     await this.applySchemaCommand(diagramId, userId, (doc) => {
       if (!doc.entities.some((e) => e.id === tableId)) throw new NotFoundException("Table not found");
       return removeEntity(doc, tableId);
+    });
+  }
+
+  async addColumn(
+    diagramId: string,
+    tableId: string,
+    userId: string,
+    dto: AddColumnDto
+  ): Promise<Diagram> {
+    return this.applySchemaCommand(diagramId, userId, (doc) => {
+      const entity = doc.entities.find((e) => e.id === tableId);
+      if (!entity) throw new NotFoundException("Table not found");
+      const column: DiagramColumn = {
+        id: randomUUID(),
+        name: dto.name,
+        type: dto.type,
+        nullable: dto.nullable ?? true,
+        primaryKey: dto.primaryKey ?? false,
+        unique: dto.unique ?? false,
+        defaultValue: dto.defaultValue ?? null,
+        comment: null,
+        ordinal: entity.columns.length,
+      };
+      return domainAddColumn(doc, tableId, column);
+    });
+  }
+
+  async updateColumn(
+    diagramId: string,
+    tableId: string,
+    columnId: string,
+    userId: string,
+    dto: UpdateColumnDto
+  ): Promise<Diagram> {
+    return this.applySchemaCommand(diagramId, userId, (doc) => {
+      const entity = doc.entities.find((e) => e.id === tableId);
+      if (!entity) throw new NotFoundException("Table not found");
+      if (!entity.columns.some((c) => c.id === columnId)) throw new NotFoundException("Column not found");
+      return domainUpdateColumn(doc, tableId, columnId, dto);
+    });
+  }
+
+  async removeColumn(
+    diagramId: string,
+    tableId: string,
+    columnId: string,
+    userId: string
+  ): Promise<void> {
+    await this.applySchemaCommand(diagramId, userId, (doc) => {
+      const entity = doc.entities.find((e) => e.id === tableId);
+      if (!entity) throw new NotFoundException("Table not found");
+      if (!entity.columns.some((c) => c.id === columnId)) throw new NotFoundException("Column not found");
+      return domainRemoveColumn(doc, tableId, columnId);
     });
   }
 }
