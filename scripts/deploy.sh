@@ -11,7 +11,7 @@ echo "==> Starting app services..."
 $APP_COMPOSE up -d
 
 echo "==> Reloading nginx..."
-sudo docker exec erdify-shared-nginx-1 nginx -s reload
+sudo docker exec erdify-shared-nginx-1 nginx -s reload 2>/dev/null || sudo docker restart erdify-shared-nginx-1
 
 echo "==> Cleaning up old images..."
 sudo docker image prune -f || true
