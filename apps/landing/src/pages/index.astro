@@ -154,6 +154,7 @@ const APP_URL = 'https://app.erdify.com';
 
       <!-- Large image display -->
       <div class="ss-display">
+        <button class="ss-arrow ss-arrow--prev" id="ss-prev" aria-label="이전">&#8592;</button>
         <div class="ss-frame" id="ss-frame" title="클릭하여 크게 보기">
           <img class="ss-img ss-img--active" src="/screenshots/editor.svg"
             alt="ERDify 에디터 — 테이블, 컬럼, 관계선을 직관적으로 편집" data-idx="0" />
@@ -163,6 +164,7 @@ const APP_URL = 'https://app.erdify.com';
             alt="DDL 가져오기 — CREATE TABLE SQL을 붙여넣으면 ERD 자동 생성" data-idx="2" />
           <div class="ss-expand-hint">🔍 클릭하여 크게 보기</div>
         </div>
+        <button class="ss-arrow ss-arrow--next" id="ss-next" aria-label="다음">&#8594;</button>
       </div>
 
       <!-- Dot indicators -->
@@ -590,7 +592,37 @@ const APP_URL = 'https://app.erdify.com';
     background: linear-gradient(135deg, #EEF4FF 0%, #f8f9fb 100%);
     border: 1px solid var(--border);
     box-shadow: 0 24px 64px rgba(0,100,224,0.07), 0 4px 12px rgba(0,0,0,0.04);
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
+
+  /* Prev / Next arrow buttons */
+  .ss-arrow {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .ss-arrow:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: #f0f6ff;
+    box-shadow: 0 4px 16px rgba(0,100,224,0.18);
+    transform: scale(1.08);
+  }
+  .ss-arrow:active { transform: scale(0.96); }
   .ss-frame {
     position: relative;
     border-radius: 12px;
@@ -816,6 +848,8 @@ const APP_URL = 'https://app.erdify.com';
   const imgs = document.querySelectorAll<HTMLImageElement>('.ss-img');
   const dots = document.querySelectorAll<HTMLButtonElement>('.ss-dot');
   const frame = document.getElementById('ss-frame')!;
+  const prevBtn = document.getElementById('ss-prev')!;
+  const nextBtn = document.getElementById('ss-next')!;
   const lightbox = document.getElementById('ss-lightbox')!;
   const lbImg = document.getElementById('ss-lb-img') as HTMLImageElement;
   const lbClose = document.getElementById('ss-lb-close')!;
@@ -843,6 +877,9 @@ const APP_URL = 'https://app.erdify.com';
   dots.forEach((dot) => {
     dot.addEventListener('click', () => switchTo(Number(dot.dataset.idx)));
   });
+
+  prevBtn.addEventListener('click', () => switchTo((current + tabs.length - 1) % tabs.length));
+  nextBtn.addEventListener('click', () => switchTo((current + 1) % tabs.length));
 
   // Lightbox
   function openLightbox() {
