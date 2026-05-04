@@ -38,7 +38,7 @@ export const ApiKeyModal = ({ open, onClose }: ApiKeyModalProps) => {
     <Modal open={open} onClose={onClose} title="MCP API 키">
       <div className={css.body}>
         <p className={css.description}>
-          Claude Desktop 등 MCP 클라이언트를 ERDify에 연결할 때 사용하는 키입니다.
+          Cursor, Claude Desktop, Gemini CLI 등 AI 도구를 ERDify와 함께 사용할 때 필요한 키입니다.
         </p>
 
         {!apiKey && (

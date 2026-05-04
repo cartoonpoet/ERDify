@@ -4,7 +4,7 @@ import { login } from "../../../shared/api/auth.api";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
 import { Button, Input } from "../../../design-system";
 import {
-  page, card, brand, brandAccent, tagline, form, authLink, authLinkAnchor,
+  page, card, brand, brandLogo, tagline, form, authLink, authLinkAnchor,
 } from "./auth-page.css";
 
 export const LoginPage = () => {
@@ -34,9 +34,9 @@ export const LoginPage = () => {
     <div className={page}>
       <div className={card}>
         <div className={brand}>
-          ERD<span className={brandAccent}>ify</span>
+          <img src="/logo.svg" alt="ERDify" className={brandLogo} />
         </div>
-        <div className={tagline}>고객사 DB 스키마를 한 곳에서</div>
+        <div className={tagline}>AI와 함께, 팀과 함께 스키마를 관리하세요</div>
         <form className={form} onSubmit={handleSubmit} aria-label="로그인">
           <Input
             label="이메일"
