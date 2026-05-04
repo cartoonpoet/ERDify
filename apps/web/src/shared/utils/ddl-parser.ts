@@ -272,8 +272,8 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
       const entity: DiagramEntity = {
         id: uuid(),
         name: result.tableName,
-        logicalName: result.tableComment,
-        comment: null,
+        logicalName: null,
+        comment: result.tableComment,
         color: null,
         columns: result.columns.map((c) => ({ ...c, id: uuid() })),
       };
@@ -291,7 +291,7 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
       const m = stmt.match(/COMMENT\s+ON\s+TABLE\s+([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
       if (m) {
         const entity = entityMap.get(stripIdentifierQuotes(m[1] ?? ""));
-        if (entity) entity.logicalName = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
+        if (entity) entity.comment = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
       }
     } else if (/^COMMENT\s+ON\s+COLUMN\s+/i.test(stmt)) {
       const m = stmt.match(/COMMENT\s+ON\s+COLUMN\s+([^\s.]+)\.([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
