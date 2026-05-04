@@ -1,0 +1,238 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+  activePage?: 'overview' | 'mcp' | 'api';
+}
+const {
+  title = 'Developer Center — ERDify',
+  description = 'ERDify MCP 연동 및 REST API 레퍼런스',
+  activePage = 'overview',
+} = Astro.props;
+
+const APP_URL = 'https://app.erdify.com';
+
+const nav = [
+  {
+    group: '시작하기',
+    items: [
+      { label: 'Developer Center', href: '/docs', key: 'overview' },
+    ],
+  },
+  {
+    group: 'MCP 연동',
+    items: [
+      { label: 'MCP 가이드', href: '/docs/mcp-integration', key: 'mcp' },
+    ],
+  },
+  {
+    group: 'REST API',
+    items: [
+      { label: 'API 레퍼런스', href: '/docs/api-reference', key: 'api' },
+    ],
+  },
+];
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    />
+    <style is:global>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        --primary: #0064E0;
+        --primary-hover: #0143B5;
+        --text: #1C2B33;
+        --text-sub: #5D6C7B;
+        --border: #DEE3E9;
+        --surface: #F1F4F7;
+        --white: #FFFFFF;
+        --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
+        --sidebar-w: 240px;
+      }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: var(--font);
+        color: var(--text);
+        background: var(--white);
+        -webkit-font-smoothing: antialiased;
+      }
+      img { max-width: 100%; display: block; }
+      a { color: inherit; text-decoration: none; }
+      button { font-family: var(--font); cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <!-- Top bar -->
+    <header class="docs-header">
+      <div class="docs-header-inner">
+        <a href="/" class="docs-logo">
+          <img src="/logo.svg" alt="ERDify" class="docs-logo-img" />
+        </a>
+        <nav class="docs-topnav">
+          <a href="/docs" class:list={['docs-toplink', activePage !== 'api' && activePage !== 'mcp' ? 'docs-toplink--active' : '']}>개요</a>
+          <a href="/docs/mcp-integration" class:list={['docs-toplink', activePage === 'mcp' ? 'docs-toplink--active' : '']}>MCP</a>
+          <a href="/docs/api-reference" class:list={['docs-toplink', activePage === 'api' ? 'docs-toplink--active' : '']}>REST API</a>
+        </nav>
+        <div class="docs-header-right">
+          <a href={APP_URL} class="docs-cta">앱 열기 →</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="docs-shell">
+      <!-- Sidebar -->
+      <aside class="docs-sidebar">
+        {nav.map((section) => (
+          <div class="sidebar-group">
+            <div class="sidebar-group-title">{section.group}</div>
+            {section.items.map((item) => (
+              <a
+                href={item.href}
+                class:list={['sidebar-link', item.key === activePage ? 'sidebar-link--active' : '']}
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+        ))}
+        <div class="sidebar-divider" />
+        <a href={`${APP_URL}/settings/api`} class="sidebar-api-key">
+          🔑 API 키 발급하기 →
+        </a>
+      </aside>
+
+      <!-- Main content -->
+      <main class="docs-main">
+        <div class="docs-content">
+          <slot />
+        </div>
+      </main>
+    </div>
+
+    <style>
+      /* Header */
+      .docs-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+      .docs-header-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        gap: 32px;
+      }
+      .docs-logo { display: flex; align-items: center; }
+      .docs-logo-img { height: 28px; }
+      .docs-topnav { display: flex; gap: 4px; }
+      .docs-toplink {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-sub);
+        padding: 5px 10px;
+        border-radius: 6px;
+        transition: color 0.15s, background 0.15s;
+      }
+      .docs-toplink:hover { color: var(--text); background: var(--surface); }
+      .docs-toplink--active { color: var(--primary); font-weight: 600; }
+      .docs-header-right { margin-left: auto; }
+      .docs-cta {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary);
+        padding: 6px 14px;
+        border: 1px solid var(--primary);
+        border-radius: 8px;
+        transition: background 0.15s, color 0.15s;
+      }
+      .docs-cta:hover { background: var(--primary); color: #fff; }
+
+      /* Shell */
+      .docs-shell {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: grid;
+        grid-template-columns: var(--sidebar-w) 1fr;
+        gap: 0;
+        min-height: calc(100vh - 56px);
+      }
+
+      /* Sidebar */
+      .docs-sidebar {
+        position: sticky;
+        top: 56px;
+        height: calc(100vh - 56px);
+        overflow-y: auto;
+        padding: 32px 16px 32px 0;
+        border-right: 1px solid var(--border);
+      }
+      .sidebar-group { margin-bottom: 28px; }
+      .sidebar-group-title {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-sub);
+        padding: 0 12px;
+        margin-bottom: 6px;
+      }
+      .sidebar-link {
+        display: block;
+        font-size: 13.5px;
+        color: var(--text-sub);
+        padding: 7px 12px;
+        border-radius: 8px;
+        transition: color 0.12s, background 0.12s;
+        font-weight: 450;
+      }
+      .sidebar-link:hover { color: var(--text); background: var(--surface); }
+      .sidebar-link--active {
+        color: var(--primary);
+        background: #EEF4FF;
+        font-weight: 600;
+      }
+      .sidebar-divider { border-top: 1px solid var(--border); margin: 12px 12px 16px; }
+      .sidebar-api-key {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--primary);
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(0,100,224,0.2);
+        background: #EEF4FF;
+        transition: background 0.15s;
+        text-align: center;
+      }
+      .sidebar-api-key:hover { background: #dde8fc; }
+
+      /* Main */
+      .docs-main { padding: 48px 0 96px 56px; }
+      .docs-content { max-width: 760px; }
+
+      @media (max-width: 860px) {
+        .docs-shell { grid-template-columns: 1fr; }
+        .docs-sidebar { display: none; }
+        .docs-main { padding: 32px 0 64px 0; }
+      }
+    </style>
+  </body>
+</html>

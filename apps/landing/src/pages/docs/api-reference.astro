@@ -1,0 +1,401 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+---
+
+<DocsLayout title="REST API 레퍼런스 — ERDify Developer Center" activePage="api"
+  description="ERDify REST API로 스키마를 조회·수정하고 DDL을 내보내는 방법">
+
+  <div class="page-header">
+    <h1>REST API 레퍼런스</h1>
+    <p class="page-lead">HTTP 요청으로 ERDify 스키마를 읽고 수정합니다. CI/CD, 자동화 스크립트, 서드파티 통합에 적합합니다.</p>
+  </div>
+
+  <!-- 인증 -->
+  <section class="doc-section">
+    <h2>인증</h2>
+    <p>모든 API 요청에 <code>Authorization</code> 헤더로 API 키를 전달하세요.</p>
+    <div class="code-block">
+      <div class="code-meta">
+        <span class="code-file">요청 헤더</span>
+        <button class="code-copy" data-copy="auth">복사</button>
+      </div>
+      <pre id="copy-auth">{`Authorization: Bearer erd_your_api_key_here`}</pre>
+    </div>
+    <div class="info-box">
+      API 키는 <a href="https://app.erdify.com/settings/api" class="inline-link">ERDify 앱 → 설정 → API</a>에서 발급받을 수 있습니다.
+    </div>
+
+    <h3>Base URL</h3>
+    <div class="code-block" style="margin-top:12px">
+      <pre style="background:#0f1923; color:#e2e8f0; padding:16px 20px; font-family:monospace; font-size:13px;">{`https://api.erdify.com/v1`}</pre>
+    </div>
+  </section>
+
+  <!-- 엔드포인트 목록 -->
+  <section class="doc-section">
+    <h2>엔드포인트</h2>
+    <table class="ep-table">
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Path</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge--get">GET</span></td>
+          <td><code>/projects</code></td>
+          <td>프로젝트 목록 조회</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge--get">GET</span></td>
+          <td><code>/projects/{`{id}`}/schema</code></td>
+          <td>ERD 전체 스키마 조회</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge--post">POST</span></td>
+          <td><code>/projects/{`{id}`}/entities</code></td>
+          <td>테이블 추가</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge--patch">PATCH</span></td>
+          <td><code>/projects/{`{id}`}/entities/{`{entityId}`}</code></td>
+          <td>테이블·컬럼 수정</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge--delete">DELETE</span></td>
+          <td><code>/projects/{`{id}`}/entities/{`{entityId}`}</code></td>
+          <td>테이블 삭제</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge--get">GET</span></td>
+          <td><code>/projects/{`{id}`}/ddl</code></td>
+          <td>DDL 내보내기</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 코드 예제 -->
+  <section class="doc-section">
+    <h2>코드 예제</h2>
+
+    <div class="lang-tabs" role="tablist">
+      <button class="lang-tab lang-tab--active" data-lang="curl">cURL</button>
+      <button class="lang-tab" data-lang="js">JavaScript</button>
+      <button class="lang-tab" data-lang="python">Python</button>
+    </div>
+
+    <!-- cURL -->
+    <div class="lang-panel" data-lang-panel="curl">
+      <h3>스키마 조회</h3>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">GET /projects/{`{id}`}/schema</span>
+          <button class="code-copy" data-copy="curl-schema">복사</button>
+        </div>
+        <pre id="copy-curl-schema">{`curl https://api.erdify.com/v1/projects/proj_abc/schema \\
+  -H "Authorization: Bearer erd_your_api_key_here"`}</pre>
+      </div>
+
+      <h3>테이블 추가</h3>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">POST /projects/{`{id}`}/entities</span>
+          <button class="code-copy" data-copy="curl-create">복사</button>
+        </div>
+        <pre id="copy-curl-create">{`curl -X POST https://api.erdify.com/v1/projects/proj_abc/entities \\
+  -H "Authorization: Bearer erd_your_api_key_here" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "orders",
+    "columns": [
+      { "name": "id",         "type": "INT",           "primaryKey": true },
+      { "name": "user_id",    "type": "INT" },
+      { "name": "total",      "type": "DECIMAL(10,2)" },
+      { "name": "created_at", "type": "TIMESTAMP" }
+    ]
+  }'`}</pre>
+      </div>
+
+      <h3>DDL 내보내기</h3>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">GET /projects/{`{id}`}/ddl</span>
+          <button class="code-copy" data-copy="curl-ddl">복사</button>
+        </div>
+        <pre id="copy-curl-ddl">{`curl "https://api.erdify.com/v1/projects/proj_abc/ddl?dialect=postgresql" \\
+  -H "Authorization: Bearer erd_your_api_key_here"`}</pre>
+      </div>
+    </div>
+
+    <!-- JavaScript -->
+    <div class="lang-panel lang-panel--hidden" data-lang-panel="js">
+      <div class="info-box" style="margin-bottom:20px">
+        <strong>SDK 설치</strong>
+        <code style="display:block; margin-top:6px; font-family:monospace; font-size:13px;">npm install @erdify/sdk</code>
+      </div>
+
+      <h3>초기화 및 스키마 조회</h3>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">schema.ts</span>
+          <button class="code-copy" data-copy="js-schema">복사</button>
+        </div>
+        <pre id="copy-js-schema">{`import { ERDifyClient } from '@erdify/sdk';
+
+const client = new ERDifyClient({ apiKey: 'erd_your_api_key_here' });
+
+const schema = await client.projects.getSchema('proj_abc');
+console.log(schema.entities); // 테이블 배열`}</pre>
+      </div>
+
+      <h3>테이블 추가</h3>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">create-entity.ts</span>
+          <button class="code-copy" data-copy="js-create">복사</button>
+        </div>
+        <pre id="copy-js-create">{`const entity = await client.entities.create('proj_abc', {
+  name: 'orders',
+  columns: [
+    { name: 'id',         type: 'INT',           primaryKey: true },
+    { name: 'user_id',    type: 'INT' },
+    { name: 'total',      type: 'DECIMAL(10,2)' },
+    { name: 'created_at', type: 'TIMESTAMP' },
+  ],
+});`}</pre>
+      </div>
+
+      <h3>DDL 내보내기</h3>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">export-ddl.ts</span>
+          <button class="code-copy" data-copy="js-ddl">복사</button>
+        </div>
+        <pre id="copy-js-ddl">{`const ddl = await client.projects.exportDDL('proj_abc', {
+  dialect: 'postgresql', // 'mysql' | 'postgresql' | 'mariadb'
+});
+console.log(ddl); // CREATE TABLE ...`}</pre>
+      </div>
+    </div>
+
+    <!-- Python -->
+    <div class="lang-panel lang-panel--hidden" data-lang-panel="python">
+      <div class="info-box" style="margin-bottom:20px">
+        <strong>SDK 설치</strong>
+        <code style="display:block; margin-top:6px; font-family:monospace; font-size:13px;">pip install erdify</code>
+      </div>
+
+      <h3>초기화 및 스키마 조회</h3>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">schema.py</span>
+          <button class="code-copy" data-copy="py-schema">복사</button>
+        </div>
+        <pre id="copy-py-schema">{`from erdify import ERDifyClient
+
+client = ERDifyClient(api_key="erd_your_api_key_here")
+
+schema = client.projects.get_schema("proj_abc")
+print(schema.entities)  # 테이블 목록`}</pre>
+      </div>
+
+      <h3>테이블 추가</h3>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">create_entity.py</span>
+          <button class="code-copy" data-copy="py-create">복사</button>
+        </div>
+        <pre id="copy-py-create">{`entity = client.entities.create("proj_abc", {
+    "name": "orders",
+    "columns": [
+        {"name": "id",         "type": "INT",           "primaryKey": True},
+        {"name": "user_id",    "type": "INT"},
+        {"name": "total",      "type": "DECIMAL(10,2)"},
+        {"name": "created_at", "type": "TIMESTAMP"},
+    ],
+})`}</pre>
+      </div>
+
+      <h3>DDL 내보내기</h3>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">export_ddl.py</span>
+          <button class="code-copy" data-copy="py-ddl">복사</button>
+        </div>
+        <pre id="copy-py-ddl">{`ddl = client.projects.export_ddl(
+    "proj_abc",
+    dialect="postgresql"  # "mysql" | "postgresql" | "mariadb"
+)
+print(ddl)  # CREATE TABLE ...`}</pre>
+      </div>
+    </div>
+  </section>
+
+  <div class="page-nav">
+    <a href="/docs/mcp-integration" class="page-nav-prev">← MCP 연동 가이드</a>
+  </div>
+</DocsLayout>
+
+<style>
+  .page-header { margin-bottom: 48px; }
+  .page-header h1 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+  .page-lead { font-size: 16px; color: var(--text-sub); line-height: 1.7; }
+
+  .doc-section { margin-bottom: 56px; }
+  .doc-section h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .doc-section h3 { font-size: 15px; font-weight: 700; margin: 24px 0 10px; color: var(--text); }
+  .doc-section p { font-size: 14.5px; color: var(--text-sub); line-height: 1.75; margin-bottom: 16px; }
+  .doc-section code {
+    font-family: monospace;
+    font-size: 13px;
+    background: var(--surface);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--text);
+  }
+
+  .info-box {
+    background: #EEF4FF;
+    border: 1px solid rgba(0,100,224,0.2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  .info-box strong { display: block; font-size: 13px; color: var(--primary); margin-bottom: 4px; }
+  .inline-link { color: var(--primary); font-weight: 600; }
+  .inline-link:hover { text-decoration: underline; }
+
+  /* Endpoint table */
+  .ep-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .ep-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .ep-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-sub); vertical-align: middle; }
+  .ep-table tr:last-child td { border-bottom: none; }
+  .ep-table code { font-family: monospace; font-size: 12.5px; background: var(--surface); padding: 2px 6px; border-radius: 4px; color: var(--text); }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    font-family: monospace;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .badge--get { background: rgba(52,211,153,0.12); color: #059669; }
+  .badge--post { background: rgba(96,165,250,0.12); color: #2563eb; }
+  .badge--patch { background: rgba(251,191,36,0.12); color: #d97706; }
+  .badge--delete { background: rgba(248,113,113,0.12); color: #dc2626; }
+
+  /* Lang tabs */
+  .lang-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  .lang-tab {
+    padding: 9px 18px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+    font-family: var(--font);
+  }
+  .lang-tab:hover { color: var(--text); }
+  .lang-tab--active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .lang-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 24px;
+  }
+  .lang-panel--hidden { display: none; }
+
+  /* Code block */
+  .code-block { border-radius: 10px; overflow: hidden; border: 1px solid rgba(0,0,0,0.08); margin-bottom: 8px; }
+  .code-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: #1a2733;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .code-file { font-size: 11px; color: rgba(255,255,255,0.45); font-family: monospace; }
+  .code-copy {
+    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.15); background: transparent;
+    color: rgba(255,255,255,0.6); cursor: pointer; transition: all 0.15s; font-family: sans-serif;
+  }
+  .code-copy:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .code-copy--copied { border-color: #34d399 !important; color: #34d399 !important; }
+  .code-block pre {
+    margin: 0; padding: 20px;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px; line-height: 1.7; color: #e2e8f0;
+    background: #0f1923; overflow-x: auto; white-space: pre;
+  }
+
+  /* Page nav */
+  .page-nav {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  .page-nav a { font-size: 14px; font-weight: 600; color: var(--primary); }
+  .page-nav a:hover { text-decoration: underline; }
+</style>
+
+<script>
+  const langTabs = document.querySelectorAll<HTMLButtonElement>('.lang-tab');
+  const langPanels = document.querySelectorAll<HTMLElement>('.lang-panel');
+
+  langTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const lang = tab.dataset.lang!;
+      langTabs.forEach(t => t.classList.remove('lang-tab--active'));
+      langPanels.forEach(p => p.classList.add('lang-panel--hidden'));
+      tab.classList.add('lang-tab--active');
+      document.querySelector<HTMLElement>(`[data-lang-panel="${lang}"]`)?.classList.remove('lang-panel--hidden');
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.code-copy').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.copy!;
+      const code = document.getElementById(`copy-${key}`)?.textContent ?? '';
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '✓ 복사됨';
+        btn.classList.add('code-copy--copied');
+        setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('code-copy--copied'); }, 2000);
+      });
+    });
+  });
+</script>

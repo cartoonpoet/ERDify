@@ -1,0 +1,399 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+---
+
+<DocsLayout title="MCP 연동 가이드 — ERDify Developer Center" activePage="mcp"
+  description="ERDify MCP 서버를 Cursor, Claude Desktop, Gemini CLI, Codex CLI에 연결하는 방법">
+
+  <div class="page-header">
+    <h1>MCP 연동 가이드</h1>
+    <p class="page-lead">ERDify MCP 서버를 AI 도구에 연결하면, AI와 함께 스키마를 읽고 수정하고 DDL을 생성할 수 있습니다.</p>
+  </div>
+
+  <!-- MCP란 -->
+  <section class="doc-section">
+    <h2>MCP란?</h2>
+    <p>MCP(Model Context Protocol)는 AI 도구와 외부 서비스를 연결하는 오픈 표준입니다. ERDify MCP 서버를 설치하면 Cursor, Claude Desktop 같은 AI 도구가 ERDify의 스키마를 직접 읽고 수정할 수 있습니다.</p>
+    <div class="info-box">
+      <strong>어떻게 동작하나요?</strong>
+      <p>AI 도구 → MCP 서버 → ERDify API 순서로 통신합니다. AI가 "orders 테이블 추가해줘"라고 요청받으면, MCP 서버가 ERDify API를 호출해 실제 ERD를 수정합니다.</p>
+    </div>
+  </section>
+
+  <!-- 사전 준비 -->
+  <section class="doc-section">
+    <h2>사전 준비</h2>
+    <ul class="checklist">
+      <li>Node.js 18 이상 설치</li>
+      <li>ERDify API 키 (<a href="https://app.erdify.com/settings/api" class="inline-link">앱 → 설정 → API</a>에서 발급)</li>
+      <li>지원 AI 도구 중 하나: Cursor, Claude Desktop, Gemini CLI, Codex CLI</li>
+    </ul>
+  </section>
+
+  <!-- 도구별 설정 -->
+  <section class="doc-section">
+    <h2>도구별 설정</h2>
+
+    <div class="tool-tabs" role="tablist">
+      <button class="tool-tab tool-tab--active" data-tool="cursor">Cursor</button>
+      <button class="tool-tab" data-tool="claude">Claude Desktop</button>
+      <button class="tool-tab" data-tool="gemini">Gemini CLI</button>
+      <button class="tool-tab" data-tool="codex">Codex CLI</button>
+    </div>
+
+    <div class="tool-panel" data-panel="cursor">
+      <p class="tool-desc">프로젝트 루트 또는 <code>~/.cursor/</code>에 <code>mcp.json</code> 파일을 생성하거나 수정하세요.</p>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">📄 .cursor/mcp.json</span>
+          <button class="code-copy" data-copy="cursor">복사</button>
+        </div>
+        <pre id="copy-cursor">{`{
+  "mcpServers": {
+    "erdify": {
+      "command": "npx",
+      "args": ["-y", "@erdify/mcp-server@latest"],
+      "env": {
+        "ERDIFY_API_KEY": "erd_your_api_key_here"
+      }
+    }
+  }
+}`}</pre>
+      </div>
+      <p class="tool-note">저장 후 Cursor를 재시작하면 AI Chat에서 ERDify MCP를 사용할 수 있습니다.</p>
+    </div>
+
+    <div class="tool-panel tool-panel--hidden" data-panel="claude">
+      <p class="tool-desc">Claude Desktop 설정 파일을 열어 아래 내용을 추가하세요.</p>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">📄 ~/Library/Application Support/Claude/claude_desktop_config.json</span>
+          <button class="code-copy" data-copy="claude">복사</button>
+        </div>
+        <pre id="copy-claude">{`{
+  "mcpServers": {
+    "erdify": {
+      "command": "npx",
+      "args": ["-y", "@erdify/mcp-server@latest"],
+      "env": {
+        "ERDIFY_API_KEY": "erd_your_api_key_here"
+      }
+    }
+  }
+}`}</pre>
+      </div>
+      <p class="tool-note">저장 후 Claude Desktop을 완전히 종료하고 재시작하세요.</p>
+    </div>
+
+    <div class="tool-panel tool-panel--hidden" data-panel="gemini">
+      <p class="tool-desc"><code>~/.gemini/settings.json</code> 파일에 아래 내용을 추가하세요.</p>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">📄 ~/.gemini/settings.json</span>
+          <button class="code-copy" data-copy="gemini">복사</button>
+        </div>
+        <pre id="copy-gemini">{`{
+  "mcpServers": {
+    "erdify": {
+      "command": "npx",
+      "args": ["-y", "@erdify/mcp-server@latest"],
+      "env": {
+        "ERDIFY_API_KEY": "erd_your_api_key_here"
+      }
+    }
+  }
+}`}</pre>
+      </div>
+      <p class="tool-note">설정 후 <code>gemini</code> CLI를 재실행하면 ERDify 도구가 활성화됩니다.</p>
+    </div>
+
+    <div class="tool-panel tool-panel--hidden" data-panel="codex">
+      <p class="tool-desc"><code>~/.codex/config.yaml</code> 파일에 아래 내용을 추가하세요.</p>
+      <div class="code-block">
+        <div class="code-meta">
+          <span class="code-file">📄 ~/.codex/config.yaml</span>
+          <button class="code-copy" data-copy="codex">복사</button>
+        </div>
+        <pre id="copy-codex">{`mcp_servers:
+  erdify:
+    command: npx
+    args:
+      - -y
+      - "@erdify/mcp-server@latest"
+    env:
+      ERDIFY_API_KEY: erd_your_api_key_here`}</pre>
+      </div>
+      <p class="tool-note">저장 후 codex CLI를 재실행하세요.</p>
+    </div>
+  </section>
+
+  <!-- MCP 도구 목록 -->
+  <section class="doc-section">
+    <h2>사용 가능한 MCP 도구</h2>
+    <p>연결된 AI 도구에서 아래 기능을 자연어로 요청할 수 있습니다.</p>
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th>도구 이름</th>
+          <th>설명</th>
+          <th>예시 요청</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>list_projects</code></td>
+          <td>프로젝트 목록 조회</td>
+          <td>"내 ERDify 프로젝트 목록 보여줘"</td>
+        </tr>
+        <tr>
+          <td><code>get_schema</code></td>
+          <td>현재 ERD 전체 스키마 조회</td>
+          <td>"현재 ERD 테이블 구조 알려줘"</td>
+        </tr>
+        <tr>
+          <td><code>get_entity</code></td>
+          <td>특정 테이블 상세 조회</td>
+          <td>"users 테이블 컬럼 목록 보여줘"</td>
+        </tr>
+        <tr>
+          <td><code>add_entity</code></td>
+          <td>새 테이블 추가</td>
+          <td>"orders 테이블 추가해줘"</td>
+        </tr>
+        <tr>
+          <td><code>update_entity</code></td>
+          <td>테이블·컬럼 수정</td>
+          <td>"users 테이블에 phone_number 컬럼 추가해줘"</td>
+        </tr>
+        <tr>
+          <td><code>delete_entity</code></td>
+          <td>테이블 삭제</td>
+          <td>"temp_logs 테이블 삭제해줘"</td>
+        </tr>
+        <tr>
+          <td><code>add_relationship</code></td>
+          <td>테이블 간 관계 설정</td>
+          <td>"orders와 users 사이에 FK 관계 만들어줘"</td>
+        </tr>
+        <tr>
+          <td><code>export_ddl</code></td>
+          <td>DDL 생성 및 반환</td>
+          <td>"PostgreSQL DDL로 내보내줘"</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 연결 확인 -->
+  <section class="doc-section">
+    <h2>연결 확인</h2>
+    <p>설정 완료 후 AI 도구에서 아래 메시지를 입력해 연결을 확인하세요.</p>
+    <div class="code-block">
+      <div class="code-meta">
+        <span class="code-file">AI 도구 채팅창</span>
+      </div>
+      <pre>{`현재 ERDify 프로젝트의 테이블 목록을 보여줘`}</pre>
+    </div>
+    <p>ERDify MCP가 정상 연결됐다면 현재 ERD의 테이블 목록이 반환됩니다.</p>
+  </section>
+
+  <div class="page-nav">
+    <a href="/docs" class="page-nav-prev">← Developer Center</a>
+    <a href="/docs/api-reference" class="page-nav-next">REST API →</a>
+  </div>
+</DocsLayout>
+
+<style>
+  .page-header { margin-bottom: 48px; }
+  .page-header h1 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+  .page-lead { font-size: 16px; color: var(--text-sub); line-height: 1.7; }
+
+  .doc-section { margin-bottom: 56px; }
+  .doc-section h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .doc-section p { font-size: 14.5px; color: var(--text-sub); line-height: 1.75; margin-bottom: 16px; }
+
+  .info-box {
+    background: #EEF4FF;
+    border: 1px solid rgba(0,100,224,0.2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+  .info-box strong { display: block; font-size: 14px; color: var(--primary); margin-bottom: 6px; }
+  .info-box p { font-size: 13.5px; color: var(--text); margin: 0; }
+
+  .checklist { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .checklist li {
+    font-size: 14px;
+    color: var(--text-sub);
+    padding-left: 22px;
+    position: relative;
+    line-height: 1.6;
+  }
+  .checklist li::before { content: '✓'; position: absolute; left: 0; color: var(--primary); font-weight: 700; }
+  .inline-link { color: var(--primary); font-weight: 600; }
+  .inline-link:hover { text-decoration: underline; }
+
+  /* Tool tabs */
+  .tool-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  .tool-tab {
+    padding: 9px 18px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+    font-family: var(--font);
+  }
+  .tool-tab:hover { color: var(--text); }
+  .tool-tab--active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .tool-panel {
+    background: var(--surface);
+    border-radius: 0 0 12px 12px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-top: none;
+  }
+  .tool-panel--hidden { display: none; }
+  .tool-desc { font-size: 14px; color: var(--text-sub); margin-bottom: 16px !important; }
+  .tool-note { font-size: 13px; color: var(--text-sub); margin-top: 12px !important; margin-bottom: 0 !important; }
+  .tool-panel code {
+    font-family: monospace;
+    font-size: 12.5px;
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--text);
+  }
+
+  /* Code block */
+  .code-block {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .code-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: #1a2733;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .code-file { font-size: 11px; color: rgba(255,255,255,0.45); font-family: monospace; }
+  .code-copy {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: sans-serif;
+  }
+  .code-copy:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .code-copy--copied { border-color: #34d399 !important; color: #34d399 !important; }
+  .code-block pre {
+    margin: 0;
+    padding: 20px;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #e2e8f0;
+    background: #0f1923;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  /* Table */
+  .tool-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-top: 16px;
+  }
+  .tool-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tool-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-sub);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .tool-table tr:last-child td { border-bottom: none; }
+  .tool-table code {
+    font-family: monospace;
+    font-size: 12px;
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--primary);
+    white-space: nowrap;
+  }
+
+  /* Page nav */
+  .page-nav {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  .page-nav a { font-size: 14px; font-weight: 600; color: var(--primary); }
+  .page-nav a:hover { text-decoration: underline; }
+</style>
+
+<script>
+  const toolTabs = document.querySelectorAll<HTMLButtonElement>('.tool-tab');
+  const toolPanels = document.querySelectorAll<HTMLElement>('.tool-panel');
+
+  toolTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const tool = tab.dataset.tool!;
+      toolTabs.forEach(t => t.classList.remove('tool-tab--active'));
+      toolPanels.forEach(p => p.classList.add('tool-panel--hidden'));
+      tab.classList.add('tool-tab--active');
+      document.querySelector<HTMLElement>(`[data-panel="${tool}"]`)?.classList.remove('tool-panel--hidden');
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.code-copy').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.copy!;
+      const code = document.getElementById(`copy-${key}`)?.textContent ?? '';
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '✓ 복사됨';
+        btn.classList.add('code-copy--copied');
+        setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('code-copy--copied'); }, 2000);
+      });
+    });
+  });
+</script>
