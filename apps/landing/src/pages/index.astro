@@ -28,7 +28,7 @@ const APP_URL = 'https://app.erdify.com';
   <!-- HERO -->
   <section class="hero">
     <div class="container">
-      <div class="badge">✦ MCP 지원 — Cursor · Claude · Windsurf · Continue</div>
+      <div class="badge">✦ MCP 지원 — Cursor · Claude · Gemini · Codex</div>
       <h1 class="hero-title">
         AI가 팀 스키마를<br /><span class="highlight">직접 관리</span>합니다
       </h1>
@@ -41,7 +41,7 @@ const APP_URL = 'https://app.erdify.com';
         <a href="#integrations" class="btn-outline btn-lg">연동 가이드 보기</a>
       </div>
       <div class="hero-stats">
-        <div class="stat"><strong>Cursor · Claude · Windsurf</strong><span>지원 AI 도구</span></div>
+        <div class="stat"><strong>Cursor · Claude · Gemini · Codex</strong><span>지원 AI 도구</span></div>
         <div class="stat-divider"></div>
         <div class="stat"><strong>실시간</strong><span>팀 협업</span></div>
         <div class="stat-divider"></div>
@@ -213,8 +213,8 @@ const APP_URL = 'https://app.erdify.com';
       <div class="it-tabs" role="tablist">
         <button class="it-tab it-tab--active" data-tool="cursor">Cursor</button>
         <button class="it-tab" data-tool="claude">Claude Desktop</button>
-        <button class="it-tab" data-tool="windsurf">Windsurf</button>
-        <button class="it-tab" data-tool="continue">Continue</button>
+        <button class="it-tab" data-tool="gemini">Gemini CLI</button>
+        <button class="it-tab" data-tool="codex">Codex CLI</button>
       </div>
 
       <!-- Config panels -->
@@ -254,12 +254,12 @@ const APP_URL = 'https://app.erdify.com';
 }`}</pre>
       </div>
 
-      <div class="it-panel it-panel--hidden" data-panel="windsurf">
+      <div class="it-panel it-panel--hidden" data-panel="gemini">
         <div class="it-meta">
-          <div class="it-file-badge">📄 ~/.codeium/windsurf/mcp_config.json</div>
-          <button class="it-copy" data-copy="windsurf">복사</button>
+          <div class="it-file-badge">📄 ~/.gemini/settings.json</div>
+          <button class="it-copy" data-copy="gemini">복사</button>
         </div>
-        <pre class="it-code" id="code-windsurf">{`{
+        <pre class="it-code" id="code-gemini">{`{
   "mcpServers": {
     "erdify": {
       "command": "npx",
@@ -272,23 +272,19 @@ const APP_URL = 'https://app.erdify.com';
 }`}</pre>
       </div>
 
-      <div class="it-panel it-panel--hidden" data-panel="continue">
+      <div class="it-panel it-panel--hidden" data-panel="codex">
         <div class="it-meta">
-          <div class="it-file-badge">📄 ~/.continue/config.json</div>
-          <button class="it-copy" data-copy="continue">복사</button>
+          <div class="it-file-badge">📄 ~/.codex/config.yaml</div>
+          <button class="it-copy" data-copy="codex">복사</button>
         </div>
-        <pre class="it-code" id="code-continue">{`{
-  "mcpServers": [
-    {
-      "name": "erdify",
-      "command": "npx",
-      "args": ["-y", "@erdify/mcp-server@latest"],
-      "env": {
-        "ERDIFY_API_KEY": "erd_your_api_key_here"
-      }
-    }
-  ]
-}`}</pre>
+        <pre class="it-code" id="code-codex">{`mcp_servers:
+  erdify:
+    command: npx
+    args:
+      - -y
+      - "@erdify/mcp-server@latest"
+    env:
+      ERDIFY_API_KEY: erd_your_api_key_here`}</pre>
       </div>
 
       <!-- API key note -->
