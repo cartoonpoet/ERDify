@@ -141,28 +141,27 @@ const nav = [
       }
       .docs-logo { display: flex; align-items: center; flex-shrink: 0; }
       .docs-logo-img { width: 138px; height: 36px; display: block; }
-      .docs-topnav { display: flex; gap: 4px; }
+      .docs-topnav { display: flex; gap: 28px; flex: 1; }
       .docs-toplink {
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 500;
         color: var(--text-sub);
-        padding: 5px 10px;
-        border-radius: 6px;
-        transition: color 0.15s, background 0.15s;
+        transition: color 0.15s;
       }
-      .docs-toplink:hover { color: var(--text); background: var(--surface); }
+      .docs-toplink:hover { color: var(--text); }
       .docs-toplink--active { color: var(--primary); font-weight: 600; }
-      .docs-header-right { margin-left: auto; }
+      .docs-header-right { display: flex; gap: 10px; align-items: center; }
       .docs-cta {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--primary);
-        padding: 6px 14px;
-        border: 1px solid var(--primary);
+        background: var(--primary);
+        color: #fff;
+        border: none;
         border-radius: 8px;
-        transition: background 0.15s, color 0.15s;
+        padding: 9px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background 0.15s;
       }
-      .docs-cta:hover { background: var(--primary); color: #fff; }
+      .docs-cta:hover { background: var(--primary-hover); }
 
       /* Shell */
       .docs-shell {
