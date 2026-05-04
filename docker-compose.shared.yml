@@ -21,7 +21,6 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "8080:8080"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/00-main.conf:ro
       - /opt/erdify/active-slot:/etc/nginx/conf.d/slot:ro
