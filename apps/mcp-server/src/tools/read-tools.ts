@@ -8,7 +8,7 @@ function formatDiagram(name: string, doc: DiagramDocument): string {
   const lines: string[] = [`Diagram: "${name}" (${doc.dialect})`, ""];
   lines.push(`Tables (${doc.entities.length}):`);
   for (const entity of doc.entities) {
-    lines.push(`  ${entity.name}`);
+    lines.push(`  ${entity.name} [tableId: ${entity.id}]`);
     for (const col of [...entity.columns].sort((a, b) => a.ordinal - b.ordinal)) {
       const flags = [
         col.primaryKey ? "PK" : null,
@@ -17,7 +17,7 @@ function formatDiagram(name: string, doc: DiagramDocument): string {
       ]
         .filter(Boolean)
         .join(" ");
-      lines.push(`    - ${col.name}: ${col.type}${flags ? " " + flags : ""}`);
+      lines.push(`    - ${col.name} [columnId: ${col.id}]: ${col.type}${flags ? " " + flags : ""}`);
     }
   }
   if (doc.relationships.length > 0) {
@@ -25,7 +25,7 @@ function formatDiagram(name: string, doc: DiagramDocument): string {
     for (const rel of doc.relationships) {
       const src = doc.entities.find((e) => e.id === rel.sourceEntityId)?.name ?? rel.sourceEntityId;
       const tgt = doc.entities.find((e) => e.id === rel.targetEntityId)?.name ?? rel.targetEntityId;
-      lines.push(`  ${src} → ${tgt} (${rel.cardinality})`);
+      lines.push(`  ${src} → ${tgt} (${rel.cardinality}) [relationshipId: ${rel.id}]`);
     }
   }
   return lines.join("\n");

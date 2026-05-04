@@ -24,6 +24,7 @@ const columnInputSchema = z.object({
     .nullable()
     .optional()
     .describe("SQL default expression, set to null to remove"),
+  comment: z.string().nullable().optional().describe("Optional column comment"),
 });
 
 type ColumnInput = z.infer<typeof columnInputSchema>;
@@ -87,12 +88,13 @@ export const registerWriteTools = (server: McpServer): void => {
     },
     async ({ diagramId, tableId }) => {
       const { content: doc } = await client.getDiagram(diagramId);
-      if (!doc.entities.find((e) => e.id === tableId)) {
+      const entity = doc.entities.find((e) => e.id === tableId);
+      if (!entity) {
         throw new Error(`Table ID "${tableId}" not found in diagram`);
       }
       const updated = removeEntity(doc, tableId);
       await client.updateDiagram(diagramId, updated);
-      return { content: [{ type: "text", text: `Table ${tableId} removed.` }] };
+      return { content: [{ type: "text", text: `Table "${entity.name}" (${tableId}) removed.` }] };
     }
   );
 
@@ -144,6 +146,7 @@ export const registerWriteTools = (server: McpServer): void => {
       if (updates.primaryKey !== undefined) changes.primaryKey = updates.primaryKey;
       if (updates.unique !== undefined) changes.unique = updates.unique;
       if (updates.defaultValue !== undefined) changes.defaultValue = updates.defaultValue;
+      if (updates.comment !== undefined) changes.comment = updates.comment;
       const updated = updateColumn(doc, tableId, columnId, changes);
       await client.updateDiagram(diagramId, updated);
       return { content: [{ type: "text", text: `Column ${columnId} updated.` }] };
@@ -165,9 +168,10 @@ export const registerWriteTools = (server: McpServer): void => {
       if (!entity.columns.find((c) => c.id === columnId)) {
         throw new Error(`Column ID "${columnId}" not found in table ${tableId}`);
       }
+      const colToRemove = entity.columns.find((c) => c.id === columnId)!;
       const updated = removeColumn(doc, tableId, columnId);
       await client.updateDiagram(diagramId, updated);
-      return { content: [{ type: "text", text: `Column ${columnId} removed from table ${tableId}.` }] };
+      return { content: [{ type: "text", text: `Column "${colToRemove.name}" (${columnId}) removed from table "${entity.name}".` }] };
     }
   );
 
@@ -230,13 +234,16 @@ export const registerWriteTools = (server: McpServer): void => {
     },
     async ({ diagramId, relationshipId }) => {
       const { content: doc } = await client.getDiagram(diagramId);
-      if (!doc.relationships.find((r) => r.id === relationshipId)) {
+      const rel = doc.relationships.find((r) => r.id === relationshipId);
+      if (!rel) {
         throw new Error(`Relationship ID "${relationshipId}" not found`);
       }
+      const srcName = doc.entities.find((e) => e.id === rel.sourceEntityId)?.name ?? rel.sourceEntityId;
+      const tgtName = doc.entities.find((e) => e.id === rel.targetEntityId)?.name ?? rel.targetEntityId;
       const updated = removeRelationship(doc, relationshipId);
       await client.updateDiagram(diagramId, updated);
       return {
-        content: [{ type: "text", text: `Relationship ${relationshipId} removed.` }],
+        content: [{ type: "text", text: `Relationship "${srcName} → ${tgtName}" (${relationshipId}) removed.` }],
       };
     }
   );
