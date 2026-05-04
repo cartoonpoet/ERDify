@@ -8,20 +8,10 @@ import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
 import type { SharePreset } from "./dto/share-diagram.dto";
 import {
   addEntity, renameEntity, updateEntityColor, updateEntityComment, removeEntity,
-  addColumn as domainAddColumn,
-  updateColumn as domainUpdateColumn,
-  removeColumn as domainRemoveColumn,
-  addRelationship as domainAddRelationship,
-  updateRelationship as domainUpdateRelationship,
-  removeRelationship as domainRemoveRelationship,
 } from "@erdify/domain";
-import type { DiagramColumn, DiagramDocument, DiagramRelationship } from "@erdify/domain";
+import type { DiagramDocument } from "@erdify/domain";
 import type { AddTableDto } from "./dto/add-table.dto";
 import type { UpdateTableDto } from "./dto/update-table.dto";
-import type { AddColumnDto } from "./dto/add-column.dto";
-import type { UpdateColumnDto } from "./dto/update-column.dto";
-import type { AddRelationshipDto } from "./dto/add-relationship.dto";
-import type { UpdateRelationshipDto } from "./dto/update-relationship.dto";
 
 @Injectable()
 export class DiagramsService {
@@ -68,7 +58,11 @@ export class DiagramsService {
   ): Promise<Diagram> {
     const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
     await this.requireEditorOrOwner(orgId, userId);
-    diagram.content = fn(diagram.content as unknown as DiagramDocument) as unknown as object;
+    const doc = diagram.content as unknown as DiagramDocument;
+    if (!doc || !Array.isArray(doc.entities)) {
+      throw new NotFoundException("Diagram content is malformed");
+    }
+    diagram.content = fn(doc) as unknown as object;
     return this.diagramRepo.save(diagram);
   }
 
@@ -220,7 +214,7 @@ export class DiagramsService {
     dto: UpdateTableDto
   ): Promise<Diagram> {
     return this.applySchemaCommand(diagramId, userId, (doc) => {
-      if (!doc.entities.find((e) => e.id === tableId)) throw new NotFoundException("Table not found");
+      if (!doc.entities.some((e) => e.id === tableId)) throw new NotFoundException("Table not found");
       let updated = doc;
       if (dto.name !== undefined) updated = renameEntity(updated, tableId, dto.name);
       if (dto.color !== undefined) updated = updateEntityColor(updated, tableId, dto.color ?? null);
@@ -231,7 +225,7 @@ export class DiagramsService {
 
   async removeTable(diagramId: string, tableId: string, userId: string): Promise<void> {
     await this.applySchemaCommand(diagramId, userId, (doc) => {
-      if (!doc.entities.find((e) => e.id === tableId)) throw new NotFoundException("Table not found");
+      if (!doc.entities.some((e) => e.id === tableId)) throw new NotFoundException("Table not found");
       return removeEntity(doc, tableId);
     });
   }

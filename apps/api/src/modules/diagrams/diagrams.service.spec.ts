@@ -267,6 +267,20 @@ describe("DiagramsService", () => {
 
       await expect(service.addTable("diag-1", "user-1", { name: "users" })).rejects.toThrow(ForbiddenException);
     });
+
+    it("sets entity position when x and y are provided", async () => {
+      const diagram = makeDiagram({ content: makeDoc() as unknown as object });
+      diagramRepo.findOne.mockResolvedValue(diagram);
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.addTable("diag-1", "user-1", { name: "users", x: 100, y: 200 });
+
+      const doc = result.content as unknown as DiagramDocument;
+      const entityId = doc.entities[0]!.id;
+      expect(doc.layout.entityPositions[entityId]).toEqual({ x: 100, y: 200 });
+    });
   });
 
   describe("updateTable", () => {
@@ -289,6 +303,20 @@ describe("DiagramsService", () => {
       memberRepo.findOne.mockResolvedValue(makeMember("editor"));
 
       await expect(service.updateTable("diag-1", "bad-id", "user-1", { name: "x" })).rejects.toThrow(NotFoundException);
+    });
+
+    it("updates entity color and comment", async () => {
+      const doc = makeDoc({ entities: [{ id: "ent-1", name: "users", logicalName: null, comment: null, color: null, columns: [] }] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.updateTable("diag-1", "ent-1", "user-1", { color: "#ff0000", comment: "main table" });
+
+      const resultDoc = result.content as unknown as DiagramDocument;
+      expect(resultDoc.entities[0]!.color).toBe("#ff0000");
+      expect(resultDoc.entities[0]!.comment).toBe("main table");
     });
   });
 
