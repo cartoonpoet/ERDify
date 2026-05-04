@@ -1,0 +1,17 @@
+.git
+.gitignore
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/.turbo
+**/dist
+**/coverage
+**/.cache
+**/uploads
+memory/
+test-fixtures/
+.vscode/
+*.md
+docker-compose.prod.yml
+.github/
