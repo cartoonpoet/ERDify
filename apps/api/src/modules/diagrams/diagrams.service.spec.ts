@@ -2,6 +2,21 @@ import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import type { Diagram, DiagramVersion, OrganizationMember, Project } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { DiagramsService } from "./diagrams.service";
+import type { DiagramDocument } from "@erdify/domain";
+
+const makeDoc = (overrides: Partial<DiagramDocument> = {}): DiagramDocument => ({
+  format: "erdify.schema.v1",
+  id: "diag-1",
+  name: "ERD",
+  dialect: "postgresql",
+  entities: [],
+  relationships: [],
+  indexes: [],
+  views: [],
+  layout: { entityPositions: {} },
+  metadata: { revision: 1, stableObjectIds: true, createdAt: "", updatedAt: "" },
+  ...overrides,
+});
 
 type MockRepo<_T> = {
   findOne: ReturnType<typeof vi.fn>;
@@ -227,6 +242,77 @@ describe("DiagramsService", () => {
       diagramRepo.findOne.mockResolvedValue(makeDiagram({ shareToken: "tok-abc", shareExpiresAt: past }));
 
       await expect(service.getPublicDiagram("tok-abc")).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe("addTable", () => {
+    it("adds entity and returns updated diagram", async () => {
+      const diagram = makeDiagram({ content: makeDoc() as unknown as object });
+      diagramRepo.findOne.mockResolvedValue(diagram);
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.addTable("diag-1", "user-1", { name: "users" });
+
+      const doc = result.content as unknown as DiagramDocument;
+      expect(doc.entities).toHaveLength(1);
+      expect(doc.entities[0]!.name).toBe("users");
+    });
+
+    it("throws ForbiddenException for viewer", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+
+      await expect(service.addTable("diag-1", "user-1", { name: "users" })).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe("updateTable", () => {
+    it("renames entity", async () => {
+      const doc = makeDoc({ entities: [{ id: "ent-1", name: "old", logicalName: null, comment: null, color: null, columns: [] }] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.updateTable("diag-1", "ent-1", "user-1", { name: "new" });
+
+      const resultDoc = result.content as unknown as DiagramDocument;
+      expect(resultDoc.entities[0]!.name).toBe("new");
+    });
+
+    it("throws NotFoundException for unknown tableId", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(service.updateTable("diag-1", "bad-id", "user-1", { name: "x" })).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("removeTable", () => {
+    it("removes entity from diagram", async () => {
+      const doc = makeDoc({ entities: [{ id: "ent-1", name: "users", logicalName: null, comment: null, color: null, columns: [] }] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      await service.removeTable("diag-1", "ent-1", "user-1");
+
+      expect(diagramRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ content: expect.objectContaining({ entities: [] }) })
+      );
+    });
+
+    it("throws NotFoundException for unknown tableId", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(service.removeTable("diag-1", "bad-id", "user-1")).rejects.toThrow(NotFoundException);
     });
   });
 });

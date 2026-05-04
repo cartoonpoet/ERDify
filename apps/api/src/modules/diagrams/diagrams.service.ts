@@ -6,6 +6,22 @@ import type { Repository } from "typeorm";
 import type { CreateDiagramDto } from "./dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
 import type { SharePreset } from "./dto/share-diagram.dto";
+import {
+  addEntity, renameEntity, updateEntityColor, updateEntityComment, removeEntity,
+  addColumn as domainAddColumn,
+  updateColumn as domainUpdateColumn,
+  removeColumn as domainRemoveColumn,
+  addRelationship as domainAddRelationship,
+  updateRelationship as domainUpdateRelationship,
+  removeRelationship as domainRemoveRelationship,
+} from "@erdify/domain";
+import type { DiagramColumn, DiagramDocument, DiagramRelationship } from "@erdify/domain";
+import type { AddTableDto } from "./dto/add-table.dto";
+import type { UpdateTableDto } from "./dto/update-table.dto";
+import type { AddColumnDto } from "./dto/add-column.dto";
+import type { UpdateColumnDto } from "./dto/update-column.dto";
+import type { AddRelationshipDto } from "./dto/add-relationship.dto";
+import type { UpdateRelationshipDto } from "./dto/update-relationship.dto";
 
 @Injectable()
 export class DiagramsService {
@@ -43,6 +59,17 @@ export class DiagramsService {
     if (!diagram) throw new NotFoundException("Diagram not found");
     const project = await this.getProject(diagram.projectId);
     return { diagram, orgId: project.organizationId };
+  }
+
+  private async applySchemaCommand(
+    diagramId: string,
+    userId: string,
+    fn: (doc: DiagramDocument) => DiagramDocument
+  ): Promise<Diagram> {
+    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
+    await this.requireEditorOrOwner(orgId, userId);
+    diagram.content = fn(diagram.content as unknown as DiagramDocument) as unknown as object;
+    return this.diagramRepo.save(diagram);
   }
 
   async create(projectId: string, userId: string, dto: CreateDiagramDto): Promise<Diagram> {
@@ -172,5 +199,40 @@ export class DiagramsService {
       throw new ForbiddenException("SHARE_LINK_EXPIRED");
     }
     return { id: diagram.id, name: diagram.name, content: diagram.content };
+  }
+
+  async addTable(diagramId: string, userId: string, dto: AddTableDto): Promise<Diagram> {
+    const entityId = randomUUID();
+    const hasPosition = dto.x !== undefined && dto.y !== undefined;
+    return this.applySchemaCommand(diagramId, userId, (doc) =>
+      addEntity(doc, {
+        id: entityId,
+        name: dto.name,
+        ...(hasPosition ? { position: { x: dto.x!, y: dto.y! } } : {}),
+      })
+    );
+  }
+
+  async updateTable(
+    diagramId: string,
+    tableId: string,
+    userId: string,
+    dto: UpdateTableDto
+  ): Promise<Diagram> {
+    return this.applySchemaCommand(diagramId, userId, (doc) => {
+      if (!doc.entities.find((e) => e.id === tableId)) throw new NotFoundException("Table not found");
+      let updated = doc;
+      if (dto.name !== undefined) updated = renameEntity(updated, tableId, dto.name);
+      if (dto.color !== undefined) updated = updateEntityColor(updated, tableId, dto.color ?? null);
+      if (dto.comment !== undefined) updated = updateEntityComment(updated, tableId, dto.comment ?? null);
+      return updated;
+    });
+  }
+
+  async removeTable(diagramId: string, tableId: string, userId: string): Promise<void> {
+    await this.applySchemaCommand(diagramId, userId, (doc) => {
+      if (!doc.entities.find((e) => e.id === tableId)) throw new NotFoundException("Table not found");
+      return removeEntity(doc, tableId);
+    });
   }
 }
