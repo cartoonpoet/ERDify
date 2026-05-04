@@ -81,9 +81,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: GH_ACTOR,DEPLOY_TOKEN
           script: |
-            echo "$DEPLOY_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
+            echo "$DEPLOY_TOKEN" | sudo docker login ghcr.io -u "$GH_ACTOR" --password-stdin
             cd /opt/erdify/repo
             git pull origin master
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            docker image prune -f
+            sudo docker compose -f docker-compose.prod.yml pull
+            sudo docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            sudo docker image prune -f
