@@ -1,0 +1,632 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// 데모 영상 YouTube ID로 교체하세요
+const YOUTUBE_ID = 'YOUR_YOUTUBE_ID';
+const APP_URL = 'https://app.erdify.com';
+---
+
+<Layout>
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="/" class="logo">
+        <span class="logo-icon">⬡</span>
+        ERDify
+      </a>
+      <div class="nav-links">
+        <a href="#features">기능</a>
+        <a href="#pricing">가격</a>
+      </div>
+      <div class="nav-cta">
+        <a href={`${APP_URL}/login`} class="btn-ghost">로그인</a>
+        <a href={`${APP_URL}/signup`} class="btn-primary">무료로 시작</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="badge">✦ 실시간 협업 ERD 도구</div>
+      <h1 class="hero-title">
+        팀과 함께<br />그리는 <span class="highlight">ERD</span>
+      </h1>
+      <p class="hero-sub">
+        DDL 가져오기/내보내기, ORM 코드 생성, AI 연동까지.<br />
+        데이터베이스 설계를 더 빠르고, 더 함께.
+      </p>
+      <div class="hero-actions">
+        <a href={`${APP_URL}/signup`} class="btn-primary btn-lg">무료로 시작하기 →</a>
+        <a href="#demo" class="btn-outline btn-lg">데모 보기</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><strong>MySQL · PostgreSQL · MariaDB</strong><span>지원 방언</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><strong>실시간</strong><span>팀 협업</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><strong>AI 연동</strong><span>MCP 지원</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEMO VIDEO -->
+  <section class="demo" id="demo">
+    <div class="container">
+      <div class="demo-wrapper">
+        <div class="demo-video">
+          {YOUTUBE_ID !== 'YOUR_YOUTUBE_ID' ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1`}
+              title="ERDify 데모"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+          ) : (
+            <div class="video-placeholder">
+              <div class="play-btn">▶</div>
+              <p>데모 영상</p>
+              <span>YouTube ID를 설정하세요</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header">
+        <div class="badge">핵심 기능</div>
+        <h2>ERDify가 다른 이유</h2>
+        <p>설계부터 개발까지, 데이터베이스 워크플로우 전체를 커버합니다.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card feature-card--accent">
+          <div class="feature-icon">⚡</div>
+          <h3>실시간 협업</h3>
+          <p>팀원과 동시에 ERD를 편집하세요. 커서 위치, 변경 사항이 실시간으로 반영됩니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⇅</div>
+          <h3>DDL 가져오기 / 내보내기</h3>
+          <p>MySQL, PostgreSQL, MariaDB DDL을 그대로 붙여넣으면 자동으로 ERD가 생성됩니다. COMMENT도 논리명으로 자동 매핑.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⌨</div>
+          <h3>ORM 코드 생성</h3>
+          <p>ERD에서 TypeORM, Prisma 등 ORM 코드를 바로 내보냅니다. 반복 작업을 줄여드립니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>AI 연동 (MCP)</h3>
+          <p>Claude와 직접 대화하며 ERD를 수정하세요. MCP 서버를 통해 AI가 다이어그램을 이해하고 수정합니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⏱</div>
+          <h3>버전 관리</h3>
+          <p>변경 이력을 자동으로 기록합니다. 언제든 이전 버전으로 되돌릴 수 있습니다.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔗</div>
+          <h3>공유 링크</h3>
+          <p>읽기 전용 링크로 팀 외부와 공유하세요. 만료 시간을 설정해 보안을 유지합니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <section class="screenshots">
+    <div class="container">
+      <div class="section-header">
+        <div class="badge">스크린샷</div>
+        <h2>직관적인 에디터</h2>
+        <p>복잡한 ERD도 쉽고 빠르게 편집하세요.</p>
+      </div>
+      <div class="screenshots-grid">
+        <!-- 실제 스크린샷 이미지로 교체하세요 -->
+        <div class="screenshot screenshot--main">
+          <div class="screenshot-placeholder">
+            <span>에디터 메인 화면</span>
+            <small>스크린샷을 추가하세요<br />public/ 폴더에 이미지를 넣고 src 교체</small>
+          </div>
+          <!-- <img src="/screenshots/editor.png" alt="ERDify 에디터" /> -->
+        </div>
+        <div class="screenshot">
+          <div class="screenshot-placeholder">
+            <span>실시간 협업</span>
+          </div>
+          <!-- <img src="/screenshots/collaboration.png" alt="실시간 협업" /> -->
+        </div>
+        <div class="screenshot">
+          <div class="screenshot-placeholder">
+            <span>DDL 가져오기</span>
+          </div>
+          <!-- <img src="/screenshots/import.png" alt="DDL 가져오기" /> -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <div class="section-header">
+        <div class="badge">가격 정책</div>
+        <h2>팀 규모에 맞게</h2>
+        <p>혼자 시작해서 팀으로 성장하세요. 언제든 플랜을 변경할 수 있습니다.</p>
+      </div>
+      <div class="pricing-grid">
+        <!-- FREE -->
+        <div class="plan-card">
+          <div class="plan-header">
+            <span class="plan-name">Free</span>
+            <div class="plan-price"><span class="price">₩0</span><span class="period">/월</span></div>
+            <p class="plan-desc">개인 프로젝트에 최적</p>
+          </div>
+          <ul class="plan-features">
+            <li>✓ 다이어그램 10개</li>
+            <li>✓ DDL 가져오기 / 내보내기</li>
+            <li>✓ ORM 코드 생성</li>
+            <li>✓ 공유 링크 (최대 1시간)</li>
+            <li class="disabled">✗ 실시간 협업</li>
+            <li class="disabled">✗ 버전 히스토리</li>
+          </ul>
+          <a href={`${APP_URL}/signup`} class="plan-cta plan-cta--outline">무료로 시작</a>
+        </div>
+
+        <!-- PRO -->
+        <div class="plan-card plan-card--featured">
+          <div class="plan-badge">인기</div>
+          <div class="plan-header">
+            <span class="plan-name">Pro</span>
+            <div class="plan-price"><span class="price">₩9,900</span><span class="period">/월</span></div>
+            <p class="plan-desc">개인 전문가용</p>
+          </div>
+          <ul class="plan-features">
+            <li>✓ 무제한 다이어그램</li>
+            <li>✓ DDL 가져오기 / 내보내기</li>
+            <li>✓ ORM 코드 생성</li>
+            <li>✓ 공유 링크 (최대 30일)</li>
+            <li>✓ 버전 히스토리 30개</li>
+            <li class="disabled">✗ 실시간 협업</li>
+          </ul>
+          <a href={`${APP_URL}/signup?plan=pro`} class="plan-cta plan-cta--primary">시작하기</a>
+        </div>
+
+        <!-- TEAM -->
+        <div class="plan-card">
+          <div class="plan-header">
+            <span class="plan-name">Team</span>
+            <div class="plan-price"><span class="price">₩29,000</span><span class="period">/월</span></div>
+            <p class="plan-desc">팀 협업에 최적</p>
+          </div>
+          <ul class="plan-features">
+            <li>✓ 무제한 다이어그램</li>
+            <li>✓ DDL 가져오기 / 내보내기</li>
+            <li>✓ ORM 코드 생성</li>
+            <li>✓ 공유 링크 (최대 30일)</li>
+            <li>✓ <strong>실시간 협업</strong></li>
+            <li>✓ 버전 히스토리 무제한</li>
+            <li>✓ 멤버 역할 관리 (RBAC)</li>
+            <li>✓ AI(MCP) 연동</li>
+          </ul>
+          <a href={`${APP_URL}/signup?plan=team`} class="plan-cta plan-cta--outline">팀 시작하기</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section class="cta-banner">
+    <div class="container">
+      <h2>지금 바로 시작하세요</h2>
+      <p>신용카드 없이 무료로 시작할 수 있습니다.</p>
+      <a href={`${APP_URL}/signup`} class="btn-primary btn-lg btn-white">무료로 시작하기 →</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a href="/" class="logo">
+          <span class="logo-icon">⬡</span>
+          ERDify
+        </a>
+        <p>실시간 협업 ERD 도구</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <span class="footer-col-title">제품</span>
+          <a href="#features">기능</a>
+          <a href="#pricing">가격</a>
+          <a href={APP_URL}>앱 열기</a>
+        </div>
+        <div class="footer-col">
+          <span class="footer-col-title">지원</span>
+          <a href="mailto:support@erdify.com">문의하기</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <span>© 2025 ERDify. All rights reserved.</span>
+      </div>
+    </div>
+  </footer>
+</Layout>
+
+<style>
+  /* ── Layout ── */
+  .container {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Nav ── */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    height: 60px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .logo-icon { color: var(--primary); font-size: 20px; }
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    flex: 1;
+  }
+  .nav-links a {
+    font-size: 14px;
+    color: var(--text-sub);
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-ghost {
+    color: var(--text-sub);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 9px 14px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .btn-ghost:hover { background: var(--surface); }
+  .btn-outline {
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: border-color 0.15s;
+  }
+  .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
+  .btn-white { background: #fff; color: var(--primary); }
+  .btn-white:hover { background: #f0f6ff; }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block;
+    background: #EEF4FF;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 100px;
+    letter-spacing: 0.02em;
+    margin-bottom: 20px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 100px 0 80px;
+    text-align: center;
+  }
+  .hero-title {
+    font-size: clamp(48px, 7vw, 80px);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+  }
+  .highlight {
+    color: var(--primary);
+    position: relative;
+  }
+  .hero-sub {
+    font-size: 18px;
+    color: var(--text-sub);
+    line-height: 1.7;
+    margin-bottom: 40px;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 60px;
+  }
+  .hero-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .stat { display: flex; flex-direction: column; gap: 4px; }
+  .stat strong { font-size: 15px; font-weight: 700; }
+  .stat span { font-size: 12px; color: var(--text-sub); }
+  .stat-divider { width: 1px; height: 32px; background: var(--border); }
+
+  /* ── Demo Video ── */
+  .demo { padding: 0 0 100px; }
+  .demo-wrapper {
+    background: linear-gradient(135deg, #EEF4FF 0%, #f8f9fb 100%);
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 64px rgba(0,100,224,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  .demo-video {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    background: #1C2B33;
+  }
+  .demo-video iframe { width: 100%; height: 100%; }
+  .video-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: rgba(255,255,255,0.6);
+  }
+  .play-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #fff;
+  }
+  .video-placeholder p { font-size: 18px; font-weight: 600; color: #fff; }
+  .video-placeholder span { font-size: 13px; text-align: center; }
+
+  /* ── Section Header ── */
+  .section-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+  .section-header h2 {
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .section-header p {
+    font-size: 17px;
+    color: var(--text-sub);
+    line-height: 1.7;
+  }
+
+  /* ── Features ── */
+  .features { padding: 100px 0; background: var(--surface); }
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .feature-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 32px;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .feature-card:hover {
+    box-shadow: 0 16px 48px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+  .feature-card--accent {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .feature-card--accent .feature-icon { background: rgba(255,255,255,0.2); color: #fff; }
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #EEF4FF;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+  .feature-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .feature-card p { font-size: 14px; line-height: 1.7; opacity: 0.75; }
+  .feature-card--accent p { opacity: 0.85; }
+
+  /* ── Screenshots ── */
+  .screenshots { padding: 100px 0; }
+  .screenshots-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .screenshot { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  .screenshot img { width: 100%; border-radius: 12px; }
+  .screenshot-placeholder {
+    background: var(--surface);
+    aspect-ratio: 16/10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-sub);
+    padding: 24px;
+    text-align: center;
+  }
+  .screenshot--main .screenshot-placeholder { aspect-ratio: 16/9; }
+  .screenshot-placeholder span { font-size: 14px; font-weight: 600; color: var(--text); }
+  .screenshot-placeholder small { font-size: 12px; line-height: 1.6; }
+
+  /* ── Pricing ── */
+  .pricing { padding: 100px 0; background: var(--surface); }
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+  .plan-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 32px;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .plan-card--featured {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(0,100,224,0.08);
+  }
+  .plan-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 100px;
+  }
+  .plan-header { margin-bottom: 28px; }
+  .plan-name { font-size: 14px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.06em; }
+  .plan-price { display: flex; align-items: baseline; gap: 4px; margin: 10px 0 8px; }
+  .price { font-size: 36px; font-weight: 900; letter-spacing: -0.02em; }
+  .period { font-size: 14px; color: var(--text-sub); }
+  .plan-desc { font-size: 13px; color: var(--text-sub); }
+  .plan-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .plan-features li.disabled { color: var(--text-sub); opacity: 0.5; }
+  .plan-cta {
+    display: block;
+    text-align: center;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .plan-cta--primary { background: var(--primary); color: #fff; }
+  .plan-cta--primary:hover { background: var(--primary-hover); }
+  .plan-cta--outline { border: 1.5px solid var(--border); color: var(--text); }
+  .plan-cta--outline:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* ── CTA Banner ── */
+  .cta-banner {
+    padding: 100px 0;
+    background: linear-gradient(135deg, var(--primary) 0%, #0143B5 100%);
+    text-align: center;
+    color: #fff;
+  }
+  .cta-banner h2 { font-size: 40px; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.02em; }
+  .cta-banner p { font-size: 17px; opacity: 0.85; margin-bottom: 36px; }
+
+  /* ── Footer ── */
+  .footer { background: #0f1923; color: rgba(255,255,255,0.7); padding: 64px 0 0; }
+  .footer-inner {
+    display: flex;
+    gap: 80px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .footer-brand { flex: 1; }
+  .footer-brand .logo { color: #fff; margin-bottom: 12px; }
+  .footer-brand p { font-size: 13px; opacity: 0.5; }
+  .footer-links { display: flex; gap: 60px; }
+  .footer-col { display: flex; flex-direction: column; gap: 12px; }
+  .footer-col-title { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .footer-col a { font-size: 14px; transition: color 0.15s; }
+  .footer-col a:hover { color: #fff; }
+  .footer-bottom { padding: 20px 0; }
+  .footer-bottom .container { display: flex; justify-content: center; }
+  .footer-bottom span { font-size: 12px; opacity: 0.4; }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+    .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+    .screenshots-grid { grid-template-columns: 1fr; }
+    .footer-inner { flex-direction: column; gap: 40px; }
+    .nav-links { display: none; }
+  }
+  @media (max-width: 600px) {
+    .features-grid { grid-template-columns: 1fr; }
+    .hero { padding: 72px 0 60px; }
+    .hero-stats { gap: 20px; }
+    .stat-divider { display: none; }
+  }
+</style>
