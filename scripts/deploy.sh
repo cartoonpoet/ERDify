@@ -51,7 +51,7 @@ cp "$REPO_DIR/nginx/slots/$NEW_SLOT.conf" "$SLOT_DIR/upstream.conf"
 sudo docker exec erdify-shared-nginx-1 nginx -s reload
 
 # ── Persist active slot ───────────────────────────────────────────────────────
-echo "$NEW_SLOT" > "$STATE_FILE"
+echo "$NEW_SLOT" | sudo tee "$STATE_FILE" > /dev/null
 
 # ── Drain & stop old slot ─────────────────────────────────────────────────────
 if [ "$CURRENT_SLOT" != "none" ]; then
