@@ -98,12 +98,19 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   @SubscribeMessage("am:change")
-  handleChange(
+  async handleChange(
     @ConnectedSocket() client: Socket,
     @MessageBody() change: number[]
-  ): void {
+  ): Promise<void> {
     const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
     if (!diagramId || !userId) return;
+
+    const permitted = await this.diagramsService.canAccessDiagram(diagramId, userId);
+    if (!permitted) {
+      client.emit("error", { message: "Forbidden" });
+      client.disconnect();
+      return;
+    }
 
     const changeBytes = Uint8Array.from(change);
     this.collaborationService.applyChanges(diagramId, [changeBytes]);

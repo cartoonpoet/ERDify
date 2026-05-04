@@ -68,6 +68,9 @@ export class OrganizationService {
     if (!requesterMembership || requesterMembership.role === "viewer") {
       throw new ForbiddenException();
     }
+    if (dto.role === "owner" && requesterMembership.role !== "owner") {
+      throw new ForbiddenException("Only owners can assign the owner role");
+    }
     const existing = await this.memberRepo.findOne({
       where: { organizationId: orgId, userId: dto.userId }
     });
@@ -95,6 +98,9 @@ export class OrganizationService {
     });
     if (!requesterMembership || requesterMembership.role === "viewer") {
       throw new ForbiddenException();
+    }
+    if (role === "owner" && requesterMembership.role !== "owner") {
+      throw new ForbiddenException("Only owners can assign the owner role");
     }
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) throw new NotFoundException("User with that email not found");

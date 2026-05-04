@@ -14,6 +14,7 @@ import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import type { CreateOrganizationDto } from "./dto/create-organization.dto";
+import type { InviteByEmailDto } from "./dto/invite-by-email.dto";
 import type { InviteMemberDto } from "./dto/invite-member.dto";
 import type { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { OrganizationService } from "./organization.service";
@@ -57,9 +58,9 @@ export class OrganizationController {
   inviteByEmail(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
-    @Body() body: { email: string; role: "owner" | "editor" | "viewer" }
+    @Body() dto: InviteByEmailDto
   ) {
-    return this.organizationService.inviteByEmail(id, user.sub, body.email, body.role);
+    return this.organizationService.inviteByEmail(id, user.sub, dto.email, dto.role);
   }
 
   @Post(":id/members")
