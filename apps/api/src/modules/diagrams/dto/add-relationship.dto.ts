@@ -19,15 +19,15 @@ export class AddRelationshipDto {
   @IsEnum(["one-to-one", "one-to-many", "many-to-one"])
   cardinality!: RelationshipCardinality;
 
-  @IsEnum(["cascade", "restrict", "set-null", "no-action"])
   @IsOptional()
+  @IsEnum(["cascade", "restrict", "set-null", "no-action"])
   onDelete?: ReferentialAction;
 
-  @IsEnum(["cascade", "restrict", "set-null", "no-action"])
   @IsOptional()
+  @IsEnum(["cascade", "restrict", "set-null", "no-action"])
   onUpdate?: ReferentialAction;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   identifying?: boolean;
 }

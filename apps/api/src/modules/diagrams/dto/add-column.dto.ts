@@ -11,19 +11,18 @@ export class AddColumnDto {
   @MaxLength(100)
   type!: string;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   nullable?: boolean;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   primaryKey?: boolean;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   unique?: boolean;
 
-  @IsString()
   @IsOptional()
   defaultValue?: string | null;
 }
