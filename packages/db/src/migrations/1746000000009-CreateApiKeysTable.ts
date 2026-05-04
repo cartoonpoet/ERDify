@@ -5,7 +5,7 @@ export class CreateApiKeysTable1746000000009 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "api_keys" (
         "id"         UUID         PRIMARY KEY,
-        "user_id"    UUID         NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+        "user_id"    VARCHAR(36)  NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
         "key_hash"   VARCHAR(64)  NOT NULL UNIQUE,
         "prefix"     VARCHAR(16)  NOT NULL,
         "created_at" TIMESTAMPTZ  NOT NULL DEFAULT NOW(),

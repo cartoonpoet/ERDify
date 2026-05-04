@@ -6,7 +6,7 @@ export class ApiKey {
   @PrimaryColumn("uuid")
   id!: string;
 
-  @Column({ name: "user_id" })
+  @Column({ name: "user_id", type: "varchar", length: 36 })
   userId!: string;
 
   @ManyToOne(() => User, { onDelete: "CASCADE" })
