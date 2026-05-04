@@ -150,6 +150,7 @@ jobs:
 
     steps:
       - name: Deploy via SSH
+        id: ssh
         uses: appleboy/ssh-action@v1
         env:
           DEPLOY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -166,3 +167,31 @@ jobs:
             chmod +x scripts/setup.sh scripts/deploy.sh
             bash scripts/setup.sh
             bash scripts/deploy.sh
+
+      - name: Telegram — 배포 성공
+        if: success()
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            ✅ *ERDify 배포 완료*
+            • 커밋: `${{ github.sha }}`
+            • 메시지: ${{ github.event.head_commit.message }}
+            • 배포자: ${{ github.actor }}
+            • 시각: ${{ github.event.head_commit.timestamp }}
+
+      - name: Telegram — 배포 실패
+        if: failure()
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            ❌ *ERDify 배포 실패*
+            • 커밋: `${{ github.sha }}`
+            • 메시지: ${{ github.event.head_commit.message }}
+            • 배포자: ${{ github.actor }}
+            • 로그: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
