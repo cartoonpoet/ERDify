@@ -2,16 +2,16 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post
 import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
-import type { CreateDiagramDto } from "./dto/create-diagram.dto";
-import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
+import { CreateDiagramDto } from "./dto/create-diagram.dto";
+import { UpdateDiagramDto } from "./dto/update-diagram.dto";
 import { DiagramsService } from "./diagrams.service";
-import type { ShareDiagramDto } from "./dto/share-diagram.dto";
-import type { AddTableDto } from "./dto/add-table.dto";
-import type { UpdateTableDto } from "./dto/update-table.dto";
-import type { AddColumnDto } from "./dto/add-column.dto";
-import type { UpdateColumnDto } from "./dto/update-column.dto";
-import type { AddRelationshipDto } from "./dto/add-relationship.dto";
-import type { UpdateRelationshipDto } from "./dto/update-relationship.dto";
+import { ShareDiagramDto } from "./dto/share-diagram.dto";
+import { AddTableDto } from "./dto/add-table.dto";
+import { UpdateTableDto } from "./dto/update-table.dto";
+import { AddColumnDto } from "./dto/add-column.dto";
+import { UpdateColumnDto } from "./dto/update-column.dto";
+import { AddRelationshipDto } from "./dto/add-relationship.dto";
+import { UpdateRelationshipDto } from "./dto/update-relationship.dto";
 
 @Controller()
 @UseGuards(FlexAuthGuard)

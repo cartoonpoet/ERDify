@@ -13,10 +13,10 @@ import {
 import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
-import type { CreateOrganizationDto } from "./dto/create-organization.dto";
-import type { InviteByEmailDto } from "./dto/invite-by-email.dto";
-import type { InviteMemberDto } from "./dto/invite-member.dto";
-import type { UpdateOrganizationDto } from "./dto/update-organization.dto";
+import { CreateOrganizationDto } from "./dto/create-organization.dto";
+import { InviteByEmailDto } from "./dto/invite-by-email.dto";
+import { InviteMemberDto } from "./dto/invite-member.dto";
+import { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { OrganizationService } from "./organization.service";
 
 @Controller("organizations")
