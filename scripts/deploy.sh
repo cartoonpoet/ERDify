@@ -64,6 +64,6 @@ if [ "$CURRENT_SLOT" != "none" ]; then
 fi
 
 # ── Cleanup ───────────────────────────────────────────────────────────────────
-sudo docker image prune -f
+sudo docker image prune -f || true
 
 echo "==> Deployment complete. Active slot: $NEW_SLOT"
