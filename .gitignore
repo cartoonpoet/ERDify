@@ -12,3 +12,4 @@ coverage/
 apps/web/src/**/*.js
 apps/api/uploads/avatars/*
 !apps/api/uploads/avatars/.gitkeep
+memory/
