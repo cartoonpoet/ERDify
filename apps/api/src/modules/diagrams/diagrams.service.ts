@@ -270,7 +270,15 @@ export class DiagramsService {
       const entity = doc.entities.find((e) => e.id === tableId);
       if (!entity) throw new NotFoundException("Table not found");
       if (!entity.columns.some((c) => c.id === columnId)) throw new NotFoundException("Column not found");
-      return domainUpdateColumn(doc, tableId, columnId, dto);
+      const changes: Partial<Omit<DiagramColumn, "id">> = {};
+      if (dto.name !== undefined) changes.name = dto.name;
+      if (dto.type !== undefined) changes.type = dto.type;
+      if (dto.nullable !== undefined) changes.nullable = dto.nullable;
+      if (dto.primaryKey !== undefined) changes.primaryKey = dto.primaryKey;
+      if (dto.unique !== undefined) changes.unique = dto.unique;
+      if (dto.defaultValue !== undefined) changes.defaultValue = dto.defaultValue ?? null;
+      if (dto.comment !== undefined) changes.comment = dto.comment ?? null;
+      return domainUpdateColumn(doc, tableId, columnId, changes);
     });
   }
 

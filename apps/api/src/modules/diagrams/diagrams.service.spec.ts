@@ -386,6 +386,34 @@ describe("DiagramsService", () => {
         service.addColumn("diag-1", "bad-id", "user-1", { name: "email", type: "varchar" })
       ).rejects.toThrow(NotFoundException);
     });
+
+    it("throws ForbiddenException for viewer", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeDoc({ entities: [makeEntity()] }) as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+
+      await expect(
+        service.addColumn("diag-1", "ent-1", "user-1", { name: "email", type: "varchar" })
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("applies defaults for nullable, primaryKey, unique, defaultValue", async () => {
+      const doc = makeDoc({ entities: [makeEntity()] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.addColumn("diag-1", "ent-1", "user-1", { name: "email", type: "varchar" });
+
+      const resultDoc = result.content as unknown as DiagramDocument;
+      const col = resultDoc.entities[0]!.columns[0]!;
+      expect(col.nullable).toBe(true);
+      expect(col.primaryKey).toBe(false);
+      expect(col.unique).toBe(false);
+      expect(col.defaultValue).toBeNull();
+      expect(col.comment).toBeNull();
+    });
   });
 
   describe("updateColumn", () => {
@@ -414,6 +442,23 @@ describe("DiagramsService", () => {
       await expect(
         service.updateColumn("diag-1", "ent-1", "bad-col", "user-1", { name: "x" })
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it("preserves unchanged fields (merge semantics)", async () => {
+      const col = makeColumn();
+      const doc = makeDoc({ entities: [makeEntity("ent-1", [col])] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.updateColumn("diag-1", "ent-1", "col-1", "user-1", { name: "user_id" });
+
+      const resultDoc = result.content as unknown as DiagramDocument;
+      const updated = resultDoc.entities[0]!.columns[0]!;
+      expect(updated.name).toBe("user_id");
+      expect(updated.type).toBe("uuid");       // unchanged
+      expect(updated.primaryKey).toBe(true);   // unchanged
     });
   });
 
