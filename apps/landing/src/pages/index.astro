@@ -126,19 +126,59 @@ const APP_URL = 'https://app.erdify.com';
         <h2>직관적인 에디터</h2>
         <p>복잡한 ERD도 쉽고 빠르게 편집하세요.</p>
       </div>
-      <div class="screenshots-grid">
-        <div class="screenshot screenshot--main">
-          <img src="/screenshots/editor.svg" alt="ERDify 에디터 — 테이블, 컬럼, 관계선을 직관적으로 편집" />
+
+      <!-- Tab buttons -->
+      <div class="ss-tabs" role="tablist">
+        <button class="ss-tab ss-tab--active" role="tab" aria-selected="true" data-idx="0">
+          <span class="ss-tab-icon">⊞</span>
+          <span class="ss-tab-text">
+            <span class="ss-tab-label">에디터</span>
+            <span class="ss-tab-desc">테이블·컬럼·관계선 편집</span>
+          </span>
+        </button>
+        <button class="ss-tab" role="tab" aria-selected="false" data-idx="1">
+          <span class="ss-tab-icon">⚡</span>
+          <span class="ss-tab-text">
+            <span class="ss-tab-label">실시간 협업</span>
+            <span class="ss-tab-desc">팀원 커서 실시간 반영</span>
+          </span>
+        </button>
+        <button class="ss-tab" role="tab" aria-selected="false" data-idx="2">
+          <span class="ss-tab-icon">⇅</span>
+          <span class="ss-tab-text">
+            <span class="ss-tab-label">DDL 가져오기</span>
+            <span class="ss-tab-desc">SQL → ERD 자동 변환</span>
+          </span>
+        </button>
+      </div>
+
+      <!-- Large image display -->
+      <div class="ss-display">
+        <div class="ss-frame" id="ss-frame" title="클릭하여 크게 보기">
+          <img class="ss-img ss-img--active" src="/screenshots/editor.svg"
+            alt="ERDify 에디터 — 테이블, 컬럼, 관계선을 직관적으로 편집" data-idx="0" />
+          <img class="ss-img" src="/screenshots/collaboration.svg"
+            alt="실시간 협업 — 팀원 커서와 편집 내용이 실시간으로 반영" data-idx="1" />
+          <img class="ss-img" src="/screenshots/import-ddl.svg"
+            alt="DDL 가져오기 — CREATE TABLE SQL을 붙여넣으면 ERD 자동 생성" data-idx="2" />
+          <div class="ss-expand-hint">🔍 클릭하여 크게 보기</div>
         </div>
-        <div class="screenshot">
-          <img src="/screenshots/collaboration.svg" alt="실시간 협업 — 팀원 커서와 편집 내용이 실시간으로 반영" />
-        </div>
-        <div class="screenshot">
-          <img src="/screenshots/import-ddl.svg" alt="DDL 가져오기 — CREATE TABLE SQL을 붙여넣으면 ERD 자동 생성" />
-        </div>
+      </div>
+
+      <!-- Dot indicators -->
+      <div class="ss-dots">
+        <button class="ss-dot ss-dot--active" data-idx="0" aria-label="에디터"></button>
+        <button class="ss-dot" data-idx="1" aria-label="실시간 협업"></button>
+        <button class="ss-dot" data-idx="2" aria-label="DDL 가져오기"></button>
       </div>
     </div>
   </section>
+
+  <!-- Lightbox -->
+  <div class="ss-lightbox" id="ss-lightbox" role="dialog" aria-modal="true" aria-label="이미지 크게 보기">
+    <button class="ss-lb-close" id="ss-lb-close" aria-label="닫기">×</button>
+    <img class="ss-lb-img" id="ss-lb-img" src="" alt="" />
+  </div>
 
   <!-- PRICING -->
   <section class="pricing" id="pricing">
@@ -489,29 +529,180 @@ const APP_URL = 'https://app.erdify.com';
 
   /* ── Screenshots ── */
   .screenshots { padding: 100px 0; }
-  .screenshots-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 16px;
-    align-items: start;
+
+  /* Tab buttons */
+  .ss-tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
   }
-  .screenshot { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-  .screenshot img { width: 100%; border-radius: 12px; display: block; }
-  .screenshot-placeholder {
-    background: var(--surface);
-    aspect-ratio: 16/10;
+  .ss-tab {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 22px;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    text-align: left;
+  }
+  .ss-tab:hover {
+    border-color: var(--primary);
+    background: #f6f9ff;
+  }
+  .ss-tab--active {
+    border-color: var(--primary);
+    background: var(--primary);
+    box-shadow: 0 4px 16px rgba(0,100,224,0.25);
+  }
+  .ss-tab-icon {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .ss-tab-text {
     display: flex;
     flex-direction: column;
+    gap: 2px;
+  }
+  .ss-tab-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .ss-tab--active .ss-tab-label { color: #fff; }
+  .ss-tab-desc {
+    font-size: 11px;
+    color: var(--text-sub);
+    line-height: 1.3;
+  }
+  .ss-tab--active .ss-tab-desc { color: rgba(255,255,255,0.75); }
+
+  /* Image frame */
+  .ss-display {
+    border-radius: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #EEF4FF 0%, #f8f9fb 100%);
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 64px rgba(0,100,224,0.07), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  .ss-frame {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: zoom-in;
+    aspect-ratio: 16/9;
+    background: #1C2B33;
+  }
+  .ss-frame:hover .ss-expand-hint { opacity: 1; }
+  .ss-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: block;
+  }
+  .ss-img--active { opacity: 1; }
+  .ss-expand-hint {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    background: rgba(28,43,51,0.72);
+    backdrop-filter: blur(6px);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 100px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+
+  /* Dot indicators */
+  .ss-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .ss-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    background: var(--border);
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s ease;
+  }
+  .ss-dot--active {
+    background: var(--primary);
+    width: 24px;
+    border-radius: 4px;
+  }
+
+  /* Lightbox */
+  .ss-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,15,20,0.88);
+    backdrop-filter: blur(8px);
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    color: var(--text-sub);
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
     padding: 24px;
-    text-align: center;
   }
-  .screenshot--main .screenshot-placeholder { aspect-ratio: 16/9; }
-  .screenshot-placeholder span { font-size: 14px; font-weight: 600; color: var(--text); }
-  .screenshot-placeholder small { font-size: 12px; line-height: 1.6; }
+  .ss-lightbox--open {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .ss-lb-img {
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+    transform: scale(0.95);
+    transition: transform 0.25s ease;
+    display: block;
+  }
+  .ss-lightbox--open .ss-lb-img { transform: scale(1); }
+  .ss-lb-close {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .ss-lb-close:hover { background: rgba(255,255,255,0.22); }
+
+  @media (max-width: 700px) {
+    .ss-tabs { flex-direction: column; align-items: stretch; }
+    .ss-tab { justify-content: flex-start; }
+  }
 
   /* ── Pricing ── */
   .pricing { padding: 100px 0; background: var(--surface); }
@@ -619,3 +810,63 @@ const APP_URL = 'https://app.erdify.com';
     .stat-divider { display: none; }
   }
 </style>
+
+<script>
+  const tabs = document.querySelectorAll<HTMLButtonElement>('.ss-tab');
+  const imgs = document.querySelectorAll<HTMLImageElement>('.ss-img');
+  const dots = document.querySelectorAll<HTMLButtonElement>('.ss-dot');
+  const frame = document.getElementById('ss-frame')!;
+  const lightbox = document.getElementById('ss-lightbox')!;
+  const lbImg = document.getElementById('ss-lb-img') as HTMLImageElement;
+  const lbClose = document.getElementById('ss-lb-close')!;
+
+  let current = 0;
+
+  function switchTo(idx: number) {
+    tabs[current].classList.remove('ss-tab--active');
+    tabs[current].setAttribute('aria-selected', 'false');
+    imgs[current].classList.remove('ss-img--active');
+    dots[current].classList.remove('ss-dot--active');
+
+    current = idx;
+
+    tabs[current].classList.add('ss-tab--active');
+    tabs[current].setAttribute('aria-selected', 'true');
+    imgs[current].classList.add('ss-img--active');
+    dots[current].classList.add('ss-dot--active');
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => switchTo(Number(tab.dataset.idx)));
+  });
+
+  dots.forEach((dot) => {
+    dot.addEventListener('click', () => switchTo(Number(dot.dataset.idx)));
+  });
+
+  // Lightbox
+  function openLightbox() {
+    const src = (imgs[current] as HTMLImageElement).src;
+    const alt = (imgs[current] as HTMLImageElement).alt;
+    lbImg.src = src;
+    lbImg.alt = alt;
+    lightbox.classList.add('ss-lightbox--open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('ss-lightbox--open');
+    document.body.style.overflow = '';
+  }
+
+  frame.addEventListener('click', openLightbox);
+  lbClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowRight') switchTo((current + 1) % tabs.length);
+    if (e.key === 'ArrowLeft') switchTo((current + tabs.length - 1) % tabs.length);
+  });
+</script>
