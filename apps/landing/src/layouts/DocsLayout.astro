@@ -52,20 +52,20 @@ const nav = [
       :root {
         --primary: #0064E0;
         --primary-hover: #0143B5;
-        --text: #1C2B33;
-        --text-sub: #5D6C7B;
-        --border: #DEE3E9;
-        --surface: #F1F4F7;
-        --white: #FFFFFF;
+        --text: #F0F4F8;
+        --text-sub: rgba(240,244,248,0.5);
+        --border: rgba(255,255,255,0.08);
+        --surface: #0d1726;
+        --white: #080f1a;
         --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
-        --sidebar-w: 256px;
+        --sidebar-w: 240px;
         --header-h: 60px;
       }
       html { scroll-behavior: smooth; }
       body {
         font-family: var(--font);
         color: var(--text);
-        background: var(--white);
+        background: #080f1a;
         -webkit-font-smoothing: antialiased;
       }
       img { max-width: 100%; display: block; }
@@ -75,11 +75,11 @@ const nav = [
   </head>
   <body>
 
-    <!-- ── Header (랜딩과 동일한 스타일) ── -->
+    <!-- ── Header ── -->
     <header class="dh">
       <div class="dh-inner">
         <a href="/" class="dh-logo">
-          <img src="/logo.svg" alt="ERDify" class="dh-logo-img" />
+          <img src="/logo-white.svg" alt="ERDify" class="dh-logo-img" />
         </a>
 
         <nav class="dh-nav">
@@ -137,7 +137,7 @@ const nav = [
         top: 0;
         z-index: 100;
         height: var(--header-h);
-        background: rgba(255,255,255,0.85);
+        background: rgba(8,15,26,0.88);
         backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--border);
       }
@@ -170,7 +170,7 @@ const nav = [
         color: var(--text-sub);
         padding: 9px 14px;
         border-radius: 8px;
-        transition: background 0.15s;
+        transition: background 0.15s, color 0.15s;
       }
       .dh-ghost:hover { background: var(--surface); color: var(--text); }
       .dh-btn {
@@ -230,7 +230,7 @@ const nav = [
       .sb-item:hover { color: var(--text); background: var(--surface); }
       .sb-item--active {
         color: var(--primary);
-        background: #EEF4FF;
+        background: rgba(0,100,224,0.12);
         font-weight: 600;
       }
       .sb-item--active::before {
@@ -251,12 +251,12 @@ const nav = [
         color: var(--primary);
         padding: 9px 12px;
         border-radius: 8px;
-        border: 1px solid rgba(0,100,224,0.2);
-        background: #EEF4FF;
+        border: 1px solid rgba(0,100,224,0.25);
+        background: rgba(0,100,224,0.1);
         text-align: center;
         transition: background 0.15s;
       }
-      .sb-key-btn:hover { background: #dce8fc; }
+      .sb-key-btn:hover { background: rgba(0,100,224,0.18); }
 
       /* ── Main ── */
       .ds-main { padding: 52px 0 96px 60px; }
