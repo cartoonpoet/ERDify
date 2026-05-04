@@ -168,17 +168,23 @@ jobs:
             bash scripts/setup.sh
             bash scripts/deploy.sh
 
+      - name: Prepare commit subject
+        id: commit
+        run: |
+          subject=$(git log -1 --format=%s)
+          echo "subject=${subject}" >> $GITHUB_OUTPUT
+
       - name: Telegram — 배포 성공
         if: success()
         uses: appleboy/telegram-action@v1.0.0
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            ✅ *ERDify 배포 완료*
-            • 커밋: `${{ github.sha }}`
-            • 메시지: ${{ github.event.head_commit.message }}
+            ✅ <b>ERDify 배포 완료</b>
+            • 커밋: <code>${{ github.sha }}</code>
+            • 메시지: ${{ steps.commit.outputs.subject }}
             • 배포자: ${{ github.actor }}
             • 시각: ${{ github.event.head_commit.timestamp }}
 
@@ -188,10 +194,10 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          format: markdown
+          format: html
           message: |
-            ❌ *ERDify 배포 실패*
-            • 커밋: `${{ github.sha }}`
-            • 메시지: ${{ github.event.head_commit.message }}
+            ❌ <b>ERDify 배포 실패</b>
+            • 커밋: <code>${{ github.sha }}</code>
+            • 메시지: ${{ steps.commit.outputs.subject }}
             • 배포자: ${{ github.actor }}
             • 로그: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
