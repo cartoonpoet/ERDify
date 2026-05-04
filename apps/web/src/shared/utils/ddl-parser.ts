@@ -20,11 +20,21 @@ function removeComments(sql: string): string {
 function splitTopLevelCommas(s: string): string[] {
   const parts: string[] = [];
   let depth = 0;
+  let inString = false;
+  let stringChar = "";
   let current = "";
   for (const ch of s) {
-    if (ch === "(") depth++;
-    else if (ch === ")") depth--;
-    if (ch === "," && depth === 0) {
+    if (!inString && (ch === "'" || ch === '"' || ch === "`")) {
+      inString = true;
+      stringChar = ch;
+    } else if (inString && ch === stringChar) {
+      inString = false;
+    }
+    if (!inString) {
+      if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+    }
+    if (ch === "," && depth === 0 && !inString) {
       parts.push(current.trim());
       current = "";
     } else {
@@ -47,6 +57,13 @@ const CONSTRAINT_KEYWORDS = new Set([
   "AUTO_INCREMENT", "AUTOINCREMENT", "GENERATED", "CHECK", "COMMENT",
   "CONSTRAINT", "KEY", "INDEX",
 ]);
+
+function cleanMySqlType(type: string): string {
+  return type
+    .replace(/\s+CHARACTER\s+SET\s+\S+/gi, "")
+    .replace(/\s+COLLATE\s+\S+/gi, "")
+    .trim();
+}
 
 function parseColumnType(tokens: string[]): string {
   const typeParts: string[] = [];
@@ -111,7 +128,7 @@ function parseFkClause(line: string, constraintName: string): ParsedFK | null {
   return { constraintName, srcCols, tgtTable, tgtCols, onDelete, onUpdate };
 }
 
-function parseCreateTable(stmt: string): { tableName: string; columns: Omit<DiagramColumn, "id">[]; fks: ParsedFK[] } | null {
+function parseCreateTable(stmt: string): { tableName: string; tableComment: string | null; columns: Omit<DiagramColumn, "id">[]; fks: ParsedFK[] } | null {
   const tableMatch = stmt.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([^\s(]+)\s*\(/i);
   if (!tableMatch) return null;
 
@@ -123,6 +140,14 @@ function parseCreateTable(stmt: string): { tableName: string; columns: Omit<Diag
 
   const body = stmt.slice(bodyStart + 1, bodyEnd);
   const lines = splitTopLevelCommas(body);
+
+  // Extract table-level COMMENT after closing paren (MySQL/MariaDB style)
+  const afterBody = stmt.slice(bodyEnd + 1);
+  let tableComment: string | null = null;
+  const tableCommentMatch = afterBody.match(/COMMENT\s*=?\s*('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
+  if (tableCommentMatch) {
+    tableComment = (tableCommentMatch[1] ?? "").replace(/^['"]|['"]$/g, "");
+  }
 
   const columns: Omit<DiagramColumn, "id">[] = [];
   const fks: ParsedFK[] = [];
@@ -178,7 +203,7 @@ function parseCreateTable(stmt: string): { tableName: string; columns: Omit<Diag
 
     const colName = stripIdentifierQuotes(tokens[0]);
     const typeTokens = tokens.slice(1);
-    const colType = parseColumnType(typeTokens);
+    const colType = cleanMySqlType(parseColumnType(typeTokens));
 
     const upperAll = upperLine;
     const nullable = !/NOT\s+NULL/i.test(upperAll);
@@ -191,6 +216,12 @@ function parseCreateTable(stmt: string): { tableName: string; columns: Omit<Diag
       defaultValue = defMatch[1] ?? null;
     }
 
+    let comment: string | null = null;
+    const colCommentMatch = line.match(/COMMENT\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
+    if (colCommentMatch) {
+      comment = (colCommentMatch[1] ?? "").replace(/^['"]|['"]$/g, "");
+    }
+
     columns.push({
       name: colName,
       type: colType,
@@ -198,7 +229,7 @@ function parseCreateTable(stmt: string): { tableName: string; columns: Omit<Diag
       primaryKey,
       unique,
       defaultValue,
-      comment: null,
+      comment,
       ordinal: columns.length,
     });
   }
@@ -208,7 +239,7 @@ function parseCreateTable(stmt: string): { tableName: string; columns: Omit<Diag
     if (uniqueCols.includes(col.name)) col.unique = true;
   }
 
-  return { tableName, columns, fks };
+  return { tableName, tableComment, columns, fks };
 }
 
 function parseAlterTableFk(stmt: string): { tableName: string; fk: ParsedFK } | null {
@@ -241,7 +272,7 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
       const entity: DiagramEntity = {
         id: uuid(),
         name: result.tableName,
-        logicalName: null,
+        logicalName: result.tableComment,
         comment: null,
         color: null,
         columns: result.columns.map((c) => ({ ...c, id: uuid() })),
@@ -255,6 +286,21 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
       const result = parseAlterTableFk(stmt);
       if (result) {
         pendingFks.push({ sourceTable: result.tableName, fk: result.fk });
+      }
+    } else if (/^COMMENT\s+ON\s+TABLE\s+/i.test(stmt)) {
+      const m = stmt.match(/COMMENT\s+ON\s+TABLE\s+([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
+      if (m) {
+        const entity = entityMap.get(stripIdentifierQuotes(m[1] ?? ""));
+        if (entity) entity.logicalName = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
+      }
+    } else if (/^COMMENT\s+ON\s+COLUMN\s+/i.test(stmt)) {
+      const m = stmt.match(/COMMENT\s+ON\s+COLUMN\s+([^\s.]+)\.([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
+      if (m) {
+        const entity = entityMap.get(stripIdentifierQuotes(m[1] ?? ""));
+        if (entity) {
+          const col = entity.columns.find((c) => c.name === stripIdentifierQuotes(m[2] ?? ""));
+          if (col) col.comment = (m[3] ?? "").replace(/^['"]|['"]$/g, "");
+        }
       }
     }
   }

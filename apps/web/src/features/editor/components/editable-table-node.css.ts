@@ -270,9 +270,7 @@ export const tableCommentInput = style({
   border: "none",
   borderBottom: "1px solid rgba(255,255,255,0.3)",
   color: "rgba(255,255,255,0.8)",
-  fontStyle: "italic",
   fontSize: 10,
-  fontFamily: "sans-serif",
   outline: "none",
   padding: "1px 2px",
   selectors: {
@@ -320,8 +318,6 @@ export const logicalNameInput = style({
   borderBottom: `1px solid transparent`,
   background: "transparent",
   color: vars.color.textSecondary,
-  fontStyle: "italic",
-  fontFamily: "monospace",
   outline: "none",
   padding: "1px 2px",
   selectors: {
