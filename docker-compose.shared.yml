@@ -36,6 +36,8 @@ volumes:
 
 networks:
   erdify-proxy:
+    external: true
     name: erdify-proxy
   erdify-db:
+    external: true
     name: erdify-db
