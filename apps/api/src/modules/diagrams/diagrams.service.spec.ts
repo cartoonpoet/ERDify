@@ -52,6 +52,19 @@ const makeColumn = (id = "col-1"): DiagramDocument["entities"][number]["columns"
   ordinal: 0,
 });
 
+const makeRelationship = (id = "rel-1") => ({
+  id,
+  name: "",
+  sourceEntityId: "ent-1",
+  sourceColumnIds: [],
+  targetEntityId: "ent-2",
+  targetColumnIds: [],
+  cardinality: "one-to-many" as const,
+  onDelete: "no-action" as const,
+  onUpdate: "no-action" as const,
+  identifying: false,
+});
+
 describe("DiagramsService", () => {
   let service: DiagramsService;
   let diagramRepo: MockRepo<Diagram>;
@@ -489,6 +502,119 @@ describe("DiagramsService", () => {
       memberRepo.findOne.mockResolvedValue(makeMember("editor"));
 
       await expect(service.removeColumn("diag-1", "ent-1", "bad-col", "user-1")).rejects.toThrow(
+        NotFoundException
+      );
+    });
+  });
+
+  describe("addRelationship", () => {
+    it("adds relationship to diagram", async () => {
+      const doc = makeDoc({
+        entities: [makeEntity("ent-1"), makeEntity("ent-2")],
+      });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.addRelationship("diag-1", "user-1", {
+        sourceEntityId: "ent-1",
+        sourceColumnIds: [],
+        targetEntityId: "ent-2",
+        targetColumnIds: [],
+        cardinality: "one-to-many",
+      });
+
+      const resultDoc = result.content as unknown as DiagramDocument;
+      expect(resultDoc.relationships).toHaveLength(1);
+      expect(resultDoc.relationships[0]!.cardinality).toBe("one-to-many");
+    });
+
+    it("throws ForbiddenException for viewer", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+
+      await expect(
+        service.addRelationship("diag-1", "user-1", {
+          sourceEntityId: "ent-1",
+          sourceColumnIds: [],
+          targetEntityId: "ent-2",
+          targetColumnIds: [],
+          cardinality: "one-to-many",
+        })
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe("updateRelationship", () => {
+    it("updates cardinality", async () => {
+      const doc = makeDoc({ relationships: [makeRelationship()] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.updateRelationship("diag-1", "rel-1", "user-1", {
+        cardinality: "one-to-one",
+      });
+
+      const resultDoc = result.content as unknown as DiagramDocument;
+      expect(resultDoc.relationships[0]!.cardinality).toBe("one-to-one");
+    });
+
+    it("throws NotFoundException for unknown relationshipId", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(
+        service.updateRelationship("diag-1", "bad-id", "user-1", { cardinality: "one-to-one" })
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("preserves unchanged fields (merge semantics)", async () => {
+      const doc = makeDoc({ relationships: [makeRelationship()] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.updateRelationship("diag-1", "rel-1", "user-1", {
+        cardinality: "one-to-one",
+      });
+
+      const resultDoc = result.content as unknown as DiagramDocument;
+      const rel = resultDoc.relationships[0]!;
+      expect(rel.cardinality).toBe("one-to-one");
+      expect(rel.onDelete).toBe("no-action");   // unchanged
+      expect(rel.identifying).toBe(false);       // unchanged
+    });
+  });
+
+  describe("removeRelationship", () => {
+    it("removes relationship", async () => {
+      const doc = makeDoc({ relationships: [makeRelationship()] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      await service.removeRelationship("diag-1", "rel-1", "user-1");
+
+      expect(diagramRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.objectContaining({ relationships: [] }),
+        })
+      );
+    });
+
+    it("throws NotFoundException for unknown relationshipId", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(service.removeRelationship("diag-1", "bad-id", "user-1")).rejects.toThrow(
         NotFoundException
       );
     });

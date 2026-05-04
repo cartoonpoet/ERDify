@@ -11,12 +11,17 @@ import {
   addColumn as domainAddColumn,
   updateColumn as domainUpdateColumn,
   removeColumn as domainRemoveColumn,
+  addRelationship as domainAddRelationship,
+  updateRelationship as domainUpdateRelationship,
+  removeRelationship as domainRemoveRelationship,
 } from "@erdify/domain";
-import type { DiagramColumn, DiagramDocument } from "@erdify/domain";
+import type { DiagramColumn, DiagramDocument, DiagramRelationship } from "@erdify/domain";
 import type { AddTableDto } from "./dto/add-table.dto";
 import type { UpdateTableDto } from "./dto/update-table.dto";
 import type { AddColumnDto } from "./dto/add-column.dto";
 import type { UpdateColumnDto } from "./dto/update-column.dto";
+import type { AddRelationshipDto } from "./dto/add-relationship.dto";
+import type { UpdateRelationshipDto } from "./dto/update-relationship.dto";
 
 @Injectable()
 export class DiagramsService {
@@ -293,6 +298,56 @@ export class DiagramsService {
       if (!entity) throw new NotFoundException("Table not found");
       if (!entity.columns.some((c) => c.id === columnId)) throw new NotFoundException("Column not found");
       return domainRemoveColumn(doc, tableId, columnId);
+    });
+  }
+
+  async addRelationship(
+    diagramId: string,
+    userId: string,
+    dto: AddRelationshipDto
+  ): Promise<Diagram> {
+    const relationship: DiagramRelationship = {
+      id: randomUUID(),
+      name: "",
+      sourceEntityId: dto.sourceEntityId,
+      sourceColumnIds: dto.sourceColumnIds,
+      targetEntityId: dto.targetEntityId,
+      targetColumnIds: dto.targetColumnIds,
+      cardinality: dto.cardinality,
+      onDelete: dto.onDelete ?? "no-action",
+      onUpdate: dto.onUpdate ?? "no-action",
+      identifying: dto.identifying ?? false,
+    };
+    return this.applySchemaCommand(diagramId, userId, (doc) =>
+      domainAddRelationship(doc, relationship)
+    );
+  }
+
+  async updateRelationship(
+    diagramId: string,
+    relId: string,
+    userId: string,
+    dto: UpdateRelationshipDto
+  ): Promise<Diagram> {
+    return this.applySchemaCommand(diagramId, userId, (doc) => {
+      if (!doc.relationships.some((r) => r.id === relId))
+        throw new NotFoundException("Relationship not found");
+      const changes: Partial<Omit<DiagramRelationship, "id">> = {};
+      if (dto.sourceColumnIds !== undefined) changes.sourceColumnIds = dto.sourceColumnIds;
+      if (dto.targetColumnIds !== undefined) changes.targetColumnIds = dto.targetColumnIds;
+      if (dto.cardinality !== undefined) changes.cardinality = dto.cardinality;
+      if (dto.onDelete !== undefined) changes.onDelete = dto.onDelete;
+      if (dto.onUpdate !== undefined) changes.onUpdate = dto.onUpdate;
+      if (dto.identifying !== undefined) changes.identifying = dto.identifying;
+      return domainUpdateRelationship(doc, relId, changes);
+    });
+  }
+
+  async removeRelationship(diagramId: string, relId: string, userId: string): Promise<void> {
+    await this.applySchemaCommand(diagramId, userId, (doc) => {
+      if (!doc.relationships.some((r) => r.id === relId))
+        throw new NotFoundException("Relationship not found");
+      return domainRemoveRelationship(doc, relId);
     });
   }
 }
