@@ -9,28 +9,66 @@ env:
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/erdify
 
 jobs:
-  build-and-push:
-    name: Build & Push Docker Images
+  # ── 변경된 경로 감지 ──────────────────────────────────────────────────────
+  changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      api:     ${{ steps.filter.outputs.api }}
+      web:     ${{ steps.filter.outputs.web }}
+      landing: ${{ steps.filter.outputs.landing }}
+      infra:   ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/db/**'
+              - 'packages/domain/**'
+              - 'packages/contracts/**'
+              - 'apps/api/Dockerfile'
+              - 'apps/api/docker-entrypoint.sh'
+            web:
+              - 'apps/web/**'
+              - 'packages/erd-ui/**'
+              - 'packages/domain/**'
+              - 'packages/contracts/**'
+              - 'apps/web/Dockerfile'
+              - 'apps/web/nginx.conf'
+            landing:
+              - 'apps/landing/**'
+              - 'apps/landing/Dockerfile'
+              - 'apps/landing/nginx.conf'
+            infra:
+              - '.github/workflows/**'
+              - 'docker-compose*.yml'
+              - 'scripts/**'
+              - 'nginx/**'
+              - 'pnpm-lock.yaml'
+
+  # ── 이미지 빌드 (변경된 앱만, 병렬 실행) ─────────────────────────────────
+  build-api:
+    name: Build API Image
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push API image
-        uses: docker/build-push-action@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/api/Dockerfile
@@ -39,8 +77,23 @@ jobs:
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
-      - name: Build and push Web image
-        uses: docker/build-push-action@v6
+  build-web:
+    name: Build Web Image
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/web/Dockerfile
@@ -51,8 +104,23 @@ jobs:
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
-      - name: Build and push Landing image
-        uses: docker/build-push-action@v6
+  build-landing:
+    name: Build Landing Image
+    needs: changes
+    if: needs.changes.outputs.landing == 'true' || needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/landing/Dockerfile
@@ -61,10 +129,21 @@ jobs:
           cache-from: type=gha,scope=landing
           cache-to: type=gha,mode=max,scope=landing
 
+  # ── Blue/Green 배포 ───────────────────────────────────────────────────────
   deploy:
     name: Blue/Green Deploy to Oracle Cloud
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [changes, build-api, build-web, build-landing]
+    # 변경 사항이 있고 빌드가 모두 성공(또는 스킵)된 경우에만 배포
+    if: |
+      always() &&
+      (needs.changes.outputs.api     == 'true' ||
+       needs.changes.outputs.web     == 'true' ||
+       needs.changes.outputs.landing == 'true' ||
+       needs.changes.outputs.infra   == 'true') &&
+      needs.build-api.result     != 'failure' &&
+      needs.build-web.result     != 'failure' &&
+      needs.build-landing.result != 'failure'
     permissions:
       contents: read
       packages: read
@@ -85,6 +164,5 @@ jobs:
             cd /opt/erdify/repo
             git pull origin master
             chmod +x scripts/setup.sh scripts/deploy.sh
-            # setup.sh is idempotent — safe to call every deploy
             bash scripts/setup.sh
             bash scripts/deploy.sh
