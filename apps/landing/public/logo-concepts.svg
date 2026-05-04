@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 920" role="img" aria-label="ERDify logo concept board with ten options">
+  <defs>
+    <style>
+      .page { fill: #f8f9fb; }
+      .card { fill: #fff; stroke: #dee3e9; stroke-width: 1; }
+      .title { fill: #1c2b33; font: 800 34px Pretendard, Inter, system-ui, sans-serif; letter-spacing: 0; }
+      .lead { fill: #5d6c7b; font: 500 16px Pretendard, Inter, system-ui, sans-serif; letter-spacing: 0; }
+      .name { fill: #1c2b33; font: 800 17px Pretendard, Inter, system-ui, sans-serif; letter-spacing: 0; }
+      .desc { fill: #5d6c7b; font: 500 12px Pretendard, Inter, system-ui, sans-serif; letter-spacing: 0; }
+      .word { fill: #1c2b33; font: 800 23px Pretendard, Inter, system-ui, sans-serif; letter-spacing: 0; }
+      .wordAccent { fill: #0064e0; font-weight: 650; }
+      .number { fill: #5d6c7b; font: 800 12px Pretendard, Inter, system-ui, sans-serif; letter-spacing: 0; }
+      .blue { fill: #0064e0; }
+      .deepBlue { fill: #0143b5; }
+      .cyan { fill: #00a6ed; }
+      .green { fill: #31a24c; }
+      .ink { fill: #1c2b33; }
+      .slate { fill: #52616f; }
+      .violet { fill: #6b4eff; }
+      .teal { fill: #008f8c; }
+      .orange { fill: #f97316; }
+      .red { fill: #e41e3f; }
+      .recommend { fill: #eef4ff; stroke: #0064e0; stroke-width: 1.5; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="920" class="page"/>
+  <text x="56" y="70" class="title">ERDify Logo Concepts</text>
+  <text x="56" y="100" class="lead">10 simple one-shape marks. Pick the number you like, then I will apply that direction.</text>
+
+  <g transform="translate(56 142)">
+    <rect width="220" height="220" rx="14" class="recommend"/>
+    <text x="22" y="32" class="number">01</text>
+    <path d="M110 42c7.4 0 12.8 4.4 17.6 9.2l40 40c10.1 10.1 10.1 27.5 0 37.6l-40 40c-10.1 10.1-27.5 10.1-37.6 0l-40-40c-10.1-10.1-10.1-27.5 0-37.6l40-40c4.8-4.8 10.2-9.2 20-9.2Z" class="blue"/>
+    <text x="22" y="170" class="name">Rounded Diamond</text>
+    <text x="22" y="193" class="desc">ERD 관계 상징. 가장 균형 좋음.</text>
+  </g>
+
+  <g transform="translate(300 142)">
+    <rect width="220" height="220" rx="14" class="card"/>
+    <text x="22" y="32" class="number">02</text>
+    <path d="M110 42l68 68-68 68-68-68 68-68Z" class="blue"/>
+    <text x="22" y="170" class="name">Pure Diamond</text>
+    <text x="22" y="193" class="desc">가장 미니멀. 선명하지만 평범함.</text>
+  </g>
+
+  <g transform="translate(544 142)">
+    <rect width="220" height="220" rx="14" class="card"/>
+    <text x="22" y="32" class="number">03</text>
+    <path d="M110 42l58 34v68l-58 34-58-34V76l58-34Z" class="deepBlue"/>
+    <text x="22" y="170" class="name">Data Hex</text>
+    <text x="22" y="193" class="desc">플랫폼/데이터 시스템 느낌.</text>
+  </g>
+
+  <g transform="translate(788 142)">
+    <rect width="220" height="220" rx="14" class="card"/>
+    <text x="22" y="32" class="number">04</text>
+    <path d="M110 40l73 42v56l-73 42-73-42V82l73-42Z" class="cyan"/>
+    <text x="22" y="170" class="name">Prism</text>
+    <text x="22" y="193" class="desc">밝고 SaaS 느낌. 조금 가벼움.</text>
+  </g>
+
+  <g transform="translate(1032 142)">
+    <rect width="220" height="220" rx="14" class="card"/>
+    <text x="22" y="32" class="number">05</text>
+    <path d="M110 42c36.5 0 68 31.5 68 68s-31.5 68-68 68-68-31.5-68-68 31.5-68 68-68Z" class="blue"/>
+    <text x="22" y="170" class="name">Schema Dot</text>
+    <text x="22" y="193" class="desc">완전 추상적. 앱 아이콘으로 강함.</text>
+  </g>
+
+  <g transform="translate(56 402)">
+    <rect width="220" height="220" rx="14" class="card"/>
+    <text x="22" y="32" class="number">06</text>
+    <path d="M110 38c26 23.8 52.2 47.6 78.2 71.4-26 24.2-52.2 48.4-78.2 72.6-26-24.2-52.2-48.4-78.2-72.6C57.8 85.6 84 61.8 110 38Z" class="ink"/>
+    <text x="22" y="170" class="name">Ink Relation</text>
+    <text x="22" y="193" class="desc">개발자 도구처럼 단단한 인상.</text>
+  </g>
+
+  <g transform="translate(300 402)">
+    <rect width="220" height="220" rx="14" class="card"/>
+    <text x="22" y="32" class="number">07</text>
+    <path d="M110 38l74 52v40l-74 52-74-52V90l74-52Z" class="green"/>
+    <text x="22" y="170" class="name">Migration Mark</text>
+    <text x="22" y="193" class="desc">검증/성공/DB 마이그레이션 느낌.</text>
+  </g>
+
+  <g transform="translate(544 402)">
+    <rect width="220" height="220" rx="14" class="card"/>
+    <text x="22" y="32" class="number">08</text>
+    <path d="M42 74c0-17.7 14.3-32 32-32h72c17.7 0 32 14.3 32 32v72c0 17.7-14.3 32-32 32H74c-17.7 0-32-14.3-32-32V74Z" class="slate"/>
+    <text x="22" y="170" class="name">Soft Square</text>
+    <text x="22" y="193" class="desc">업무툴 친화적. ERD 맥락은 약함.</text>
+  </g>
+
+  <g transform="translate(788 402)">
+    <rect width="220" height="220" rx="14" class="card"/>
+    <text x="22" y="32" class="number">09</text>
+    <path d="M110 38l63 36v72l-63 36-63-36V74l63-36Z" class="violet"/>
+    <text x="22" y="170" class="name">AI Node</text>
+    <text x="22" y="193" class="desc">AI/MCP 확장성은 보이나 흔함.</text>
+  </g>
+
+  <g transform="translate(1032 402)">
+    <rect width="220" height="220" rx="14" class="card"/>
+    <text x="22" y="32" class="number">10</text>
+    <path d="M110 34l62 36c4.9 2.8 8 8 8 13.7v52.6c0 5.7-3.1 10.9-8 13.7l-62 36-62-36c-4.9-2.8-8-8-8-13.7V83.7c0-5.7 3.1-10.9 8-13.7l62-36Z" class="teal"/>
+    <text x="22" y="170" class="name">Enterprise Seal</text>
+    <text x="22" y="193" class="desc">B2B 신뢰감. 조금 보수적.</text>
+  </g>
+
+  <g transform="translate(56 690)">
+    <text class="word" x="0" y="0"><tspan>ERD</tspan><tspan class="wordAccent">ify</tspan></text>
+    <text x="0" y="34" class="lead">My recommendation: 01. If you want stricter minimalism, choose 02. If you want a broader data-platform brand, choose 03 or 10.</text>
+  </g>
+</svg>

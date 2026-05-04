@@ -211,18 +211,10 @@ const APP_URL = 'https://app.erdify.com';
 
       <!-- Tool tabs -->
       <div class="it-tabs" role="tablist">
-        <button class="it-tab it-tab--active" data-tool="cursor">
-          <span class="it-tool-name">Cursor</span>
-        </button>
-        <button class="it-tab" data-tool="claude">
-          <span class="it-tool-name">Claude Desktop</span>
-        </button>
-        <button class="it-tab" data-tool="gemini">
-          <span class="it-tool-name">Gemini CLI</span>
-        </button>
-        <button class="it-tab" data-tool="codex">
-          <span class="it-tool-name">Codex CLI</span>
-        </button>
+        <button class="it-tab it-tab--active" data-tool="cursor">Cursor</button>
+        <button class="it-tab" data-tool="claude">Claude Desktop</button>
+        <button class="it-tab" data-tool="windsurf">Windsurf</button>
+        <button class="it-tab" data-tool="continue">Continue</button>
       </div>
 
       <!-- Config panels -->
@@ -262,12 +254,12 @@ const APP_URL = 'https://app.erdify.com';
 }`}</pre>
       </div>
 
-      <div class="it-panel it-panel--hidden" data-panel="gemini">
+      <div class="it-panel it-panel--hidden" data-panel="windsurf">
         <div class="it-meta">
-          <div class="it-file-badge">📄 ~/.gemini/settings.json</div>
-          <button class="it-copy" data-copy="gemini">복사</button>
+          <div class="it-file-badge">📄 ~/.codeium/windsurf/mcp_config.json</div>
+          <button class="it-copy" data-copy="windsurf">복사</button>
         </div>
-        <pre class="it-code" id="code-gemini">{`{
+        <pre class="it-code" id="code-windsurf">{`{
   "mcpServers": {
     "erdify": {
       "command": "npx",
@@ -280,21 +272,23 @@ const APP_URL = 'https://app.erdify.com';
 }`}</pre>
       </div>
 
-      <div class="it-panel it-panel--hidden" data-panel="codex">
+      <div class="it-panel it-panel--hidden" data-panel="continue">
         <div class="it-meta">
-          <div class="it-file-badge">📄 ~/.codex/config.yaml (또는 --mcp-server 플래그)</div>
-          <button class="it-copy" data-copy="codex">복사</button>
+          <div class="it-file-badge">📄 ~/.continue/config.json</div>
+          <button class="it-copy" data-copy="continue">복사</button>
         </div>
-        <pre class="it-code" id="code-codex">{`# codex --mcp-server npx:-y:@erdify/mcp-server@latest 실행
-# 또는 config.yaml에 추가:
-mcp_servers:
-  erdify:
-    command: npx
-    args:
-      - -y
-      - "@erdify/mcp-server@latest"
-    env:
-      ERDIFY_API_KEY: erd_your_api_key_here`}</pre>
+        <pre class="it-code" id="code-continue">{`{
+  "mcpServers": [
+    {
+      "name": "erdify",
+      "command": "npx",
+      "args": ["-y", "@erdify/mcp-server@latest"],
+      "env": {
+        "ERDIFY_API_KEY": "erd_your_api_key_here"
+      }
+    }
+  ]
+}`}</pre>
       </div>
 
       <!-- API key note -->
@@ -458,7 +452,7 @@ mcp_servers:
     <div class="container footer-inner">
       <div class="footer-brand">
         <a href="/" class="logo">
-          <img src="/logo.svg" alt="ERDify" class="logo-image" />
+          <img src="/logo-white.svg" alt="ERDify" class="logo-image" />
         </a>
         <p>실시간 협업 ERD 도구</p>
       </div>
