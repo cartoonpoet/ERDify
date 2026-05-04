@@ -6,6 +6,12 @@ import type { CreateDiagramDto } from "./dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
 import { DiagramsService } from "./diagrams.service";
 import type { ShareDiagramDto } from "./dto/share-diagram.dto";
+import type { AddTableDto } from "./dto/add-table.dto";
+import type { UpdateTableDto } from "./dto/update-table.dto";
+import type { AddColumnDto } from "./dto/add-column.dto";
+import type { UpdateColumnDto } from "./dto/update-column.dto";
+import type { AddRelationshipDto } from "./dto/add-relationship.dto";
+import type { UpdateRelationshipDto } from "./dto/update-relationship.dto";
 
 @Controller()
 @UseGuards(FlexAuthGuard)
@@ -76,5 +82,101 @@ export class DiagramsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   revokeLink(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
     return this.diagramsService.revokeShareLink(id, user.sub);
+  }
+
+  // Tables
+  @Post("diagrams/:id/tables")
+  @HttpCode(HttpStatus.CREATED)
+  addTable(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() dto: AddTableDto
+  ) {
+    return this.diagramsService.addTable(id, user.sub, dto);
+  }
+
+  @Patch("diagrams/:id/tables/:tableId")
+  updateTable(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("tableId") tableId: string,
+    @Body() dto: UpdateTableDto
+  ) {
+    return this.diagramsService.updateTable(id, tableId, user.sub, dto);
+  }
+
+  @Delete("diagrams/:id/tables/:tableId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeTable(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("tableId") tableId: string
+  ) {
+    return this.diagramsService.removeTable(id, tableId, user.sub);
+  }
+
+  // Columns
+  @Post("diagrams/:id/tables/:tableId/columns")
+  @HttpCode(HttpStatus.CREATED)
+  addColumn(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("tableId") tableId: string,
+    @Body() dto: AddColumnDto
+  ) {
+    return this.diagramsService.addColumn(id, tableId, user.sub, dto);
+  }
+
+  @Patch("diagrams/:id/tables/:tableId/columns/:columnId")
+  updateColumn(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("tableId") tableId: string,
+    @Param("columnId") columnId: string,
+    @Body() dto: UpdateColumnDto
+  ) {
+    return this.diagramsService.updateColumn(id, tableId, columnId, user.sub, dto);
+  }
+
+  @Delete("diagrams/:id/tables/:tableId/columns/:columnId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeColumn(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("tableId") tableId: string,
+    @Param("columnId") columnId: string
+  ) {
+    return this.diagramsService.removeColumn(id, tableId, columnId, user.sub);
+  }
+
+  // Relationships
+  @Post("diagrams/:id/relationships")
+  @HttpCode(HttpStatus.CREATED)
+  addRelationship(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Body() dto: AddRelationshipDto
+  ) {
+    return this.diagramsService.addRelationship(id, user.sub, dto);
+  }
+
+  @Patch("diagrams/:id/relationships/:relId")
+  updateRelationship(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("relId") relId: string,
+    @Body() dto: UpdateRelationshipDto
+  ) {
+    return this.diagramsService.updateRelationship(id, relId, user.sub, dto);
+  }
+
+  @Delete("diagrams/:id/relationships/:relId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeRelationship(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("relId") relId: string
+  ) {
+    return this.diagramsService.removeRelationship(id, relId, user.sub);
   }
 }
