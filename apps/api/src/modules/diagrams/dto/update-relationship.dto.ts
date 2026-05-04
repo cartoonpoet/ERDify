@@ -2,29 +2,29 @@ import { IsArray, IsBoolean, IsEnum, IsOptional, IsString } from "class-validato
 import type { ReferentialAction, RelationshipCardinality } from "@erdify/domain";
 
 export class UpdateRelationshipDto {
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @IsOptional()
   sourceColumnIds?: string[];
 
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @IsOptional()
   targetColumnIds?: string[];
 
-  @IsEnum(["one-to-one", "one-to-many", "many-to-one"])
   @IsOptional()
+  @IsEnum(["one-to-one", "one-to-many", "many-to-one"])
   cardinality?: RelationshipCardinality;
 
-  @IsEnum(["cascade", "restrict", "set-null", "no-action"])
   @IsOptional()
+  @IsEnum(["cascade", "restrict", "set-null", "no-action"])
   onDelete?: ReferentialAction;
 
-  @IsEnum(["cascade", "restrict", "set-null", "no-action"])
   @IsOptional()
+  @IsEnum(["cascade", "restrict", "set-null", "no-action"])
   onUpdate?: ReferentialAction;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   identifying?: boolean;
 }

@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { IsInt, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 
 export class AddTableDto {
   @IsString()
@@ -6,11 +6,11 @@ export class AddTableDto {
   @MaxLength(100)
   name!: string;
 
-  @IsNumber()
   @IsOptional()
+  @IsInt()
   x?: number;
 
-  @IsNumber()
   @IsOptional()
+  @IsInt()
   y?: number;
 }

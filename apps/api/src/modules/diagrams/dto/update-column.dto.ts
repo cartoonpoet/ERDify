@@ -1,33 +1,31 @@
 import { IsBoolean, IsOptional, IsString, MinLength } from "class-validator";
 
 export class UpdateColumnDto {
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  @IsOptional()
   name?: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  @IsOptional()
   type?: string;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   nullable?: boolean;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   primaryKey?: boolean;
 
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   unique?: boolean;
 
-  @IsString()
   @IsOptional()
   defaultValue?: string | null;
 
-  @IsString()
   @IsOptional()
   comment?: string | null;
 }

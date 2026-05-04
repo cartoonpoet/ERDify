@@ -1,12 +1,14 @@
-import { IsBoolean, IsOptional, IsString, MinLength } from "class-validator";
+import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 
 export class AddColumnDto {
   @IsString()
   @MinLength(1)
+  @MaxLength(100)
   name!: string;
 
   @IsString()
   @MinLength(1)
+  @MaxLength(100)
   type!: string;
 
   @IsBoolean()
