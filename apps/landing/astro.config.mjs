@@ -3,5 +3,4 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
   output: 'static',
   site: 'https://erdify.kro.kr',
-  base: '/introduce',
 });
