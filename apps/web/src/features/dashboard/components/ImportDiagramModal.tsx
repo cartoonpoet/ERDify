@@ -1,4 +1,4 @@
-import { randomUUID } from "@/shared/utils/uuid";
+import { randomUUID } from "../../../shared/utils/uuid";
 import { useState, useRef } from "react";
 import type { DragEvent, ChangeEvent } from "react";
 import { Modal, Button } from "../../../design-system";

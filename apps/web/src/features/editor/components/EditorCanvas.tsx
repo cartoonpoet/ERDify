@@ -1,4 +1,4 @@
-import { randomUUID } from "@/shared/utils/uuid";
+import { randomUUID } from "../../../shared/utils/uuid";
 import { useRef, useState } from "react";
 import type { MouseEvent, CSSProperties } from "react";
 import { ReactFlow, Background, Controls, useReactFlow } from "@xyflow/react";

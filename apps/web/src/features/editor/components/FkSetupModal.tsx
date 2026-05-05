@@ -1,4 +1,4 @@
-import { randomUUID } from "@/shared/utils/uuid";
+import { randomUUID } from "../../../shared/utils/uuid";
 import { useState } from "react";
 import { Modal } from "../../../design-system/Modal";
 import { addColumn, addRelationship } from "@erdify/domain";
