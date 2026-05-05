@@ -9,7 +9,7 @@ const YOUTUBE_ID = 'YOUR_YOUTUBE_ID';
   <!-- NAV -->
   <nav class="nav">
     <div class="container nav-inner">
-      <a href="/" class="logo">
+      <a href={import.meta.env.BASE_URL} class="logo">
         <img src="/logo.svg" alt="ERDify" class="logo-image" />
       </a>
       <div class="nav-links">
@@ -663,7 +663,7 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
   <footer class="footer">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <a href="/" class="logo">
+        <a href={import.meta.env.BASE_URL} class="logo">
           <img src="/logo.svg" alt="ERDify" class="logo-image" style="filter: brightness(0) invert(1);" />
         </a>
         <p>실시간 협업 ERD 도구</p>
