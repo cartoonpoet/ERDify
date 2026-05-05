@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 import { User } from "./user.entity";
 
 @Entity("api_keys")
@@ -10,6 +10,7 @@ export class ApiKey {
   userId!: string;
 
   @ManyToOne(() => User, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "user_id" })
   user!: User;
 
   // SHA-256 hex of the raw key — never store the raw key
