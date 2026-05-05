@@ -4,6 +4,7 @@ import { Copy, Check } from "lucide-react";
 import { Modal } from "../../../design-system";
 import { shareDiagram, revokeDiagramShare } from "../../../shared/api/diagrams.api";
 import type { SharePreset } from "../../../shared/api/diagrams.api";
+import { copyToClipboard } from "../../../shared/utils/clipboard";
 import * as css from "./share-diagram-modal.css";
 
 const PRESET_LABELS: Record<SharePreset, string> = {
@@ -66,7 +67,7 @@ export const ShareDiagramModal = ({
   const handleCopy = async () => {
     if (!shareUrl) return;
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await copyToClipboard(shareUrl);
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
       setCopied(true);
       copyTimerRef.current = setTimeout(() => setCopied(false), 2000);

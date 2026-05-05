@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Modal } from "../../../design-system";
 import { generateDdl } from "../../../shared/utils/ddl-generator";
 import { useEditorStore } from "../stores/useEditorStore";
+import { copyToClipboard } from "../../../shared/utils/clipboard";
 import { body, toolbar, actionBtn, copySuccessBtn, codeBlock, emptyText } from "./ExportDdlModal.css";
 
 interface ExportDdlModalProps {
@@ -17,7 +18,7 @@ export const ExportDdlModal = ({ open, diagramName, onClose }: ExportDdlModalPro
   const ddl = document ? generateDdl(document) : "";
 
   function handleCopy() {
-    navigator.clipboard.writeText(ddl).then(() => {
+    copyToClipboard(ddl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });

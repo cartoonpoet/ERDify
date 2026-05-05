@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal } from "../../../design-system/Modal";
 import { generateApiKey } from "../../../shared/api/auth.api";
+import { copyToClipboard } from "../../../shared/utils/clipboard";
 import * as css from "./ApiKeyModal.css";
 
 interface ApiKeyModalProps {
@@ -29,7 +30,7 @@ export const ApiKeyModal = ({ open, onClose }: ApiKeyModalProps) => {
 
   async function handleCopy() {
     if (!apiKey) return;
-    await navigator.clipboard.writeText(apiKey);
+    await copyToClipboard(apiKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }

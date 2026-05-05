@@ -3,6 +3,7 @@ import { Modal } from "../../../design-system/Modal";
 import { generateOrm } from "@erdify/domain";
 import type { OrmType } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
+import { copyToClipboard } from "../../../shared/utils/clipboard";
 import * as css from "./export-orm-modal.css";
 
 interface ExportOrmModalProps {
@@ -25,7 +26,7 @@ export const ExportOrmModal = ({ open, onClose }: ExportOrmModalProps) => {
   const currentTab = TABS.find((t) => t.value === orm)!;
 
   function handleCopy() {
-    navigator.clipboard.writeText(code).then(() => {
+    copyToClipboard(code).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
