@@ -3,20 +3,21 @@ import Layout from '../layouts/Layout.astro';
 
 // 데모 영상 YouTube ID로 교체하세요
 const YOUTUBE_ID = 'YOUR_YOUTUBE_ID';
+const BASE = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
 ---
 
 <Layout>
   <!-- NAV -->
   <nav class="nav">
     <div class="container nav-inner">
-      <a href={import.meta.env.BASE_URL} class="logo">
+      <a href={BASE} class="logo">
         <img src="/logo.svg" alt="ERDify" class="logo-image" />
       </a>
       <div class="nav-links">
         <a href="#features">기능</a>
         <a href="#integrations">연동</a>
         <a href="#pricing">가격</a>
-        <a href={`${import.meta.env.BASE_URL}docs/`}>개발자 센터</a>
+        <a href={`${BASE}docs/`}>개발자 센터</a>
       </div>
       <div class="nav-cta">
         <a href="/login" data-app-path="/login" class="btn-ghost">로그인</a>
@@ -30,7 +31,7 @@ const YOUTUBE_ID = 'YOUR_YOUTUBE_ID';
       <a href="#features">기능</a>
       <a href="#integrations">연동</a>
       <a href="#pricing">가격</a>
-      <a href={`${import.meta.env.BASE_URL}docs/`}>개발자 센터</a>
+      <a href={`${BASE}docs/`}>개발자 센터</a>
       <div class="nav-mobile-cta">
         <a href="/login" data-app-path="/login" class="btn-ghost" style="flex:1;text-align:center;">로그인</a>
         <a href="/register" data-app-path="/register" class="btn-primary" style="flex:1;text-align:center;">무료로 시작</a>
@@ -663,7 +664,7 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
   <footer class="footer">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <a href={import.meta.env.BASE_URL} class="logo">
+        <a href={BASE} class="logo">
           <img src="/logo.svg" alt="ERDify" class="logo-image" style="filter: brightness(0) invert(1);" />
         </a>
         <p>실시간 협업 ERD 도구</p>
