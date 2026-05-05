@@ -16,11 +16,24 @@ const YOUTUBE_ID = 'YOUR_YOUTUBE_ID';
         <a href="#features">기능</a>
         <a href="#integrations">연동</a>
         <a href="#pricing">가격</a>
-        <a href="/docs">개발자 센터</a>
+        <a href={`${import.meta.env.BASE_URL}docs/`}>개발자 센터</a>
       </div>
       <div class="nav-cta">
         <a href="/login" data-app-path="/login" class="btn-ghost">로그인</a>
         <a href="/register" data-app-path="/register" class="btn-primary">무료로 시작</a>
+      </div>
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="메뉴 열기" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile" id="nav-mobile" aria-hidden="true">
+      <a href="#features">기능</a>
+      <a href="#integrations">연동</a>
+      <a href="#pricing">가격</a>
+      <a href={`${import.meta.env.BASE_URL}docs/`}>개발자 센터</a>
+      <div class="nav-mobile-cta">
+        <a href="/login" data-app-path="/login" class="btn-ghost" style="flex:1;text-align:center;">로그인</a>
+        <a href="/register" data-app-path="/register" class="btn-primary" style="flex:1;text-align:center;">무료로 시작</a>
       </div>
     </div>
   </nav>
@@ -729,6 +742,55 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
   }
   .nav-links a:hover { color: var(--text); }
   .nav-cta { display: flex; gap: 10px; align-items: center; }
+
+  /* ── Hamburger ── */
+  .nav-hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .nav-hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: transform 0.22s, opacity 0.22s;
+  }
+  .nav-hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav-hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+  .nav-hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ── Mobile nav ── */
+  .nav-mobile {
+    display: none;
+    flex-direction: column;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+  .nav-mobile[aria-hidden="false"] { display: flex; }
+  .nav-mobile > a {
+    padding: 15px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  .nav-mobile > a:hover { background: var(--surface); }
+  .nav-mobile-cta {
+    display: flex;
+    gap: 10px;
+    padding: 16px 24px 8px;
+  }
 
   /* ── Buttons ── */
   .btn-primary {
@@ -1595,23 +1657,45 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
 
   /* ── Responsive ── */
   @media (max-width: 900px) {
+    .nav-links { display: none; }
+    .nav-cta { display: none; }
+    .nav-hamburger { display: flex; }
+
     .features-grid { grid-template-columns: repeat(2, 1fr); }
     .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
     .screenshots-grid { grid-template-columns: 1fr; }
-    .footer-inner { flex-direction: column; gap: 40px; }
-    .nav-links { display: none; }
+    .footer-inner { flex-direction: column; gap: 32px; }
+    .footer-links { flex-wrap: wrap; gap: 32px; }
+
     .api-layout { grid-template-columns: 1fr; }
     .api-endpoints { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 16px 0; }
     .api-ep-list { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px; }
     .api-ep { border-left: none; border-radius: 8px; padding: 8px 12px; }
     .api-ep--active { border-left: none; }
+
+    .hero { padding: 80px 0 60px; }
+    .ai-workflow, .features, .integrations, .screenshots, .pricing { padding: 72px 0; }
+    .cta-banner { padding: 72px 0; }
+    .cta-banner h2 { font-size: 32px; }
+    .section-header { margin-bottom: 48px; }
   }
   @media (max-width: 600px) {
     .features-grid { grid-template-columns: 1fr; }
-    .hero { padding: 72px 0 60px; }
-    .hero-stats { gap: 20px; }
+    .hero { padding: 64px 0 48px; }
+    .hero-sub { font-size: 16px; }
+    .hero-sub br { display: none; }
+    .hero-stats { gap: 16px; }
     .stat-divider { display: none; }
     .ac-modes { flex-direction: column; }
+    .cta-banner h2 { font-size: 26px; }
+    .cta-banner p { font-size: 15px; }
+    .cta-banner > .container > div { flex-direction: column; align-items: center; }
+    .footer { padding: 48px 0 0; }
+    .section-header h2 { font-size: 26px; }
+    .section-header p { font-size: 15px; }
+    .ai-workflow, .features, .integrations, .screenshots, .pricing { padding: 56px 0; }
+    .plan-card { padding: 24px; }
+    .feature-card { padding: 24px; }
   }
 </style>
 
@@ -1678,16 +1762,43 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
     });
   });
 
+  // ── Clipboard helper (HTTP 환경 fallback) ──
+  function copyText(text: string): Promise<void> {
+    if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+    document.body.appendChild(el);
+    el.focus(); el.select();
+    try { document.execCommand('copy'); } finally { document.body.removeChild(el); }
+    return Promise.resolve();
+  }
+
   // ── Copy buttons (all) ──
   document.querySelectorAll<HTMLButtonElement>('.it-copy').forEach((btn) => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.copy!;
       const code = document.getElementById(`code-${key}`)?.textContent ?? '';
-      navigator.clipboard.writeText(code).then(() => {
+      copyText(code).then(() => {
         btn.textContent = '✓ 복사됨';
         btn.classList.add('it-copy--copied');
         setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('it-copy--copied'); }, 2000);
       });
+    });
+  });
+
+  // ── Hamburger menu ──
+  const hamburger = document.getElementById('nav-hamburger') as HTMLButtonElement;
+  const mobileNav = document.getElementById('nav-mobile')!;
+  hamburger.addEventListener('click', () => {
+    const isOpen = hamburger.getAttribute('aria-expanded') === 'true';
+    hamburger.setAttribute('aria-expanded', String(!isOpen));
+    mobileNav.setAttribute('aria-hidden', String(isOpen));
+  });
+  mobileNav.querySelectorAll('a').forEach((a) => {
+    a.addEventListener('click', () => {
+      hamburger.setAttribute('aria-expanded', 'false');
+      mobileNav.setAttribute('aria-hidden', 'true');
     });
   });
 
