@@ -1,3 +1,4 @@
+import { randomUUID } from "@/shared/utils/uuid";
 import { useState } from "react";
 import { Modal } from "../../../design-system/Modal";
 import { addColumn, addRelationship } from "@erdify/domain";
@@ -59,7 +60,7 @@ const Inner = ({ pending }: { pending: PendingConnection }) => {
         if (!inp) return;
 
         if (inp.mode === "new") {
-          const colId = crypto.randomUUID();
+          const colId = randomUUID();
           fkColIds.push(colId);
           if (pk.pkColId) pkColIds.push(pk.pkColId);
           const srcEntity = next.entities.find((e) => e.id === pending.sourceEntityId)!;
@@ -84,7 +85,7 @@ const Inner = ({ pending }: { pending: PendingConnection }) => {
       const tgtName = toSnake(next.entities.find((e) => e.id === pending.targetEntityId)!.name);
 
       const relationship: DiagramRelationship = {
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         name: `fk_${srcName}_${tgtName}`,
         sourceEntityId: pending.sourceEntityId,
         sourceColumnIds: fkColIds,

@@ -1,3 +1,4 @@
+import { randomUUID } from "@/shared/utils/uuid";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -65,7 +66,7 @@ export const EditorPage = () => {
   const handleAddTable = () => {
     applyCommand((doc) =>
       addEntity(doc, {
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         name: `Table_${doc.entities.length + 1}`
       })
     );

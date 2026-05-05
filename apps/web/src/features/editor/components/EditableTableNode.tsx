@@ -1,3 +1,4 @@
+import { randomUUID } from "@/shared/utils/uuid";
 import { useState } from "react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 import { Handle, Position } from "@xyflow/react";
@@ -38,7 +39,7 @@ const COLUMN_TYPES = [
 ];
 
 const makeColumn = (ordinal: number): DiagramColumn => ({
-  id: crypto.randomUUID(),
+  id: randomUUID(),
   name: "column",
   type: "varchar(255)",
   nullable: true,
@@ -52,7 +53,7 @@ const makeColumn = (ordinal: number): DiagramColumn => ({
 const makeIndex = (entityId: string, entityName: string): DiagramIndex => {
   const safeName = entityName.replace(/\s+/g, "_").toLowerCase();
   return {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     entityId,
     name: `idx_${safeName}`,
     columnIds: [],

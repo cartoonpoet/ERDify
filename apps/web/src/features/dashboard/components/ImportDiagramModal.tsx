@@ -1,3 +1,4 @@
+import { randomUUID } from "@/shared/utils/uuid";
 import { useState, useRef } from "react";
 import type { DragEvent, ChangeEvent } from "react";
 import { Modal, Button } from "../../../design-system";
@@ -138,7 +139,7 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
         const now = new Date().toISOString();
         content = {
           format: "erdify.schema.v1",
-          id: crypto.randomUUID(),
+          id: randomUUID(),
           name: diagramName,
           dialect,
           ...parsed,

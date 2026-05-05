@@ -1,11 +1,5 @@
 import type { DiagramDocument, DiagramEntity, DiagramColumn, DiagramRelationship } from "@erdify/domain";
-
-function uuid(): string {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
+import { randomUUID as uuid } from "./uuid";
 
 function attr(el: Element, ...names: string[]): string {
   for (const name of names) {

@@ -1,3 +1,4 @@
+import { randomUUID } from "@/shared/utils/uuid";
 import { useRef, useState } from "react";
 import type { MouseEvent, CSSProperties } from "react";
 import { ReactFlow, Background, Controls, useReactFlow } from "@xyflow/react";
@@ -125,7 +126,7 @@ const ContextMenuInner = ({
 
   const handleAddTable = () => {
     const flowPos = screenToFlowPosition({ x: state.clientX, y: state.clientY });
-    const entityId = crypto.randomUUID();
+    const entityId = randomUUID();
     applyCommand((doc) => {
       const next = addEntity(doc, {
         id: entityId,
@@ -261,7 +262,7 @@ export const EditorCanvas = () => {
         const src = doc.entities.find((e) => e.id === srcId)!;
         const tgt = doc.entities.find((e) => e.id === tgtId)!;
         const relationship: DiagramRelationship = {
-          id: crypto.randomUUID(),
+          id: randomUUID(),
           name: `fk_${toSnake(src.name)}_${toSnake(tgt.name)}`,
           sourceEntityId: srcId,
           sourceColumnIds: autoMatchedCols.map((m) => m.fkColId),
