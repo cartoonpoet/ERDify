@@ -22,10 +22,10 @@ export const orgSelector = style({
   alignItems: "center",
   gap: vars.space["2"],
   padding: `${vars.space["3"]} ${vars.space["3"]}`,
+  border: "none",
   borderBottom: `1px solid ${vars.color.border}`,
   cursor: "pointer",
   background: "none",
-  border: "none",
   fontFamily: vars.font.family,
   textAlign: "left",
   selectors: {

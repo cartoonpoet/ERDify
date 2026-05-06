@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import type { OrgResponse } from "../../../shared/api/organizations.api";
 import type { ProjectResponse } from "../../../shared/api/projects.api";
 import type { DiagramResponse } from "../../../shared/api/diagrams.api";
+import type { DiagramDialect } from "@erdify/domain";
 import * as css from "./unified-sidebar.css";
 
 interface UnifiedSidebarProps {
@@ -23,7 +24,12 @@ interface UnifiedSidebarProps {
   onCreateDiagram: () => void;
 }
 
-const dialectLabel: Record<string, string> = { postgresql: "PG", mysql: "MY" };
+const dialectLabel: Record<DiagramDialect, string> = {
+  postgresql: "PG",
+  mysql: "MY",
+  mariadb: "MA",
+  mssql: "MS",
+};
 
 export const UnifiedSidebar = ({
   orgs, selectedOrgId, onSelectOrg, onDeleteOrg, onCreateOrg,
@@ -150,7 +156,7 @@ export const UnifiedSidebar = ({
                   </div>
                   {isExpanded && (
                     <>
-                      {diagrams.map((diagram) => (
+                      {diagrams.filter((d) => d.projectId === project.id).map((diagram) => (
                         <button
                           key={diagram.id}
                           className={css.erdRow}
@@ -159,7 +165,7 @@ export const UnifiedSidebar = ({
                           <span className={css.erdDot} aria-hidden="true" />
                           <span className={css.erdName}>{diagram.name}</span>
                           <span className={css.erdBadge} aria-hidden="true">
-                            {dialectLabel[diagram.content.dialect] ?? diagram.content.dialect.slice(0, 2).toUpperCase()}
+                            {dialectLabel[diagram.content.dialect]}
                           </span>
                         </button>
                       ))}

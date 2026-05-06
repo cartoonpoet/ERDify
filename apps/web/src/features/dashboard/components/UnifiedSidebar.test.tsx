@@ -140,4 +140,31 @@ describe("UnifiedSidebar", () => {
     fireEvent.click(screen.getByText("+ 새 프로젝트"));
     expect(onCreateProject).toHaveBeenCalledTimes(1);
   });
+
+  it("프로젝트 삭제 버튼 클릭 후 확인 시 onDeleteProject가 호출된다", () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const onDeleteProject = vi.fn();
+    wrap(<UnifiedSidebar {...defaultProps} onDeleteProject={onDeleteProject} />);
+    fireEvent.click(screen.getByRole("button", { name: "Backend API 삭제" }));
+    expect(onDeleteProject).toHaveBeenCalledWith("p1");
+    vi.restoreAllMocks();
+  });
+
+  it("프로젝트 삭제 버튼 클릭 후 취소 시 onDeleteProject가 호출되지 않는다", () => {
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    const onDeleteProject = vi.fn();
+    wrap(<UnifiedSidebar {...defaultProps} onDeleteProject={onDeleteProject} />);
+    fireEvent.click(screen.getByRole("button", { name: "Backend API 삭제" }));
+    expect(onDeleteProject).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it("조직 선택 후 드롭다운이 닫힌다", () => {
+    const onSelectOrg = vi.fn();
+    wrap(<UnifiedSidebar {...defaultProps} onSelectOrg={onSelectOrg} />);
+    fireEvent.click(screen.getByText("Acme Corp").closest("button")!);
+    expect(screen.getByText("My Team")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("My Team").closest("button")!);
+    expect(screen.queryByText("My Team")).not.toBeInTheDocument();
+  });
 });
