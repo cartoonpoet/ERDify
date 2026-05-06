@@ -23,7 +23,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     }),
     {
       name: "erdify-workspace",
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         selectedOrganizationId: state.selectedOrganizationId,
         selectedProjectId: state.selectedProjectId,

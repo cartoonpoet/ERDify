@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { FocusEvent } from "react";
@@ -86,6 +86,25 @@ export const DashboardPage = () => {
     },
   });
 
+  // Auto-select first org when none is selected (or persisted org no longer exists)
+  useEffect(() => {
+    const firstOrg = orgs[0];
+    if (!firstOrg) return;
+    if (!selectedOrganizationId || !orgs.find((o) => o.id === selectedOrganizationId)) {
+      selectOrganization(firstOrg.id);
+    }
+  }, [orgs, selectedOrganizationId, selectOrganization]);
+
+  // Auto-select first project when org is set but no project is selected (or persisted project no longer exists)
+  useEffect(() => {
+    const firstProject = projects[0];
+    if (!selectedOrganizationId || !firstProject) return;
+    if (!selectedProjectId || !projects.find((p) => p.id === selectedProjectId)) {
+      selectProject(firstProject.id);
+      setSearchQuery("");
+    }
+  }, [projects, selectedProjectId, selectedOrganizationId, selectProject]);
+
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null;
 
   async function handleLogout() {
@@ -126,8 +145,12 @@ export const DashboardPage = () => {
   function handleDeleteDiagram(id: string) { deleteDiagramMutation.mutate(id); }
 
   function handleSelectProject(projectId: string) {
-    selectProject(projectId);
-    setSearchQuery("");
+    if (selectedProjectId === projectId) {
+      if (selectedOrganizationId) selectOrganization(selectedOrganizationId);
+    } else {
+      selectProject(projectId);
+      setSearchQuery("");
+    }
   }
 
   function handleDeleteProject(id: string) { deleteProjectMutation.mutate(id); }
