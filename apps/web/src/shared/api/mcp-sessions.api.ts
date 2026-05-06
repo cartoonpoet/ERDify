@@ -21,5 +21,5 @@ export const listMcpSessions = (diagramId: string): Promise<McpSessionResponse[]
 
 export const revertMcpSession = (diagramId: string, sessionId: string): Promise<void> =>
   httpClient
-    .post(`/diagrams/${diagramId}/mcp-sessions/${sessionId}/revert`, {})
+    .post(`/diagrams/${diagramId}/mcp-sessions/${sessionId}/revert`)
     .then(() => undefined);
