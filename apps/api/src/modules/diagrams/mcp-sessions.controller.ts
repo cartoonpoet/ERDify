@@ -1,19 +1,13 @@
 import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from "@nestjs/common";
 import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
-import { CollaborationGateway } from "../collaboration/collaboration.gateway";
 import { McpSessionsService } from "./mcp-sessions.service";
-
-class RecordToolCallDto {
-  tool!: string;
-  summary!: string;
-}
+import { RecordToolCallDto } from "./dto/record-tool-call.dto";
 
 @Controller("diagrams/:diagramId/mcp-sessions")
 @UseGuards(FlexAuthGuard)
 export class McpSessionsController {
   constructor(
     private readonly mcpSessionsService: McpSessionsService,
-    private readonly collaborationGateway: CollaborationGateway
   ) {}
 
   @Post(":sessionId/tool-calls")
@@ -23,15 +17,9 @@ export class McpSessionsController {
     @Param("sessionId") sessionId: string,
     @Body() dto: RecordToolCallDto
   ) {
-    const session = await this.mcpSessionsService.recordToolCall(diagramId, sessionId, {
+    await this.mcpSessionsService.recordToolCall(diagramId, sessionId, {
       tool: dto.tool,
       summary: dto.summary,
-    });
-
-    this.collaborationGateway.broadcastMcpActivity(diagramId, {
-      sessionId,
-      summary: session.summary ?? dto.summary,
-      toolCall: { tool: dto.tool, summary: dto.summary },
     });
 
     return { ok: true };
