@@ -3,11 +3,12 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
-import type { UserProfile, ApiKeyInfo } from "./auth.service";
+import type { UserProfile, ApiKeyInfo, ApiKeyCreated } from "./auth.service";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import type { JwtPayload } from "./strategies/jwt.strategy";
 import { ChangePasswordDto } from "./dto/change-password.dto";
+import { CreateApiKeyDto } from "./dto/create-api-key.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
@@ -26,7 +27,6 @@ const ALLOWED_AVATAR_MIMES = new Set(["image/jpeg", "image/png", "image/gif", "i
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // 회원가입: 1분에 5회
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post("register")
   async register(
@@ -38,7 +38,6 @@ export class AuthController {
     return { ok: true };
   }
 
-  // 로그인: 1분에 10회 (브루트포스 방어)
   @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post("login")
   @HttpCode(HttpStatus.OK)
@@ -61,8 +60,20 @@ export class AuthController {
 
   @Post("api-keys")
   @UseGuards(JwtAuthGuard)
-  generateApiKey(@CurrentUser() user: JwtPayload): Promise<{ apiKey: string }> {
-    return this.authService.generateApiKey(user.sub);
+  generateApiKey(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateApiKeyDto,
+  ): Promise<ApiKeyCreated> {
+    return this.authService.generateApiKey(user.sub, dto);
+  }
+
+  @Post("api-keys/:id/regenerate")
+  @UseGuards(JwtAuthGuard)
+  regenerateApiKey(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+  ): Promise<ApiKeyCreated> {
+    return this.authService.regenerateApiKey(user.sub, id);
   }
 
   @Get("api-keys")
