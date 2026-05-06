@@ -57,7 +57,7 @@ describe("auth.api", () => {
       expect.any(FormData),
       { headers: { "Content-Type": "multipart/form-data" } },
     );
-    const callArg = vi.mocked(httpClient.post).mock.calls[0][1] as FormData;
+    const callArg = vi.mocked(httpClient.post).mock.calls[0]?.[1] as FormData;
     expect(callArg.get("file")).toBe(file);
     expect(result).toEqual(profile);
   });

@@ -29,9 +29,9 @@ describe("DarkCodeEditor", () => {
     );
     const spans = container.querySelectorAll(".lineNumber");
     expect(spans).toHaveLength(3);
-    expect(spans[0].textContent).toBe("1");
-    expect(spans[1].textContent).toBe("2");
-    expect(spans[2].textContent).toBe("3");
+    expect(spans[0]?.textContent).toBe("1");
+    expect(spans[1]?.textContent).toBe("2");
+    expect(spans[2]?.textContent).toBe("3");
   });
 
   it("renders 1 line number span when value is empty", () => {

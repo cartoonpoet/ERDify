@@ -188,7 +188,7 @@ it("submitting create form calls createApiKey and shows reveal box", async () =>
 
   await waitFor(() => {
     expect(apiKeysApi.createApiKey).toHaveBeenCalled();
-    expect((apiKeysApi.createApiKey as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatchObject(
+    expect((apiKeysApi.createApiKey as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toMatchObject(
       { name: "Test Key" }
     );
     expect(screen.getByText("erd_secret_abc123")).toBeInTheDocument();
@@ -244,7 +244,7 @@ it("폐기 button shows confirm and calls revokeApiKey on 확인", async () => {
 
   await waitFor(() => {
     expect(apiKeysApi.revokeApiKey).toHaveBeenCalled();
-    expect((apiKeysApi.revokeApiKey as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe("key-1");
+    expect((apiKeysApi.revokeApiKey as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toBe("key-1");
   });
 });
 
