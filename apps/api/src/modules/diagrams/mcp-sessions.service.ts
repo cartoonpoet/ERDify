@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Diagram, DiagramVersion, McpSession } from "@erdify/db";
 import type { Repository } from "typeorm";
 
@@ -32,7 +33,8 @@ export class McpSessionsService {
     @InjectRepository(Diagram)
     private readonly diagramRepo: Repository<Diagram>,
     @InjectRepository(DiagramVersion)
-    private readonly versionRepo: Repository<DiagramVersion>
+    private readonly versionRepo: Repository<DiagramVersion>,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   async recordToolCall(
@@ -75,7 +77,14 @@ export class McpSessionsService {
       session.summary = buildSummary(toolCalls);
     }
 
-    return this.sessionRepo.save(session);
+    const saved = await this.sessionRepo.save(session);
+    this.eventEmitter.emit("mcp.tool_call.recorded", {
+      diagramId,
+      sessionId,
+      summary: saved.summary ?? entry.summary,
+      toolCall: { tool: entry.tool, summary: entry.summary },
+    });
+    return saved;
   }
 
   async listSessions(diagramId: string): Promise<McpSessionResponse[]> {

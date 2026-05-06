@@ -7,6 +7,7 @@ import {
   WebSocketGateway,
   WebSocketServer
 } from "@nestjs/websockets";
+import { OnEvent } from "@nestjs/event-emitter";
 import { JwtService } from "@nestjs/jwt";
 import type { Server, Socket } from "socket.io";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
@@ -118,11 +119,17 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     this.collaborationService.schedulePersist(diagramId);
   }
 
-  broadcastMcpActivity(
-    _diagramId: string,
-    _data: { sessionId: string; summary: string; toolCall: { tool: string; summary: string } }
-  ): void {
-    // implemented in Task 4
+  @OnEvent("mcp.tool_call.recorded")
+  broadcastMcpActivity(data: {
+    diagramId: string;
+    sessionId: string;
+    summary: string;
+    toolCall: { tool: string; summary: string };
+  }): void {
+    this.server.to(data.diagramId).emit("mcp_activity", {
+      type: "mcp_activity",
+      ...data,
+    });
   }
 
   @SubscribeMessage("presence:update")
