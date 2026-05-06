@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { ApiKey } from "./entities/api-key.entity";
 import { Diagram } from "./entities/diagram.entity";
 import { DiagramVersion } from "./entities/diagram-version.entity";
+import { McpSession } from "./entities/mcp-session.entity";
 import { OrganizationMember } from "./entities/organization-member.entity";
 import { Organization } from "./entities/organization.entity";
 import { Project } from "./entities/project.entity";
@@ -17,13 +18,14 @@ import { AddCreatedByToDiagrams1746000000006 } from "./migrations/1746000000006-
 import { AddAvatarUrlToUsers1746000000007 } from "./migrations/1746000000007-AddAvatarUrlToUsers";
 import { AddShareTokenToDiagrams1746000000008 } from "./migrations/1746000000008-AddShareTokenToDiagrams";
 import { CreateApiKeysTable1746000000009 } from "./migrations/1746000000009-CreateApiKeysTable";
+import { CreateMcpSessionsTable1746000000010 } from "./migrations/1746000000010-CreateMcpSessionsTable";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
   url: process.env["DATABASE_URL"] ?? "postgres://erdify:erdify@localhost:5432/erdify",
   synchronize: false,
   migrationsRun: false,
-  entities: [User, Organization, OrganizationMember, Project, Diagram, DiagramVersion, ApiKey],
+  entities: [User, Organization, OrganizationMember, Project, Diagram, DiagramVersion, ApiKey, McpSession],
   migrations: [
     CreateUsersTable1746000000000,
     CreateOrganizationsTable1746000000001,
@@ -35,5 +37,6 @@ export const AppDataSource = new DataSource({
     AddAvatarUrlToUsers1746000000007,
     AddShareTokenToDiagrams1746000000008,
     CreateApiKeysTable1746000000009,
+    CreateMcpSessionsTable1746000000010,
   ]
 });
