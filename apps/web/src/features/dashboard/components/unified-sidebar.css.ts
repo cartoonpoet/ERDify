@@ -362,3 +362,9 @@ export const addProjectBtn = style({
     },
   },
 });
+
+export const sidebarBottomBar = style({
+  borderTop: `1px solid ${vars.color.border}`,
+  padding: `${vars.space["2"]} 0`,
+  flexShrink: 0,
+});

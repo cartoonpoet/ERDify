@@ -58,6 +58,8 @@ const defaultProps = {
   onCreateDiagram: vi.fn(),
   memberManagementActive: false,
   onManageMembers: vi.fn(),
+  apiKeysActive: false,
+  onApiKeys: vi.fn(),
 };
 
 const wrap = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
@@ -168,5 +170,17 @@ describe("UnifiedSidebar", () => {
     expect(screen.getByText("My Team")).toBeInTheDocument();
     fireEvent.click(screen.getByText("My Team").closest("button")!);
     expect(screen.queryByText("My Team")).not.toBeInTheDocument();
+  });
+
+  it("API 키 버튼은 조직 미선택 상태에서도 렌더링된다", () => {
+    wrap(<UnifiedSidebar {...defaultProps} selectedOrgId={null} />);
+    expect(screen.getByText("API 키")).toBeInTheDocument();
+  });
+
+  it("API 키 버튼 클릭 시 onApiKeys가 호출된다", () => {
+    const onApiKeys = vi.fn();
+    wrap(<UnifiedSidebar {...defaultProps} onApiKeys={onApiKeys} />);
+    fireEvent.click(screen.getByText("API 키").closest("button")!);
+    expect(onApiKeys).toHaveBeenCalledTimes(1);
   });
 });

@@ -24,6 +24,8 @@ interface UnifiedSidebarProps {
   onCreateDiagram: () => void;
   memberManagementActive: boolean;
   onManageMembers: () => void;
+  apiKeysActive: boolean;
+  onApiKeys: () => void;
 }
 
 const dialectLabel: Record<DiagramDialect, string> = {
@@ -38,6 +40,7 @@ export const UnifiedSidebar = ({
   projects, selectedProjectId, onSelectProject, onDeleteProject, onCreateProject,
   diagrams, onCreateDiagram,
   memberManagementActive, onManageMembers,
+  apiKeysActive, onApiKeys,
 }: UnifiedSidebarProps) => {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -198,6 +201,18 @@ export const UnifiedSidebar = ({
           </div>
         </>
       )}
+
+      <div className={css.sidebarBottomBar}>
+        <button
+          className={[css.projRow, apiKeysActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
+          onClick={onApiKeys}
+          aria-pressed={apiKeysActive}
+        >
+          <span className={css.projArrow} aria-hidden="true" />
+          <span className={css.projIcon} aria-hidden="true">🔑</span>
+          <span className={css.projName}>API 키</span>
+        </button>
+      </div>
     </aside>
   );
 };
