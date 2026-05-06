@@ -26,10 +26,6 @@ export function logout(): Promise<void> {
   return httpClient.post("/auth/logout").then(() => undefined);
 }
 
-export function generateApiKey(): Promise<{ apiKey: string }> {
-  return httpClient.post<{ apiKey: string }>("/auth/api-keys").then((r) => r.data);
-}
-
 export function getMe(): Promise<UserProfile> {
   return httpClient.get<UserProfile>("/auth/me").then((r) => r.data);
 }
