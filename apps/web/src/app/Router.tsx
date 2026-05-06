@@ -3,7 +3,6 @@ import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { EditorPage } from "../features/editor/pages/EditorPage";
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage";
-import { ApiKeysPage } from "../features/settings/pages/ApiKeysPage";
 import { SharedDiagramPage } from "../features/shared-diagram/pages/SharedDiagramPage";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 
@@ -14,7 +13,6 @@ export const Router = () => (
     <Route path="/share/:shareToken" element={<SharedDiagramPage />} />
     <Route element={<ProtectedRoute />}>
       <Route path="/diagrams/:diagramId" element={<EditorPage />} />
-      <Route path="/settings/api-keys" element={<ApiKeysPage />} />
       <Route path="/*" element={<DashboardPage />} />
     </Route>
   </Routes>
