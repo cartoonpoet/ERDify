@@ -14,7 +14,7 @@ import type { CreateOrganizationDto } from "./dto/create-organization.dto";
 import type { InviteMemberDto } from "./dto/invite-member.dto";
 import type { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import type { MemberRole } from "@erdify/db";
-import type { EmailService } from "../email/email.service";
+import { EmailService } from "../email/email.service";
 
 @Injectable()
 export class OrganizationService {
