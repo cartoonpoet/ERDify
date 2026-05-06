@@ -15,7 +15,7 @@ describe("Modal", () => {
   it("Escape 키를 누르면 onClose가 호출된다", () => {
     const onClose = vi.fn();
     render(<Modal open onClose={onClose} title="테스트"><div>내용</div></Modal>);
-    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

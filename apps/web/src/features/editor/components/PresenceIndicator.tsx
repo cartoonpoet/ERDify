@@ -25,6 +25,7 @@ export const PresenceIndicator = () => {
           <div key={c.userId} className={css.avatarWrapper}>
             <div
               className={css.avatar}
+              title={entityName ? `${c.email} — ${entityName} 편집 중` : c.email}
               style={{
                 background: c.color,
                 outline: c.selectedEntityId ? `2px solid ${c.color}` : "none",

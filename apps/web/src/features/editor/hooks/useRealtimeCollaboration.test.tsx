@@ -20,17 +20,23 @@ vi.mock("../../../shared/stores/useAuthStore", () => ({
   )
 }));
 
-const mockSetDocument = vi.fn();
-const mockSetCollaborators = vi.fn();
-const mockSubscribeUnsub = vi.fn();
-const mockSubscribe = vi.fn(() => mockSubscribeUnsub);
-
-const storeHook = Object.assign(
-  vi.fn((selector: (s: { document: null; setDocument: typeof mockSetDocument; setCollaborators: typeof mockSetCollaborators }) => unknown) =>
-    selector({ document: null, setDocument: mockSetDocument, setCollaborators: mockSetCollaborators })
-  ),
-  { subscribe: mockSubscribe }
-);
+// vi.mock is hoisted to the top of the file, so variables referenced in the
+// factory must also be hoisted via vi.hoisted() to avoid "Cannot access before
+// initialization" errors.
+const { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, mockSubscribe, storeHook } =
+  vi.hoisted(() => {
+    const mockSetDocument = vi.fn();
+    const mockSetCollaborators = vi.fn();
+    const mockSubscribeUnsub = vi.fn();
+    const mockSubscribe = vi.fn(() => mockSubscribeUnsub);
+    const storeHook = Object.assign(
+      vi.fn((selector: (s: { document: null; setDocument: typeof mockSetDocument; setCollaborators: typeof mockSetCollaborators }) => unknown) =>
+        selector({ document: null, setDocument: mockSetDocument, setCollaborators: mockSetCollaborators })
+      ),
+      { subscribe: mockSubscribe }
+    );
+    return { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, mockSubscribe, storeHook };
+  });
 
 vi.mock("../stores/useEditorStore", () => ({
   useEditorStore: storeHook
@@ -64,7 +70,7 @@ describe("useRealtimeCollaboration", () => {
     renderHook(() => useRealtimeCollaboration("d1"));
     expect(io).toHaveBeenCalledWith(
       expect.stringContaining("/collaboration"),
-      expect.objectContaining({ auth: { token: "Bearer test-token" } })
+      expect.objectContaining({ withCredentials: true })
     );
   });
 

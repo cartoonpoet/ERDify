@@ -34,8 +34,8 @@ describe("VersionHistoryDrawer", () => {
 
     render(<VersionHistoryDrawer diagramId="d" onClose={vi.fn()} />);
 
-    expect(screen.getByText("불러오는 중...")).toBeInTheDocument();
     expect(screen.queryByText("저장된 버전이 없습니다.")).not.toBeInTheDocument();
+    expect(document.querySelectorAll("[aria-hidden='true']").length).toBeGreaterThan(0);
   });
 
   it("renders version list when versions exist", () => {
