@@ -22,6 +22,22 @@ export const vars = createGlobalTheme(":root", {
   font: {
     family:
       "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    size: {
+      "2xs": "9px",
+      xs: "10px",
+      sm: "11px",
+      md: "13px",
+      lg: "15px",
+      xl: "20px",
+      "2xl": "24px",
+    },
+    weight: {
+      regular: "400",
+      medium: "500",
+      semibold: "600",
+      bold: "700",
+      extrabold: "800",
+    },
   },
   radius: {
     sm: "6px",
