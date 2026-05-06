@@ -18,6 +18,7 @@ export interface McpSessionResponse {
   updatedAt: string;
 }
 
+// DB column allows 500 chars; we truncate at 200 per spec for display clarity
 function buildSummary(toolCalls: ToolCallEntry[]): string {
   const full = toolCalls.map((t) => t.summary).join(", ");
   return full.length > 200 ? full.slice(0, 199) + "…" : full;
@@ -65,7 +66,7 @@ export class McpSessionsService {
         id: sessionId,
         diagramId,
         toolCalls: [entry],
-        summary: entry.summary,
+        summary: buildSummary([entry]),
         snapshotVersionId: version.id,
       });
     } else {
