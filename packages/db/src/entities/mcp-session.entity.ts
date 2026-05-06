@@ -15,7 +15,7 @@ export class McpSession {
   @Column({ type: "varchar", length: 500, nullable: true })
   summary!: string | null;
 
-  @Column({ name: "snapshot_version_id", length: 36, nullable: true })
+  @Column({ name: "snapshot_version_id", type: "varchar", length: 36, nullable: true })
   snapshotVersionId!: string | null;
 
   @CreateDateColumn({ name: "created_at" })
