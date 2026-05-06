@@ -199,6 +199,10 @@ export const treeSectionLabel = style({
   padding: `6px 14px ${vars.space["1"]}`,
 });
 
+export const treeSectionLabelSpaced = style({
+  marginTop: vars.space["2"],
+});
+
 export const projRowWrapper = style({
   position: "relative",
   display: "flex",

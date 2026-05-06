@@ -22,6 +22,8 @@ interface UnifiedSidebarProps {
 
   diagrams: DiagramResponse[];
   onCreateDiagram: () => void;
+  memberManagementActive: boolean;
+  onManageMembers: () => void;
 }
 
 const dialectLabel: Record<DiagramDialect, string> = {
@@ -35,6 +37,7 @@ export const UnifiedSidebar = ({
   orgs, selectedOrgId, onSelectOrg, onDeleteOrg, onCreateOrg,
   projects, selectedProjectId, onSelectProject, onDeleteProject, onCreateProject,
   diagrams, onCreateDiagram,
+  memberManagementActive, onManageMembers,
 }: UnifiedSidebarProps) => {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -178,6 +181,16 @@ export const UnifiedSidebar = ({
               );
             })}
           </div>
+          <div className={[css.treeSectionLabel, css.treeSectionLabelSpaced].join(" ")}>관리</div>
+          <button
+            className={[css.projRow, memberManagementActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
+            onClick={onManageMembers}
+            aria-pressed={memberManagementActive}
+          >
+            <span className={css.projArrow} aria-hidden="true" />
+            <span className={css.projIcon} aria-hidden="true">👥</span>
+            <span className={css.projName}>멤버 관리</span>
+          </button>
           <div className={css.sidebarFooter}>
             <button className={css.addProjectBtn} onClick={onCreateProject}>
               + 새 프로젝트

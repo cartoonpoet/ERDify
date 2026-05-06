@@ -16,6 +16,7 @@ import { CreateProjectModal } from "../components/CreateProjectModal";
 import { CreateDiagramModal } from "../components/CreateDiagramModal";
 import { ImportDiagramModal } from "../components/ImportDiagramModal";
 import { ProfileModal } from "../components/ProfileModal";
+import { MemberManagementPage } from "./MemberManagementPage";
 import {
   shell, topbar, brand, brandLogo, topbarSpacer, topbarSearch, avatar, avatarImg,
   avatarWrapper, dropdown, dropdownHeader, dropdownEmail,
@@ -40,6 +41,7 @@ export const DashboardPage = () => {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [memberManagementOpen, setMemberManagementOpen] = useState(false);
 
   const { data: me } = useQuery({
     queryKey: ["me"],
@@ -66,7 +68,10 @@ export const DashboardPage = () => {
   const deleteOrgMutation = useMutation({
     mutationFn: (orgId: string) => deleteOrganization(orgId),
     onSuccess: (_data, orgId) => {
-      if (selectedOrganizationId === orgId) reset();
+      if (selectedOrganizationId === orgId) {
+        reset();
+        setMemberManagementOpen(false);
+      }
       void queryClient.invalidateQueries({ queryKey: ["orgs"] });
     },
   });
@@ -144,6 +149,11 @@ export const DashboardPage = () => {
   function handleDeleteOrg(id: string) { deleteOrgMutation.mutate(id); }
   function handleDeleteDiagram(id: string) { deleteDiagramMutation.mutate(id); }
 
+  function handleSelectOrg(orgId: string) {
+    selectOrganization(orgId);
+    setMemberManagementOpen(false);
+  }
+
   function handleSelectProject(projectId: string) {
     if (selectedProjectId === projectId) {
       if (selectedOrganizationId) selectOrganization(selectedOrganizationId);
@@ -211,7 +221,7 @@ export const DashboardPage = () => {
         <UnifiedSidebar
           orgs={orgs}
           selectedOrgId={selectedOrganizationId}
-          onSelectOrg={selectOrganization}
+          onSelectOrg={handleSelectOrg}
           onDeleteOrg={handleDeleteOrg}
           onCreateOrg={handleOpenOrgModal}
           projects={projects}
@@ -221,18 +231,27 @@ export const DashboardPage = () => {
           onCreateProject={handleOpenProjectModal}
           diagrams={diagrams}
           onCreateDiagram={handleOpenDiagramModal}
+          memberManagementActive={memberManagementOpen}
+          onManageMembers={() => setMemberManagementOpen(true)}
         />
 
-        <DiagramGrid
-          diagrams={diagrams}
-          {...(selectedProject?.name ? { projectName: selectedProject.name } : {})}
-          currentUserId={me?.id ?? null}
-          onCreateDiagram={handleOpenDiagramModal}
-          {...(selectedProjectId ? { onImportDiagram: handleOpenImportModal } : {})}
-          onDeleteDiagram={handleDeleteDiagram}
-          loading={diagramsLoading && !!selectedProjectId}
-          {...(searchQuery ? { filterQuery: searchQuery } : {})}
-        />
+        {memberManagementOpen && selectedOrganizationId ? (
+          <MemberManagementPage
+            orgId={selectedOrganizationId}
+            orgName={orgs.find((o) => o.id === selectedOrganizationId)?.name ?? ""}
+          />
+        ) : (
+          <DiagramGrid
+            diagrams={diagrams}
+            {...(selectedProject?.name ? { projectName: selectedProject.name } : {})}
+            currentUserId={me?.id ?? null}
+            onCreateDiagram={handleOpenDiagramModal}
+            {...(selectedProjectId ? { onImportDiagram: handleOpenImportModal } : {})}
+            onDeleteDiagram={handleDeleteDiagram}
+            loading={diagramsLoading && !!selectedProjectId}
+            {...(searchQuery ? { filterQuery: searchQuery } : {})}
+          />
+        )}
       </div>
 
       <CreateOrgModal

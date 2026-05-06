@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { register } from "../../../shared/api/auth.api";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
 import { Button, Input } from "../../../design-system";
@@ -17,8 +17,9 @@ const getStrength = (pw: string) => {
 };
 
 export const RegisterPage = () => {
+  const [searchParams] = useSearchParams();
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(searchParams.get("inviteEmail") ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

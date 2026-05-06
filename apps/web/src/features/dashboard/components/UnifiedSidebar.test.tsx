@@ -56,6 +56,8 @@ const defaultProps = {
   onCreateProject: vi.fn(),
   diagrams: [],
   onCreateDiagram: vi.fn(),
+  memberManagementActive: false,
+  onManageMembers: vi.fn(),
 };
 
 const wrap = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
