@@ -4,6 +4,7 @@ import { generateOrm } from "@erdify/domain";
 import type { OrmType } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
 import { copyToClipboard } from "../../../shared/utils/clipboard";
+import { DarkCodeEditor } from "../../../shared/components/DarkCodeEditor";
 import * as css from "./export-orm-modal.css";
 
 interface ExportOrmModalProps {
@@ -24,6 +25,7 @@ export const ExportOrmModal = ({ open, onClose }: ExportOrmModalProps) => {
 
   const code = document ? generateOrm(document, orm) : "";
   const currentTab = TABS.find((t) => t.value === orm)!;
+  const filename = `schema.${currentTab.ext}`;
 
   function handleCopy() {
     copyToClipboard(code).then(() => {
@@ -37,7 +39,7 @@ export const ExportOrmModal = ({ open, onClose }: ExportOrmModalProps) => {
     const url = URL.createObjectURL(blob);
     const a = window.document.createElement("a");
     a.href = url;
-    a.download = `schema.${currentTab.ext}`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -51,21 +53,28 @@ export const ExportOrmModal = ({ open, onClose }: ExportOrmModalProps) => {
               key={t.value}
               className={`${css.tab}${orm === t.value ? ` ${css.tabActive}` : ""}`}
               onClick={() => { setOrm(t.value); setCopied(false); }}
+              type="button"
             >
               {t.label}
             </button>
           ))}
         </div>
-        <div className={css.toolbar}>
-          <button className={copied ? css.copySuccessBtn : css.actionBtn} onClick={handleCopy}>
-            {copied ? "✓ 복사됨" : "복사"}
-          </button>
-          <button className={css.actionBtn} onClick={handleDownload}>
-            다운로드 (.{currentTab.ext})
-          </button>
-        </div>
+
         {code ? (
-          <pre className={css.codeBlock}>{code}</pre>
+          <>
+            <div className={css.toolbar}>
+              <span className={css.filenameLabel}>{filename}</span>
+              <div className={css.toolbarBtns}>
+                <button className={copied ? css.copySuccessBtn : css.actionBtn} onClick={handleCopy} type="button">
+                  {copied ? "✓ 복사됨" : "📋 복사"}
+                </button>
+                <button className={css.actionBtn} onClick={handleDownload} type="button">
+                  ⬇ 다운로드 (.{currentTab.ext})
+                </button>
+              </div>
+            </div>
+            <DarkCodeEditor value={code} height="440px" />
+          </>
         ) : (
           <div className={css.emptyText}>테이블이 없습니다</div>
         )}

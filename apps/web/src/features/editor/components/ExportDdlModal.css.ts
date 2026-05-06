@@ -9,7 +9,24 @@ export const body = style({
 
 export const toolbar = style({
   display: "flex",
-  justifyContent: "flex-end",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: vars.space["2"],
+});
+
+export const filenameLabel = style({
+  fontSize: "12px",
+  fontWeight: "600",
+  color: vars.color.textSecondary,
+  fontFamily: "var(--font-mono, 'Courier New', monospace)",
+  background: vars.color.surfaceSecondary,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.sm,
+  padding: `3px ${vars.space["2"]}`,
+});
+
+export const toolbarBtns = style({
+  display: "flex",
   gap: vars.space["2"],
 });
 
@@ -25,16 +42,13 @@ export const actionBtn = style({
   fontFamily: vars.font.family,
   transition: "background 150ms ease, color 150ms ease",
   selectors: {
-    "&:hover": {
-      background: vars.color.surfaceSecondary,
-      color: vars.color.textPrimary,
-    },
+    "&:hover": { background: vars.color.surfaceSecondary, color: vars.color.textPrimary },
   },
 });
 
 export const copySuccessBtn = style({
   padding: `${vars.space["1"]} ${vars.space["3"]}`,
-  border: `1px solid #16a34a`,
+  border: "1px solid #16a34a",
   borderRadius: vars.radius.md,
   background: "#dcfce7",
   color: "#15803d",
@@ -42,22 +56,6 @@ export const copySuccessBtn = style({
   fontWeight: "500",
   cursor: "pointer",
   fontFamily: vars.font.family,
-});
-
-export const codeBlock = style({
-  fontFamily: "var(--font-mono, 'Courier New', monospace)",
-  fontSize: "12px",
-  lineHeight: "1.6",
-  background: vars.color.surfaceSecondary,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  padding: vars.space["4"],
-  overflowX: "auto",
-  overflowY: "auto",
-  maxHeight: "400px",
-  whiteSpace: "pre",
-  color: vars.color.textPrimary,
-  margin: 0,
 });
 
 export const emptyText = style({

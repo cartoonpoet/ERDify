@@ -5,17 +5,26 @@ import { Modal, Button } from "../../../design-system";
 import { createDiagram } from "../../../shared/api/diagrams.api";
 import { parseDdl } from "../../../shared/utils/ddl-parser";
 import { parseExerd } from "../../../shared/utils/exerd-parser";
+import { DarkCodeEditor } from "../../../shared/components/DarkCodeEditor";
 import type { DiagramDialect } from "@erdify/domain";
 import {
   tabRow, tab, tabActive,
-  field, fieldLabel, textInput, selectInput,
+  nameField, fieldLabel, textInput,
+  sectionHeader, sectionTitle, sectionDesc,
+  hintBox, hintIcon,
   dropzone, dropzoneActive, dropzoneIcon, dropzoneHint,
   fileChosen, fileChosenName, fileClearBtn,
-  textarea, textareaDragOver, errorText, footer, cancelBtn, submitBtn,
-  ddlLabelRow, sqlUploadBtn,
+  errorText, footer, cancelBtn,
 } from "./ImportDiagramModal.css";
 
-type TabType = "exerd" | "ddl";
+type TabType = DiagramDialect | "exerd";
+
+const DIALECT_TABS: { label: string; value: DiagramDialect }[] = [
+  { label: "MySQL", value: "mysql" },
+  { label: "PostgreSQL", value: "postgresql" },
+  { label: "MariaDB", value: "mariadb" },
+  { label: "MSSQL", value: "mssql" },
+];
 
 interface ImportDiagramModalProps {
   open: boolean;
@@ -24,10 +33,14 @@ interface ImportDiagramModalProps {
   onImported: (diagramId: string) => void;
 }
 
+function extractFirstTableName(sql: string): string | null {
+  const m = sql.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:\[?[\w.]+\]?\.)?[\["`]?([\w]+)[\]"`]?\s*\(/i);
+  return m ? (m[1] ?? null) : null;
+}
+
 export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: ImportDiagramModalProps) => {
-  const [activeTab, setActiveTab] = useState<TabType>("ddl");
+  const [activeTab, setActiveTab] = useState<TabType>("mysql");
   const [name, setName] = useState("");
-  const [dialect, setDialect] = useState<DiagramDialect>("postgresql");
   const [exerdFile, setExerdFile] = useState<File | null>(null);
   const [ddlText, setDdlText] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
@@ -35,42 +48,20 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const sqlFileInputRef = useRef<HTMLInputElement>(null);
 
-  function handleTabSwitch(tab: TabType) {
-    setActiveTab(tab);
+  const dialect: DiagramDialect = activeTab === "exerd" ? "mysql" : activeTab;
+
+  function handleTabSwitch(t: TabType) {
+    setActiveTab(t);
     setError(null);
   }
 
-  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    if (file) acceptFile(file);
-  }
-
-  function acceptFile(file: File) {
-    if (!file.name.endsWith(".exerd") && !file.name.endsWith(".xml")) {
-      setError(".exerd 또는 .xml 파일만 지원합니다.");
-      return;
+  function handleDdlChange(v: string) {
+    setDdlText(v);
+    if (!name.trim()) {
+      const detected = extractFirstTableName(v);
+      if (detected) setName(detected);
     }
-    setExerdFile(file);
-    if (!name) setName(file.name.replace(/\.(exerd|xml)$/, ""));
-    setError(null);
-  }
-
-  function handleDrop(e: DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    setIsDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) acceptFile(file);
-  }
-
-  function handleDragOver(e: DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    setIsDragOver(true);
-  }
-
-  function handleDragLeave() {
-    setIsDragOver(false);
   }
 
   const acceptSqlFile = async (file: File) => {
@@ -80,7 +71,7 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
     }
     const text = await file.text();
     setDdlText(text);
-    if (!name) setName(file.name.replace(/\.sql$/, ""));
+    if (!name.trim()) setName(file.name.replace(/\.sql$/, ""));
     setError(null);
   };
 
@@ -90,21 +81,29 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
     e.target.value = "";
   };
 
-  const handleDdlDrop = (e: DragEvent<HTMLDivElement>) => {
+  function acceptExerdFile(file: File) {
+    if (!file.name.endsWith(".exerd") && !file.name.endsWith(".xml")) {
+      setError(".exerd 또는 .xml 파일만 지원합니다.");
+      return;
+    }
+    setExerdFile(file);
+    if (!name.trim()) setName(file.name.replace(/\.(exerd|xml)$/, ""));
+    setError(null);
+  }
+
+  function handleExerdDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
-    setIsDdlDragOver(false);
+    setIsDragOver(false);
     const file = e.dataTransfer.files[0];
-    if (file) acceptSqlFile(file);
-  };
+    if (file) acceptExerdFile(file);
+  }
 
-  const handleDdlDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDdlDragOver(true);
-  };
+  function handleExerdFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (file) acceptExerdFile(file);
+  }
 
-  const handleDdlDragLeave = () => setIsDdlDragOver(false);
-
-  function handleClearFile() {
+  function handleClearExerdFile() {
     setExerdFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -116,13 +115,11 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
       setError("다이어그램 이름을 입력하세요.");
       return;
     }
-
     if (activeTab === "exerd" && !exerdFile) {
       setError("ExERD 파일을 선택하세요.");
       return;
     }
-
-    if (activeTab === "ddl" && !ddlText.trim()) {
+    if (activeTab !== "exerd" && !ddlText.trim()) {
       setError("DDL SQL을 입력하세요.");
       return;
     }
@@ -130,10 +127,7 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
     setLoading(true);
     try {
       let content: object;
-
-      if (activeTab === "ddl") {
-        content = parseDdl(ddlText, dialect);
-      } else {
+      if (activeTab === "exerd") {
         const xmlText = await exerdFile!.text();
         const parsed = parseExerd(xmlText);
         const now = new Date().toISOString();
@@ -141,12 +135,13 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
           format: "erdify.schema.v1",
           id: randomUUID(),
           name: diagramName,
-          dialect,
+          dialect: "mysql" as DiagramDialect,
           ...parsed,
           metadata: { revision: 1, stableObjectIds: true, createdAt: now, updatedAt: now },
         };
+      } else {
+        content = parseDdl(ddlText, dialect);
       }
-
       const created = await createDiagram(projectId, { name: diagramName, dialect, content });
       onImported(created.id);
       onClose();
@@ -160,11 +155,10 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
 
   function resetState() {
     setName("");
-    setDialect("postgresql");
+    setActiveTab("mysql");
     setExerdFile(null);
     setDdlText("");
     setError(null);
-    setActiveTab("ddl");
   }
 
   function handleClose() {
@@ -173,18 +167,21 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
   }
 
   const canSubmit = !loading && !!name.trim() &&
-    (activeTab === "ddl" ? !!ddlText.trim() : !!exerdFile);
+    (activeTab === "exerd" ? !!exerdFile : !!ddlText.trim());
 
   return (
-    <Modal open={open} onClose={handleClose} title="ERD 가져오기">
+    <Modal open={open} onClose={handleClose} title="DDL 가져오기">
       <div className={tabRow}>
-        <button
-          className={[tab, activeTab === "ddl" ? tabActive : ""].join(" ")}
-          onClick={() => handleTabSwitch("ddl")}
-          type="button"
-        >
-          DDL 입력
-        </button>
+        {DIALECT_TABS.map((t) => (
+          <button
+            key={t.value}
+            className={[tab, activeTab === t.value ? tabActive : ""].join(" ")}
+            onClick={() => handleTabSwitch(t.value)}
+            type="button"
+          >
+            {t.label}
+          </button>
+        ))}
         <button
           className={[tab, activeTab === "exerd" ? tabActive : ""].join(" ")}
           onClick={() => handleTabSwitch("exerd")}
@@ -194,7 +191,7 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
         </button>
       </div>
 
-      <div className={field}>
+      <div className={nameField}>
         <label className={fieldLabel} htmlFor="import-name">다이어그램 이름</label>
         <input
           id="import-name"
@@ -206,62 +203,40 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
         />
       </div>
 
-      <div className={field}>
-        <label className={fieldLabel} htmlFor="import-dialect">데이터베이스</label>
-        <select
-          id="import-dialect"
-          className={selectInput}
-          value={dialect}
-          onChange={(e) => setDialect(e.target.value as DiagramDialect)}
-        >
-          <option value="postgresql">PostgreSQL</option>
-          <option value="mysql">MySQL</option>
-          <option value="mariadb">MariaDB</option>
-        </select>
-      </div>
-
-      {activeTab === "ddl" ? (
-        <div className={field}>
-          <div className={ddlLabelRow}>
-            <label className={fieldLabel} htmlFor="import-ddl">DDL SQL</label>
-            <button
-              type="button"
-              className={sqlUploadBtn}
-              onClick={() => sqlFileInputRef.current?.click()}
-            >
-              📂 .sql 파일 불러오기
-            </button>
+      {activeTab !== "exerd" ? (
+        <>
+          <div className={sectionHeader}>
+            <div className={sectionTitle}>SQL 불러넣기</div>
+            <div className={sectionDesc}>CREATE TABLE 구문을 입력하면 자동으로 ERD가 생성됩니다.</div>
           </div>
-          <div
-            onDrop={handleDdlDrop}
-            onDragOver={handleDdlDragOver}
-            onDragLeave={handleDdlDragLeave}
-          >
-            <textarea
-              id="import-ddl"
-              className={[textarea, isDdlDragOver ? textareaDragOver : ""].join(" ")}
-              placeholder={"CREATE TABLE users (\n  id SERIAL PRIMARY KEY,\n  name VARCHAR(100) NOT NULL\n);"}
-              value={ddlText}
-              onChange={(e) => setDdlText(e.target.value)}
-              spellCheck={false}
-            />
-          </div>
+          <DarkCodeEditor
+            value={ddlText}
+            onChange={handleDdlChange}
+            onFileDrop={acceptSqlFile}
+            height="220px"
+            placeholder={"CREATE TABLE users (\n  id INT NOT NULL,\n  name VARCHAR(100)\n);"}
+            isDragOver={isDdlDragOver}
+            onDragOver={(e) => { e.preventDefault(); setIsDdlDragOver(true); }}
+            onDragLeave={() => setIsDdlDragOver(false)}
+          />
           <input
-            ref={sqlFileInputRef}
             type="file"
             accept=".sql"
             style={{ display: "none" }}
             onChange={handleSqlFileChange}
           />
-        </div>
+          <div className={hintBox}>
+            <span className={hintIcon}>✦</span>
+            <span>COMMENT는 논리명으로 자동 매핑됩니다. FK는 관계선으로 변환됩니다.</span>
+          </div>
+        </>
       ) : (
-        <div className={field}>
-          <label className={fieldLabel}>ExERD 파일</label>
+        <>
           <div
             className={[dropzone, isDragOver ? dropzoneActive : ""].join(" ")}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
+            onDrop={handleExerdDrop}
+            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+            onDragLeave={() => setIsDragOver(false)}
             onClick={() => fileInputRef.current?.click()}
             role="button"
             tabIndex={0}
@@ -276,15 +251,15 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
             type="file"
             accept=".exerd,.xml"
             style={{ display: "none" }}
-            onChange={handleFileChange}
+            onChange={handleExerdFileChange}
           />
           {exerdFile && (
             <div className={fileChosen}>
               <span className={fileChosenName}>{exerdFile.name}</span>
-              <button className={fileClearBtn} onClick={handleClearFile} type="button" aria-label="파일 제거">×</button>
+              <button className={fileClearBtn} onClick={handleClearExerdFile} type="button" aria-label="파일 제거">×</button>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {error && <div className={errorText}>{error}</div>}
@@ -292,7 +267,7 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
       <div className={footer}>
         <button className={cancelBtn} onClick={handleClose} type="button">취소</button>
         <Button variant="primary" size="md" onClick={handleSubmit} disabled={!canSubmit}>
-          {loading ? "가져오는 중..." : "가져오기"}
+          {loading ? "변환 중..." : "ERD로 변환 →"}
         </Button>
       </div>
     </Modal>

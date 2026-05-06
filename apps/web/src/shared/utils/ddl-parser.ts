@@ -2,6 +2,7 @@ import type { DiagramDocument, DiagramDialect, DiagramEntity, DiagramColumn, Dia
 import { randomUUID as uuid } from "./uuid";
 
 function stripIdentifierQuotes(s: string): string {
+  if (s.startsWith("[") && s.endsWith("]")) return s.slice(1, -1);
   return s.replace(/^["'`]|["'`]$/g, "");
 }
 
@@ -253,7 +254,7 @@ function parseAlterTableFk(stmt: string): { tableName: string; fk: ParsedFK } | 
 
 export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument {
   const cleaned = removeComments(sql);
-  const statements = cleaned.split(";").map((s) => s.trim()).filter(Boolean);
+  const statements = cleaned.split(/;|^\s*GO\s*$/im).map((s) => s.trim()).filter(Boolean);
 
   const entityMap = new Map<string, DiagramEntity>();
   const pendingFks: { sourceTable: string; fk: ParsedFK }[] = [];

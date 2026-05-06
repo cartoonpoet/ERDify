@@ -2,6 +2,7 @@ import type { DiagramColumn, DiagramDocument, DiagramEntity, DiagramIndex, Diagr
 
 function quote(name: string, dialect: DiagramDocument["dialect"]): string {
   if (dialect === "postgresql") return `"${name}"`;
+  if (dialect === "mssql") return `[${name}]`;
   return `\`${name}\``;
 }
 
@@ -24,7 +25,7 @@ function columnDdl(col: DiagramColumn, dialect: DiagramDocument["dialect"]): str
   if (!col.nullable) parts.push("NOT NULL");
   if (col.unique && !col.primaryKey) parts.push("UNIQUE");
   if (col.defaultValue !== null) parts.push(`DEFAULT ${col.defaultValue}`);
-  if (col.comment && dialect !== "postgresql") {
+  if (col.comment && dialect !== "postgresql" && dialect !== "mssql") {
     parts.push(`COMMENT '${escapeComment(col.comment)}'`);
   }
   return `  ${parts.join(" ")}`;
@@ -47,7 +48,7 @@ function entityDdl(entity: DiagramEntity, dialect: DiagramDocument["dialect"]): 
     lines.push(`  PRIMARY KEY (${pkCols.map((c) => quote(c.name, dialect)).join(", ")})`);
   }
 
-  if (entity.comment && dialect !== "postgresql") {
+  if (entity.comment && dialect !== "postgresql" && dialect !== "mssql") {
     lines.push(`) COMMENT='${escapeComment(entity.comment)}';`);
   } else {
     lines.push(");");

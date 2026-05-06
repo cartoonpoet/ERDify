@@ -1,4 +1,4 @@
-export type DiagramDialect = "postgresql" | "mysql" | "mariadb";
+export type DiagramDialect = "postgresql" | "mysql" | "mariadb" | "mssql";
 
 export type RelationshipCardinality = "one-to-one" | "one-to-many" | "many-to-one";
 

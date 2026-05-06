@@ -27,9 +27,10 @@ export const tab = style({
 export const tabActive = style({
   color: vars.color.primary,
   borderBottomColor: vars.color.primary,
+  fontWeight: "600",
 });
 
-export const field = style({
+export const nameField = style({
   display: "flex",
   flexDirection: "column",
   gap: vars.space["1"],
@@ -59,20 +60,41 @@ export const textInput = style({
   },
 });
 
-export const selectInput = style({
-  height: "36px",
-  padding: `0 ${vars.space["3"]}`,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
+export const sectionHeader = style({
+  marginBottom: vars.space["2"],
+});
+
+export const sectionTitle = style({
   fontSize: "14px",
+  fontWeight: "600",
   color: vars.color.textPrimary,
-  background: vars.color.surface,
-  fontFamily: vars.font.family,
-  outline: "none",
-  cursor: "pointer",
-  selectors: {
-    "&:focus": { borderColor: vars.color.primary, boxShadow: `0 0 0 3px ${vars.color.primary}22` },
-  },
+  marginBottom: "2px",
+});
+
+export const sectionDesc = style({
+  fontSize: "12px",
+  color: vars.color.textSecondary,
+});
+
+export const hintBox = style({
+  display: "flex",
+  alignItems: "flex-start",
+  gap: vars.space["2"],
+  padding: `${vars.space["2"]} ${vars.space["3"]}`,
+  background: "rgba(0,100,224,0.07)",
+  border: "1px solid rgba(0,100,224,0.15)",
+  borderRadius: vars.radius.md,
+  marginTop: vars.space["3"],
+  fontSize: "12px",
+  color: vars.color.textSecondary,
+  lineHeight: "1.5",
+});
+
+export const hintIcon = style({
+  color: vars.color.primary,
+  fontSize: "14px",
+  flexShrink: 0,
+  marginTop: "1px",
 });
 
 export const dropzone = style({
@@ -138,61 +160,10 @@ export const fileClearBtn = style({
   selectors: { "&:hover": { color: vars.color.error } },
 });
 
-export const ddlLabelRow = style({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  marginBottom: vars.space["1"],
-});
-
-export const sqlUploadBtn = style({
-  fontSize: "11px",
-  fontWeight: "500",
-  color: vars.color.primary,
-  background: "none",
-  border: `1px solid ${vars.color.primary}44`,
-  borderRadius: vars.radius.sm,
-  padding: `2px ${vars.space["2"]}`,
-  cursor: "pointer",
-  fontFamily: vars.font.family,
-  display: "flex",
-  alignItems: "center",
-  gap: 4,
-  selectors: {
-    "&:hover": { background: `${vars.color.primary}0f`, borderColor: vars.color.primary },
-    "&:focus-visible": { outline: `2px solid ${vars.color.primary}`, outlineOffset: 2 },
-  },
-});
-
-export const textarea = style({
-  width: "100%",
-  minHeight: "180px",
-  padding: vars.space["3"],
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  fontSize: "12px",
-  fontFamily: "var(--font-mono, 'Courier New', monospace)",
-  color: vars.color.textPrimary,
-  background: vars.color.surfaceSecondary,
-  resize: "vertical",
-  outline: "none",
-  boxSizing: "border-box",
-  transition: "border-color 150ms ease, box-shadow 150ms ease",
-  selectors: {
-    "&:focus": { borderColor: vars.color.primary, boxShadow: `0 0 0 3px ${vars.color.primary}22` },
-  },
-});
-
-export const textareaDragOver = style({
-  borderColor: vars.color.primary,
-  boxShadow: `0 0 0 3px ${vars.color.primary}22`,
-  background: `${vars.color.primary}08`,
-});
-
 export const errorText = style({
   fontSize: "12px",
   color: vars.color.error,
-  marginTop: vars.space["1"],
+  marginTop: vars.space["2"],
 });
 
 export const footer = style({
@@ -215,20 +186,4 @@ export const cancelBtn = style({
   cursor: "pointer",
   fontFamily: vars.font.family,
   selectors: { "&:hover": { background: vars.color.surfaceSecondary } },
-});
-
-export const submitBtn = style({
-  padding: `${vars.space["2"]} ${vars.space["4"]}`,
-  border: "none",
-  borderRadius: vars.radius.md,
-  background: vars.color.primary,
-  color: "#fff",
-  fontSize: "14px",
-  fontWeight: "600",
-  cursor: "pointer",
-  fontFamily: vars.font.family,
-  selectors: {
-    "&:hover": { background: vars.color.primaryHover },
-    "&:disabled": { opacity: 0.5, cursor: "not-allowed" },
-  },
 });

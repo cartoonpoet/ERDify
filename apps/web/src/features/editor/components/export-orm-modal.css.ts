@@ -9,36 +9,52 @@ export const body = style({
 
 export const tabRow = style({
   display: "flex",
-  gap: vars.space["1"],
   borderBottom: `1px solid ${vars.color.border}`,
-  paddingBottom: vars.space["2"],
 });
 
 export const tab = style({
-  padding: `5px ${vars.space["3"]}`,
-  border: "none",
-  borderRadius: `${vars.radius.sm} ${vars.radius.sm} 0 0`,
-  background: "none",
-  color: vars.color.textSecondary,
-  fontSize: "12px",
+  padding: `${vars.space["2"]} ${vars.space["3"]}`,
+  fontSize: "13px",
   fontWeight: "500",
   cursor: "pointer",
+  border: "none",
+  background: "transparent",
+  color: vars.color.textSecondary,
   fontFamily: vars.font.family,
-  transition: "color 150ms ease, background 150ms ease",
+  borderBottom: "2px solid transparent",
+  marginBottom: "-1px",
+  transition: "color 150ms ease, border-color 150ms ease",
   selectors: {
-    "&:hover": { color: vars.color.textPrimary, background: vars.color.surfaceSecondary },
+    "&:hover": { color: vars.color.textPrimary },
   },
 });
 
 export const tabActive = style({
   color: vars.color.primary,
-  background: vars.color.selectedBg,
+  borderBottomColor: vars.color.primary,
   fontWeight: "600",
 });
 
 export const toolbar = style({
   display: "flex",
-  justifyContent: "flex-end",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: vars.space["2"],
+});
+
+export const filenameLabel = style({
+  fontSize: "12px",
+  fontWeight: "600",
+  color: vars.color.textSecondary,
+  fontFamily: "var(--font-mono, 'Courier New', monospace)",
+  background: vars.color.surfaceSecondary,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.sm,
+  padding: `3px ${vars.space["2"]}`,
+});
+
+export const toolbarBtns = style({
+  display: "flex",
   gap: vars.space["2"],
 });
 
@@ -60,7 +76,7 @@ export const actionBtn = style({
 
 export const copySuccessBtn = style({
   padding: `${vars.space["1"]} ${vars.space["3"]}`,
-  border: `1px solid #16a34a`,
+  border: "1px solid #16a34a",
   borderRadius: vars.radius.md,
   background: "#dcfce7",
   color: "#15803d",
@@ -68,22 +84,6 @@ export const copySuccessBtn = style({
   fontWeight: "500",
   cursor: "pointer",
   fontFamily: vars.font.family,
-});
-
-export const codeBlock = style({
-  fontFamily: "var(--font-mono, 'Courier New', monospace)",
-  fontSize: "12px",
-  lineHeight: "1.6",
-  background: vars.color.surfaceSecondary,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  padding: vars.space["4"],
-  overflowX: "auto",
-  overflowY: "auto",
-  maxHeight: "440px",
-  whiteSpace: "pre",
-  color: vars.color.textPrimary,
-  margin: 0,
 });
 
 export const emptyText = style({

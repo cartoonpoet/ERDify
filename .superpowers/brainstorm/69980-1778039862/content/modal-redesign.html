@@ -1,0 +1,90 @@
+<h2>가져오기 / 내보내기 모달 리디자인</h2>
+<p class="subtitle">랜딩페이지 스타일(다크 코드 에디터)로 3개 모달을 어떻게 바꿀지 — 방향을 골라주세요</p>
+
+<div class="cards" style="gap:24px;margin-top:24px;">
+
+  <!-- Option A: 다크 전체 -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)" style="flex:1;min-width:280px;">
+    <div class="card-image" style="background:#0f1923;padding:20px;border-radius:8px 8px 0 0;min-height:260px;">
+      <!-- Mock modal A -->
+      <div style="background:#1a2733;border-radius:10px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+        <!-- Header -->
+        <div style="background:#111d27;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="color:#fff;font-size:13px;font-weight:700;">ERD 가져오기</span>
+          <span style="color:rgba(255,255,255,0.3);font-size:16px;">×</span>
+        </div>
+        <!-- Tab bar -->
+        <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.06);padding:0 12px;">
+          <div style="padding:10px 14px;font-size:11px;font-weight:700;color:#0064E0;border-bottom:2px solid #0064E0;">DDL 입력</div>
+          <div style="padding:10px 14px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);">ExERD 파일</div>
+        </div>
+        <!-- DB selector chips -->
+        <div style="padding:10px 14px;display:flex;gap:6px;">
+          <div style="background:#0064E0;color:#fff;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;">PostgreSQL</div>
+          <div style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;">MySQL</div>
+          <div style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;">MariaDB</div>
+          <div style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;">MSSQL</div>
+        </div>
+        <!-- Code editor -->
+        <div style="background:#0f1923;margin:0 14px 10px;border-radius:8px;padding:12px;font-family:monospace;font-size:10px;color:#7dd3fc;line-height:1.6;border:1px solid rgba(255,255,255,0.04);">
+          <span style="color:#a78bfa;">CREATE TABLE</span> <span style="color:#fde68a;">users</span> (<br/>
+          &nbsp;&nbsp;<span style="color:#e2e8f0;">id</span> <span style="color:#34d399;">SERIAL</span> <span style="color:#a78bfa;">PRIMARY KEY</span>,<br/>
+          &nbsp;&nbsp;<span style="color:#e2e8f0;">name</span> <span style="color:#34d399;">VARCHAR</span>(100)<br/>
+          );
+        </div>
+        <!-- Footer -->
+        <div style="padding:10px 14px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid rgba(255,255,255,0.06);">
+          <div style="background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);padding:6px 14px;border-radius:6px;font-size:10px;">취소</div>
+          <div style="background:#0064E0;color:#fff;padding:6px 14px;border-radius:6px;font-size:10px;font-weight:700;">가져오기</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 풀 다크 모달</h3>
+      <p>모달 전체를 다크 테마로. DB를 드롭다운 대신 칩(chip)으로 선택. 코드 영역에 syntax highlight 적용.</p>
+    </div>
+  </div>
+
+  <!-- Option B: 상단 라이트 + 하단 다크 -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)" style="flex:1;min-width:280px;">
+    <div class="card-image" style="background:#f4f5f7;padding:20px;border-radius:8px 8px 0 0;min-height:260px;">
+      <div style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12);">
+        <!-- Header -->
+        <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;">
+          <span style="color:#111827;font-size:13px;font-weight:700;">ERD 가져오기</span>
+          <span style="color:#9ca3af;font-size:16px;">×</span>
+        </div>
+        <!-- Name + DB field -->
+        <div style="padding:12px 14px 0;display:flex;gap:8px;">
+          <div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:7px 10px;font-size:10px;color:#6b7280;">다이어그램 이름</div>
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:7px 10px;font-size:10px;color:#111827;display:flex;gap:4px;align-items:center;">PostgreSQL <span style="color:#9ca3af;">▾</span></div>
+        </div>
+        <!-- Tab -->
+        <div style="display:flex;border-bottom:1px solid #e5e7eb;margin-top:12px;padding:0 14px;">
+          <div style="padding:8px 12px;font-size:10px;font-weight:700;color:#0064E0;border-bottom:2px solid #0064E0;">DDL 입력</div>
+          <div style="padding:8px 12px;font-size:10px;font-weight:700;color:#9ca3af;">ExERD 파일</div>
+        </div>
+        <!-- Dark code area -->
+        <div style="background:#0f1923;margin:0;padding:12px 14px;font-family:monospace;font-size:10px;color:#7dd3fc;line-height:1.6;min-height:70px;">
+          <span style="color:#a78bfa;">CREATE TABLE</span> <span style="color:#fde68a;">users</span> (<br/>
+          &nbsp;&nbsp;<span style="color:#e2e8f0;">id</span> <span style="color:#34d399;">SERIAL</span> <span style="color:#a78bfa;">PRIMARY KEY</span><br/>
+          );
+        </div>
+        <!-- Footer -->
+        <div style="padding:10px 14px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #e5e7eb;">
+          <div style="border:1px solid #e5e7eb;color:#6b7280;padding:6px 14px;border-radius:6px;font-size:10px;">취소</div>
+          <div style="background:#0064E0;color:#fff;padding:6px 14px;border-radius:6px;font-size:10px;font-weight:700;">가져오기</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 하이브리드 (현재 스타일 유지)</h3>
+      <p>폼 영역은 라이트. 코드/텍스트 입력 영역만 다크 에디터로. 기존 UX 흐름은 유지.</p>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;padding:14px 18px;background:rgba(0,100,224,0.08);border-radius:10px;border:1px solid rgba(0,100,224,0.15);">
+  <p style="font-size:13px;color:#111827;margin:0;"><strong>공통 적용 사항:</strong> DB 선택에 MSSQL 추가 · .sql 파일 드래그앤드롭 import · DDL/ORM export에 파일명 표시 및 복사 버튼 랜딩 스타일로 통일</p>
+</div>

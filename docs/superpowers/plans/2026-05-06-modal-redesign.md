@@ -95,7 +95,7 @@ describe("generateDdl — MSSQL", () => {
     doc = addColumn(doc, "e1", col({ id: "c1", name: "id", type: "INT", primaryKey: true }));
     doc = addEntity(doc, { id: "e2", name: "posts" });
     doc = addColumn(doc, "e2", col({ id: "c2", name: "user_id", type: "INT", primaryKey: false }));
-    const { addRelationship } = await import("../commands/relationship-commands.js");
+    // addRelationship을 파일 상단 import에 추가: import { addRelationship } from "../commands/relationship-commands.js";
     doc = addRelationship(doc, {
       id: "r1", name: "fk_posts_user",
       sourceEntityId: "e2", sourceColumnIds: ["c2"],

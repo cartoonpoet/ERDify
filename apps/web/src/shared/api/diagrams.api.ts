@@ -26,7 +26,7 @@ export interface DiagramVersionResponse {
 
 export function createDiagram(
   projectId: string,
-  body: { name: string; dialect: "postgresql" | "mysql" | "mariadb"; content?: object }
+  body: { name: string; dialect: "postgresql" | "mysql" | "mariadb" | "mssql"; content?: object }
 ): Promise<DiagramResponse> {
   return httpClient
     .post<DiagramResponse>(`/projects/${projectId}/diagrams`, body)
