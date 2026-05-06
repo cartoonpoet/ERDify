@@ -9,7 +9,7 @@ export class CreateInvitesTable1746000000012 implements MigrationInterface {
         email VARCHAR(255) NOT NULL,
         role VARCHAR(20) NOT NULL DEFAULT 'editor',
         token VARCHAR(36) UNIQUE NOT NULL,
-        invited_by_id VARCHAR(36) NOT NULL REFERENCES users(id),
+        invited_by_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         expires_at TIMESTAMPTZ NOT NULL,
         accepted_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -21,6 +21,7 @@ export class CreateInvitesTable1746000000012 implements MigrationInterface {
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP INDEX IF EXISTS idx_invites_email_accepted`);
     await queryRunner.query(`DROP TABLE invites`);
   }
 }

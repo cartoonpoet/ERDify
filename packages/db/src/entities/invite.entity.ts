@@ -8,7 +8,7 @@ export class Invite {
   @PrimaryColumn("varchar", { length: 36 })
   id!: string;
 
-  @Column({ name: "org_id", length: 36 })
+  @Column({ name: "org_id", type: "varchar", length: 36 })
   orgId!: string;
 
   @Column({ length: 255 })
