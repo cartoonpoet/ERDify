@@ -98,4 +98,19 @@ export class OrganizationController {
   ) {
     return this.organizationService.removeMember(id, user.sub, targetUserId);
   }
+
+  @Get(":id/invites")
+  getPendingInvites(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
+    return this.organizationService.getPendingInvites(id, user.sub);
+  }
+
+  @Delete(":id/invites/:inviteId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  cancelInvite(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("inviteId") inviteId: string
+  ) {
+    return this.organizationService.cancelInvite(id, inviteId, user.sub);
+  }
 }

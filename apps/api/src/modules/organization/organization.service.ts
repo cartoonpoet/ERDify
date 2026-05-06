@@ -8,7 +8,7 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Invite, Organization, OrganizationMember, User } from "@erdify/db";
-import type { Repository } from "typeorm";
+import { IsNull, type Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import type { CreateOrganizationDto } from "./dto/create-organization.dto";
 import type { InviteMemberDto } from "./dto/invite-member.dto";
@@ -134,9 +134,9 @@ export class OrganizationService {
     requesterId: string,
     email: string,
     role: MemberRole
-  ): Promise<OrganizationMember> {
+  ): Promise<{ status: "added" | "pending" }> {
     const requesterMembership = await this.memberRepo.findOne({
-      where: { organizationId: orgId, userId: requesterId }
+      where: { organizationId: orgId, userId: requesterId },
     });
     if (!requesterMembership || requesterMembership.role === "viewer") {
       throw new ForbiddenException();
@@ -144,15 +144,57 @@ export class OrganizationService {
     if (role === "owner" && requesterMembership.role !== "owner") {
       throw new ForbiddenException("Only owners can assign the owner role");
     }
+
     const user = await this.userRepo.findOne({ where: { email } });
-    if (!user) throw new NotFoundException("User with that email not found");
-    const existing = await this.memberRepo.findOne({
-      where: { organizationId: orgId, userId: user.id }
+
+    if (user) {
+      const existing = await this.memberRepo.findOne({
+        where: { organizationId: orgId, userId: user.id },
+      });
+      if (existing) throw new ConflictException("User is already a member");
+      await this.memberRepo.save(
+        this.memberRepo.create({ organizationId: orgId, userId: user.id, role })
+      );
+      return { status: "added" };
+    }
+
+    // 미가입자 — pending invite 생성
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const existingInvite = await this.inviteRepo.findOne({
+      where: { orgId, email, acceptedAt: IsNull() },
     });
-    if (existing) throw new ConflictException("User is already a member");
-    return this.memberRepo.save(
-      this.memberRepo.create({ organizationId: orgId, userId: user.id, role })
-    );
+
+    if (existingInvite) {
+      existingInvite.role = role;
+      existingInvite.expiresAt = expiresAt;
+      await this.inviteRepo.save(existingInvite);
+    } else {
+      await this.inviteRepo.save({
+        id: randomUUID(),
+        orgId,
+        email,
+        role,
+        token: randomUUID(),
+        invitedById: requesterId,
+        expiresAt,
+        acceptedAt: null,
+      });
+    }
+
+    const [org, inviter] = await Promise.all([
+      this.orgRepo.findOne({ where: { id: orgId } }),
+      this.userRepo.findOne({ where: { id: requesterId } }),
+    ]);
+    const appUrl = this.config.get<string>("APP_URL", "https://erdify.app");
+    await this.emailService.sendInviteEmail({
+      to: email,
+      orgName: org!.name,
+      inviterName: inviter!.name,
+      role,
+      inviteUrl: `${appUrl}/register?inviteEmail=${encodeURIComponent(email)}`,
+    });
+
+    return { status: "pending" };
   }
 
   async removeMember(orgId: string, requesterId: string, targetUserId: string): Promise<void> {
@@ -165,5 +207,25 @@ export class OrganizationService {
     });
     if (!member) throw new NotFoundException("Member not found");
     await this.memberRepo.remove(member);
+  }
+
+  async getPendingInvites(orgId: string, requesterId: string): Promise<Invite[]> {
+    const membership = await this.memberRepo.findOne({
+      where: { organizationId: orgId, userId: requesterId },
+    });
+    if (!membership) throw new ForbiddenException();
+    return this.inviteRepo.find({
+      where: { orgId, acceptedAt: IsNull() },
+      order: { createdAt: "ASC" },
+    });
+  }
+
+  async cancelInvite(orgId: string, inviteId: string, requesterId: string): Promise<void> {
+    const org = await this.orgRepo.findOne({ where: { id: orgId } });
+    if (!org) throw new NotFoundException("Organization not found");
+    if (org.ownerId !== requesterId) throw new ForbiddenException();
+    const invite = await this.inviteRepo.findOne({ where: { id: inviteId, orgId } });
+    if (!invite) throw new NotFoundException("Invite not found");
+    await this.inviteRepo.remove(invite);
   }
 }
