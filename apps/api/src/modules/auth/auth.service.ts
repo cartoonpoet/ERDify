@@ -6,7 +6,7 @@ import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ApiKey, Invite, OrganizationMember, User } from "@erdify/db";
 import * as bcrypt from "bcryptjs";
-import { IsNull, type Repository } from "typeorm";
+import { IsNull, MoreThan, type Repository } from "typeorm";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { CreateApiKeyDto } from "./dto/create-api-key.dto";
 import type { LoginDto } from "./dto/login.dto";
@@ -60,14 +60,19 @@ export class AuthService {
     const user = this.userRepo.create({ id: randomUUID(), email: dto.email, passwordHash, name: dto.name });
     const saved = await this.userRepo.save(user);
 
-    // pending invite 자동 수락
+    // auto-accept pending invites
     const pendingInvites = await this.inviteRepo.find({
-      where: { email: dto.email, acceptedAt: IsNull() },
+      where: { email: dto.email, acceptedAt: IsNull(), expiresAt: MoreThan(new Date()) },
     });
     for (const invite of pendingInvites) {
-      await this.memberRepo.save(
-        this.memberRepo.create({ organizationId: invite.orgId, userId: saved.id, role: invite.role })
-      );
+      const existingMember = await this.memberRepo.findOne({
+        where: { organizationId: invite.orgId, userId: saved.id },
+      });
+      if (!existingMember) {
+        await this.memberRepo.save(
+          this.memberRepo.create({ organizationId: invite.orgId, userId: saved.id, role: invite.role })
+        );
+      }
       invite.acceptedAt = new Date();
       await this.inviteRepo.save(invite);
     }

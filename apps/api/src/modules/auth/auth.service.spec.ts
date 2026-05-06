@@ -23,14 +23,14 @@ describe("AuthService", () => {
   let userRepo: MockRepo<User>;
   let apiKeyRepo: MockRepo<ApiKey>;
   let inviteRepo: { find: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
-  let memberRepo: { create: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
+  let memberRepo: { findOne: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
   let jwtService: { sign: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     inviteRepo = { find: vi.fn(), save: vi.fn() };
-    memberRepo = { create: vi.fn(), save: vi.fn() };
+    memberRepo = { findOne: vi.fn().mockResolvedValue(null), create: vi.fn(), save: vi.fn() };
     jwtService = { sign: vi.fn() };
     service = new AuthService(
       userRepo as unknown as Repository<User>,
@@ -70,7 +70,7 @@ describe("AuthService", () => {
       vi.mocked(bcrypt.hash).mockResolvedValue("hashed" as never);
       vi.mocked(jwtService.sign).mockReturnValue("token");
 
-      const pendingInvite = { id: "inv-1", orgId: "org-1", email: "new@b.com", role: "editor", acceptedAt: null };
+      const pendingInvite = { id: "inv-1", orgId: "org-1", email: "new@b.com", role: "editor", acceptedAt: null, expiresAt: new Date(Date.now() + 86400000) };
       vi.mocked(inviteRepo.find).mockResolvedValue([pendingInvite] as unknown as Invite[]);
       vi.mocked(memberRepo.create).mockReturnValue({ organizationId: "org-1", userId: "new-user", role: "editor" } as OrganizationMember);
       vi.mocked(memberRepo.save).mockResolvedValue({} as OrganizationMember);
