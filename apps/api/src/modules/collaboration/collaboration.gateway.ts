@@ -119,7 +119,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     this.collaborationService.schedulePersist(diagramId);
   }
 
-  @OnEvent("mcp.tool_call.recorded")
+  @OnEvent("mcp.tool_call.recorded", { async: false })
   broadcastMcpActivity(data: {
     diagramId: string;
     sessionId: string;
