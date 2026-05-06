@@ -17,6 +17,7 @@ import { CreateDiagramModal } from "../components/CreateDiagramModal";
 import { ImportDiagramModal } from "../components/ImportDiagramModal";
 import { ProfileModal } from "../components/ProfileModal";
 import { MemberManagementPage } from "./MemberManagementPage";
+import { ApiKeysPanel } from "./ApiKeysPanel";
 import {
   shell, topbar, brand, brandLogo, topbarSpacer, topbarSearch, avatar, avatarImg,
   avatarWrapper, dropdown, dropdownHeader, dropdownEmail,
@@ -42,6 +43,7 @@ export const DashboardPage = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [memberManagementOpen, setMemberManagementOpen] = useState(false);
+  const [apiKeysOpen, setApiKeysOpen] = useState(false);
 
   const { data: me } = useQuery({
     queryKey: ["me"],
@@ -71,6 +73,7 @@ export const DashboardPage = () => {
       if (selectedOrganizationId === orgId) {
         reset();
         setMemberManagementOpen(false);
+        setApiKeysOpen(false);
       }
       void queryClient.invalidateQueries({ queryKey: ["orgs"] });
     },
@@ -154,6 +157,11 @@ export const DashboardPage = () => {
     setMemberManagementOpen(false);
   }
 
+  function handleApiKeys() {
+    setApiKeysOpen(true);
+    setMemberManagementOpen(false);
+  }
+
   function handleSelectProject(projectId: string) {
     if (selectedProjectId === projectId) {
       if (selectedOrganizationId) selectOrganization(selectedOrganizationId);
@@ -206,9 +214,6 @@ export const DashboardPage = () => {
               <button className={dropdownItem} onClick={() => { setMenuOpen(false); setProfileModalOpen(true); }}>
                 회원정보 수정
               </button>
-              <button className={dropdownItem} onClick={() => { setMenuOpen(false); navigate("/settings/api-keys"); }}>
-                API 키 관리
-              </button>
               <button className={`${dropdownItem} ${dropdownItemDanger}`} onClick={handleLogout}>
                 로그아웃
               </button>
@@ -232,10 +237,14 @@ export const DashboardPage = () => {
           diagrams={diagrams}
           onCreateDiagram={handleOpenDiagramModal}
           memberManagementActive={memberManagementOpen}
-          onManageMembers={() => setMemberManagementOpen(true)}
+          onManageMembers={() => { setMemberManagementOpen(true); setApiKeysOpen(false); }}
+          apiKeysActive={apiKeysOpen}
+          onApiKeys={handleApiKeys}
         />
 
-        {memberManagementOpen && selectedOrganizationId ? (
+        {apiKeysOpen ? (
+          <ApiKeysPanel />
+        ) : memberManagementOpen && selectedOrganizationId ? (
           <MemberManagementPage
             orgId={selectedOrganizationId}
             orgName={orgs.find((o) => o.id === selectedOrganizationId)?.name ?? ""}
