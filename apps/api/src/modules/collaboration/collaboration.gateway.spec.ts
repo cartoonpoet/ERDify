@@ -87,7 +87,7 @@ describe("CollaborationGateway", () => {
       expect(client.join).toHaveBeenCalledWith("d1");
       expect(client.data.diagramId).toBe("d1");
       expect(client.emit).toHaveBeenCalledWith("am:init", Array.from(docBytes));
-      expect(mockService.addPresence).toHaveBeenCalledWith("d1", "user-1", "socket-1");
+      expect(mockService.addPresence).toHaveBeenCalledWith("d1", "user-1", "socket-1", undefined);
       expect(mockServer.to).toHaveBeenCalledWith("d1");
       expect(mockServer.emit).toHaveBeenCalledWith("presence:state", []);
     });
@@ -107,12 +107,13 @@ describe("CollaborationGateway", () => {
   });
 
   describe("handleChange", () => {
-    it("applies changes, broadcasts am:change to others in room, schedules persist", () => {
+    it("applies changes, broadcasts am:change to others in room, schedules persist", async () => {
       const change = [1, 2, 3];
       const client = makeSocket();
       client.data = { userId: "user-1", diagramId: "d1" };
+      mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
 
-      gateway.handleChange(client, change);
+      await gateway.handleChange(client, change);
 
       expect(mockService.applyChanges).toHaveBeenCalledWith("d1", [Uint8Array.from(change)]);
       expect(client.to).toHaveBeenCalledWith("d1");

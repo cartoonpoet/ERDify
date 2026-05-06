@@ -27,6 +27,11 @@ function loadDomainModule(): Promise<DomainModule> {
   return domainModulePromise;
 }
 
+/** @internal Inject a pre-resolved module in tests to bypass new Function dynamic import. */
+export function _setDomainModuleForTest(m: DomainModule): void {
+  domainModulePromise = Promise.resolve(m);
+}
+
 @Injectable()
 export class DiagramsService {
   constructor(

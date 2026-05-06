@@ -1,8 +1,9 @@
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import type { Diagram, DiagramVersion, OrganizationMember, Project } from "@erdify/db";
 import type { Repository } from "typeorm";
-import { DiagramsService } from "./diagrams.service";
+import { DiagramsService, _setDomainModuleForTest } from "./diagrams.service";
 import type { DiagramDocument } from "@erdify/domain";
+import * as erdifyDomain from "@erdify/domain";
 
 const makeDoc = (overrides: Partial<DiagramDocument> = {}): DiagramDocument => ({
   format: "erdify.schema.v1",
@@ -83,6 +84,7 @@ describe("DiagramsService", () => {
       projectRepo as unknown as Repository<Project>,
       memberRepo as unknown as Repository<OrganizationMember>
     );
+    _setDomainModuleForTest(erdifyDomain);
   });
 
   describe("create", () => {
@@ -132,7 +134,11 @@ describe("DiagramsService", () => {
       diagramRepo.findOne.mockResolvedValue(diagram);
       projectRepo.findOne.mockResolvedValue(makeProject());
       memberRepo.findOne.mockResolvedValue(makeMember());
-      expect(await service.findOne("diag-1", "user-1")).toEqual(diagram);
+      expect(await service.findOne("diag-1", "user-1")).toEqual({
+        ...diagram,
+        organizationId: "org-1",
+        myRole: "editor",
+      });
     });
   });
 
