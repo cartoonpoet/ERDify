@@ -9,8 +9,7 @@ import { getMe, logout } from "../../../shared/api/auth.api";
 import { API_BASE_URL } from "../../../shared/api/httpClient";
 import { useWorkspaceStore } from "../../../shared/stores/useWorkspaceStore";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
-import { OrgRail } from "../components/OrgRail";
-import { ProjectSidebar } from "../components/ProjectSidebar";
+import { UnifiedSidebar } from "../components/UnifiedSidebar";
 import { DiagramGrid } from "../components/DiagramGrid";
 import { CreateOrgModal } from "../components/CreateOrgModal";
 import { CreateProjectModal } from "../components/CreateProjectModal";
@@ -18,9 +17,9 @@ import { CreateDiagramModal } from "../components/CreateDiagramModal";
 import { ImportDiagramModal } from "../components/ImportDiagramModal";
 import { ProfileModal } from "../components/ProfileModal";
 import {
-  shell, topbar, brand, brandLogo, topbarSpacer, avatar, avatarImg,
+  shell, topbar, brand, brandLogo, topbarSpacer, topbarSearch, avatar, avatarImg,
   avatarWrapper, dropdown, dropdownHeader, dropdownEmail,
-  dropdownItem, dropdownItemDanger, body, emptySidebar,
+  dropdownItem, dropdownItemDanger, body,
 } from "./dashboard-page.css";
 
 function getInitial(email: string | undefined | null): string {
@@ -40,6 +39,7 @@ export const DashboardPage = () => {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: me } = useQuery({
     queryKey: ["me"],
@@ -86,7 +86,6 @@ export const DashboardPage = () => {
     },
   });
 
-  const selectedOrg = orgs.find((o) => o.id === selectedOrganizationId) ?? null;
   const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null;
 
   async function handleLogout() {
@@ -124,8 +123,14 @@ export const DashboardPage = () => {
   function handleDiagramImported(id: string) { navigate(`/diagrams/${id}`); }
 
   function handleDeleteOrg(id: string) { deleteOrgMutation.mutate(id); }
-  function handleDeleteProject(id: string) { deleteProjectMutation.mutate(id); }
   function handleDeleteDiagram(id: string) { deleteDiagramMutation.mutate(id); }
+
+  function handleSelectProject(projectId: string) {
+    selectProject(projectId);
+    setSearchQuery("");
+  }
+
+  function handleDeleteProject(id: string) { deleteProjectMutation.mutate(id); }
 
   return (
     <div className={shell}>
@@ -134,6 +139,16 @@ export const DashboardPage = () => {
           <img src="/logo.svg" alt="ERDify" className={brandLogo} />
         </div>
         <div className={topbarSpacer} />
+
+        <input
+          className={topbarSearch}
+          type="text"
+          placeholder="다이어그램 검색... ⌘K"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          disabled={!selectedProjectId}
+          aria-label="다이어그램 검색"
+        />
 
         <div className={avatarWrapper} tabIndex={-1} onBlur={handleAvatarMenuBlur}>
           {me?.avatarUrl ? (
@@ -170,26 +185,20 @@ export const DashboardPage = () => {
       </header>
 
       <div className={body}>
-        <OrgRail
+        <UnifiedSidebar
           orgs={orgs}
           selectedOrgId={selectedOrganizationId}
-          onSelect={selectOrganization}
+          onSelectOrg={selectOrganization}
           onDeleteOrg={handleDeleteOrg}
           onCreateOrg={handleOpenOrgModal}
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          onSelectProject={handleSelectProject}
+          onDeleteProject={handleDeleteProject}
+          onCreateProject={handleOpenProjectModal}
+          diagrams={diagrams}
+          onCreateDiagram={handleOpenDiagramModal}
         />
-
-        {selectedOrg ? (
-          <ProjectSidebar
-            org={selectedOrg}
-            projects={projects}
-            selectedProjectId={selectedProjectId}
-            onSelect={selectProject}
-            onDeleteProject={handleDeleteProject}
-            onCreateProject={handleOpenProjectModal}
-          />
-        ) : (
-          <div className={emptySidebar} />
-        )}
 
         <DiagramGrid
           diagrams={diagrams}
@@ -199,6 +208,7 @@ export const DashboardPage = () => {
           {...(selectedProjectId ? { onImportDiagram: handleOpenImportModal } : {})}
           onDeleteDiagram={handleDeleteDiagram}
           loading={diagramsLoading && !!selectedProjectId}
+          {...(searchQuery ? { filterQuery: searchQuery } : {})}
         />
       </div>
 

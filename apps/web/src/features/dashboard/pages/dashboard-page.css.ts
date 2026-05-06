@@ -31,6 +31,25 @@ export const brandLogo = style({
 
 export const topbarSpacer = style({ flex: 1 });
 
+export const topbarSearch = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space["2"],
+  background: vars.color.surfaceTertiary,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.md,
+  padding: `${vars.space["1"]} ${vars.space["3"]}`,
+  fontSize: vars.font.size.sm,
+  color: vars.color.textSecondary,
+  width: "220px",
+  fontFamily: vars.font.family,
+  outline: "none",
+  selectors: {
+    "&:focus": { borderColor: vars.color.primary, boxShadow: `0 0 0 3px ${vars.color.focusRing}` },
+    "&:disabled": { opacity: 0.5, cursor: "not-allowed" },
+  },
+});
+
 export const avatar = style({
   width: "30px",
   height: "30px",
@@ -40,8 +59,8 @@ export const avatar = style({
   alignItems: "center",
   justifyContent: "center",
   color: "#fff",
-  fontSize: "12px",
-  fontWeight: "600",
+  fontSize: vars.font.size.sm,
+  fontWeight: vars.font.weight.semibold,
   cursor: "pointer",
 });
 
@@ -56,14 +75,8 @@ export const avatarImg = style({
 
 export const body = style({
   display: "grid",
-  gridTemplateColumns: "52px 220px 1fr",
+  gridTemplateColumns: "260px 1fr",
   overflow: "hidden",
-});
-
-export const emptySidebar = style({
-  width: "220px",
-  borderRight: `1px solid ${vars.color.border}`,
-  flexShrink: 0,
 });
 
 export const avatarWrapper = style({
@@ -90,8 +103,8 @@ export const dropdownHeader = style({
 });
 
 export const dropdownEmail = style({
-  fontSize: "13px",
-  fontWeight: "600",
+  fontSize: vars.font.size.md,
+  fontWeight: vars.font.weight.semibold,
   color: vars.color.textPrimary,
   overflow: "hidden",
   textOverflow: "ellipsis",
@@ -107,7 +120,7 @@ export const dropdownItem = style({
   background: "none",
   border: "none",
   cursor: "pointer",
-  fontSize: "13px",
+  fontSize: vars.font.size.md,
   color: vars.color.textPrimary,
   fontFamily: vars.font.family,
   textAlign: "left",
