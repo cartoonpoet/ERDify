@@ -266,6 +266,24 @@ describe("OrganizationService", () => {
         expect.objectContaining({ to: "new@b.com" })
       );
     });
+
+    it("reuses existing pending invite and updates role/expiresAt/invitedById", async () => {
+      const existingInvite = {
+        id: "inv-old", orgId: "org-1", email: "new@b.com",
+        role: "viewer", expiresAt: new Date(), invitedById: "other-user", token: "old-token",
+      };
+      memberRepo.findOne.mockResolvedValue(makeMember({ role: "owner" }));
+      userRepo.findOne.mockResolvedValueOnce(null);
+      inviteRepo.findOne.mockResolvedValue(existingInvite);
+      inviteRepo.save.mockResolvedValue({});
+      orgRepo.findOne.mockResolvedValue(makeOrg());
+      userRepo.findOne.mockResolvedValueOnce({ id: "user-1", name: "Owner" });
+      const result = await service.inviteByEmail("org-1", "user-1", "new@b.com", "editor");
+      expect(result).toEqual({ status: "pending" });
+      expect(inviteRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ role: "editor", invitedById: "user-1" })
+      );
+    });
   });
 
   describe("getPendingInvites", () => {
@@ -285,6 +303,11 @@ describe("OrganizationService", () => {
   });
 
   describe("cancelInvite", () => {
+    it("throws NotFoundException if org not found", async () => {
+      orgRepo.findOne.mockResolvedValue(null);
+      await expect(service.cancelInvite("org-1", "inv-1", "user-1")).rejects.toThrow(NotFoundException);
+    });
+
     it("throws ForbiddenException if requester is not owner", async () => {
       orgRepo.findOne.mockResolvedValue(makeOrg({ ownerId: "other" }));
       await expect(service.cancelInvite("org-1", "inv-1", "user-1")).rejects.toThrow(ForbiddenException);

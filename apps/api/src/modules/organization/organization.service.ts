@@ -8,7 +8,7 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Invite, Organization, OrganizationMember, User } from "@erdify/db";
-import { IsNull, type Repository } from "typeorm";
+import { IsNull, MoreThan, type Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import type { CreateOrganizationDto } from "./dto/create-organization.dto";
 import type { InviteMemberDto } from "./dto/invite-member.dto";
@@ -167,6 +167,7 @@ export class OrganizationService {
     if (existingInvite) {
       existingInvite.role = role;
       existingInvite.expiresAt = expiresAt;
+      existingInvite.invitedById = requesterId;
       await this.inviteRepo.save(existingInvite);
     } else {
       await this.inviteRepo.save({
@@ -215,7 +216,7 @@ export class OrganizationService {
     });
     if (!membership) throw new ForbiddenException();
     return this.inviteRepo.find({
-      where: { orgId, acceptedAt: IsNull() },
+      where: { orgId, acceptedAt: IsNull(), expiresAt: MoreThan(new Date()) },
       order: { createdAt: "ASC" },
     });
   }
