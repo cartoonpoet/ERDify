@@ -21,6 +21,7 @@ import { CollaborationGateway } from "./collaboration.gateway";
       },
     })
   ],
-  providers: [CollaborationService, CollaborationGateway]
+  providers: [CollaborationService, CollaborationGateway],
+  exports: [CollaborationGateway],
 })
 export class CollaborationModule {}

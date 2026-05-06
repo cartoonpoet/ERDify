@@ -118,6 +118,13 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     this.collaborationService.schedulePersist(diagramId);
   }
 
+  broadcastMcpActivity(
+    _diagramId: string,
+    _data: { sessionId: string; summary: string; toolCall: { tool: string; summary: string } }
+  ): void {
+    // implemented in Task 4
+  }
+
   @SubscribeMessage("presence:update")
   handlePresenceUpdate(
     @ConnectedSocket() client: Socket,
