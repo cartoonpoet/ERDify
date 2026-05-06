@@ -1,5 +1,5 @@
 import * as bcrypt from "bcryptjs";
-import { ConflictException, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import type { JwtService } from "@nestjs/jwt";
 import type { ApiKey, User } from "@erdify/db";
 import type { Repository } from "typeorm";
@@ -15,6 +15,7 @@ type MockRepo<T> = {
   create: ReturnType<typeof vi.fn>;
   save: ReturnType<typeof vi.fn>;
   find: ReturnType<typeof vi.fn>;
+  count: ReturnType<typeof vi.fn>;
 };
 
 describe("AuthService", () => {
@@ -24,8 +25,8 @@ describe("AuthService", () => {
   let jwtService: { sign: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn() };
-    apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn() };
+    userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
+    apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     jwtService = { sign: vi.fn() };
     service = new AuthService(
       userRepo as unknown as Repository<User>,
@@ -83,17 +84,109 @@ describe("AuthService", () => {
   });
 
   describe("generateApiKey", () => {
-    it("creates DB entry and returns erd_ prefixed key", async () => {
-      vi.mocked(apiKeyRepo.create).mockReturnValue({} as ApiKey);
-      vi.mocked(apiKeyRepo.save).mockResolvedValue({} as ApiKey);
+    it("auto-names key when no name is provided", async () => {
+      vi.mocked(apiKeyRepo.count).mockResolvedValue(2);
+      const saved = { id: "key-id", name: "API Key #3", prefix: "erd_abcdef012345", expiresAt: null, createdAt: new Date("2026-01-01") } as unknown as ApiKey;
+      vi.mocked(apiKeyRepo.create).mockReturnValue(saved);
+      vi.mocked(apiKeyRepo.save).mockResolvedValue(saved);
 
-      const result = await service.generateApiKey("user-1");
+      const result = await service.generateApiKey("user-1", {});
 
       expect(result.apiKey).toMatch(/^erd_[a-f0-9]{64}$/);
+      expect(result.name).toBe("API Key #3");
       expect(apiKeyRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: "user-1", prefix: expect.stringMatching(/^erd_/) })
+        expect.objectContaining({ userId: "user-1", name: "API Key #3" })
       );
-      expect(apiKeyRepo.save).toHaveBeenCalled();
+    });
+
+    it("uses provided name and does not call count", async () => {
+      const saved = { id: "key-id", name: "Production", prefix: "erd_abcdef012345", expiresAt: null, createdAt: new Date("2026-01-01") } as unknown as ApiKey;
+      vi.mocked(apiKeyRepo.create).mockReturnValue(saved);
+      vi.mocked(apiKeyRepo.save).mockResolvedValue(saved);
+
+      const result = await service.generateApiKey("user-1", { name: "Production" });
+
+      expect(result.name).toBe("Production");
+      expect(apiKeyRepo.count).not.toHaveBeenCalled();
+    });
+
+    it("stores expiresAt when provided", async () => {
+      vi.mocked(apiKeyRepo.count).mockResolvedValue(0);
+      const expiresAt = new Date("2026-12-31");
+      const saved = { id: "key-id", name: "API Key #1", prefix: "erd_abc", expiresAt, createdAt: new Date() } as unknown as ApiKey;
+      vi.mocked(apiKeyRepo.create).mockReturnValue(saved);
+      vi.mocked(apiKeyRepo.save).mockResolvedValue(saved);
+
+      const result = await service.generateApiKey("user-1", { expiresAt: "2026-12-31T00:00:00.000Z" });
+
+      expect(apiKeyRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ expiresAt })
+      );
+      expect(result.expiresAt).toEqual(expiresAt);
+    });
+  });
+
+  describe("regenerateApiKey", () => {
+    it("throws NotFoundException if key not found or already revoked", async () => {
+      vi.mocked(apiKeyRepo.findOne).mockResolvedValue(null);
+      await expect(service.regenerateApiKey("user-1", "key-id")).rejects.toThrow(NotFoundException);
+    });
+
+    it("revokes existing key and returns new key with same name and expiresAt", async () => {
+      const expiresAt = new Date("2026-12-31");
+      const existing = { id: "key-id", userId: "user-1", name: "Production", expiresAt, revokedAt: null } as unknown as ApiKey;
+      vi.mocked(apiKeyRepo.findOne).mockResolvedValue(existing);
+      const newSaved = { id: "new-id", name: "Production", prefix: "erd_newprefix12", expiresAt, createdAt: new Date() } as unknown as ApiKey;
+      vi.mocked(apiKeyRepo.create).mockReturnValue(newSaved);
+      vi.mocked(apiKeyRepo.save)
+        .mockResolvedValueOnce({ ...existing, revokedAt: new Date() } as unknown as ApiKey)
+        .mockResolvedValueOnce(newSaved);
+
+      const result = await service.regenerateApiKey("user-1", "key-id");
+
+      expect(apiKeyRepo.save).toHaveBeenNthCalledWith(1, expect.objectContaining({ revokedAt: expect.any(Date) }));
+      expect(result.apiKey).toMatch(/^erd_[a-f0-9]{64}$/);
+      expect(result.name).toBe("Production");
+      expect(result.expiresAt).toEqual(expiresAt);
+    });
+  });
+
+  describe("validateApiKey", () => {
+    it("returns null if key does not exist", async () => {
+      vi.mocked(apiKeyRepo.findOne).mockResolvedValue(null);
+      expect(await service.validateApiKey("erd_badkey")).toBeNull();
+    });
+
+    it("returns null if key is expired", async () => {
+      vi.mocked(apiKeyRepo.findOne).mockResolvedValue({
+        userId: "user-1",
+        expiresAt: new Date(Date.now() - 1000),
+        user: { email: "a@b.com" },
+      } as unknown as ApiKey);
+
+      expect(await service.validateApiKey("erd_expiredkey")).toBeNull();
+    });
+
+    it("returns JwtPayload if key is valid and not expired", async () => {
+      vi.mocked(apiKeyRepo.findOne).mockResolvedValue({
+        userId: "user-1",
+        expiresAt: new Date(Date.now() + 86400000),
+        user: { email: "a@b.com" },
+      } as unknown as ApiKey);
+
+      const result = await service.validateApiKey("erd_validkey");
+      expect(result).toEqual({ sub: "user-1", email: "a@b.com" });
+    });
+
+    it("returns JwtPayload if key has no expiry (무기한)", async () => {
+      vi.mocked(apiKeyRepo.findOne).mockResolvedValue({
+        userId: "user-1",
+        expiresAt: null,
+        user: { email: "a@b.com" },
+      } as unknown as ApiKey);
+
+      const result = await service.validateApiKey("erd_noexpirykey");
+      expect(result).toEqual({ sub: "user-1", email: "a@b.com" });
     });
   });
 });
