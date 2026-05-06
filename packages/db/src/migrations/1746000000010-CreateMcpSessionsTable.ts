@@ -3,7 +3,7 @@ import type { MigrationInterface, QueryRunner } from "typeorm";
 export class CreateMcpSessionsTable1746000000010 implements MigrationInterface {
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE "mcp_sessions" (
+      CREATE TABLE IF NOT EXISTS "mcp_sessions" (
         "id"                   VARCHAR(36)  NOT NULL,
         "diagram_id"           VARCHAR(36)  NOT NULL,
         "tool_calls"           JSONB        NOT NULL DEFAULT '[]',
@@ -16,9 +16,14 @@ export class CreateMcpSessionsTable1746000000010 implements MigrationInterface {
           FOREIGN KEY ("diagram_id") REFERENCES "diagrams"("id") ON DELETE CASCADE
       )
     `);
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS "idx_mcp_sessions_diagram_id"
+        ON "mcp_sessions" ("diagram_id")
+    `);
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE "mcp_sessions"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "idx_mcp_sessions_diagram_id"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "mcp_sessions"`);
   }
 }

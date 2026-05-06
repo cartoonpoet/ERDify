@@ -9,4 +9,3 @@ export { Organization } from "./entities/organization.entity";
 export { Project } from "./entities/project.entity";
 export { User } from "./entities/user.entity";
 export { createTypeOrmOptions } from "./typeorm/create-typeorm-options";
-export { CreateMcpSessionsTable1746000000010 } from "./migrations/1746000000010-CreateMcpSessionsTable";

@@ -9,8 +9,8 @@ export class McpSession {
   @Column({ name: "diagram_id", length: 36 })
   diagramId!: string;
 
-  @Column({ type: "jsonb", default: [] })
-  tool_calls!: { tool: string; summary: string }[];
+  @Column({ name: "tool_calls", type: "jsonb", default: [] })
+  toolCalls!: { tool: string; summary: string }[];
 
   @Column({ type: "varchar", length: 500, nullable: true })
   summary!: string | null;
@@ -24,7 +24,7 @@ export class McpSession {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
-  @ManyToOne("Diagram", "mcpSessions")
+  @ManyToOne("Diagram")
   @JoinColumn({ name: "diagram_id" })
   diagram!: Diagram;
 }
