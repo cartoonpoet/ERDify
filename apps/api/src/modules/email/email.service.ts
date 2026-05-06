@@ -16,14 +16,16 @@ export class EmailService {
   private readonly transporter: nodemailer.Transporter;
 
   constructor(private readonly config: ConfigService) {
+    const smtpUser = config.get<string>("SMTP_USER", "");
+    const auth = smtpUser
+      ? { user: smtpUser, pass: config.get<string>("SMTP_PASS", "") }
+      : undefined;
+
     this.transporter = nodemailer.createTransport({
       host: config.get<string>("SMTP_HOST", "localhost"),
       port: config.get<number>("SMTP_PORT", 587),
-      secure: config.get<boolean>("SMTP_SECURE", false),
-      auth: {
-        user: config.get<string>("SMTP_USER", ""),
-        pass: config.get<string>("SMTP_PASS", ""),
-      },
+      secure: config.get<string>("SMTP_SECURE", "false") === "true",
+      auth,
     });
   }
 
