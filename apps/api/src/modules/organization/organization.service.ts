@@ -8,7 +8,7 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Invite, Organization, OrganizationMember, User } from "@erdify/db";
-import { IsNull, type Repository } from "typeorm";
+import type { Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import type { CreateOrganizationDto } from "./dto/create-organization.dto";
 import type { InviteMemberDto } from "./dto/invite-member.dto";
