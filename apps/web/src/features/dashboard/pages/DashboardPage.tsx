@@ -16,7 +16,6 @@ import { CreateOrgModal } from "../components/CreateOrgModal";
 import { CreateProjectModal } from "../components/CreateProjectModal";
 import { CreateDiagramModal } from "../components/CreateDiagramModal";
 import { ImportDiagramModal } from "../components/ImportDiagramModal";
-import { ApiKeyModal } from "../components/ApiKeyModal";
 import { ProfileModal } from "../components/ProfileModal";
 import {
   shell, topbar, brand, brandLogo, topbarSpacer, avatar, avatarImg,
@@ -39,7 +38,6 @@ export const DashboardPage = () => {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [diagramModalOpen, setDiagramModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
-  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -160,8 +158,8 @@ export const DashboardPage = () => {
               <button className={dropdownItem} onClick={() => { setMenuOpen(false); setProfileModalOpen(true); }}>
                 회원정보 수정
               </button>
-              <button className={dropdownItem} onClick={() => { setMenuOpen(false); setApiKeyModalOpen(true); }}>
-                MCP API 키
+              <button className={dropdownItem} onClick={() => { setMenuOpen(false); navigate("/settings/api-keys"); }}>
+                API 키 관리
               </button>
               <button className={`${dropdownItem} ${dropdownItemDanger}`} onClick={handleLogout}>
                 로그아웃
@@ -227,11 +225,6 @@ export const DashboardPage = () => {
           projectId={selectedProjectId}
         />
       )}
-
-      <ApiKeyModal
-        open={apiKeyModalOpen}
-        onClose={() => setApiKeyModalOpen(false)}
-      />
 
       <ProfileModal
         open={profileModalOpen}
