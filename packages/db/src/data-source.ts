@@ -19,6 +19,7 @@ import { AddAvatarUrlToUsers1746000000007 } from "./migrations/1746000000007-Add
 import { AddShareTokenToDiagrams1746000000008 } from "./migrations/1746000000008-AddShareTokenToDiagrams";
 import { CreateApiKeysTable1746000000009 } from "./migrations/1746000000009-CreateApiKeysTable";
 import { CreateMcpSessionsTable1746000000010 } from "./migrations/1746000000010-CreateMcpSessionsTable";
+import { AddNameExpiresAtToApiKeys1746000000011 } from "./migrations/1746000000011-AddNameExpiresAtToApiKeys";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -38,5 +39,6 @@ export const AppDataSource = new DataSource({
     AddShareTokenToDiagrams1746000000008,
     CreateApiKeysTable1746000000009,
     CreateMcpSessionsTable1746000000010,
+    AddNameExpiresAtToApiKeys1746000000011,
   ]
 });

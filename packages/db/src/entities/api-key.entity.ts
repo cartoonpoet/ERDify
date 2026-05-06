@@ -13,13 +13,17 @@ export class ApiKey {
   @JoinColumn({ name: "user_id" })
   user!: User;
 
-  // SHA-256 hex of the raw key — never store the raw key
   @Column({ name: "key_hash", length: 64, unique: true })
   keyHash!: string;
 
-  // First 16 chars of the raw key for display (e.g. "erd_a1b2c3d4...")
   @Column({ length: 16 })
   prefix!: string;
+
+  @Column({ type: "varchar", length: 100, nullable: true })
+  name!: string | null;
+
+  @Column({ name: "expires_at", type: "timestamptz", nullable: true })
+  expiresAt!: Date | null;
 
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt!: Date;
