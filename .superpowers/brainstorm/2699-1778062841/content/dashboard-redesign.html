@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERDify 대시보드 리디자인</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 32px 24px; gap: 48px; min-height: 100vh; }
+
+  .page-title { font-size: 15px; font-weight: 700; color: #1C2B33; text-align: center; }
+  .page-sub { font-size: 13px; color: #5D6C7B; text-align: center; margin-top: 4px; }
+
+  /* ── MOCKUP SHELL ── */
+  .shell {
+    width: 100%;
+    max-width: 1000px;
+    height: 580px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+    display: grid;
+    grid-template-rows: 48px 1fr;
+    background: #F8F9FB;
+    border: 1px solid #DEE3E9;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .shell:hover { transform: translateY(-2px); box-shadow: 0 28px 72px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.08); }
+  .shell.selected { outline: 2.5px solid #0064E0; outline-offset: 3px; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: #FFFFFF;
+    border-bottom: 1px solid #DEE3E9;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+  }
+  .logo { font-size: 15px; font-weight: 800; color: #0064E0; letter-spacing: -0.5px; }
+  .logo span { color: #1C2B33; }
+  .topbar-spacer { flex: 1; }
+  .topbar-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #F1F4F7;
+    border: 1px solid #DEE3E9;
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 11px;
+    color: #5D6C7B;
+    width: 180px;
+  }
+  .topbar-avatar {
+    width: 28px; height: 28px;
+    background: #0064E0;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .topbar-new-btn {
+    background: #0064E0;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 5px 11px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* ── BODY GRID ── */
+  .body {
+    display: grid;
+    grid-template-columns: 52px 220px 1fr;
+    overflow: hidden;
+  }
+
+  /* ── ORG RAIL ── */
+  .org-rail {
+    background: #FFFFFF;
+    border-right: 1px solid #DEE3E9;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 6px;
+    overflow: hidden;
+  }
+  .org-icon {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .org-icon.active { background: #EEF4FF; color: #0064E0; }
+  .org-icon.inactive { background: #F1F4F7; color: #5D6C7B; }
+  .org-add { width: 32px; height: 32px; border-radius: 9px; background: none; border: 1.5px dashed #CBD2D9; color: #BCC0C4; font-size: 16px; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+
+  /* ── PROJECT SIDEBAR ── */
+  .sidebar {
+    background: #FFFFFF;
+    border-right: 1px solid #DEE3E9;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 12px 14px 8px;
+    border-bottom: 1px solid #DEE3E9;
+  }
+  .sidebar-org-name { font-size: 11px; font-weight: 700; color: #1C2B33; }
+  .sidebar-org-sub { font-size: 10px; color: #5D6C7B; margin-top: 1px; }
+  .sidebar-section-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #BCC0C4;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    padding: 10px 14px 4px;
+  }
+  .sidebar-project {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 0;
+  }
+  .sidebar-project.active { background: #EEF4FF; color: #0064E0; font-weight: 600; }
+  .sidebar-project.inactive { color: #5D6C7B; }
+  .sidebar-project.inactive:hover { background: #F1F4F7; }
+  .proj-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .proj-dot.active { background: #0064E0; }
+  .proj-dot.inactive { background: #CBD2D9; }
+  .proj-count { margin-left: auto; font-size: 9px; color: #BCC0C4; font-weight: 600; }
+  .sidebar-new-proj {
+    margin: 8px 14px;
+    padding: 5px 10px;
+    border: 1.5px dashed #CBD2D9;
+    border-radius: 7px;
+    font-size: 10px;
+    color: #BCC0C4;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  /* ── MAIN AREA ── */
+  .main {
+    background: #F8F9FB;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .main-header {
+    padding: 14px 18px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .main-title { font-size: 14px; font-weight: 700; color: #1C2B33; flex: 1; }
+  .main-btn-secondary {
+    padding: 5px 10px;
+    border: 1px solid #DEE3E9;
+    border-radius: 7px;
+    background: #fff;
+    font-size: 10px;
+    font-weight: 500;
+    color: #5D6C7B;
+  }
+  .main-btn-primary {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 7px;
+    background: #0064E0;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .filter-row {
+    display: flex;
+    gap: 6px;
+    padding: 10px 18px 6px;
+  }
+  .filter-chip {
+    padding: 3px 9px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .filter-chip.active { background: #EEF4FF; color: #0064E0; font-weight: 600; border-color: #c5d8ff; }
+  .filter-chip.inactive { background: #fff; color: #5D6C7B; border-color: #DEE3E9; }
+
+  /* ── DIAGRAM CARDS ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 4px 18px 18px;
+    overflow-y: auto;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #DEE3E9;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: box-shadow 0.12s;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .card-preview {
+    height: 70px;
+    background: #F8F9FB;
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    align-items: flex-start;
+    border-bottom: 1px solid #F1F4F7;
+  }
+  .mini-table {
+    background: #fff;
+    border: 1px solid #DEE3E9;
+    border-radius: 5px;
+    overflow: hidden;
+    font-size: 7px;
+    min-width: 58px;
+  }
+  .mini-thead {
+    background: #EEF4FF;
+    color: #0064E0;
+    font-weight: 700;
+    padding: 2px 5px;
+    font-size: 7px;
+  }
+  .mini-row { padding: 1px 5px; color: #5D6C7B; border-top: 1px solid #f0f0f0; }
+  .card-body { padding: 8px 10px; }
+  .card-name { font-size: 11px; font-weight: 600; color: #1C2B33; }
+  .card-meta { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
+  .dialect-badge {
+    font-size: 8px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #F1F4F7;
+    color: #5D6C7B;
+    text-transform: uppercase;
+  }
+  .card-date { font-size: 9px; color: #BCC0C4; }
+
+  /* new card */
+  .new-card {
+    background: none;
+    border: 1.5px dashed #CBD2D9;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 115px;
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .new-card:hover { border-color: #0064E0; background: #f5f8ff; }
+  .new-card-icon { width: 24px; height: 24px; border-radius: 50%; background: #EEF4FF; color: #0064E0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .new-card-label { font-size: 10px; color: #5D6C7B; font-weight: 500; }
+
+  /* ── LABEL ── */
+  .label { font-size: 12px; font-weight: 700; color: #1C2B33; text-align: center; margin-top: 8px; }
+  .desc { font-size: 11px; color: #5D6C7B; text-align: center; margin-top: 3px; }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="page-title">ERDify 대시보드 리디자인 시안</div>
+  <div class="page-sub">클릭해서 선택해주세요</div>
+</div>
+
+<!-- ── OPTION A: 현재 레이아웃 유지 + 폴리시 ── -->
+<div>
+  <div class="shell" id="optA" onclick="select('a')">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="logo">ERD<span>ify</span></div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-search">🔍 다이어그램 검색</div>
+      <div class="topbar-new-btn">+ 새 ERD</div>
+      <div class="topbar-avatar">J</div>
+    </div>
+    <!-- Body -->
+    <div class="body">
+      <!-- Org Rail -->
+      <div class="org-rail">
+        <div class="org-icon active">A</div>
+        <div class="org-icon inactive">M</div>
+        <div class="org-add">+</div>
+      </div>
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-org-name">Acme Corp</div>
+          <div class="sidebar-org-sub">3개 프로젝트</div>
+        </div>
+        <div class="sidebar-section-label">프로젝트</div>
+        <div class="sidebar-project active">
+          <div class="proj-dot active"></div>
+          Backend API
+          <div class="proj-count">4</div>
+        </div>
+        <div class="sidebar-project inactive">
+          <div class="proj-dot inactive"></div>
+          Auth Service
+          <div class="proj-count">2</div>
+        </div>
+        <div class="sidebar-project inactive">
+          <div class="proj-dot inactive"></div>
+          Analytics
+          <div class="proj-count">1</div>
+        </div>
+        <div class="sidebar-new-proj">+ 새 프로젝트</div>
+      </div>
+      <!-- Main -->
+      <div class="main">
+        <div class="main-header">
+          <div class="main-title">Backend API</div>
+          <div class="main-btn-secondary">가져오기</div>
+          <div class="main-btn-primary">+ 새 ERD</div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-chip active">전체</div>
+          <div class="filter-chip inactive">최근 수정</div>
+          <div class="filter-chip inactive">내가 만든</div>
+        </div>
+        <div class="cards-grid">
+          <div class="card">
+            <div class="card-preview">
+              <div class="mini-table">
+                <div class="mini-thead">users</div>
+                <div class="mini-row">id</div>
+                <div class="mini-row">email</div>
+                <div class="mini-row">name</div>
+              </div>
+              <div class="mini-table">
+                <div class="mini-thead">orders</div>
+                <div class="mini-row">id</div>
+                <div class="mini-row">user_id</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="card-name">사용자 스키마 v2</div>
+              <div class="card-meta">
+                <div class="dialect-badge">PostgreSQL</div>
+                <div class="card-date">3시간 전</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-preview">
+              <div class="mini-table">
+                <div class="mini-thead">products</div>
+                <div class="mini-row">id</div>
+                <div class="mini-row">name</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="card-name">상품 카탈로그</div>
+              <div class="card-meta">
+                <div class="dialect-badge">MySQL</div>
+                <div class="card-date">1일 전</div>
+              </div>
+            </div>
+          </div>
+          <div class="new-card">
+            <div class="new-card-icon">+</div>
+            <div class="new-card-label">새 ERD 만들기</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="label">A — 현재 레이아웃 유지 + 검색바 추가</div>
+  <div class="desc">3단 구조 그대로, Topbar에 검색 + 글로벌 "새 ERD" 추가</div>
+</div>
+
+<!-- ── OPTION B: 사이드바 통합 (Notion 스타일) ── -->
+<div>
+  <div class="shell" id="optB" onclick="select('b')">
+    <!-- Topbar -->
+    <div class="topbar" style="background:#1C2B33; border-bottom-color: #2d3f4d;">
+      <div class="logo" style="color:#fff;">ERD<span style="color:#4d9fff;">ify</span></div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-search" style="background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.12); color:rgba(255,255,255,0.5);">🔍 다이어그램 검색</div>
+      <div class="topbar-new-btn">+ 새 ERD</div>
+      <div class="topbar-avatar">J</div>
+    </div>
+    <!-- Body: 2-col (sidebar 260px, main 1fr) -->
+    <div class="body" style="grid-template-columns: 260px 1fr;">
+      <!-- Unified Sidebar -->
+      <div class="sidebar" style="background: #fff;">
+        <!-- Org selector -->
+        <div style="padding: 10px 12px; border-bottom: 1px solid #DEE3E9; display:flex; align-items:center; gap:8px;">
+          <div style="width:26px;height:26px;border-radius:7px;background:#EEF4FF;color:#0064E0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">A</div>
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:700;color:#1C2B33;">Acme Corp</div>
+            <div style="font-size:9px;color:#5D6C7B;">3 프로젝트</div>
+          </div>
+          <div style="font-size:10px;color:#BCC0C4;">⌄</div>
+        </div>
+        <!-- Projects tree -->
+        <div style="flex:1;overflow-y:auto;padding:8px 0;">
+          <div style="padding:4px 12px;font-size:9px;font-weight:700;color:#BCC0C4;letter-spacing:0.6px;text-transform:uppercase;">프로젝트</div>
+          <!-- project row active -->
+          <div style="padding:5px 12px;display:flex;align-items:center;gap:7px;background:#EEF4FF;cursor:pointer;">
+            <span style="font-size:11px;">📁</span>
+            <span style="font-size:11px;font-weight:600;color:#0064E0;flex:1;">Backend API</span>
+            <span style="font-size:9px;color:#0064E0;font-weight:600;">4</span>
+          </div>
+          <!-- sub-items -->
+          <div style="padding:3px 12px 3px 30px;display:flex;align-items:center;gap:5px;cursor:pointer;background:#f5f8ff;">
+            <span style="font-size:9px;color:#5D6C7B;width:6px;height:6px;background:#0064E0;border-radius:50%;flex-shrink:0;"></span>
+            <span style="font-size:10px;color:#5D6C7B;">사용자 스키마 v2</span>
+          </div>
+          <div style="padding:3px 12px 3px 30px;display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <span style="font-size:9px;color:#5D6C7B;width:6px;height:6px;background:#CBD2D9;border-radius:50%;flex-shrink:0;"></span>
+            <span style="font-size:10px;color:#5D6C7B;">상품 카탈로그</span>
+          </div>
+          <!-- project inactive -->
+          <div style="padding:5px 12px;display:flex;align-items:center;gap:7px;cursor:pointer;">
+            <span style="font-size:11px;">📁</span>
+            <span style="font-size:11px;color:#5D6C7B;flex:1;">Auth Service</span>
+            <span style="font-size:9px;color:#BCC0C4;">2</span>
+          </div>
+          <div style="padding:5px 12px;display:flex;align-items:center;gap:7px;cursor:pointer;">
+            <span style="font-size:11px;">📁</span>
+            <span style="font-size:11px;color:#5D6C7B;flex:1;">Analytics</span>
+            <span style="font-size:9px;color:#BCC0C4;">1</span>
+          </div>
+          <div style="margin:6px 12px;padding:4px 8px;border:1.5px dashed #CBD2D9;border-radius:7px;font-size:10px;color:#BCC0C4;text-align:center;cursor:pointer;">+ 새 프로젝트</div>
+        </div>
+      </div>
+      <!-- Main -->
+      <div class="main">
+        <div class="main-header">
+          <div class="main-title">Backend API</div>
+          <div class="main-btn-secondary">가져오기</div>
+          <div class="main-btn-primary">+ 새 ERD</div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-chip active">전체</div>
+          <div class="filter-chip inactive">최근 수정</div>
+          <div class="filter-chip inactive">내가 만든</div>
+        </div>
+        <div class="cards-grid">
+          <div class="card">
+            <div class="card-preview">
+              <div class="mini-table"><div class="mini-thead">users</div><div class="mini-row">id</div><div class="mini-row">email</div></div>
+              <div class="mini-table"><div class="mini-thead">orders</div><div class="mini-row">id</div></div>
+            </div>
+            <div class="card-body"><div class="card-name">사용자 스키마 v2</div><div class="card-meta"><div class="dialect-badge">PostgreSQL</div><div class="card-date">3시간 전</div></div></div>
+          </div>
+          <div class="card">
+            <div class="card-preview"><div class="mini-table"><div class="mini-thead">products</div><div class="mini-row">id</div></div></div>
+            <div class="card-body"><div class="card-name">상품 카탈로그</div><div class="card-meta"><div class="dialect-badge">MySQL</div><div class="card-date">1일 전</div></div></div>
+          </div>
+          <div class="new-card"><div class="new-card-icon">+</div><div class="new-card-label">새 ERD 만들기</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="label">B — 다크 Topbar + 사이드바 통합 (Notion/Linear 스타일)</div>
+  <div class="desc">org rail 제거, 사이드바 하나에 조직 전환 + 프로젝트 트리 + 다이어그램 목록 통합</div>
+</div>
+
+<script>
+function select(choice) {
+  ['a','b'].forEach(id => document.getElementById('opt'+id.toUpperCase()).classList.remove('selected'));
+  document.getElementById('opt'+choice.toUpperCase()).classList.add('selected');
+  if (window.__recordChoice) window.__recordChoice(choice, 'Option ' + choice.toUpperCase());
+}
+</script>
+</body>
+</html>

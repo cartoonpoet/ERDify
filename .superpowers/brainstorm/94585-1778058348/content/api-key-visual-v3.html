@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>API 키 화면 위치 선택</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; padding: 24px; }
+h1 { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+
+.options-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+.option-card {
+  background: white;
+  border-radius: 12px;
+  border: 2.5px solid #e2e8f0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.option-card:hover { border-color: #94a3b8; box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+.option-card.selected { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+
+.preview {
+  height: 220px;
+  position: relative;
+  overflow: hidden;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* === OPTION A: 사이드바 설정 페이지 === */
+.preview-a { display: flex; }
+.sidebar-a {
+  width: 130px;
+  min-height: 100%;
+  background: #1e293b;
+  padding: 10px 0;
+  flex-shrink: 0;
+}
+.sidebar-a .logo { color: white; font-weight: 700; font-size: 11px; padding: 4px 12px 10px; border-bottom: 1px solid #334155; margin-bottom: 8px; }
+.sidebar-item { padding: 6px 12px; font-size: 10px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+.sidebar-item.active { background: #334155; color: white; border-left: 2px solid #3b82f6; }
+.sidebar-item.sub { padding-left: 28px; color: #60a5fa; font-size: 10px; }
+.main-a { flex: 1; padding: 12px; overflow: hidden; }
+.main-a h2 { font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+.table { width: 100%; border-collapse: collapse; font-size: 9px; }
+.table th { background: #f8fafc; color: #94a3b8; padding: 4px 6px; text-align: left; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+.table td { padding: 5px 6px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+.badge { display: inline-block; padding: 2px 5px; border-radius: 9px; font-size: 8px; font-weight: 600; }
+.badge.active { background: #dcfce7; color: #16a34a; }
+.badge.expiring { background: #fef9c3; color: #a16207; }
+.btn-sm { font-size: 8px; padding: 2px 6px; border-radius: 4px; border: none; cursor: pointer; }
+.btn-danger { background: #fee2e2; color: #dc2626; }
+.btn-primary { background: #3b82f6; color: white; }
+.new-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; background: #3b82f6; color: white; padding: 4px 8px; border-radius: 5px; margin-top: 8px; }
+
+/* === OPTION B: 모달 === */
+.preview-b { background: #e2e8f0; display: flex; align-items: center; justify-content: center; }
+.modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.3); display: flex; align-items: center; justify-content: center; }
+.modal-box { background: white; border-radius: 10px; width: 280px; box-shadow: 0 10px 30px rgba(0,0,0,.25); overflow: hidden; }
+.modal-header { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+.modal-header h3 { font-size: 12px; font-weight: 700; }
+.modal-body { padding: 12px 14px; max-height: 140px; overflow-y: auto; }
+.key-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 10px; gap: 6px; }
+.key-prefix { font-family: monospace; color: #334155; flex: 1; }
+.key-actions { display: flex; gap: 4px; }
+.modal-footer { padding: 10px 14px; border-top: 1px solid #e2e8f0; }
+.modal-footer button { width: 100%; background: #3b82f6; color: white; border: none; border-radius: 6px; padding: 7px; font-size: 10px; cursor: pointer; }
+
+/* === OPTION C: 독립 페이지 === */
+.preview-c { display: flex; flex-direction: column; }
+.topnav { background: #1e293b; display: flex; align-items: center; gap: 0; padding: 0 12px; height: 34px; flex-shrink: 0; }
+.topnav .logo { color: white; font-size: 11px; font-weight: 700; margin-right: 16px; }
+.topnav a { color: #94a3b8; font-size: 10px; padding: 0 10px; height: 34px; display: flex; align-items: center; }
+.topnav a.active { color: white; border-bottom: 2px solid #3b82f6; }
+.page-c { flex: 1; padding: 12px; overflow: hidden; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.page-header h2 { font-size: 12px; font-weight: 700; }
+
+/* Card labels */
+.card-label { padding: 10px 14px; }
+.card-label .tag { display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 10px; padding: 2px 8px; border-radius: 9px; margin-bottom: 6px; }
+.card-label h3 { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+.card-label p { font-size: 11px; color: #64748b; line-height: 1.5; }
+
+.check { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; background: #3b82f6; border-radius: 50%; display: none; align-items: center; justify-content: center; color: white; font-size: 12px; }
+.option-card.selected .check { display: flex; }
+</style>
+<script>
+function select(el) {
+  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const choice = el.dataset.choice;
+  // record selection
+  if (window.__sp_select) window.__sp_select(choice, el.querySelector('h3').textContent);
+}
+</script>
+</head>
+<body>
+<h1>API 키 관리 화면 — 어디에 배치할까요?</h1>
+<p class="subtitle">각 옵션을 클릭해서 선택해주세요</p>
+
+<div class="options-row">
+
+  <!-- OPTION A -->
+  <div class="option-card" data-choice="settings-sidebar" onclick="toggleSelect(this)">
+    <div class="preview preview-a">
+      <div class="sidebar-a">
+        <div class="logo">ERDify</div>
+        <div class="sidebar-item">🏠 대시보드</div>
+        <div class="sidebar-item">📁 프로젝트</div>
+        <div class="sidebar-item active">⚙️ 설정</div>
+        <div class="sidebar-item sub">└ 프로필</div>
+        <div class="sidebar-item sub" style="background:#1e3a5f;color:white">└ 🔑 API 키</div>
+      </div>
+      <div class="main-a">
+        <h2>API 키 관리</h2>
+        <table class="table">
+          <thead>
+            <tr><th>이름</th><th>만료</th><th>상태</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Production</td>
+              <td>2026-12-31</td>
+              <td><span class="badge active">활성</span></td>
+              <td><button class="btn-sm btn-danger">폐기</button></td>
+            </tr>
+            <tr>
+              <td>Dev key</td>
+              <td>2026-06-01</td>
+              <td><span class="badge expiring">D-26</span></td>
+              <td><button class="btn-sm btn-danger">폐기</button></td>
+            </tr>
+            <tr>
+              <td>Claude MCP</td>
+              <td>없음</td>
+              <td><span class="badge active">활성</span></td>
+              <td><button class="btn-sm btn-danger">폐기</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="new-btn">＋ 새 키 생성</div>
+      </div>
+    </div>
+    <div style="position:relative">
+      <div class="check">✓</div>
+      <div class="card-label">
+        <div class="tag">A</div>
+        <h3>사이드바 설정 페이지</h3>
+        <p>설정 메뉴 안에 API 키 관리 탭. 테이블 형태로 키 목록 전체 표시.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="option-card" data-choice="modal" onclick="toggleSelect(this)">
+    <div class="preview preview-b" style="position:relative">
+      <div style="position:absolute;inset:0;background:#cbd5e1;"></div>
+      <div class="modal-backdrop">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>🔑 API 키 관리</h3>
+            <span style="font-size:14px;color:#94a3b8;cursor:pointer">✕</span>
+          </div>
+          <div class="modal-body">
+            <div class="key-row">
+              <span class="key-prefix">sk-prod••••••1a2b</span>
+              <span class="badge active">활성</span>
+              <div class="key-actions">
+                <button class="btn-sm btn-primary">복사</button>
+                <button class="btn-sm btn-danger">폐기</button>
+              </div>
+            </div>
+            <div class="key-row">
+              <span class="key-prefix">sk-dev•••••••3c4d</span>
+              <span class="badge expiring">D-26</span>
+              <div class="key-actions">
+                <button class="btn-sm btn-primary">복사</button>
+                <button class="btn-sm btn-danger">폐기</button>
+              </div>
+            </div>
+            <div class="key-row">
+              <span class="key-prefix">sk-mcp•••••••5e6f</span>
+              <span class="badge active">활성</span>
+              <div class="key-actions">
+                <button class="btn-sm btn-primary">복사</button>
+                <button class="btn-sm btn-danger">폐기</button>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button>＋ 새 API 키 생성</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="position:relative">
+      <div class="check">✓</div>
+      <div class="card-label">
+        <div class="tag">B</div>
+        <h3>모달 / 다이얼로그</h3>
+        <p>현재 ApiKeyModal 확장. 대시보드 버튼으로 열기. 코드 변경 최소.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="option-card" data-choice="dedicated-page" onclick="toggleSelect(this)">
+    <div class="preview preview-c">
+      <div class="topnav">
+        <span class="logo">ERDify</span>
+        <a href="#">대시보드</a>
+        <a href="#">프로젝트</a>
+        <a href="#" class="active">🔑 API 키</a>
+      </div>
+      <div class="page-c">
+        <div class="page-header">
+          <h2>API 키 관리</h2>
+          <button class="btn-sm btn-primary" style="font-size:10px;padding:4px 10px">＋ 새 키 생성</button>
+        </div>
+        <table class="table">
+          <thead>
+            <tr><th>이름</th><th>접두사</th><th>만료일</th><th>상태</th><th>생성일</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Production</td>
+              <td style="font-family:monospace">sk-prod1a2b</td>
+              <td>2026-12-31</td>
+              <td><span class="badge active">활성</span></td>
+              <td>2026-01-15</td>
+              <td><button class="btn-sm btn-danger">폐기</button></td>
+            </tr>
+            <tr>
+              <td>Dev key</td>
+              <td style="font-family:monospace">sk-dev3c4d</td>
+              <td>2026-06-01</td>
+              <td><span class="badge expiring">D-26</span></td>
+              <td>2026-03-01</td>
+              <td><button class="btn-sm btn-danger">폐기</button></td>
+            </tr>
+            <tr>
+              <td>Claude MCP</td>
+              <td style="font-family:monospace">sk-mcp5e6f</td>
+              <td>없음</td>
+              <td><span class="badge active">활성</span></td>
+              <td>2026-04-20</td>
+              <td><button class="btn-sm btn-danger">폐기</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="position:relative">
+      <div class="check">✓</div>
+      <div class="card-label">
+        <div class="tag">C</div>
+        <h3>독립 페이지 (/settings/api-keys)</h3>
+        <p>상단 네비에 탭 추가. 가장 넓은 공간. URL 직접 접근 가능.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

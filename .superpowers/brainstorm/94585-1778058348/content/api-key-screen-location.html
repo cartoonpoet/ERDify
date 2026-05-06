@@ -1,0 +1,107 @@
+<h2>API 키 관리 화면 - 어디에 배치할까요?</h2>
+<p class="subtitle">현재 대시보드에는 프로젝트 목록이 있고, 에디터 페이지에는 다이어그램이 있습니다. API 키 관리 화면의 위치를 선택해주세요.</p>
+
+<div class="cards">
+  <div class="card" data-choice="settings-page" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="display:flex;height:160px;border-radius:6px;overflow:hidden;border:1px solid #e2e8f0">
+        <div class="mock-sidebar" style="width:180px;min-height:100%;padding:16px 0;background:#1e293b;color:#94a3b8;font-size:12px">
+          <div style="padding:8px 16px;color:white;font-weight:700;margin-bottom:12px">ERDify</div>
+          <div style="padding:8px 16px">대시보드</div>
+          <div style="padding:8px 16px">프로젝트</div>
+          <div style="padding:8px 16px;background:#334155;color:white;border-radius:4px;margin:0 8px">⚙️ 설정</div>
+          <div style="padding:8px 16px;padding-left:24px;color:#60a5fa">└ API 키</div>
+        </div>
+        <div style="flex:1;padding:16px;background:#f8fafc">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px">API 키 관리</div>
+          <div style="background:white;border-radius:4px;border:1px solid #e2e8f0;padding:8px;font-size:11px;color:#64748b">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">
+              <span>sk-•••••••abc123</span>
+              <span style="color:#22c55e;font-size:10px">활성</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid #f1f5f9">
+              <span>sk-•••••••def456</span>
+              <span style="color:#f59e0b;font-size:10px">D-7</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 전용 설정 페이지</h3>
+      <p>사이드바에 "설정 > API 키" 메뉴 추가. 전체 화면을 활용한 테이블 뷰.</p>
+      <div class="pros-cons" style="margin-top:8px">
+        <div class="pros"><ul><li>공간이 넓어 많은 키 목록 표시 가능</li><li>설정 항목과 같은 맥락</li></ul></div>
+        <div class="cons"><ul><li>현재 사이드바 구조 변경 필요</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="modal" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="display:flex;height:160px;border-radius:6px;overflow:hidden;border:1px solid #e2e8f0;position:relative;background:#f8fafc">
+        <div style="position:absolute;inset:12px;background:white;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);padding:16px;font-size:11px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px">API 키 관리</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="flex:1;background:#f1f5f9;border-radius:4px;padding:6px;color:#64748b">
+              <div style="font-size:10px;color:#94a3b8">이름</div>
+              <div>Production</div>
+            </div>
+            <div style="flex:1;background:#f1f5f9;border-radius:4px;padding:6px;color:#64748b">
+              <div style="font-size:10px;color:#94a3b8">키</div>
+              <div>sk-•••abc</div>
+            </div>
+            <div style="background:#3b82f6;color:white;border-radius:4px;padding:6px 10px;font-size:10px;display:flex;align-items:center">폐기</div>
+          </div>
+          <div style="text-align:center;color:#94a3b8;font-size:10px">+ 새 API 키 생성</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 모달 / 다이얼로그</h3>
+      <p>현재 ApiKeyModal 확장. 대시보드 우상단 버튼으로 열기.</p>
+      <div class="pros-cons" style="margin-top:8px">
+        <div class="pros"><ul><li>현재 구조 변경 최소화</li><li>빠르게 접근 가능</li></ul></div>
+        <div class="cons"><ul><li>키가 많으면 스크롤 답답</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="dedicated-page" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="height:160px;border-radius:6px;overflow:hidden;border:1px solid #e2e8f0;background:#f8fafc">
+        <div style="background:#1e293b;color:white;padding:8px 16px;font-size:11px;display:flex;align-items:center;gap:12px">
+          <span style="font-weight:700">ERDify</span>
+          <span style="color:#94a3b8">대시보드</span>
+          <span style="color:#94a3b8">프로젝트</span>
+          <span style="background:#3b82f6;padding:3px 8px;border-radius:3px">🔑 API 키</span>
+        </div>
+        <div style="padding:16px;font-size:11px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px">API 키 관리</div>
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:4px;font-size:10px;color:#64748b">
+            <div style="font-weight:600;color:#94a3b8;font-size:9px">이름</div>
+            <div style="font-weight:600;color:#94a3b8;font-size:9px">만료일</div>
+            <div style="font-weight:600;color:#94a3b8;font-size:9px">상태</div>
+            <div></div>
+            <div>Production key</div>
+            <div>2026-12-31</div>
+            <div style="color:#22c55e">활성</div>
+            <div style="color:#ef4444">폐기</div>
+            <div>Dev key</div>
+            <div>2026-06-01</div>
+            <div style="color:#f59e0b">D-26</div>
+            <div style="color:#ef4444">폐기</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 독립 페이지 (/settings/api-keys)</h3>
+      <p>상단 네비게이션에 "API 키" 탭 추가. 별도 라우트로 접근.</p>
+      <div class="pros-cons" style="margin-top:8px">
+        <div class="pros"><ul><li>URL로 직접 접근 가능</li><li>가장 넓은 화면 활용</li></ul></div>
+        <div class="cons"><ul><li>네비게이션 변경 필요</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

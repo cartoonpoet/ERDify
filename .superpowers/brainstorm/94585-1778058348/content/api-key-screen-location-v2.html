@@ -1,0 +1,39 @@
+<h2>API 키 관리 화면 - 위치 선택</h2>
+<p class="subtitle">세 가지 옵션 중 어디에 배치할지 선택해주세요. 이전에 B를 클릭하셨습니다.</p>
+
+<div class="options">
+  <div class="option" data-choice="settings-sidebar" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>설정 페이지 (사이드바 메뉴)</h3>
+      <p>사이드바에 "설정 → API 키" 메뉴 추가. 전체 화면 테이블 뷰. 키가 많아도 보기 편함.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="modal" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>모달 / 다이얼로그 (현재 구조 유지)</h3>
+      <p>기존 ApiKeyModal을 확장. 대시보드 우상단 버튼으로 열기. 변경이 가장 적음.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="dedicated-page" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>독립 페이지 (/settings/api-keys)</h3>
+      <p>상단 네비게이션에 탭 추가. URL로 직접 접근 가능. 가장 넓은 화면 활용.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 24px; padding: 16px; background: var(--surface-raised, #f8fafc); border-radius: 8px;">
+  <p class="label">현재 코드베이스 상황</p>
+  <ul style="margin-top: 8px; padding-left: 20px; font-size: 13px; line-height: 1.8;">
+    <li><code>ApiKey</code> 엔티티: id, userId, keyHash(SHA-256), prefix(앞 16자), createdAt, revokedAt</li>
+    <li><code>expiresAt</code> 컬럼 없음 → 추가 필요</li>
+    <li>키 이름/라벨 없음 → 추가 필요</li>
+    <li><code>listApiKeys</code>, <code>revokeApiKey</code> 서비스 메서드 이미 존재</li>
+    <li>현재 ApiKeyModal은 생성만 가능, 목록/폐기 없음</li>
+  </ul>
+</div>

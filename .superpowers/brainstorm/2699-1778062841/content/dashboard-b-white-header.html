@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERDify 대시보드 — B안 (화이트 헤더)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 40px 24px; gap: 24px; min-height: 100vh; }
+
+  .page-title { font-size: 15px; font-weight: 700; color: #1C2B33; }
+  .page-sub { font-size: 12px; color: #5D6C7B; margin-top: 4px; text-align: center; }
+
+  .shell {
+    width: 100%;
+    max-width: 1040px;
+    height: 600px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06);
+    display: grid;
+    grid-template-rows: 48px 1fr;
+    background: #F8F9FB;
+    border: 1px solid #DEE3E9;
+  }
+
+  /* ── TOPBAR (White) ── */
+  .topbar {
+    background: #FFFFFF;
+    border-bottom: 1px solid #DEE3E9;
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    gap: 10px;
+  }
+  .logo { font-size: 16px; font-weight: 800; color: #0064E0; letter-spacing: -0.5px; }
+  .logo span { color: #1C2B33; }
+  .topbar-spacer { flex: 1; }
+  .topbar-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #F8F9FB;
+    border: 1px solid #DEE3E9;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #BCC0C4;
+    width: 200px;
+    cursor: text;
+  }
+  .topbar-avatar {
+    width: 30px; height: 30px;
+    background: #0064E0;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  /* ── BODY ── */
+  .body {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    overflow: hidden;
+  }
+
+  /* ── UNIFIED SIDEBAR ── */
+  .sidebar {
+    background: #FFFFFF;
+    border-right: 1px solid #DEE3E9;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Org selector */
+  .org-selector {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 14px;
+    border-bottom: 1px solid #DEE3E9;
+    cursor: pointer;
+    user-select: none;
+  }
+  .org-selector:hover { background: #F8F9FB; }
+  .org-badge {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: #EEF4FF;
+    color: #0064E0;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .org-info { flex: 1; min-width: 0; }
+  .org-name { font-size: 12px; font-weight: 700; color: #1C2B33; }
+  .org-sub { font-size: 10px; color: #5D6C7B; margin-top: 1px; }
+  .org-chevron { font-size: 10px; color: #BCC0C4; }
+
+  /* Project tree */
+  .tree { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .tree-section-label {
+    font-size: 9px; font-weight: 700; color: #BCC0C4;
+    letter-spacing: 0.7px; text-transform: uppercase;
+    padding: 6px 14px 4px;
+  }
+  .proj-row {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .proj-row:hover { background: #F8F9FB; }
+  .proj-row.active { background: #EEF4FF; }
+  .proj-icon { font-size: 12px; flex-shrink: 0; }
+  .proj-name { font-size: 11px; flex: 1; color: #5D6C7B; }
+  .proj-name.active { color: #0064E0; font-weight: 600; }
+  .proj-count { font-size: 9px; color: #BCC0C4; font-weight: 600; }
+  .proj-count.active { color: #0064E0; }
+
+  /* ERD sub-items */
+  .erd-row {
+    display: flex; align-items: center; gap: 7px;
+    padding: 4px 14px 4px 34px;
+    cursor: pointer;
+  }
+  .erd-row:hover { background: #F8F9FB; }
+  .erd-row.active { background: #f0f5ff; }
+  .erd-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .erd-dot.active { background: #0064E0; }
+  .erd-dot.inactive { background: #CBD2D9; }
+  .erd-name { font-size: 10px; color: #5D6C7B; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .erd-badge { font-size: 8px; font-weight: 600; padding: 1px 4px; border-radius: 3px; background: #F1F4F7; color: #5D6C7B; text-transform: uppercase; flex-shrink: 0; }
+
+  .sidebar-footer {
+    padding: 10px 14px;
+    border-top: 1px solid #DEE3E9;
+  }
+  .sidebar-new-proj {
+    padding: 5px 10px;
+    border: 1.5px dashed #CBD2D9;
+    border-radius: 7px;
+    font-size: 10px; color: #BCC0C4;
+    text-align: center; cursor: pointer;
+  }
+  .sidebar-new-proj:hover { border-color: #0064E0; color: #0064E0; background: #f5f8ff; }
+
+  /* ── MAIN ── */
+  .main {
+    background: #F8F9FB;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .main-header {
+    padding: 16px 20px 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .main-title { font-size: 15px; font-weight: 700; color: #1C2B33; flex: 1; }
+  .btn-secondary {
+    padding: 6px 12px;
+    border: 1px solid #DEE3E9;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 11px; font-weight: 500;
+    color: #5D6C7B; cursor: pointer;
+  }
+  .btn-primary {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    background: #0064E0;
+    font-size: 11px; font-weight: 600;
+    color: #fff; cursor: pointer;
+  }
+  .filter-row {
+    display: flex; gap: 6px;
+    padding: 12px 20px 8px;
+  }
+  .chip {
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 10px; font-weight: 500;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .chip.active { background: #EEF4FF; color: #0064E0; font-weight: 600; border-color: #c5d8ff; }
+  .chip.inactive { background: #fff; color: #5D6C7B; border-color: #DEE3E9; }
+
+  /* Cards */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 4px 20px 20px;
+    overflow-y: auto;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #DEE3E9;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow 0.12s, border-color 0.12s;
+  }
+  .card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.09); border-color: #CBD2D9; }
+  .card-preview {
+    height: 76px;
+    background: #F8F9FB;
+    display: flex; gap: 7px; padding: 9px;
+    align-items: flex-start;
+    border-bottom: 1px solid #F1F4F7;
+  }
+  .mini-table { background: #fff; border: 1px solid #DEE3E9; border-radius: 5px; overflow: hidden; min-width: 60px; }
+  .mini-thead { background: #EEF4FF; color: #0064E0; font-weight: 700; padding: 2px 6px; font-size: 7px; }
+  .mini-row { padding: 1.5px 6px; color: #5D6C7B; border-top: 1px solid #f0f0f0; font-size: 7px; }
+  .card-body { padding: 9px 11px; }
+  .card-name { font-size: 12px; font-weight: 600; color: #1C2B33; }
+  .card-meta { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+  .dialect { font-size: 8px; font-weight: 600; padding: 1px 5px; border-radius: 4px; background: #F1F4F7; color: #5D6C7B; text-transform: uppercase; }
+  .card-date { font-size: 9px; color: #BCC0C4; }
+  .new-card {
+    background: none; border: 1.5px dashed #CBD2D9; border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 5px; height: 124px; cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .new-card:hover { border-color: #0064E0; background: #f5f8ff; }
+  .new-card-icon { width: 26px; height: 26px; border-radius: 50%; background: #EEF4FF; color: #0064E0; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .new-card-label { font-size: 10px; color: #5D6C7B; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div style="text-align:center;">
+  <div class="page-title">ERDify 대시보드 — B안 (화이트 헤더)</div>
+  <div class="page-sub">사이드바 통합 + 화이트 Topbar</div>
+</div>
+
+<div class="shell">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">ERD<span>ify</span></div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-search">🔍 다이어그램 검색...</div>
+    <div class="topbar-avatar">J</div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+    <!-- Unified Sidebar -->
+    <div class="sidebar">
+      <!-- Org selector -->
+      <div class="org-selector">
+        <div class="org-badge">A</div>
+        <div class="org-info">
+          <div class="org-name">Acme Corp</div>
+          <div class="org-sub">3개 프로젝트</div>
+        </div>
+        <div class="org-chevron">⌄</div>
+      </div>
+
+      <!-- Project + ERD Tree -->
+      <div class="tree">
+        <div class="tree-section-label">프로젝트</div>
+
+        <!-- Active project -->
+        <div class="proj-row active">
+          <div class="proj-icon">📁</div>
+          <div class="proj-name active">Backend API</div>
+          <div class="proj-count active">4</div>
+        </div>
+        <!-- ERD sub-items -->
+        <div class="erd-row active">
+          <div class="erd-dot active"></div>
+          <div class="erd-name">사용자 스키마 v2</div>
+          <div class="erd-badge">PG</div>
+        </div>
+        <div class="erd-row">
+          <div class="erd-dot inactive"></div>
+          <div class="erd-name">상품 카탈로그</div>
+          <div class="erd-badge">MY</div>
+        </div>
+        <div class="erd-row">
+          <div class="erd-dot inactive"></div>
+          <div class="erd-name">주문 처리 플로우</div>
+          <div class="erd-badge">PG</div>
+        </div>
+        <div class="erd-row">
+          <div class="erd-dot inactive"></div>
+          <div class="erd-name">알림 시스템</div>
+          <div class="erd-badge">MY</div>
+        </div>
+
+        <!-- Collapsed projects -->
+        <div class="proj-row" style="margin-top:2px;">
+          <div class="proj-icon">📁</div>
+          <div class="proj-name">Auth Service</div>
+          <div class="proj-count">2</div>
+        </div>
+        <div class="proj-row">
+          <div class="proj-icon">📁</div>
+          <div class="proj-name">Analytics</div>
+          <div class="proj-count">1</div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-new-proj">+ 새 프로젝트</div>
+      </div>
+    </div>
+
+    <!-- Main area -->
+    <div class="main">
+      <div class="main-header">
+        <div class="main-title">Backend API</div>
+        <div class="btn-secondary">가져오기</div>
+        <div class="btn-primary">+ 새 ERD</div>
+      </div>
+      <div class="filter-row">
+        <div class="chip active">전체</div>
+        <div class="chip inactive">최근 수정</div>
+        <div class="chip inactive">내가 만든</div>
+      </div>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-preview">
+            <div class="mini-table">
+              <div class="mini-thead">users</div>
+              <div class="mini-row">id</div>
+              <div class="mini-row">email</div>
+              <div class="mini-row">name</div>
+            </div>
+            <div class="mini-table">
+              <div class="mini-thead">orders</div>
+              <div class="mini-row">id</div>
+              <div class="mini-row">user_id</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-name">사용자 스키마 v2</div>
+            <div class="card-meta">
+              <div class="dialect">PostgreSQL</div>
+              <div class="card-date">3시간 전</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-preview">
+            <div class="mini-table">
+              <div class="mini-thead">products</div>
+              <div class="mini-row">id</div>
+              <div class="mini-row">name</div>
+              <div class="mini-row">price</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-name">상품 카탈로그</div>
+            <div class="card-meta">
+              <div class="dialect">MySQL</div>
+              <div class="card-date">1일 전</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-preview">
+            <div class="mini-table">
+              <div class="mini-thead">orders</div>
+              <div class="mini-row">id</div>
+              <div class="mini-row">status</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-name">주문 처리 플로우</div>
+            <div class="card-meta">
+              <div class="dialect">PostgreSQL</div>
+              <div class="card-date">3일 전</div>
+            </div>
+          </div>
+        </div>
+        <div class="new-card">
+          <div class="new-card-icon">+</div>
+          <div class="new-card-label">새 ERD 만들기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

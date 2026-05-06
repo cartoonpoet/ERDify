@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>키 생성 폼 선택</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; padding: 24px; }
+h1 { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.card {
+  background: white;
+  border-radius: 12px;
+  border: 2.5px solid #e2e8f0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.card:hover { border-color: #94a3b8; box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+.card.selected { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+
+.preview {
+  padding: 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  min-height: 240px;
+}
+
+/* form elements */
+label { display: block; font-size: 11px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+.optional { font-weight: 400; color: #9ca3af; margin-left: 4px; }
+input[type=text], input[type=date] {
+  width: 100%; padding: 7px 10px; border: 1.5px solid #d1d5db; border-radius: 6px;
+  font-size: 12px; color: #111827; background: white; outline: none;
+}
+input:focus { border-color: #3b82f6; }
+.form-group { margin-bottom: 14px; }
+.hint { font-size: 10px; color: #9ca3af; margin-top: 3px; }
+
+/* preset chips */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  padding: 5px 12px; border-radius: 20px; border: 1.5px solid #d1d5db;
+  font-size: 11px; color: #374151; cursor: pointer; background: white;
+}
+.chip.active { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+
+.btn { width: 100%; padding: 9px; border-radius: 7px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; background: #3b82f6; color: white; margin-top: 4px; }
+.divider { border: none; border-top: 1px solid #e2e8f0; margin: 12px 0; }
+
+.card-label { padding: 14px 16px; }
+.tag { display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 10px; padding: 2px 8px; border-radius: 9px; margin-bottom: 6px; }
+.card-label h3 { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+.card-label p { font-size: 11px; color: #64748b; line-height: 1.6; }
+
+.check { float: right; width: 20px; height: 20px; background: #3b82f6; border-radius: 50%; display: none; align-items: center; justify-content: center; color: white; font-size: 12px; }
+.card.selected .check { display: inline-flex; }
+</style>
+</head>
+<body>
+<h1>새 API 키 생성 폼 — 어떤 방식이 좋을까요?</h1>
+<p class="subtitle">만료 기간을 어떻게 설정할지 선택해주세요</p>
+
+<div class="row">
+
+  <!-- OPTION A: 프리셋 칩 -->
+  <div class="card" data-choice="preset" onclick="toggleSelect(this)">
+    <div class="preview">
+      <div class="form-group">
+        <label>키 이름 <span class="optional">(선택)</span></label>
+        <input type="text" placeholder="예: Production, Claude MCP" value="Production">
+      </div>
+      <div class="form-group">
+        <label>만료 기간</label>
+        <div class="chips">
+          <div class="chip">30일</div>
+          <div class="chip">90일</div>
+          <div class="chip active">1년</div>
+          <div class="chip">무기한</div>
+        </div>
+        <div class="hint">선택한 기간: 2027-05-06 만료</div>
+      </div>
+      <button class="btn">키 생성</button>
+    </div>
+    <div class="card-label">
+      <div class="tag">A</div> <span class="check">✓</span>
+      <h3>프리셋 칩 선택</h3>
+      <p>30일 / 90일 / 1년 / 무기한 중 선택. 빠르고 실수 없음. 대부분의 서비스가 이 방식.</p>
+    </div>
+  </div>
+
+  <!-- OPTION B: 날짜 직접 입력 -->
+  <div class="card" data-choice="datepicker" onclick="toggleSelect(this)">
+    <div class="preview">
+      <div class="form-group">
+        <label>키 이름 <span class="optional">(선택)</span></label>
+        <input type="text" placeholder="예: Production, Claude MCP" value="Production">
+      </div>
+      <div class="form-group">
+        <label>만료 기간</label>
+        <div class="chips" style="margin-bottom: 8px;">
+          <div class="chip">30일</div>
+          <div class="chip">90일</div>
+          <div class="chip">1년</div>
+          <div class="chip">무기한</div>
+          <div class="chip active">직접 입력</div>
+        </div>
+        <input type="date" value="2026-12-31">
+        <div class="hint">날짜를 직접 지정할 수 있습니다</div>
+      </div>
+      <button class="btn">키 생성</button>
+    </div>
+    <div class="card-label">
+      <div class="tag">B</div> <span class="check">✓</span>
+      <h3>프리셋 + 날짜 직접 입력</h3>
+      <p>프리셋 칩 + "직접 입력" 칩 선택 시 날짜 피커 노출. 유연하지만 UI가 약간 복잡.</p>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top: 20px; background: white; border-radius: 10px; padding: 16px; border: 1px solid #e2e8f0; font-size: 12px; color: #64748b; line-height: 1.7;">
+  <strong style="color: #0f172a;">공통 사항</strong><br>
+  • 키 이름은 선택 입력 (없으면 자동으로 "API Key #3" 같이 채움)<br>
+  • 키 생성 직후 전체 키 값 한 번만 표시 → 복사 버튼 제공<br>
+  • 이후엔 앞 16자(prefix)만 표시, 재생성으로만 새 키 발급
+</div>
+</body>
+</html>

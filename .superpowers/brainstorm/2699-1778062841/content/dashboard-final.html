@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERDify 대시보드 최종 시안</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 36px 24px; gap: 20px; min-height: 100vh;
+  }
+  .page-title { font-size: 15px; font-weight: 700; color: #1C2B33; text-align: center; }
+  .page-sub { font-size: 12px; color: #5D6C7B; text-align: center; margin-top: 4px; }
+
+  /* ── SHELL ── */
+  .shell {
+    width: 100%; max-width: 1080px; height: 600px;
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.06);
+    display: grid; grid-template-rows: 48px 1fr;
+    border: 1px solid #DEE3E9;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: #fff; border-bottom: 1px solid #DEE3E9;
+    display: flex; align-items: center; padding: 0 20px; gap: 12px;
+  }
+  .logo { font-size: 16px; font-weight: 800; color: #0064E0; letter-spacing: -0.5px; }
+  .logo span { color: #1C2B33; }
+  .topbar-spacer { flex: 1; }
+  .topbar-search {
+    display: flex; align-items: center; gap: 7px;
+    background: #F8F9FB; border: 1px solid #DEE3E9;
+    border-radius: 8px; padding: 6px 12px;
+    font-size: 11px; color: #BCC0C4; width: 220px;
+  }
+  .topbar-search-icon { font-size: 11px; }
+  .topbar-kbd {
+    margin-left: auto; font-size: 9px; color: #BCC0C4;
+    background: #F1F4F7; border: 1px solid #DEE3E9;
+    border-radius: 4px; padding: 1px 5px; font-family: monospace;
+  }
+  .topbar-avatar {
+    width: 30px; height: 30px; background: #0064E0;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 12px; font-weight: 700; cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* ── BODY ── */
+  .body { display: grid; grid-template-columns: 260px 1fr; overflow: hidden; }
+
+  /* ── SIDEBAR ── */
+  .sidebar { background: #fff; border-right: 1px solid #DEE3E9; display: flex; flex-direction: column; overflow: hidden; }
+
+  .org-selector {
+    display: flex; align-items: center; gap: 9px;
+    padding: 12px 14px; border-bottom: 1px solid #DEE3E9;
+    cursor: pointer; transition: background 0.1s;
+  }
+  .org-selector:hover { background: #F8F9FB; }
+  .org-badge {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: #EEF4FF; color: #0064E0;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .org-info { flex: 1; min-width: 0; }
+  .org-name { font-size: 12px; font-weight: 700; color: #1C2B33; }
+  .org-sub { font-size: 10px; color: #5D6C7B; margin-top: 1px; }
+  .org-chevron { font-size: 11px; color: #BCC0C4; }
+
+  /* tree */
+  .tree { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .tree-label { font-size: 9px; font-weight: 700; color: #BCC0C4; letter-spacing: 0.7px; text-transform: uppercase; padding: 6px 14px 3px; }
+
+  .proj-row {
+    display: flex; align-items: center; gap: 7px;
+    padding: 6px 14px; cursor: pointer; transition: background 0.1s;
+    user-select: none;
+  }
+  .proj-row:hover { background: #F8F9FB; }
+  .proj-row.active { background: #EEF4FF; }
+  .proj-arrow { font-size: 9px; color: #BCC0C4; width: 10px; flex-shrink: 0; }
+  .proj-arrow.open { color: #5D6C7B; }
+  .proj-icon { font-size: 12px; }
+  .proj-name { font-size: 11px; flex: 1; color: #5D6C7B; }
+  .proj-name.active { color: #0064E0; font-weight: 600; }
+  .proj-count { font-size: 9px; color: #BCC0C4; font-weight: 600; }
+  .proj-count.active { color: #0064E0; }
+
+  .erd-row {
+    display: flex; align-items: center; gap: 7px;
+    padding: 4px 14px 4px 36px; cursor: pointer; transition: background 0.1s;
+  }
+  .erd-row:hover { background: #F8F9FB; }
+  .erd-row.current { background: #EEF4FF; }
+  .erd-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; background: #CBD2D9; }
+  .erd-dot.current { background: #0064E0; }
+  .erd-name { font-size: 10px; color: #5D6C7B; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .erd-name.current { color: #0064E0; font-weight: 600; }
+  .erd-badge { font-size: 7px; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #F1F4F7; color: #5D6C7B; text-transform: uppercase; flex-shrink: 0; }
+
+  .sidebar-footer { padding: 10px 14px; border-top: 1px solid #DEE3E9; }
+  .new-proj-btn {
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    padding: 6px; border: 1.5px dashed #CBD2D9;
+    border-radius: 8px; font-size: 10px; color: #BCC0C4;
+    cursor: pointer; transition: all 0.12s;
+  }
+  .new-proj-btn:hover { border-color: #0064E0; color: #0064E0; background: #f5f8ff; }
+
+  /* ── MAIN ── */
+  .main { background: #F8F9FB; display: flex; flex-direction: column; overflow: hidden; }
+  .main-header { padding: 18px 22px 0; display: flex; align-items: center; gap: 8px; }
+  .main-title { font-size: 16px; font-weight: 700; color: #1C2B33; flex: 1; }
+  .btn-sec { padding: 7px 13px; border: 1px solid #DEE3E9; border-radius: 8px; background: #fff; font-size: 11px; font-weight: 500; color: #5D6C7B; cursor: pointer; }
+  .btn-pri { padding: 7px 13px; border: none; border-radius: 8px; background: #0064E0; font-size: 11px; font-weight: 600; color: #fff; cursor: pointer; }
+  .filter-row { display: flex; gap: 6px; padding: 12px 22px 8px; }
+  .chip { padding: 4px 11px; border-radius: 100px; font-size: 10px; font-weight: 500; border: 1px solid transparent; cursor: pointer; }
+  .chip.on { background: #EEF4FF; color: #0064E0; font-weight: 600; border-color: #c5d8ff; }
+  .chip.off { background: #fff; color: #5D6C7B; border-color: #DEE3E9; }
+
+  /* Cards */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 4px 22px 22px; overflow-y: auto; }
+  .card {
+    background: #fff; border: 1px solid #DEE3E9;
+    border-radius: 11px; overflow: hidden; cursor: pointer;
+    transition: box-shadow 0.12s, border-color 0.12s, transform 0.12s;
+  }
+  .card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.09); border-color: #CBD2D9; transform: translateY(-1px); }
+  .card-preview {
+    height: 78px; background: #F8F9FB;
+    display: flex; gap: 7px; padding: 9px;
+    border-bottom: 1px solid #F1F4F7;
+  }
+  .mini-t { background: #fff; border: 1px solid #DEE3E9; border-radius: 5px; overflow: hidden; min-width: 58px; }
+  .mt-head { background: #EEF4FF; color: #0064E0; font-weight: 700; padding: 2px 6px; font-size: 7px; }
+  .mt-row { padding: 1.5px 6px; color: #5D6C7B; border-top: 1px solid #f0f0f0; font-size: 7px; }
+  .card-body { padding: 10px 12px; }
+  .card-name { font-size: 12px; font-weight: 600; color: #1C2B33; }
+  .card-meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .dialect { font-size: 8px; font-weight: 700; padding: 1.5px 5px; border-radius: 4px; background: #F1F4F7; color: #5D6C7B; text-transform: uppercase; }
+  .card-date { font-size: 9px; color: #BCC0C4; }
+
+  .new-card {
+    background: none; border: 1.5px dashed #CBD2D9; border-radius: 11px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; cursor: pointer; height: 128px;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .new-card:hover { border-color: #0064E0; background: #f5f8ff; }
+  .new-card-icon { width: 28px; height: 28px; border-radius: 50%; background: #EEF4FF; color: #0064E0; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .new-card-label { font-size: 11px; color: #5D6C7B; font-weight: 500; }
+
+  /* ── ANNOTATIONS ── */
+  .annotations { width: 100%; max-width: 1080px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .note { background: #fff; border: 1px solid #DEE3E9; border-radius: 10px; padding: 12px 14px; }
+  .note-title { font-size: 11px; font-weight: 700; color: #1C2B33; margin-bottom: 4px; }
+  .note-body { font-size: 10px; color: #5D6C7B; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="page-title">ERDify 대시보드 최종 시안</div>
+  <div class="page-sub">화이트 헤더 · 통합 사이드바 · 프로젝트+ERD 트리</div>
+</div>
+
+<!-- ── MAIN MOCKUP ── -->
+<div class="shell">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">ERD<span>ify</span></div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-search">
+      <span class="topbar-search-icon">🔍</span>
+      다이어그램 검색...
+      <span class="topbar-kbd">⌘K</span>
+    </div>
+    <div class="topbar-avatar">J</div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Org selector -->
+      <div class="org-selector">
+        <div class="org-badge">A</div>
+        <div class="org-info">
+          <div class="org-name">Acme Corp</div>
+          <div class="org-sub">3개 프로젝트 · 7개 ERD</div>
+        </div>
+        <div class="org-chevron">⌄</div>
+      </div>
+
+      <!-- Tree -->
+      <div class="tree">
+        <div class="tree-label">프로젝트</div>
+
+        <!-- Active project (expanded) -->
+        <div class="proj-row active">
+          <span class="proj-arrow open">▾</span>
+          <span class="proj-icon">📁</span>
+          <span class="proj-name active">Backend API</span>
+          <span class="proj-count active">4</span>
+        </div>
+        <!-- ERD items -->
+        <div class="erd-row current">
+          <div class="erd-dot current"></div>
+          <div class="erd-name current">사용자 스키마 v2</div>
+          <div class="erd-badge" style="background:#e8f0ff;color:#0064E0;">PG</div>
+        </div>
+        <div class="erd-row">
+          <div class="erd-dot"></div>
+          <div class="erd-name">상품 카탈로그</div>
+          <div class="erd-badge">MY</div>
+        </div>
+        <div class="erd-row">
+          <div class="erd-dot"></div>
+          <div class="erd-name">주문 처리 플로우</div>
+          <div class="erd-badge" style="background:#e8f0ff;color:#0064E0;">PG</div>
+        </div>
+        <div class="erd-row">
+          <div class="erd-dot"></div>
+          <div class="erd-name">알림 시스템</div>
+          <div class="erd-badge">MY</div>
+        </div>
+
+        <!-- Collapsed projects -->
+        <div class="proj-row" style="margin-top:4px;">
+          <span class="proj-arrow">▸</span>
+          <span class="proj-icon">📁</span>
+          <span class="proj-name">Auth Service</span>
+          <span class="proj-count">2</span>
+        </div>
+        <div class="proj-row">
+          <span class="proj-arrow">▸</span>
+          <span class="proj-icon">📁</span>
+          <span class="proj-name">Analytics</span>
+          <span class="proj-count">1</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="new-proj-btn">+ 새 프로젝트</div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="main-header">
+        <div class="main-title">Backend API</div>
+        <div class="btn-sec">가져오기</div>
+        <div class="btn-pri">+ 새 ERD</div>
+      </div>
+      <div class="filter-row">
+        <div class="chip on">전체</div>
+        <div class="chip off">최근 수정</div>
+        <div class="chip off">내가 만든</div>
+      </div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-preview">
+            <div class="mini-t"><div class="mt-head">users</div><div class="mt-row">id</div><div class="mt-row">email</div><div class="mt-row">name</div></div>
+            <div class="mini-t"><div class="mt-head">orders</div><div class="mt-row">id</div><div class="mt-row">user_id</div></div>
+          </div>
+          <div class="card-body">
+            <div class="card-name">사용자 스키마 v2</div>
+            <div class="card-meta"><div class="dialect">PostgreSQL</div><div class="card-date">3시간 전</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-preview">
+            <div class="mini-t"><div class="mt-head">products</div><div class="mt-row">id</div><div class="mt-row">name</div><div class="mt-row">price</div></div>
+          </div>
+          <div class="card-body">
+            <div class="card-name">상품 카탈로그</div>
+            <div class="card-meta"><div class="dialect">MySQL</div><div class="card-date">1일 전</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-preview">
+            <div class="mini-t"><div class="mt-head">orders</div><div class="mt-row">id</div><div class="mt-row">status</div></div>
+            <div class="mini-t"><div class="mt-head">items</div><div class="mt-row">id</div></div>
+          </div>
+          <div class="card-body">
+            <div class="card-name">주문 처리 플로우</div>
+            <div class="card-meta"><div class="dialect">PostgreSQL</div><div class="card-date">3일 전</div></div>
+          </div>
+        </div>
+        <div class="new-card">
+          <div class="new-card-icon">+</div>
+          <div class="new-card-label">새 ERD 만들기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── NOTES ── -->
+<div class="annotations">
+  <div class="note">
+    <div class="note-title">🏢 조직 전환</div>
+    <div class="note-body">상단 조직 셀렉터 클릭 → 드롭다운으로 조직 전환. 기존 OrgRail(52px 아이콘 열) 제거.</div>
+  </div>
+  <div class="note">
+    <div class="note-title">📁 사이드바 트리</div>
+    <div class="note-body">▸/▾ 클릭으로 프로젝트 펼침/접힘. ERD 클릭 시 바로 에디터로 이동. 현재 열린 ERD는 파란 점으로 표시.</div>
+  </div>
+  <div class="note">
+    <div class="note-title">🔍 검색</div>
+    <div class="note-body">Topbar 검색창(⌘K) — 전체 다이어그램 이름 검색. 기존에 없던 신규 기능.</div>
+  </div>
+</div>
+
+</body>
+</html>
