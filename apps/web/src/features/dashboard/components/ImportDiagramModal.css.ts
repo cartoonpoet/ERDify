@@ -64,6 +64,30 @@ export const sectionHeader = style({
   marginBottom: vars.space["2"],
 });
 
+export const sqlBrowseRow = style({
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: vars.space["3"],
+});
+
+export const sqlBrowseBtn = style({
+  flexShrink: 0,
+  fontSize: "12px",
+  fontWeight: "500",
+  color: vars.color.primary,
+  background: "none",
+  border: `1px solid ${vars.color.primary}44`,
+  borderRadius: vars.radius.sm,
+  padding: `5px ${vars.space["3"]}`,
+  cursor: "pointer",
+  fontFamily: vars.font.family,
+  whiteSpace: "nowrap",
+  selectors: {
+    "&:hover": { background: `${vars.color.primary}0f`, borderColor: vars.color.primary },
+  },
+});
+
 export const sectionTitle = style({
   fontSize: "14px",
   fontWeight: "600",

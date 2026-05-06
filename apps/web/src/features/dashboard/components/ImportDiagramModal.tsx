@@ -1,6 +1,6 @@
 import { randomUUID } from "../../../shared/utils/uuid";
 import { useState, useRef } from "react";
-import type { DragEvent, ChangeEvent } from "react";
+import type { DragEvent, ChangeEvent, MouseEvent } from "react";
 import { Modal, Button } from "../../../design-system";
 import { createDiagram } from "../../../shared/api/diagrams.api";
 import { parseDdl } from "../../../shared/utils/ddl-parser";
@@ -10,7 +10,7 @@ import type { DiagramDialect } from "@erdify/domain";
 import {
   tabRow, tab, tabActive,
   nameField, fieldLabel, textInput,
-  sectionHeader, sectionTitle, sectionDesc,
+  sectionHeader, sectionTitle, sectionDesc, sqlBrowseRow, sqlBrowseBtn,
   hintBox, hintIcon,
   dropzone, dropzoneActive, dropzoneIcon, dropzoneHint,
   fileChosen, fileChosenName, fileClearBtn,
@@ -48,6 +48,7 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sqlFileInputRef = useRef<HTMLInputElement>(null);
 
   const dialect: DiagramDialect = activeTab === "exerd" ? "mysql" : activeTab;
 
@@ -170,7 +171,7 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
     (activeTab === "exerd" ? !!exerdFile : !!ddlText.trim());
 
   return (
-    <Modal open={open} onClose={handleClose} title="DDL 가져오기">
+    <Modal open={open} onClose={handleClose} title="DDL 가져오기" maxWidth="680px">
       <div className={tabRow}>
         {DIALECT_TABS.map((t) => (
           <button
@@ -206,20 +207,32 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
       {activeTab !== "exerd" ? (
         <>
           <div className={sectionHeader}>
-            <div className={sectionTitle}>SQL 불러넣기</div>
-            <div className={sectionDesc}>CREATE TABLE 구문을 입력하면 자동으로 ERD가 생성됩니다.</div>
+            <div className={sqlBrowseRow}>
+              <div>
+                <div className={sectionTitle}>SQL 불러넣기</div>
+                <div className={sectionDesc}>CREATE TABLE 구문을 입력하거나 .sql 파일을 드래그하세요.</div>
+              </div>
+              <button
+                type="button"
+                className={sqlBrowseBtn}
+                onClick={(e: MouseEvent) => { e.stopPropagation(); sqlFileInputRef.current?.click(); }}
+              >
+                📂 .sql 파일 선택
+              </button>
+            </div>
           </div>
           <DarkCodeEditor
             value={ddlText}
             onChange={handleDdlChange}
             onFileDrop={acceptSqlFile}
-            height="220px"
+            height="300px"
             placeholder={"CREATE TABLE users (\n  id INT NOT NULL,\n  name VARCHAR(100)\n);"}
             isDragOver={isDdlDragOver}
             onDragOver={(e) => { e.preventDefault(); setIsDdlDragOver(true); }}
             onDragLeave={() => setIsDdlDragOver(false)}
           />
           <input
+            ref={sqlFileInputRef}
             type="file"
             accept=".sql"
             style={{ display: "none" }}

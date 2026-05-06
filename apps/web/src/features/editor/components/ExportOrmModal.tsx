@@ -45,7 +45,7 @@ export const ExportOrmModal = ({ open, onClose }: ExportOrmModalProps) => {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="ORM 코드 내보내기" maxWidth="640px">
+    <Modal open={open} onClose={onClose} title="ORM 코드 내보내기" maxWidth="680px">
       <div className={css.body}>
         <div className={css.tabRow}>
           {TABS.map((t) => (

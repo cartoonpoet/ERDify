@@ -37,7 +37,7 @@ export const ExportDdlModal = ({ open, diagramName, onClose }: ExportDdlModalPro
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="DDL 내보내기">
+    <Modal open={open} onClose={onClose} title="DDL 내보내기" maxWidth="680px">
       <div className={body}>
         {ddl ? (
           <>
