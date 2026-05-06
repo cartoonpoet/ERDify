@@ -16,6 +16,7 @@ import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import { CreateOrganizationDto } from "./dto/create-organization.dto";
 import { InviteByEmailDto } from "./dto/invite-by-email.dto";
 import { InviteMemberDto } from "./dto/invite-member.dto";
+import { UpdateMemberRoleDto } from "./dto/update-member-role.dto";
 import { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { OrganizationService } from "./organization.service";
 
@@ -52,6 +53,22 @@ export class OrganizationController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
     return this.organizationService.remove(id, user.sub);
+  }
+
+  @Get(":id/members")
+  getMembers(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
+    return this.organizationService.getMembers(id, user.sub);
+  }
+
+  @Patch(":id/members/:userId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  updateMemberRole(
+    @CurrentUser() user: JwtPayload,
+    @Param("id") id: string,
+    @Param("userId") targetUserId: string,
+    @Body() dto: UpdateMemberRoleDto
+  ) {
+    return this.organizationService.updateMemberRole(id, targetUserId, dto.role, user.sub);
   }
 
   @Post(":id/members/invite")

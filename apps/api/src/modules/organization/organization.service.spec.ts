@@ -4,12 +4,15 @@ import {
   ForbiddenException,
   NotFoundException
 } from "@nestjs/common";
-import type { Organization, OrganizationMember, User } from "@erdify/db";
+import type { Invite, Organization, OrganizationMember, User } from "@erdify/db";
 import type { Repository } from "typeorm";
+import type { EmailService } from "../email/email.service";
+import type { ConfigService } from "@nestjs/config";
 import { OrganizationService } from "./organization.service";
 
 type MockRepo<_T> = {
   findOne: ReturnType<typeof vi.fn>;
+  find?: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
   save: ReturnType<typeof vi.fn>;
   remove: ReturnType<typeof vi.fn>;
@@ -29,12 +32,18 @@ describe("OrganizationService", () => {
 
   beforeEach(() => {
     orgRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
-    memberRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
+    memberRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
     userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
+    const inviteRepo = {} as unknown as Repository<Invite>;
+    const emailService = {} as unknown as EmailService;
+    const config = {} as unknown as ConfigService;
     service = new OrganizationService(
       orgRepo as unknown as Repository<Organization>,
       memberRepo as unknown as Repository<OrganizationMember>,
-      userRepo as unknown as Repository<User>
+      userRepo as unknown as Repository<User>,
+      inviteRepo,
+      emailService,
+      config
     );
   });
 
@@ -160,6 +169,51 @@ describe("OrganizationService", () => {
       memberRepo.remove.mockResolvedValue(undefined);
       await expect(service.removeMember("org-1", "user-1", "user-2")).resolves.toBeUndefined();
       expect(memberRepo.remove).toHaveBeenCalledWith(member);
+    });
+  });
+
+  describe("getMembers", () => {
+    it("throws ForbiddenException if requester is not a member", async () => {
+      memberRepo.findOne.mockResolvedValue(null);
+      await expect(service.getMembers("org-1", "user-99")).rejects.toThrow(ForbiddenException);
+    });
+
+    it("returns member list with user info", async () => {
+      memberRepo.findOne.mockResolvedValue(makeMember());
+      memberRepo.find = vi.fn().mockResolvedValue([
+        { ...makeMember(), user: { email: "a@b.com", name: "A" } },
+        { ...makeMember({ userId: "user-2", role: "editor" }), user: { email: "b@b.com", name: "B" } },
+      ]);
+      const result = await service.getMembers("org-1", "user-1");
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({ userId: "user-1", email: "a@b.com", role: "owner" });
+    });
+  });
+
+  describe("updateMemberRole", () => {
+    it("throws ForbiddenException if requester is not owner", async () => {
+      orgRepo.findOne.mockResolvedValue(makeOrg({ ownerId: "other" }));
+      await expect(service.updateMemberRole("org-1", "user-2", "editor", "user-1")).rejects.toThrow(ForbiddenException);
+    });
+
+    it("throws BadRequestException if trying to change own role", async () => {
+      orgRepo.findOne.mockResolvedValue(makeOrg());
+      await expect(service.updateMemberRole("org-1", "user-1", "editor", "user-1")).rejects.toThrow(BadRequestException);
+    });
+
+    it("throws NotFoundException if target not a member", async () => {
+      orgRepo.findOne.mockResolvedValue(makeOrg());
+      memberRepo.findOne.mockResolvedValue(null);
+      await expect(service.updateMemberRole("org-1", "user-2", "editor", "user-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("updates and saves member role", async () => {
+      const member = makeMember({ userId: "user-2", role: "viewer" });
+      orgRepo.findOne.mockResolvedValue(makeOrg());
+      memberRepo.findOne.mockResolvedValue(member);
+      memberRepo.save.mockResolvedValue({ ...member, role: "editor" });
+      await service.updateMemberRole("org-1", "user-2", "editor", "user-1");
+      expect(memberRepo.save).toHaveBeenCalledWith(expect.objectContaining({ role: "editor" }));
     });
   });
 });

@@ -2,6 +2,7 @@ export { AppDataSource } from "./data-source";
 export { ApiKey } from "./entities/api-key.entity";
 export { Diagram } from "./entities/diagram.entity";
 export { DiagramVersion } from "./entities/diagram-version.entity";
+export { Invite } from "./entities/invite.entity";
 export { McpSession } from "./entities/mcp-session.entity";
 export { OrganizationMember } from "./entities/organization-member.entity";
 export type { MemberRole } from "./entities/organization-member.entity";

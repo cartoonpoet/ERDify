@@ -4,15 +4,17 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Organization, OrganizationMember, User } from "@erdify/db";
-import type { Repository } from "typeorm";
+import { Invite, Organization, OrganizationMember, User } from "@erdify/db";
+import { IsNull, type Repository } from "typeorm";
+import { ConfigService } from "@nestjs/config";
 import type { CreateOrganizationDto } from "./dto/create-organization.dto";
 import type { InviteMemberDto } from "./dto/invite-member.dto";
 import type { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import type { MemberRole } from "@erdify/db";
+import type { EmailService } from "../email/email.service";
 
 @Injectable()
 export class OrganizationService {
@@ -22,7 +24,11 @@ export class OrganizationService {
     @InjectRepository(OrganizationMember)
     private readonly memberRepo: Repository<OrganizationMember>,
     @InjectRepository(User)
-    private readonly userRepo: Repository<User>
+    private readonly userRepo: Repository<User>,
+    @InjectRepository(Invite)
+    private readonly inviteRepo: Repository<Invite>,
+    private readonly emailService: EmailService,
+    private readonly config: ConfigService,
   ) {}
 
   async create(userId: string, dto: CreateOrganizationDto): Promise<Organization> {
@@ -85,6 +91,42 @@ export class OrganizationService {
     if (memberships.length === 0) return [];
     const orgIds = memberships.map((m) => m.organizationId);
     return this.orgRepo.find({ where: orgIds.map((id) => ({ id })) });
+  }
+
+  async getMembers(
+    orgId: string,
+    requesterId: string
+  ): Promise<Array<{ userId: string; email: string; name: string; role: MemberRole; joinedAt: Date }>> {
+    const membership = await this.memberRepo.findOne({ where: { organizationId: orgId, userId: requesterId } });
+    if (!membership) throw new ForbiddenException();
+    const members = await this.memberRepo.find({
+      where: { organizationId: orgId },
+      relations: ["user"],
+      order: { joinedAt: "ASC" },
+    });
+    return members.map((m) => ({
+      userId: m.userId,
+      email: m.user.email,
+      name: m.user.name,
+      role: m.role,
+      joinedAt: m.joinedAt,
+    }));
+  }
+
+  async updateMemberRole(
+    orgId: string,
+    targetUserId: string,
+    role: MemberRole,
+    requesterId: string
+  ): Promise<void> {
+    const org = await this.orgRepo.findOne({ where: { id: orgId } });
+    if (!org) throw new NotFoundException("Organization not found");
+    if (org.ownerId !== requesterId) throw new ForbiddenException("Only the owner can change member roles");
+    if (targetUserId === requesterId) throw new BadRequestException("Cannot change your own role");
+    const member = await this.memberRepo.findOne({ where: { organizationId: orgId, userId: targetUserId } });
+    if (!member) throw new NotFoundException("Member not found");
+    member.role = role;
+    await this.memberRepo.save(member);
   }
 
   async inviteByEmail(
