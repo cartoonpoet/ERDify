@@ -124,6 +124,18 @@ export class DiagramsService {
     }
   }
 
+  /** Throws ForbiddenException / NotFoundException if user cannot read the diagram. */
+  async assertReadAccess(diagramId: string, userId: string): Promise<void> {
+    const { orgId } = await this.getDiagramWithOrg(diagramId);
+    await this.requireMember(orgId, userId);
+  }
+
+  /** Throws ForbiddenException / NotFoundException if user lacks editor-or-owner access. */
+  async assertEditorAccess(diagramId: string, userId: string): Promise<void> {
+    const { orgId } = await this.getDiagramWithOrg(diagramId);
+    await this.requireEditorOrOwner(orgId, userId);
+  }
+
   async update(diagramId: string, userId: string, dto: UpdateDiagramDto): Promise<Diagram> {
     const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
     await this.requireEditorOrOwner(orgId, userId);

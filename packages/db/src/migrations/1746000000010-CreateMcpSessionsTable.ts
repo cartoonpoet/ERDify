@@ -13,7 +13,9 @@ export class CreateMcpSessionsTable1746000000010 implements MigrationInterface {
         "updated_at"           TIMESTAMPTZ  NOT NULL DEFAULT now(),
         CONSTRAINT "pk_mcp_sessions" PRIMARY KEY ("id"),
         CONSTRAINT "fk_mcp_sessions_diagram"
-          FOREIGN KEY ("diagram_id") REFERENCES "diagrams"("id") ON DELETE CASCADE
+          FOREIGN KEY ("diagram_id") REFERENCES "diagrams"("id") ON DELETE CASCADE,
+        CONSTRAINT "fk_mcp_sessions_snapshot_version"
+          FOREIGN KEY ("snapshot_version_id") REFERENCES "diagram_versions"("id") ON DELETE SET NULL
       )
     `);
     await queryRunner.query(`
