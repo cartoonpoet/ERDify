@@ -56,4 +56,10 @@ describe("DiagramGrid", () => {
     wrap(<DiagramGrid diagrams={[]} currentUserId={null} onCreateDiagram={vi.fn()} onDeleteDiagram={vi.fn()} loading />);
     expect(document.querySelectorAll("[aria-hidden='true']").length).toBeGreaterThan(0);
   });
+
+  it("filterQuery가 있으면 이름에 해당 문자열이 포함된 다이어그램만 렌더링한다", () => {
+    wrap(<DiagramGrid diagrams={diagrams} currentUserId="user-1" onCreateDiagram={vi.fn()} onDeleteDiagram={vi.fn()} filterQuery="User" />);
+    expect(screen.getByText("User Schema")).toBeInTheDocument();
+    expect(screen.queryByText("Order Schema")).not.toBeInTheDocument();
+  });
 });

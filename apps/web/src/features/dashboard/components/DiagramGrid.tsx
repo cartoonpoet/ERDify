@@ -25,6 +25,7 @@ interface DiagramGridProps {
   onImportDiagram?: () => void;
   onDeleteDiagram: (diagramId: string) => void;
   loading?: boolean;
+  filterQuery?: string;
 }
 
 const DiagramCardPreview = ({ diagram }: { diagram: DiagramResponse }) => {
@@ -46,21 +47,30 @@ const DiagramCardPreview = ({ diagram }: { diagram: DiagramResponse }) => {
   );
 };
 
-function applyFilter(diagrams: DiagramResponse[], filter: FilterType, userId: string | null): DiagramResponse[] {
+function applyFilter(
+  diagrams: DiagramResponse[],
+  filter: FilterType,
+  userId: string | null,
+  filterQuery?: string,
+): DiagramResponse[] {
+  let result = diagrams;
   if (filter === "recent") {
-    return [...diagrams].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    result = [...result].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  } else if (filter === "mine") {
+    result = result.filter((d) => d.createdBy !== null && d.createdBy === userId);
   }
-  if (filter === "mine") {
-    return diagrams.filter((d) => d.createdBy !== null && d.createdBy === userId);
+  if (filterQuery) {
+    const q = filterQuery.toLowerCase();
+    result = result.filter((d) => d.name.toLowerCase().includes(q));
   }
-  return diagrams;
+  return result;
 }
 
-export const DiagramGrid = ({ diagrams, projectName, currentUserId, onCreateDiagram, onImportDiagram, onDeleteDiagram, loading = false }: DiagramGridProps) => {
+export const DiagramGrid = ({ diagrams, projectName, currentUserId, onCreateDiagram, onImportDiagram, onDeleteDiagram, loading = false, filterQuery }: DiagramGridProps) => {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [shareDiagramItem, setShareDiagramItem] = useState<DiagramResponse | null>(null);
-  const filtered = applyFilter(diagrams, activeFilter, currentUserId);
+  const filtered = applyFilter(diagrams, activeFilter, currentUserId, filterQuery);
 
   return (
     <div className={mainArea}>
