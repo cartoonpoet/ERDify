@@ -1,7 +1,7 @@
 import * as bcrypt from "bcryptjs";
 import { ConflictException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import type { JwtService } from "@nestjs/jwt";
-import type { ApiKey, User } from "@erdify/db";
+import type { ApiKey, Invite, OrganizationMember, User } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { AuthService } from "./auth.service";
 
@@ -22,15 +22,21 @@ describe("AuthService", () => {
   let service: AuthService;
   let userRepo: MockRepo<User>;
   let apiKeyRepo: MockRepo<ApiKey>;
+  let inviteRepo: { find: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
+  let memberRepo: { create: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
   let jwtService: { sign: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
+    inviteRepo = { find: vi.fn(), save: vi.fn() };
+    memberRepo = { create: vi.fn(), save: vi.fn() };
     jwtService = { sign: vi.fn() };
     service = new AuthService(
       userRepo as unknown as Repository<User>,
       apiKeyRepo as unknown as Repository<ApiKey>,
+      inviteRepo as unknown as Repository<Invite>,
+      memberRepo as unknown as Repository<OrganizationMember>,
       jwtService as unknown as JwtService
     );
   });
@@ -49,11 +55,35 @@ describe("AuthService", () => {
       vi.mocked(userRepo.save).mockResolvedValue({ id: "uuid", email: "a@b.com" } as User);
       vi.mocked(bcrypt.hash).mockResolvedValue("hashed" as never);
       vi.mocked(jwtService.sign).mockReturnValue("token");
+      vi.mocked(inviteRepo.find).mockResolvedValue([]);
 
       const result = await service.register({ email: "a@b.com", password: "pass1234", name: "A" });
 
       expect(bcrypt.hash).toHaveBeenCalledWith("pass1234", 10);
       expect(result).toEqual({ accessToken: "token" });
+    });
+
+    it("auto-accepts pending invites on register", async () => {
+      vi.mocked(userRepo.findOne).mockResolvedValue(null);
+      vi.mocked(userRepo.create).mockReturnValue({ id: "new-user", email: "new@b.com" } as User);
+      vi.mocked(userRepo.save).mockResolvedValue({ id: "new-user", email: "new@b.com" } as User);
+      vi.mocked(bcrypt.hash).mockResolvedValue("hashed" as never);
+      vi.mocked(jwtService.sign).mockReturnValue("token");
+
+      const pendingInvite = { id: "inv-1", orgId: "org-1", email: "new@b.com", role: "editor", acceptedAt: null };
+      vi.mocked(inviteRepo.find).mockResolvedValue([pendingInvite] as unknown as Invite[]);
+      vi.mocked(memberRepo.create).mockReturnValue({ organizationId: "org-1", userId: "new-user", role: "editor" } as OrganizationMember);
+      vi.mocked(memberRepo.save).mockResolvedValue({} as OrganizationMember);
+      vi.mocked(inviteRepo.save).mockResolvedValue({} as Invite);
+
+      await service.register({ email: "new@b.com", password: "pass1234", name: "New" });
+
+      expect(memberRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: "org-1", userId: "new-user", role: "editor" })
+      );
+      expect(inviteRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ acceptedAt: expect.any(Date) })
+      );
     });
   });
 

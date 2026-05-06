@@ -4,7 +4,7 @@ import { writeFile, unlink } from "fs/promises";
 import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ApiKey, User } from "@erdify/db";
+import { ApiKey, Invite, OrganizationMember, User } from "@erdify/db";
 import * as bcrypt from "bcryptjs";
 import { IsNull, type Repository } from "typeorm";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
@@ -45,6 +45,10 @@ export class AuthService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(ApiKey)
     private readonly apiKeyRepo: Repository<ApiKey>,
+    @InjectRepository(Invite)
+    private readonly inviteRepo: Repository<Invite>,
+    @InjectRepository(OrganizationMember)
+    private readonly memberRepo: Repository<OrganizationMember>,
     private readonly jwtService: JwtService
   ) {}
 
@@ -55,6 +59,19 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = this.userRepo.create({ id: randomUUID(), email: dto.email, passwordHash, name: dto.name });
     const saved = await this.userRepo.save(user);
+
+    // pending invite 자동 수락
+    const pendingInvites = await this.inviteRepo.find({
+      where: { email: dto.email, acceptedAt: IsNull() },
+    });
+    for (const invite of pendingInvites) {
+      await this.memberRepo.save(
+        this.memberRepo.create({ organizationId: invite.orgId, userId: saved.id, role: invite.role })
+      );
+      invite.acceptedAt = new Date();
+      await this.inviteRepo.save(invite);
+    }
+
     return { accessToken: this.jwtService.sign({ sub: saved.id, email: saved.email }) };
   }
 
