@@ -10,6 +10,7 @@ import { DiagramsModule } from "./modules/diagrams/diagrams.module";
 import { OrganizationModule } from "./modules/organization/organization.module";
 import { ProjectModule } from "./modules/project/project.module";
 import { CollaborationModule } from "./modules/collaboration/collaboration.module";
+import { EmailModule } from "./modules/email/email.module";
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CollaborationModule } from "./modules/collaboration/collaboration.modul
     ProjectModule,
     DiagramsModule,
     CollaborationModule,
+    EmailModule,
     HealthModule,
   ],
   providers: [
