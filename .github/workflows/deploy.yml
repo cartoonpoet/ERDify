@@ -52,10 +52,48 @@ jobs:
               - 'nginx/**'
               - 'pnpm-lock.yaml'
 
+  # ── 테스트 (변경된 앱만, 빌드 전 실행) ──────────────────────────────────
+  test-web:
+    name: Test Web
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enable corepack & install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run web tests
+        run: pnpm --filter @erdify/web test
+
+  test-api:
+    name: Test API
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enable corepack & install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run API tests
+        run: pnpm --filter @erdify/api test
+
   # ── 이미지 빌드 (변경된 앱만, 병렬 실행) ─────────────────────────────────
   build-api:
     name: Build API Image
-    needs: changes
+    needs: [changes, test-api]
     if: needs.changes.outputs.api == 'true' || needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -80,7 +118,7 @@ jobs:
 
   build-web:
     name: Build Web Image
-    needs: changes
+    needs: [changes, test-web]
     if: needs.changes.outputs.web == 'true' || needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -134,16 +172,18 @@ jobs:
   deploy:
     name: Blue/Green Deploy to Oracle Cloud
     runs-on: ubuntu-latest
-    needs: [changes, build-api, build-web, build-landing]
-    # 변경 사항이 있고 빌드가 모두 성공(또는 스킵)된 경우에만 배포
+    needs: [changes, test-web, test-api, build-api, build-web, build-landing]
+    # 변경 사항이 있고 테스트·빌드가 모두 성공(또는 스킵)된 경우에만 배포
     if: |
       always() &&
       (needs.changes.outputs.api     == 'true' ||
        needs.changes.outputs.web     == 'true' ||
        needs.changes.outputs.landing == 'true' ||
        needs.changes.outputs.infra   == 'true') &&
-      needs.build-api.result     != 'failure' &&
-      needs.build-web.result     != 'failure' &&
+      needs.test-web.result     != 'failure' &&
+      needs.test-api.result     != 'failure' &&
+      needs.build-api.result    != 'failure' &&
+      needs.build-web.result    != 'failure' &&
       needs.build-landing.result != 'failure'
     permissions:
       contents: read
