@@ -8,6 +8,7 @@ import { ApiKey, User } from "@erdify/db";
 import * as bcrypt from "bcryptjs";
 import { IsNull, type Repository } from "typeorm";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
+import type { CreateApiKeyDto } from "./dto/create-api-key.dto";
 import type { LoginDto } from "./dto/login.dto";
 import type { RegisterDto } from "./dto/register.dto";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
@@ -22,7 +23,18 @@ export interface UserProfile {
 
 export interface ApiKeyInfo {
   id: string;
+  name: string | null;
   prefix: string;
+  expiresAt: Date | null;
+  createdAt: Date;
+}
+
+export interface ApiKeyCreated {
+  apiKey: string;
+  id: string;
+  name: string | null;
+  prefix: string;
+  expiresAt: Date | null;
   createdAt: Date;
 }
 
@@ -56,19 +68,47 @@ export class AuthService {
     return { accessToken: this.jwtService.sign({ sub: user.id, email: user.email }) };
   }
 
-  // Generate a random erd_* key, store only its SHA-256 hash in DB
-  async generateApiKey(userId: string): Promise<{ apiKey: string }> {
+  async generateApiKey(userId: string, dto: CreateApiKeyDto): Promise<ApiKeyCreated> {
     const rawKey = `erd_${randomBytes(32).toString("hex")}`;
     const keyHash = createHash("sha256").update(rawKey).digest("hex");
-    const prefix = rawKey.slice(0, 16); // "erd_" + 12 hex chars
+    const prefix = rawKey.slice(0, 16);
 
-    const entry = this.apiKeyRepo.create({ id: randomUUID(), userId, keyHash, prefix, revokedAt: null });
-    await this.apiKeyRepo.save(entry);
+    let name: string | null = dto.name?.trim() ?? null;
+    if (!name) {
+      const count = await this.apiKeyRepo.count({ where: { userId } });
+      name = `API Key #${count + 1}`;
+    }
+    const expiresAt = dto.expiresAt ? new Date(dto.expiresAt) : null;
 
-    return { apiKey: rawKey };
+    const entry = this.apiKeyRepo.create({ id: randomUUID(), userId, keyHash, prefix, revokedAt: null, name, expiresAt });
+    const saved = await this.apiKeyRepo.save(entry);
+    return { apiKey: rawKey, id: saved.id, name: saved.name, prefix: saved.prefix, expiresAt: saved.expiresAt, createdAt: saved.createdAt };
   }
 
-  // Validate a raw erd_* key against stored hashes — returns JwtPayload shape on success
+  async regenerateApiKey(userId: string, keyId: string): Promise<ApiKeyCreated> {
+    const existing = await this.apiKeyRepo.findOne({ where: { id: keyId, userId, revokedAt: IsNull() } });
+    if (!existing) throw new NotFoundException("API key not found");
+
+    existing.revokedAt = new Date();
+    await this.apiKeyRepo.save(existing);
+
+    const rawKey = `erd_${randomBytes(32).toString("hex")}`;
+    const keyHash = createHash("sha256").update(rawKey).digest("hex");
+    const prefix = rawKey.slice(0, 16);
+
+    const entry = this.apiKeyRepo.create({
+      id: randomUUID(),
+      userId,
+      keyHash,
+      prefix,
+      revokedAt: null,
+      name: existing.name,
+      expiresAt: existing.expiresAt,
+    });
+    const saved = await this.apiKeyRepo.save(entry);
+    return { apiKey: rawKey, id: saved.id, name: saved.name, prefix: saved.prefix, expiresAt: saved.expiresAt, createdAt: saved.createdAt };
+  }
+
   async validateApiKey(rawKey: string): Promise<JwtPayload | null> {
     const keyHash = createHash("sha256").update(rawKey).digest("hex");
     const entry = await this.apiKeyRepo.findOne({
@@ -76,6 +116,7 @@ export class AuthService {
       relations: ["user"],
     });
     if (!entry) return null;
+    if (entry.expiresAt && entry.expiresAt < new Date()) return null;
     return { sub: entry.userId, email: entry.user.email };
   }
 
@@ -84,7 +125,7 @@ export class AuthService {
       where: { userId, revokedAt: IsNull() },
       order: { createdAt: "DESC" },
     });
-    return keys.map(k => ({ id: k.id, prefix: k.prefix, createdAt: k.createdAt }));
+    return keys.map(k => ({ id: k.id, name: k.name, prefix: k.prefix, expiresAt: k.expiresAt, createdAt: k.createdAt }));
   }
 
   async revokeApiKey(userId: string, keyId: string): Promise<void> {
