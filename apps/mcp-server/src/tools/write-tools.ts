@@ -169,10 +169,10 @@ export const registerWriteTools = (server: McpServer): void => {
       const { content: doc } = await client.getDiagram(diagramId);
       const entity = doc.entities.find((e) => e.id === tableId);
       if (!entity) throw new Error(`Table ID "${tableId}" not found`);
-      if (!entity.columns.find((c) => c.id === columnId)) {
+      const colToRemove = entity.columns.find((c) => c.id === columnId);
+      if (!colToRemove) {
         throw new Error(`Column ID "${columnId}" not found in table ${tableId}`);
       }
-      const colToRemove = entity.columns.find((c) => c.id === columnId)!;
       const updated = removeColumn(doc, tableId, columnId);
       await client.updateDiagram(diagramId, updated);
       await client.recordToolCall(diagramId, "remove_column", `"${entity.name}.${colToRemove.name}" 컬럼 삭제`).catch(() => {});
