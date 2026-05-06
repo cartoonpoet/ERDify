@@ -10,6 +10,9 @@ $APP_COMPOSE pull
 echo "==> Starting app services..."
 $APP_COMPOSE up -d
 
+echo "==> Waiting for API container to be ready..."
+until sudo docker exec erdify-api-1 echo ok 2>/dev/null; do sleep 2; done
+
 echo "==> Reloading nginx..."
 sudo docker exec erdify-shared-nginx-1 nginx -s reload 2>/dev/null || sudo docker restart erdify-shared-nginx-1
 
