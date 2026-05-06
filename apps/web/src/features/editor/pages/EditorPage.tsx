@@ -9,6 +9,7 @@ import { useEditorStore } from "../stores/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
 import { RelationshipPopover } from "../components/RelationshipPopover";
 import { VersionHistoryDrawer } from "../components/VersionHistoryDrawer";
+import { McpActivityDrawer } from "../components/McpActivityDrawer";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceIndicator } from "../components/PresenceIndicator";
 import { ExportDdlModal } from "../components/ExportDdlModal";
@@ -30,8 +31,16 @@ export const EditorPage = () => {
   const [showExport, setShowExport] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showOrmExport, setShowOrmExport] = useState(false);
+  const [showMcpActivity, setShowMcpActivity] = useState(false);
 
   const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen } = useEditorStore();
+
+  const mcpSeenAt = diagramId
+    ? (() => {
+        const v = localStorage.getItem(`mcp_seen_${diagramId}`);
+        return v ? parseInt(v, 10) : null;
+      })()
+    : null;
 
   const { data, isLoading } = useQuery({
     queryKey: ["diagram", diagramId],
@@ -138,6 +147,19 @@ export const EditorPage = () => {
           버전 저장
         </button>
         <button
+          onClick={() => {
+            setShowMcpActivity((v) => !v);
+            if (diagramId) {
+              localStorage.setItem(`mcp_seen_${diagramId}`, Date.now().toString());
+            }
+          }}
+          className={css.topbarBtn({ variant: showMcpActivity ? "historyActive" : "historyInactive" })}
+          title="AI 활동"
+          aria-label="AI 활동"
+        >
+          🤖
+        </button>
+        <button
           onClick={() => setShowHistory((v) => !v)}
           className={css.topbarBtn({ variant: showHistory ? "historyActive" : "historyInactive" })}
         >
@@ -157,6 +179,13 @@ export const EditorPage = () => {
         </div>
         {showHistory && diagramId && (
           <VersionHistoryDrawer diagramId={diagramId} onClose={() => setShowHistory(false)} />
+        )}
+        {showMcpActivity && diagramId && (
+          <McpActivityDrawer
+            diagramId={diagramId}
+            seenAt={mcpSeenAt}
+            onClose={() => setShowMcpActivity(false)}
+          />
         )}
       </div>
 
