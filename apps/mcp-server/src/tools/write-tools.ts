@@ -66,6 +66,7 @@ export const registerWriteTools = (server: McpServer): void => {
         }
       }
       await client.updateDiagram(diagramId, updated);
+      await client.recordToolCall(diagramId, "add_table", `"${name}" 테이블 추가`).catch(() => {});
       const colInfo =
         columnIds.length > 0 ? ` Columns: ${columnIds.join(", ")}` : "";
       return {
@@ -94,6 +95,7 @@ export const registerWriteTools = (server: McpServer): void => {
       }
       const updated = removeEntity(doc, tableId);
       await client.updateDiagram(diagramId, updated);
+      await client.recordToolCall(diagramId, "remove_table", `"${entity.name}" 테이블 삭제`).catch(() => {});
       return { content: [{ type: "text", text: `Table "${entity.name}" (${tableId}) removed.` }] };
     }
   );
@@ -113,6 +115,7 @@ export const registerWriteTools = (server: McpServer): void => {
       const built = buildColumn(column, entity.columns.length);
       const updated = addColumn(doc, tableId, built);
       await client.updateDiagram(diagramId, updated);
+      await client.recordToolCall(diagramId, "add_column", `"${entity.name}.${column.name}" 컬럼 추가`).catch(() => {});
       return {
         content: [
           {
@@ -149,6 +152,7 @@ export const registerWriteTools = (server: McpServer): void => {
       if (updates.comment !== undefined) changes.comment = updates.comment;
       const updated = updateColumn(doc, tableId, columnId, changes);
       await client.updateDiagram(diagramId, updated);
+      await client.recordToolCall(diagramId, "update_column", `"${entity.name}.${col.name}" 컬럼 수정`).catch(() => {});
       return { content: [{ type: "text", text: `Column ${columnId} updated.` }] };
     }
   );
@@ -171,6 +175,7 @@ export const registerWriteTools = (server: McpServer): void => {
       const colToRemove = entity.columns.find((c) => c.id === columnId)!;
       const updated = removeColumn(doc, tableId, columnId);
       await client.updateDiagram(diagramId, updated);
+      await client.recordToolCall(diagramId, "remove_column", `"${entity.name}.${colToRemove.name}" 컬럼 삭제`).catch(() => {});
       return { content: [{ type: "text", text: `Column "${colToRemove.name}" (${columnId}) removed from table "${entity.name}".` }] };
     }
   );
@@ -212,6 +217,9 @@ export const registerWriteTools = (server: McpServer): void => {
       };
       const updated = addRelationship(doc, relationship);
       await client.updateDiagram(diagramId, updated);
+      const srcName = doc.entities.find((e) => e.id === sourceTableId)?.name ?? sourceTableId;
+      const tgtName = doc.entities.find((e) => e.id === targetTableId)?.name ?? targetTableId;
+      await client.recordToolCall(diagramId, "add_relationship", `"${srcName}" → "${tgtName}" 관계 추가`).catch(() => {});
       return {
         content: [
           {
@@ -242,6 +250,7 @@ export const registerWriteTools = (server: McpServer): void => {
       const tgtName = doc.entities.find((e) => e.id === rel.targetEntityId)?.name ?? rel.targetEntityId;
       const updated = removeRelationship(doc, relationshipId);
       await client.updateDiagram(diagramId, updated);
+      await client.recordToolCall(diagramId, "remove_relationship", `"${srcName}" → "${tgtName}" 관계 삭제`).catch(() => {});
       return {
         content: [{ type: "text", text: `Relationship "${srcName} → ${tgtName}" (${relationshipId}) removed.` }],
       };

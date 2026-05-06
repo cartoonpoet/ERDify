@@ -1,4 +1,5 @@
 import type { DiagramDocument } from "@erdify/domain";
+import { MCP_SESSION_ID } from "./session.js";
 
 const API_URL = process.env.ERDIFY_API_URL ?? "http://localhost:3000";
 const API_KEY = process.env.ERDIFY_API_KEY ?? "";
@@ -32,6 +33,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${API_KEY}`,
+      "X-MCP-Session-ID": MCP_SESSION_ID,
     },
   };
   if (body !== undefined) {
@@ -55,4 +57,9 @@ export const client = {
     request<DiagramResponse>("GET", `/diagrams/${diagramId}`),
   updateDiagram: (diagramId: string, content: DiagramDocument) =>
     request<void>("PATCH", `/diagrams/${diagramId}`, { content }),
+  recordToolCall: (diagramId: string, tool: string, summary: string) =>
+    request<void>("POST", `/diagrams/${diagramId}/mcp-sessions/${MCP_SESSION_ID}/tool-calls`, {
+      tool,
+      summary,
+    }),
 };
