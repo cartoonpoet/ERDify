@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listApiKeys, createApiKey, revokeApiKey, regenerateApiKey } from "../../../shared/api/api-keys.api";
 import type { ApiKeyItem, ApiKeyCreated } from "../../../shared/api/api-keys.api";
@@ -49,6 +49,7 @@ export const ApiKeysPanel = () => {
   const [confirmRegenerateId, setConfirmRegenerateId] = useState<string | null>(null);
   const [revealedKey, setRevealedKey] = useState<ApiKeyCreated | null>(null);
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: keys = [], isLoading } = useQuery({
     queryKey: ["api-keys"],
@@ -100,10 +101,12 @@ export const ApiKeysPanel = () => {
     if (!revealedKey) return;
     await copyToClipboard(revealedKey.apiKey);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
   }
 
   function handleDismissReveal() {
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     setRevealedKey(null);
     setCopied(false);
   }
