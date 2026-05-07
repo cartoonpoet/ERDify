@@ -57,6 +57,7 @@ interface WrapOptions {
   outletCtx?: Partial<DashboardOutletContext>;
   orgId?: string;
   projectId?: string;
+  noProject?: boolean;
 }
 
 const ParentWithOutlet = ({ ctx }: { ctx: DashboardOutletContext }) => (
@@ -67,8 +68,10 @@ const wrap = (opts: WrapOptions = {}) => {
   const {
     outletCtx = {},
     orgId = "org-1",
-    projectId = "p1",
+    projectId: _pid = "p1",
+    noProject = false,
   } = opts;
+  const projectId = noProject ? undefined : _pid;
 
   const ctx: DashboardOutletContext = {
     onCreateDiagram: vi.fn(),
@@ -147,7 +150,7 @@ describe("DiagramGrid", () => {
   });
 
   it("projectId가 없으면 '프로젝트를 선택하세요'를 렌더링한다", async () => {
-    wrap({ projectId: undefined });
+    wrap({ noProject: true });
     expect(await screen.findByText("프로젝트를 선택하세요")).toBeInTheDocument();
   });
 });

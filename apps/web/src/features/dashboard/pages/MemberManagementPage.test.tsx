@@ -30,12 +30,12 @@ const wrap = (orgId = "org-1") =>
 
 describe("MemberManagementPage", () => {
   beforeEach(() => {
-    vi.mocked(getMe).mockResolvedValue({ id: "u1", email: "a@b.com", name: null, avatarUrl: null });
+    vi.mocked(getMe).mockResolvedValue({ id: "u1", email: "a@b.com", name: "Test User", avatarUrl: null });
     vi.mocked(listMyOrganizations).mockResolvedValue([
       { id: "org-1", name: "Acme Corp", ownerId: "u1", createdAt: "", updatedAt: "" },
     ]);
     vi.mocked(useMembers).mockReturnValue({
-      members: [{ userId: "u1", email: "a@b.com", role: "owner" }],
+      members: [{ userId: "u1", email: "a@b.com", name: "Test User", role: "owner", joinedAt: "" }],
       isLoading: false,
       updateRole: vi.fn(),
       removeMember: vi.fn(),
@@ -43,7 +43,9 @@ describe("MemberManagementPage", () => {
     vi.mocked(useInvites).mockReturnValue({
       invites: [],
       isLoading: false,
+      invite: vi.fn(),
       cancelInvite: vi.fn(),
+      isInviting: false,
     });
   });
 
