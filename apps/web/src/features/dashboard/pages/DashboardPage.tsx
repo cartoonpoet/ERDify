@@ -1,28 +1,32 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, Outlet } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { FocusEvent } from "react";
-import { listMyOrganizations, deleteOrganization } from "../../../shared/api/organizations.api";
-import { listProjects, deleteProject } from "../../../shared/api/projects.api";
-import { listDiagrams, deleteDiagram } from "../../../shared/api/diagrams.api";
+import { deleteOrganization } from "../../../shared/api/organizations.api";
+import { deleteProject } from "../../../shared/api/projects.api";
+import { deleteDiagram } from "../../../shared/api/diagrams.api";
 import { getMe, logout } from "../../../shared/api/auth.api";
 import { API_BASE_URL } from "../../../shared/api/httpClient";
-import { useWorkspaceStore } from "../../../shared/stores/useWorkspaceStore";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
 import { UnifiedSidebar } from "../components/UnifiedSidebar";
-import { DiagramGrid } from "../components/DiagramGrid";
 import { CreateOrgModal } from "../components/CreateOrgModal";
 import { CreateProjectModal } from "../components/CreateProjectModal";
 import { CreateDiagramModal } from "../components/CreateDiagramModal";
 import { ImportDiagramModal } from "../components/ImportDiagramModal";
 import { ProfileModal } from "../components/ProfileModal";
-import { MemberManagementPage } from "./MemberManagementPage";
-import { ApiKeysPanel } from "./ApiKeysPanel";
 import {
   shell, topbar, brand, brandLogo, topbarSpacer, topbarSearch, avatar, avatarImg,
   avatarWrapper, dropdown, dropdownHeader, dropdownEmail,
   dropdownItem, dropdownItemDanger, body,
 } from "./dashboard-page.css";
+
+export interface DashboardOutletContext {
+  onCreateDiagram: () => void;
+  onImportDiagram: () => void;
+  onDeleteDiagram: (id: string) => void;
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+}
 
 function getInitial(email: string | undefined | null): string {
   return (email?.split("@")[0]?.[0] ?? "?").toUpperCase();
@@ -30,9 +34,8 @@ function getInitial(email: string | undefined | null): string {
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
+  const { orgId, projectId } = useParams<{ orgId: string; projectId?: string }>();
   const queryClient = useQueryClient();
-  const { selectedOrganizationId, selectedProjectId, selectOrganization, selectProject, reset } =
-    useWorkspaceStore();
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
 
   const [orgModalOpen, setOrgModalOpen] = useState(false);
@@ -42,83 +45,39 @@ export const DashboardPage = () => {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [memberManagementOpen, setMemberManagementOpen] = useState(false);
-  const [apiKeysOpen, setApiKeysOpen] = useState(false);
 
-  const { data: me } = useQuery({
-    queryKey: ["me"],
-    queryFn: getMe,
-  });
+  useEffect(() => {
+    setSearchQuery("");
+  }, [projectId]);
 
-  const { data: orgs = [] } = useQuery({
-    queryKey: ["orgs"],
-    queryFn: listMyOrganizations,
-  });
-
-  const { data: projects = [] } = useQuery({
-    queryKey: ["projects", selectedOrganizationId],
-    queryFn: () => listProjects(selectedOrganizationId!),
-    enabled: !!selectedOrganizationId,
-  });
-
-  const { data: diagrams = [], isLoading: diagramsLoading } = useQuery({
-    queryKey: ["diagrams", selectedProjectId],
-    queryFn: () => listDiagrams(selectedProjectId!),
-    enabled: !!selectedProjectId,
-  });
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
 
   const deleteOrgMutation = useMutation({
-    mutationFn: (orgId: string) => deleteOrganization(orgId),
-    onSuccess: (_data, orgId) => {
-      if (selectedOrganizationId === orgId) {
-        reset();
-        setMemberManagementOpen(false);
-        setApiKeysOpen(false);
-      }
+    mutationFn: (id: string) => deleteOrganization(id),
+    onSuccess: (_data, deletedOrgId) => {
+      if (orgId === deletedOrgId) navigate("/");
       void queryClient.invalidateQueries({ queryKey: ["orgs"] });
     },
   });
 
   const deleteProjectMutation = useMutation({
-    mutationFn: (projectId: string) => deleteProject(selectedOrganizationId!, projectId),
-    onSuccess: (_data, projectId) => {
-      if (selectedProjectId === projectId) selectOrganization(selectedOrganizationId!);
-      void queryClient.invalidateQueries({ queryKey: ["projects", selectedOrganizationId] });
+    mutationFn: (pid: string) => deleteProject(orgId!, pid),
+    onSuccess: (_data, deletedProjectId) => {
+      if (projectId === deletedProjectId) navigate(`/${orgId}`);
+      void queryClient.invalidateQueries({ queryKey: ["projects", orgId] });
     },
   });
 
   const deleteDiagramMutation = useMutation({
-    mutationFn: (diagramId: string) => deleteDiagram(diagramId),
+    mutationFn: (id: string) => deleteDiagram(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["diagrams", selectedProjectId] });
+      void queryClient.invalidateQueries({ queryKey: ["diagrams", projectId] });
     },
   });
-
-  // Auto-select first org when none is selected (or persisted org no longer exists)
-  useEffect(() => {
-    const firstOrg = orgs[0];
-    if (!firstOrg) return;
-    if (!selectedOrganizationId || !orgs.find((o) => o.id === selectedOrganizationId)) {
-      selectOrganization(firstOrg.id);
-    }
-  }, [orgs, selectedOrganizationId, selectOrganization]);
-
-  // Auto-select first project when org is set but no project is selected (or persisted project no longer exists)
-  useEffect(() => {
-    const firstProject = projects[0];
-    if (!selectedOrganizationId || !firstProject) return;
-    if (!selectedProjectId || !projects.find((p) => p.id === selectedProjectId)) {
-      selectProject(firstProject.id);
-      setSearchQuery("");
-    }
-  }, [projects, selectedProjectId, selectedOrganizationId, selectProject]);
-
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) ?? null;
 
   async function handleLogout() {
     await logout().catch(() => undefined);
     setAuthenticated(false);
-    reset();
     queryClient.clear();
     navigate("/login");
   }
@@ -127,51 +86,13 @@ export const DashboardPage = () => {
     if (!e.currentTarget.contains(e.relatedTarget)) setMenuOpen(false);
   }
 
-  function handleAvatarClick() {
-    setMenuOpen((v) => !v);
-  }
-
-  function handleOpenOrgModal() { setOrgModalOpen(true); }
-  function handleCloseOrgModal() { setOrgModalOpen(false); }
-  function handleOrgCreated() { void queryClient.invalidateQueries({ queryKey: ["orgs"] }); }
-
-  function handleOpenProjectModal() { setProjectModalOpen(true); }
-  function handleCloseProjectModal() { setProjectModalOpen(false); }
-  function handleProjectCreated() {
-    void queryClient.invalidateQueries({ queryKey: ["projects", selectedOrganizationId] });
-  }
-
-  function handleOpenDiagramModal() { setDiagramModalOpen(true); }
-  function handleCloseDiagramModal() { setDiagramModalOpen(false); }
-  function handleDiagramCreated(id: string) { navigate(`/diagrams/${id}`); }
-
-  function handleOpenImportModal() { setImportModalOpen(true); }
-  function handleCloseImportModal() { setImportModalOpen(false); }
-  function handleDiagramImported(id: string) { navigate(`/diagrams/${id}`); }
-
-  function handleDeleteOrg(id: string) { deleteOrgMutation.mutate(id); }
-  function handleDeleteDiagram(id: string) { deleteDiagramMutation.mutate(id); }
-
-  function handleSelectOrg(orgId: string) {
-    selectOrganization(orgId);
-    setMemberManagementOpen(false);
-  }
-
-  function handleApiKeys() {
-    setApiKeysOpen(true);
-    setMemberManagementOpen(false);
-  }
-
-  function handleSelectProject(projectId: string) {
-    if (selectedProjectId === projectId) {
-      if (selectedOrganizationId) selectOrganization(selectedOrganizationId);
-    } else {
-      selectProject(projectId);
-      setSearchQuery("");
-    }
-  }
-
-  function handleDeleteProject(id: string) { deleteProjectMutation.mutate(id); }
+  const outletCtx: DashboardOutletContext = {
+    onCreateDiagram: () => setDiagramModalOpen(true),
+    onImportDiagram: () => setImportModalOpen(true),
+    onDeleteDiagram: (id) => deleteDiagramMutation.mutate(id),
+    searchQuery,
+    onSearchChange: setSearchQuery,
+  };
 
   return (
     <div className={shell}>
@@ -187,7 +108,7 @@ export const DashboardPage = () => {
           placeholder="다이어그램 검색... ⌘K"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          disabled={!selectedProjectId}
+          disabled={!projectId}
           aria-label="다이어그램 검색"
         />
 
@@ -197,11 +118,11 @@ export const DashboardPage = () => {
               src={me.avatarUrl.startsWith("http") ? me.avatarUrl : `${API_BASE_URL}${me.avatarUrl}`}
               alt="프로필"
               className={avatarImg}
-              onClick={handleAvatarClick}
+              onClick={() => setMenuOpen((v) => !v)}
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
             />
           ) : (
-            <div className={avatar} onClick={handleAvatarClick}>
+            <div className={avatar} onClick={() => setMenuOpen((v) => !v)}>
               {getInitial(me?.name ?? me?.email)}
             </div>
           )}
@@ -224,66 +145,37 @@ export const DashboardPage = () => {
 
       <div className={body}>
         <UnifiedSidebar
-          orgs={orgs}
-          selectedOrgId={selectedOrganizationId}
-          onSelectOrg={handleSelectOrg}
-          onDeleteOrg={handleDeleteOrg}
-          onCreateOrg={handleOpenOrgModal}
-          projects={projects}
-          selectedProjectId={selectedProjectId}
-          onSelectProject={handleSelectProject}
-          onDeleteProject={handleDeleteProject}
-          onCreateProject={handleOpenProjectModal}
-          diagrams={diagrams}
-          onCreateDiagram={handleOpenDiagramModal}
-          memberManagementActive={memberManagementOpen}
-          onManageMembers={() => { setMemberManagementOpen(true); setApiKeysOpen(false); }}
-          apiKeysActive={apiKeysOpen}
-          onApiKeys={handleApiKeys}
+          onCreateOrg={() => setOrgModalOpen(true)}
+          onDeleteOrg={(id) => deleteOrgMutation.mutate(id)}
+          onCreateProject={() => setProjectModalOpen(true)}
+          onDeleteProject={(id) => deleteProjectMutation.mutate(id)}
+          onCreateDiagram={() => setDiagramModalOpen(true)}
         />
 
-        {apiKeysOpen ? (
-          <ApiKeysPanel />
-        ) : memberManagementOpen && selectedOrganizationId ? (
-          <MemberManagementPage
-            orgId={selectedOrganizationId}
-            orgName={orgs.find((o) => o.id === selectedOrganizationId)?.name ?? ""}
-          />
-        ) : (
-          <DiagramGrid
-            diagrams={diagrams}
-            {...(selectedProject?.name ? { projectName: selectedProject.name } : {})}
-            currentUserId={me?.id ?? null}
-            onCreateDiagram={handleOpenDiagramModal}
-            {...(selectedProjectId ? { onImportDiagram: handleOpenImportModal } : {})}
-            onDeleteDiagram={handleDeleteDiagram}
-            loading={diagramsLoading && !!selectedProjectId}
-            {...(searchQuery ? { filterQuery: searchQuery } : {})}
-          />
-        )}
+        <Outlet context={outletCtx} />
       </div>
 
       <CreateOrgModal
         open={orgModalOpen}
-        onClose={handleCloseOrgModal}
-        onCreated={handleOrgCreated}
+        onClose={() => setOrgModalOpen(false)}
+        onCreated={() => void queryClient.invalidateQueries({ queryKey: ["orgs"] })}
       />
 
-      {selectedOrganizationId && (
+      {orgId && (
         <CreateProjectModal
           open={projectModalOpen}
-          onClose={handleCloseProjectModal}
-          onCreated={handleProjectCreated}
-          orgId={selectedOrganizationId}
+          onClose={() => setProjectModalOpen(false)}
+          onCreated={() => void queryClient.invalidateQueries({ queryKey: ["projects", orgId] })}
+          orgId={orgId}
         />
       )}
 
-      {selectedProjectId && (
+      {projectId && (
         <CreateDiagramModal
           open={diagramModalOpen}
-          onClose={handleCloseDiagramModal}
-          onCreated={handleDiagramCreated}
-          projectId={selectedProjectId}
+          onClose={() => setDiagramModalOpen(false)}
+          onCreated={(id) => navigate(`/diagrams/${id}`)}
+          projectId={projectId}
         />
       )}
 
@@ -292,12 +184,12 @@ export const DashboardPage = () => {
         onClose={() => setProfileModalOpen(false)}
       />
 
-      {selectedProjectId && (
+      {projectId && (
         <ImportDiagramModal
           open={importModalOpen}
-          projectId={selectedProjectId}
-          onClose={handleCloseImportModal}
-          onImported={handleDiagramImported}
+          projectId={projectId}
+          onClose={() => setImportModalOpen(false)}
+          onImported={(id) => navigate(`/diagrams/${id}`)}
         />
       )}
     </div>
