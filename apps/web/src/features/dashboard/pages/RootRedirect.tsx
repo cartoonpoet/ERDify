@@ -7,13 +7,14 @@ import { CreateOrgModal } from "../components/CreateOrgModal";
 export const RootRedirect = () => {
   const queryClient = useQueryClient();
   const [orgModalOpen, setOrgModalOpen] = useState(false);
-  const { data: orgs, isLoading } = useQuery({
+  const { data: orgs = [], isLoading } = useQuery({
     queryKey: ["orgs"],
     queryFn: listMyOrganizations,
   });
 
   if (isLoading) return null;
-  if (orgs && orgs.length > 0) return <Navigate to={`/${orgs[0].id}`} replace />;
+  const firstOrg = orgs[0];
+  if (firstOrg) return <Navigate to={`/${firstOrg.id}`} replace />;
 
   return (
     <>
