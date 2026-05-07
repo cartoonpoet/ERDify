@@ -1,31 +1,19 @@
 import { useState } from "react";
 import type { FocusEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import type { OrgResponse } from "../../../shared/api/organizations.api";
-import type { ProjectResponse } from "../../../shared/api/projects.api";
-import type { DiagramResponse } from "../../../shared/api/diagrams.api";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { listMyOrganizations } from "../../../shared/api/organizations.api";
+import { listProjects } from "../../../shared/api/projects.api";
+import { listDiagrams } from "../../../shared/api/diagrams.api";
 import type { DiagramDialect } from "@erdify/domain";
 import * as css from "./unified-sidebar.css";
 
 interface UnifiedSidebarProps {
-  orgs: OrgResponse[];
-  selectedOrgId: string | null;
-  onSelectOrg: (orgId: string) => void;
-  onDeleteOrg: (orgId: string) => void;
   onCreateOrg: () => void;
-
-  projects: ProjectResponse[];
-  selectedProjectId: string | null;
-  onSelectProject: (projectId: string) => void;
-  onDeleteProject: (projectId: string) => void;
+  onDeleteOrg: (orgId: string) => void;
   onCreateProject: () => void;
-
-  diagrams: DiagramResponse[];
+  onDeleteProject: (projectId: string) => void;
   onCreateDiagram: () => void;
-  memberManagementActive: boolean;
-  onManageMembers: () => void;
-  apiKeysActive: boolean;
-  onApiKeys: () => void;
 }
 
 const dialectLabel: Record<DiagramDialect, string> = {
@@ -36,16 +24,46 @@ const dialectLabel: Record<DiagramDialect, string> = {
 };
 
 export const UnifiedSidebar = ({
-  orgs, selectedOrgId, onSelectOrg, onDeleteOrg, onCreateOrg,
-  projects, selectedProjectId, onSelectProject, onDeleteProject, onCreateProject,
-  diagrams, onCreateDiagram,
-  memberManagementActive, onManageMembers,
-  apiKeysActive, onApiKeys,
+  onCreateOrg, onDeleteOrg,
+  onCreateProject, onDeleteProject,
+  onCreateDiagram,
 }: UnifiedSidebarProps) => {
   const navigate = useNavigate();
+  const { orgId, projectId } = useParams<{ orgId?: string; projectId?: string }>();
+  const { pathname } = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const selectedOrg = orgs.find((o) => o.id === selectedOrgId) ?? null;
+  const { data: orgs = [] } = useQuery({
+    queryKey: ["orgs"],
+    queryFn: listMyOrganizations,
+  });
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects", orgId],
+    queryFn: () => listProjects(orgId!),
+    enabled: !!orgId,
+  });
+  const { data: diagrams = [] } = useQuery({
+    queryKey: ["diagrams", projectId],
+    queryFn: () => listDiagrams(projectId!),
+    enabled: !!projectId,
+  });
+
+  const selectedOrg = orgs.find((o) => o.id === orgId) ?? null;
+  const memberManagementActive = pathname.endsWith("/members");
+  const apiKeysActive = pathname.endsWith("/api-keys");
+
+  const handleSelectOrg = (id: string) => {
+    navigate(`/${id}`);
+    setDropdownOpen(false);
+  };
+
+  const handleSelectProject = (pid: string) => {
+    if (pid === projectId) {
+      navigate(`/${orgId}`);
+    } else {
+      navigate(`/${orgId}/${pid}`);
+    }
+  };
 
   const handleWrapperBlur = (e: FocusEvent<HTMLDivElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget)) setDropdownOpen(false);
@@ -88,12 +106,11 @@ export const UnifiedSidebar = ({
                   className={css.orgDropdownItem}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onSelectOrg(org.id);
-                    setDropdownOpen(false);
+                    handleSelectOrg(org.id);
                   }}
                 >
                   <span className={css.checkMark} aria-hidden="true">
-                    {org.id === selectedOrgId ? "✓" : ""}
+                    {org.id === orgId ? "✓" : ""}
                   </span>
                   <span className={css.orgBadgeSmall} aria-hidden="true">
                     {org.name.charAt(0).toUpperCase()}
@@ -130,18 +147,18 @@ export const UnifiedSidebar = ({
         )}
       </div>
 
-      {selectedOrgId && (
+      {orgId && (
         <>
           <div className={css.tree}>
             <div className={css.treeSectionLabel}>프로젝트</div>
             {projects.map((project) => {
-              const isExpanded = selectedProjectId === project.id;
+              const isExpanded = projectId === project.id;
               return (
                 <div key={project.id}>
                   <div className={css.projRowWrapper}>
                     <button
                       className={[css.projRow, isExpanded ? css.projRowActive : ""].filter(Boolean).join(" ")}
-                      onClick={() => onSelectProject(project.id)}
+                      onClick={() => handleSelectProject(project.id)}
                       aria-pressed={isExpanded}
                     >
                       <span className={css.projArrow} aria-hidden="true">{isExpanded ? "▾" : "▸"}</span>
@@ -187,7 +204,7 @@ export const UnifiedSidebar = ({
           <div className={[css.treeSectionLabel, css.treeSectionLabelSpaced].join(" ")}>관리</div>
           <button
             className={[css.projRow, memberManagementActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
-            onClick={onManageMembers}
+            onClick={() => navigate(`/${orgId}/members`)}
             aria-pressed={memberManagementActive}
           >
             <span className={css.projArrow} aria-hidden="true" />
@@ -205,7 +222,7 @@ export const UnifiedSidebar = ({
       <div className={css.sidebarBottomBar}>
         <button
           className={[css.projRow, apiKeysActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
-          onClick={onApiKeys}
+          onClick={() => { if (orgId) navigate(`/${orgId}/api-keys`); }}
           aria-pressed={apiKeysActive}
         >
           <span className={css.projArrow} aria-hidden="true" />
