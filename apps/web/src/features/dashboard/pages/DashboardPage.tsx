@@ -61,7 +61,10 @@ export const DashboardPage = () => {
   });
 
   const deleteProjectMutation = useMutation({
-    mutationFn: (pid: string) => deleteProject(orgId!, pid),
+    mutationFn: (pid: string) => {
+      if (!orgId) return Promise.reject(new Error("no org"));
+      return deleteProject(orgId, pid);
+    },
     onSuccess: (_data, deletedProjectId) => {
       if (projectId === deletedProjectId) navigate(`/${orgId}`);
       void queryClient.invalidateQueries({ queryKey: ["projects", orgId] });
