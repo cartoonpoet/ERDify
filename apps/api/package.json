@@ -10,7 +10,7 @@
     "lint": "eslint src",
     "pretypecheck": "pnpm --filter @erdify/db build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "pretest": "pnpm --filter @erdify/db build",
+    "pretest": "pnpm --filter @erdify/db build && pnpm --filter @erdify/domain build",
     "test": "vitest run"
   },
   "dependencies": {
