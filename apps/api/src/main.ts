@@ -10,7 +10,6 @@ import { AppModule } from "./app.module";
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
 
-  // NestJS default limit is 100kb — increase for large DDL/diagram imports
   app.useBodyParser("json", { limit: "50mb" });
   app.useBodyParser("urlencoded", { limit: "50mb", extended: true } as Parameters<typeof app.useBodyParser>[1]);
 
