@@ -121,21 +121,21 @@ describe("EmailService", () => {
     it("includes inviteUrl in html body", async () => {
       await service.sendInviteEmail(defaultParams);
 
-      const callArgs = mockSendMail.mock.calls[0][0] as { html: string };
+      const callArgs = mockSendMail.mock.calls[0]![0] as { html: string };
       expect(callArgs.html).toContain("https://erdify.app/invite/abc123");
     });
 
     it("includes inviterName in html body", async () => {
       await service.sendInviteEmail(defaultParams);
 
-      const callArgs = mockSendMail.mock.calls[0][0] as { html: string };
+      const callArgs = mockSendMail.mock.calls[0]![0] as { html: string };
       expect(callArgs.html).toContain("Alice");
     });
 
     it("includes role in html body", async () => {
       await service.sendInviteEmail(defaultParams);
 
-      const callArgs = mockSendMail.mock.calls[0][0] as { html: string };
+      const callArgs = mockSendMail.mock.calls[0]![0] as { html: string };
       expect(callArgs.html).toContain("editor");
     });
 
