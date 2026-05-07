@@ -145,4 +145,9 @@ describe("DiagramGrid", () => {
     expect(await screen.findByText("User Schema")).toBeInTheDocument();
     expect(screen.queryByText("Order Schema")).not.toBeInTheDocument();
   });
+
+  it("projectId가 없으면 '프로젝트를 선택하세요'를 렌더링한다", async () => {
+    wrap({ projectId: undefined });
+    expect(await screen.findByText("프로젝트를 선택하세요")).toBeInTheDocument();
+  });
 });

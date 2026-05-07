@@ -230,4 +230,20 @@ describe("UnifiedSidebar", () => {
     fireEvent.click(screen.getByText("API 키").closest("button")!);
     expect(mockNavigate).toHaveBeenCalledWith("/org-1/api-keys");
   });
+
+  it("멤버 관리 버튼 클릭 시 members 경로로 navigate가 호출된다", async () => {
+    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+    await screen.findByText("Acme Corp");
+    fireEvent.click(screen.getByText("멤버 관리").closest("button")!);
+    expect(mockNavigate).toHaveBeenCalledWith("/org-1/members");
+  });
+
+  it("선택된 프로젝트를 다시 클릭하면 프로젝트 목록 루트로 navigate가 호출된다", async () => {
+    wrap(<UnifiedSidebar {...defaultProps} />, {
+      initialPath: "/org-1/p1",
+      routePattern: "/:orgId/:projectId",
+    });
+    fireEvent.click((await screen.findByText("Backend API")).closest("button")!);
+    expect(mockNavigate).toHaveBeenCalledWith("/org-1");
+  });
 });
