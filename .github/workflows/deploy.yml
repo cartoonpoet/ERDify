@@ -52,11 +52,10 @@ jobs:
               - 'nginx/**'
               - 'pnpm-lock.yaml'
 
-  # ── 테스트 (변경된 앱만, 빌드 전 실행) ──────────────────────────────────
+  # ── 테스트 (항상 실행, 빌드 전 실행) ────────────────────────────────────
   test-web:
     name: Test Web
     needs: changes
-    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -76,7 +75,6 @@ jobs:
   test-api:
     name: Test API
     needs: changes
-    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
