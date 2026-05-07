@@ -1,10 +1,15 @@
 import { useState } from "react";
 import type { FocusEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams, useOutletContext } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import { MoreVertical, Share2, Trash2 } from "lucide-react";
+import { listDiagrams } from "../../../shared/api/diagrams.api";
+import { listProjects } from "../../../shared/api/projects.api";
+import { getMe } from "../../../shared/api/auth.api";
 import type { DiagramResponse } from "../../../shared/api/diagrams.api";
+import type { DashboardOutletContext } from "../pages/DashboardPage";
 import { Button, Skeleton } from "../../../design-system";
 import {
   mainArea, mainHeader, mainTitle, filterRow, filterChip, filterChipVariants,
@@ -16,17 +21,6 @@ import {
 import { ShareDiagramModal } from "../../editor/components/ShareDiagramModal";
 
 type FilterType = "all" | "recent" | "mine";
-
-interface DiagramGridProps {
-  diagrams: DiagramResponse[];
-  projectName?: string;
-  currentUserId: string | null;
-  onCreateDiagram: () => void;
-  onImportDiagram?: () => void;
-  onDeleteDiagram: (diagramId: string) => void;
-  loading?: boolean;
-  filterQuery?: string;
-}
 
 const DiagramCardPreview = ({ diagram }: { diagram: DiagramResponse }) => {
   const previewEntities = diagram.content.entities.slice(0, 2);
@@ -66,17 +60,37 @@ function applyFilter(
   return result;
 }
 
-export const DiagramGrid = ({ diagrams, projectName, currentUserId, onCreateDiagram, onImportDiagram, onDeleteDiagram, loading = false, filterQuery }: DiagramGridProps) => {
+export const DiagramGrid = () => {
+  const { orgId, projectId } = useParams<{ orgId: string; projectId?: string }>();
+  const { onCreateDiagram, onImportDiagram, onDeleteDiagram, searchQuery } =
+    useOutletContext<DashboardOutletContext>();
+
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
+  const { data: projects = [] } = useQuery({
+    queryKey: ["projects", orgId],
+    queryFn: () => listProjects(orgId!),
+    enabled: !!orgId,
+  });
+  const { data: diagrams = [], isLoading } = useQuery({
+    queryKey: ["diagrams", projectId],
+    queryFn: () => listDiagrams(projectId!),
+    enabled: !!projectId,
+  });
+
+  const projectName = projects.find((p) => p.id === projectId)?.name;
+  const currentUserId = me?.id ?? null;
+
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [shareDiagramItem, setShareDiagramItem] = useState<DiagramResponse | null>(null);
-  const filtered = applyFilter(diagrams, activeFilter, currentUserId, filterQuery);
+
+  const filtered = applyFilter(diagrams, activeFilter, currentUserId, searchQuery || undefined);
 
   return (
     <div className={mainArea}>
       <div className={mainHeader}>
         <div className={mainTitle}>{projectName ?? "프로젝트를 선택하세요"}</div>
-        {projectName && onImportDiagram && (
+        {projectName && (
           <Button variant="secondary" size="md" onClick={onImportDiagram}>
             가져오기
           </Button>
@@ -112,7 +126,7 @@ export const DiagramGrid = ({ diagrams, projectName, currentUserId, onCreateDiag
           </button>
         </div>
       )}
-      {loading ? (
+      {isLoading && !!projectId ? (
         <div className={grid}>
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} height={140} />
@@ -178,10 +192,12 @@ export const DiagramGrid = ({ diagrams, projectName, currentUserId, onCreateDiag
               )}
             </div>
           ))}
-          <button className={newCard} onClick={onCreateDiagram}>
-            <div className={newCardIcon}>+</div>
-            새 ERD 만들기
-          </button>
+          {projectName && (
+            <button className={newCard} onClick={onCreateDiagram}>
+              <div className={newCardIcon}>+</div>
+              새 ERD 만들기
+            </button>
+          )}
         </div>
       )}
       {shareDiagramItem && (
