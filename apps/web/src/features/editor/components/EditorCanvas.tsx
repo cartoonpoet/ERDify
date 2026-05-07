@@ -2,7 +2,7 @@ import { randomUUID } from "../../../shared/utils/uuid";
 import { useRef, useState } from "react";
 import type { MouseEvent, CSSProperties } from "react";
 import { ReactFlow, Background, Controls, useReactFlow } from "@xyflow/react";
-import type { Edge, EdgeChange, NodeChange, Connection } from "@xyflow/react";
+import type { Edge, EdgeChange, NodeChange, NodeSelectionChange, Connection } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { updateEntityPosition, addRelationship, removeRelationship, addEntity } from "@erdify/domain";
 import type { DiagramRelationship, DiagramDocument } from "@erdify/domain";
@@ -231,6 +231,11 @@ export const EditorCanvas = () => {
 
   function onNodesChange(changes: NodeChange<EditableTableNodeType>[]) {
     applyNodeChanges(changes);
+    const selectionChanges = changes.filter((c): c is NodeSelectionChange => c.type === "select");
+    if (selectionChanges.length > 0) {
+      const selected = selectionChanges.find((c) => c.selected);
+      setSelectedEntity(selected?.id ?? null);
+    }
   }
 
   function onNodeDragStop(_: MouseEvent, node: EditableTableNodeType) {

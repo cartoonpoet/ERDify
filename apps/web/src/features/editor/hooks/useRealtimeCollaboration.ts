@@ -72,6 +72,7 @@ function applyDiff(
       if (draftEntity.name !== nextEntity.name) draftEntity.name = nextEntity.name;
       if (draftEntity.logicalName !== nextEntity.logicalName) draftEntity.logicalName = nextEntity.logicalName;
       if (draftEntity.comment !== nextEntity.comment) draftEntity.comment = nextEntity.comment;
+      if (draftEntity.color !== nextEntity.color) draftEntity.color = nextEntity.color;
       const prevCols = prevEntity?.columns ?? [];
       applyColumnDiff(draftEntity.columns as DiagramColumn[], prevCols, nextEntity.columns);
     }
