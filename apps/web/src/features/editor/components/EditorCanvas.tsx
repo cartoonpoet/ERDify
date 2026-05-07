@@ -1,7 +1,7 @@
 import { randomUUID } from "../../../shared/utils/uuid";
 import { useRef, useState } from "react";
 import type { MouseEvent, CSSProperties } from "react";
-import { ReactFlow, Background, Controls, useReactFlow } from "@xyflow/react";
+import { ReactFlow, Background, Controls, MiniMap, useReactFlow } from "@xyflow/react";
 import type { Edge, EdgeChange, NodeChange, NodeSelectionChange, Connection } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { updateEntityPosition, addRelationship, removeRelationship, addEntity } from "@erdify/domain";
@@ -83,36 +83,120 @@ type ContextMenuState = {
 
 function computeAutoLayout(doc: DiagramDocument, measuredSizes: Map<string, { w: number; h: number }>) {
   const NODE_W = 280;
-  const COL_GAP = 56;
-  const ROW_GAP = 40;
-  const N_COLS = Math.min(8, Math.max(3, Math.ceil(Math.sqrt(doc.entities.length))));
+  const H_GAP = 96;
+  const V_GAP = 80;
+  const GROUP_H_PAD = 180;
+  const GROUP_V_PAD = 120;
 
-  const estimateH = (entityId: string, colCount: number) => {
-    const m = measuredSizes.get(entityId);
-    return (m?.h ?? (38 + 28 + colCount * 30)) + ROW_GAP;
-  };
-  const estimateW = (entityId: string) => {
-    const m = measuredSizes.get(entityId);
-    return (m?.w ?? NODE_W) + COL_GAP;
-  };
+  const estimateH = (id: string, colCount: number) =>
+    (measuredSizes.get(id)?.h ?? (38 + 28 + colCount * 30)) + V_GAP;
+  const estimateW = (id: string) =>
+    (measuredSizes.get(id)?.w ?? NODE_W) + H_GAP;
 
-  const colWidths = Array<number>(N_COLS).fill(0);
-  const colHeights = Array<number>(N_COLS).fill(0);
+  // Build undirected adjacency graph for connected-component detection
+  const adj = new Map<string, Set<string>>();
+  for (const e of doc.entities) adj.set(e.id, new Set());
+  for (const r of doc.relationships) {
+    adj.get(r.sourceEntityId)?.add(r.targetEntityId);
+    adj.get(r.targetEntityId)?.add(r.sourceEntityId);
+  }
+
+  // BFS — find connected components (each = one "cluster" of related tables)
+  const visited = new Set<string>();
+  const components: string[][] = [];
+  for (const e of doc.entities) {
+    if (visited.has(e.id)) continue;
+    const comp: string[] = [];
+    const queue = [e.id];
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      if (visited.has(id)) continue;
+      visited.add(id);
+      comp.push(id);
+      for (const nbr of adj.get(id) ?? []) {
+        if (!visited.has(nbr)) queue.push(nbr);
+      }
+    }
+    components.push(comp);
+  }
+
+  // Largest/most-connected clusters first
+  components.sort((a, b) => b.length - a.length);
+
+  // In-degree: tables referenced by FKs (parent tables) go first within a cluster
+  const inDegree = new Map<string, number>(doc.entities.map((e) => [e.id, 0]));
+  for (const r of doc.relationships) {
+    inDegree.set(r.targetEntityId, (inDegree.get(r.targetEntityId) ?? 0) + 1);
+  }
+
+  // Arrange clusters in a wrapping row-grid
+  const GROUPS_PER_ROW = Math.max(1, Math.ceil(Math.sqrt(components.length)));
   const positions: Record<string, { x: number; y: number }> = {};
 
-  for (const entity of doc.entities) {
-    const minH = Math.min(...colHeights);
-    const col = colHeights.indexOf(minH);
-    const x = colWidths.slice(0, col).reduce((acc, w) => acc + w, 0);
-    positions[entity.id] = { x, y: colHeights[col]! };
-    colHeights[col] = colHeights[col]! + estimateH(entity.id, entity.columns.length);
-    colWidths[col] = Math.max(colWidths[col]!, estimateW(entity.id));
+  let originX = 0;
+  let originY = 0;
+  let rowMaxH = 0;
+  let groupCol = 0;
+
+  for (const comp of components) {
+    const sorted = [...comp].sort((a, b) => (inDegree.get(b) ?? 0) - (inDegree.get(a) ?? 0));
+
+    const nCols = Math.min(4, Math.max(1, Math.ceil(Math.sqrt(sorted.length))));
+    const colWidths = Array<number>(nCols).fill(0);
+    const colHeights = Array<number>(nCols).fill(0);
+
+    for (const id of sorted) {
+      const entity = doc.entities.find((e) => e.id === id)!;
+      const col = colHeights.indexOf(Math.min(...colHeights));
+      const x = colWidths.slice(0, col).reduce((s, w) => s + w, 0);
+      positions[id] = { x: originX + x, y: originY + colHeights[col]! };
+      colHeights[col] = colHeights[col]! + estimateH(id, entity.columns.length);
+      colWidths[col] = Math.max(colWidths[col]!, estimateW(id));
+    }
+
+    const groupW = colWidths.reduce((s, w) => s + w, 0);
+    const groupH = Math.max(...colHeights);
+    rowMaxH = Math.max(rowMaxH, groupH);
+
+    groupCol++;
+    if (groupCol >= GROUPS_PER_ROW) {
+      originX = 0;
+      originY += rowMaxH + GROUP_V_PAD;
+      rowMaxH = 0;
+      groupCol = 0;
+    } else {
+      originX += groupW + GROUP_H_PAD;
+    }
   }
 
   return positions;
 }
 
 // ReactFlow 내부 컴포넌트 — useReactFlow 사용 가능
+const ClickableMiniMap = ({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) => {
+  const { setViewport, getViewport } = useReactFlow();
+  return (
+    <MiniMap
+      nodeColor={(node) => (node.data as { entity: { color?: string | null } }).entity?.color ?? "#60a5fa"}
+      maskColor="rgba(240,244,248,0.7)"
+      style={{ bottom: 56, right: 8 }}
+      onClick={(_event, position) => {
+        const { zoom } = getViewport();
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        setViewport(
+          {
+            x: rect.width / 2 - position.x * zoom,
+            y: rect.height / 2 - position.y * zoom,
+            zoom,
+          },
+          { duration: 300 }
+        );
+      }}
+    />
+  );
+};
+
 const ContextMenuInner = ({
   state,
   onClose,
@@ -339,6 +423,7 @@ export const EditorCanvas = () => {
       >
         <Background />
         <Controls />
+        <ClickableMiniMap containerRef={containerRef} />
         {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
         {contextMenu && (
           <ContextMenuInner
