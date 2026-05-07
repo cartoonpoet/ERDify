@@ -8,6 +8,13 @@ services:
       DATABASE_URL: postgres://${DB_USER:-erdify}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-erdify}
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_SECURE: "false"
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_USER}
+      APP_URL: ${APP_URL}
     volumes:
       - erdify_uploads:/app/uploads
     networks:
