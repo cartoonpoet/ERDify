@@ -1,3 +1,62 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="ERDify">
-  <path d="M16 2.8c1.5 0 2.7.9 3.7 1.9l7.6 7.6c2.1 2.1 2.1 5.3 0 7.4l-7.6 7.6c-2.1 2.1-5.3 2.1-7.4 0l-7.6-7.6c-2.1-2.1-2.1-5.3 0-7.4l7.6-7.6c1-1 2.2-1.9 3.7-1.9Z" fill="#0064E0"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" role="img" aria-label="ERDify">
+  <defs>
+    <radialGradient id="face" cx="64" cy="58" r="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#93c5fd"/>
+      <stop offset="16%"  stop-color="#4b9ef7"/>
+      <stop offset="38%"  stop-color="#0064E0"/>
+      <stop offset="64%"  stop-color="#0143B5"/>
+      <stop offset="84%"  stop-color="#061550"/>
+      <stop offset="100%" stop-color="#020c38"/>
+    </radialGradient>
+    <radialGradient id="spec" cx="70" cy="58" r="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="rgba(210,236,255,0.72)"/>
+      <stop offset="42%"  stop-color="rgba(170,215,255,0.18)"/>
+      <stop offset="100%" stop-color="rgba(120,185,255,0)"/>
+    </radialGradient>
+    <radialGradient id="hot" cx="62" cy="50" r="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="rgba(255,255,255,0.82)"/>
+      <stop offset="55%"  stop-color="rgba(255,255,255,0.1)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+    <radialGradient id="edge" cx="176" cy="110" r="72" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#3d8ef0"/>
+      <stop offset="22%"  stop-color="#1d4ed8"/>
+      <stop offset="55%"  stop-color="#0b1e6a"/>
+      <stop offset="100%" stop-color="#020930"/>
+    </radialGradient>
+    <linearGradient id="crease" x1="110" y1="38" x2="110" y2="174" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="rgba(224,238,255,0.9)"/>
+      <stop offset="40%"  stop-color="rgba(191,219,254,0.65)"/>
+      <stop offset="80%"  stop-color="rgba(147,197,253,0.2)"/>
+      <stop offset="100%" stop-color="rgba(147,197,253,0)"/>
+    </linearGradient>
+    <filter id="drop" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="20" stdDeviation="22" flood-color="#0143B5" flood-opacity="0.54"/>
+    </filter>
+    <filter id="glow" x="-200%" y="-80%" width="500%" height="260%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4"/>
+    </filter>
+    <clipPath id="rclip">
+      <rect x="108" y="0" width="112" height="220"/>
+    </clipPath>
+  </defs>
+
+  <g filter="url(#drop)">
+    <path d="M16 2.8c1.5 0 2.7.9 3.7 1.9l7.6 7.6c2.1 2.1 2.1 5.3 0 7.4l-7.6 7.6c-2.1 2.1-5.3 2.1-7.4 0l-7.6-7.6c-2.1-2.1-2.1-5.3 0-7.4l7.6-7.6c1-1 2.2-1.9 3.7-1.9Z"
+      transform="translate(32.8, 27.2) scale(5)" fill="url(#edge)"/>
+    <path d="M16 2.8c1.5 0 2.7.9 3.7 1.9l7.6 7.6c2.1 2.1 2.1 5.3 0 7.4l-7.6 7.6c-2.1 2.1-5.3 2.1-7.4 0l-7.6-7.6c-2.1-2.1-2.1-5.3 0-7.4l7.6-7.6c1-1 2.2-1.9 3.7-1.9Z"
+      transform="translate(30, 26) scale(5)" fill="url(#face)"/>
+    <path d="M16 2.8c1.5 0 2.7.9 3.7 1.9l7.6 7.6c2.1 2.1 2.1 5.3 0 7.4l-7.6 7.6c-2.1 2.1-5.3 2.1-7.4 0l-7.6-7.6c-2.1-2.1-2.1-5.3 0-7.4l7.6-7.6c1-1 2.2-1.9 3.7-1.9Z"
+      transform="translate(30, 26) scale(5)" fill="url(#spec)" style="mix-blend-mode:screen"/>
+    <path d="M16 2.8c1.5 0 2.7.9 3.7 1.9l7.6 7.6c2.1 2.1 2.1 5.3 0 7.4l-7.6 7.6c-2.1 2.1-5.3 2.1-7.4 0l-7.6-7.6c-2.1-2.1-2.1-5.3 0-7.4l7.6-7.6c1-1 2.2-1.9 3.7-1.9Z"
+      transform="translate(30, 26) scale(5)" fill="url(#hot)" style="mix-blend-mode:screen"/>
+    <path d="M16 2.8c1.5 0 2.7.9 3.7 1.9l7.6 7.6c2.1 2.1 2.1 5.3 0 7.4l-7.6 7.6c-2.1 2.1-5.3 2.1-7.4 0l-7.6-7.6c-2.1-2.1-2.1-5.3 0-7.4l7.6-7.6c1-1 2.2-1.9 3.7-1.9Z"
+      transform="translate(30, 26) scale(5)"
+      fill="none" stroke="rgba(200,228,255,0.5)" stroke-width="9"
+      clip-path="url(#rclip)" filter="url(#glow)"/>
+    <path d="M16 2.8c1.5 0 2.7.9 3.7 1.9l7.6 7.6c2.1 2.1 2.1 5.3 0 7.4l-7.6 7.6c-2.1 2.1-5.3 2.1-7.4 0l-7.6-7.6c-2.1-2.1-2.1-5.3 0-7.4l7.6-7.6c1-1 2.2-1.9 3.7-1.9Z"
+      transform="translate(30, 26) scale(5)"
+      fill="none" stroke="url(#crease)" stroke-width="2"
+      clip-path="url(#rclip)"/>
+  </g>
 </svg>
