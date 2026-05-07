@@ -1,20 +1,20 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button, Skeleton } from "../../../design-system";
 import { getMe } from "../../../shared/api/auth.api";
+import { listMyOrganizations } from "../../../shared/api/organizations.api";
 import { useMembers } from "../hooks/useMembers";
 import { useInvites } from "../hooks/useInvites";
 import { InviteOrgModal } from "../components/InviteOrgModal";
 import * as css from "./member-management-page.css";
 
-interface MemberManagementPageProps {
-  orgId: string;
-  orgName: string;
-}
-
-export const MemberManagementPage = ({ orgId, orgName }: MemberManagementPageProps) => {
+export const MemberManagementPage = () => {
+  const { orgId = "" } = useParams<{ orgId: string }>();
   const [inviteOpen, setInviteOpen] = useState(false);
   const { data: me, isLoading: meLoading } = useQuery({ queryKey: ["me"], queryFn: getMe });
+  const { data: orgs = [] } = useQuery({ queryKey: ["orgs"], queryFn: listMyOrganizations });
+  const orgName = orgs.find((o) => o.id === orgId)?.name ?? "";
   const { members, isLoading: membersLoading, updateRole, removeMember } = useMembers(orgId);
   const { invites, isLoading: invitesLoading, cancelInvite } = useInvites(orgId);
 
