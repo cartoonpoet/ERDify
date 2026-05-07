@@ -93,8 +93,12 @@ jobs:
   # ── 이미지 빌드 (변경된 앱만, 병렬 실행) ─────────────────────────────────
   build-api:
     name: Build API Image
-    needs: [changes, test-api]
-    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.infra == 'true'
+    needs: [changes, test-api, test-web]
+    if: |
+      always() &&
+      (needs.changes.outputs.api == 'true' || needs.changes.outputs.infra == 'true') &&
+      needs.test-api.result != 'failure' &&
+      needs.test-web.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -118,8 +122,12 @@ jobs:
 
   build-web:
     name: Build Web Image
-    needs: [changes, test-web]
-    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.infra == 'true'
+    needs: [changes, test-web, test-api]
+    if: |
+      always() &&
+      (needs.changes.outputs.web == 'true' || needs.changes.outputs.infra == 'true') &&
+      needs.test-web.result != 'failure' &&
+      needs.test-api.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -145,8 +153,12 @@ jobs:
 
   build-landing:
     name: Build Landing Image
-    needs: changes
-    if: needs.changes.outputs.landing == 'true' || needs.changes.outputs.infra == 'true'
+    needs: [changes, test-web, test-api]
+    if: |
+      always() &&
+      (needs.changes.outputs.landing == 'true' || needs.changes.outputs.infra == 'true') &&
+      needs.test-web.result != 'failure' &&
+      needs.test-api.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       contents: read
