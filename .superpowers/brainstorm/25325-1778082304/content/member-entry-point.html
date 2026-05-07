@@ -1,0 +1,138 @@
+<h2>멤버 관리 — 진입점 선택</h2>
+<p class="subtitle">어디서 멤버 관리 화면을 열까요?</p>
+
+<div class="cards">
+
+  <!-- Option A: Sidebar menu -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:16px;font-family:sans-serif;">
+      <div style="display:flex;gap:12px;height:240px;">
+        <div style="width:150px;background:#1e293b;border-radius:8px;padding:10px;flex-shrink:0;">
+          <div style="color:#94a3b8;font-size:10px;margin-bottom:6px;">조직</div>
+          <div style="background:#334155;border-radius:4px;padding:6px 8px;color:#f1f5f9;font-size:11px;margin-bottom:2px;">⚡ LegalTech Co</div>
+          <!-- Sub-menu under org -->
+          <div style="padding:5px 8px 5px 16px;color:#64748b;font-size:10px;border-left:1px solid #334155;margin-left:8px;">📊 다이어그램</div>
+          <div style="padding:5px 8px 5px 16px;background:#6366f120;color:#818cf8;font-size:10px;border-left:2px solid #6366f1;margin-left:8px;border-radius:0 4px 4px 0;">👥 멤버 관리</div>
+          <div style="margin-top:10px;color:#94a3b8;font-size:10px;margin-bottom:6px;">다른 조직</div>
+          <div style="padding:6px 8px;color:#64748b;font-size:11px;">🏢 Company B</div>
+        </div>
+        <div style="flex:1;background:#1e293b;border-radius:8px;padding:12px;">
+          <div style="color:#f1f5f9;font-size:12px;font-weight:600;margin-bottom:10px;">👥 멤버 관리 · LegalTech Co</div>
+          <div style="background:#0f172a;border-radius:6px;">
+            <div style="display:flex;align-items:center;padding:8px 10px;border-bottom:1px solid #1e293b;gap:8px;">
+              <div style="width:22px;height:22px;background:#6366f1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;">J</div>
+              <div style="flex:1;color:#e2e8f0;font-size:10px;">junho@co.com</div>
+              <span style="background:#334155;border-radius:4px;padding:2px 7px;color:#94a3b8;font-size:9px;">Owner</span>
+            </div>
+            <div style="display:flex;align-items:center;padding:8px 10px;gap:8px;">
+              <div style="width:22px;height:22px;background:#10b981;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;">K</div>
+              <div style="flex:1;color:#e2e8f0;font-size:10px;">kim@co.com</div>
+              <span style="background:#0f172a;border:1px solid #475569;border-radius:4px;padding:2px 7px;color:#94a3b8;font-size:9px;">Editor ▾</span>
+              <span style="color:#ef4444;font-size:11px;">✕</span>
+            </div>
+          </div>
+          <button style="margin-top:10px;background:#6366f1;color:white;border:none;border-radius:6px;padding:6px 12px;font-size:10px;width:100%;">+ 멤버 초대</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — 사이드바 서브메뉴</h3>
+      <p>조직 아래 "👥 멤버 관리" 메뉴. 클릭하면 오른쪽 메인 영역에 멤버 관리 화면.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Modal/Drawer from org settings icon -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:16px;font-family:sans-serif;position:relative;overflow:hidden;">
+      <div style="display:flex;gap:12px;height:240px;">
+        <div style="width:150px;background:#1e293b;border-radius:8px;padding:10px;flex-shrink:0;">
+          <div style="color:#94a3b8;font-size:10px;margin-bottom:6px;">조직</div>
+          <div style="background:#334155;border-radius:4px;padding:6px 8px;color:#f1f5f9;font-size:11px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;">
+            <span>⚡ LegalTech Co</span>
+            <span style="color:#818cf8;font-size:13px;cursor:pointer;">⚙</span>
+          </div>
+          <div style="padding:6px 8px;color:#64748b;font-size:11px;">🏢 Company B</div>
+        </div>
+        <div style="flex:1;background:#1e293b;border-radius:8px;padding:12px;position:relative;">
+          <div style="color:#94a3b8;font-size:10px;margin-bottom:8px;">다이어그램</div>
+          <div style="background:#0f172a;border-radius:6px;padding:8px 10px;color:#e2e8f0;font-size:11px;margin-bottom:4px;">📊 주문 관리 ERD</div>
+          <div style="background:#0f172a;border-radius:6px;padding:8px 10px;color:#e2e8f0;font-size:11px;">📊 사용자 ERD</div>
+          <!-- Settings drawer -->
+          <div style="position:absolute;top:0;right:0;bottom:0;width:190px;background:#1e293b;border-left:1px solid #334155;border-radius:0 8px 8px 0;padding:12px;box-shadow:-8px 0 20px rgba(0,0,0,0.4);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <div style="color:#f1f5f9;font-size:11px;font-weight:600;">⚙ LegalTech Co 설정</div>
+              <span style="color:#64748b;font-size:14px;cursor:pointer;">✕</span>
+            </div>
+            <div style="color:#94a3b8;font-size:10px;margin-bottom:6px;">멤버</div>
+            <div style="background:#0f172a;border-radius:6px;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;padding:7px 8px;border-bottom:1px solid #1e293b;gap:6px;">
+                <div style="width:20px;height:20px;background:#6366f1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:8px;">J</div>
+                <div style="flex:1;color:#e2e8f0;font-size:9px;">junho@co.com</div>
+                <span style="color:#94a3b8;font-size:8px;">Owner</span>
+              </div>
+              <div style="display:flex;align-items:center;padding:7px 8px;gap:6px;">
+                <div style="width:20px;height:20px;background:#10b981;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:8px;">K</div>
+                <div style="flex:1;color:#e2e8f0;font-size:9px;">kim@co.com</div>
+                <span style="background:#0f172a;border:1px solid #475569;border-radius:3px;padding:1px 5px;color:#94a3b8;font-size:8px;">Ed ▾</span>
+                <span style="color:#ef4444;font-size:10px;">✕</span>
+              </div>
+            </div>
+            <button style="width:100%;background:#6366f1;color:white;border:none;border-radius:5px;padding:5px;font-size:9px;">+ 멤버 초대</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — 조직 설정 드로어</h3>
+      <p>조직명 옆 ⚙ 아이콘 클릭 → 오른쪽에서 설정 드로어 슬라이드. 멤버 관리가 그 안에.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Modal popup -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f172a;padding:16px;font-family:sans-serif;position:relative;">
+      <div style="display:flex;gap:12px;height:240px;">
+        <div style="width:150px;background:#1e293b;border-radius:8px;padding:10px;flex-shrink:0;">
+          <div style="color:#94a3b8;font-size:10px;margin-bottom:6px;">조직</div>
+          <div style="background:#334155;border-radius:4px;padding:6px 8px;color:#f1f5f9;font-size:11px;margin-bottom:4px;display:flex;justify-content:space-between;">
+            <span>⚡ LegalTech Co</span>
+          </div>
+        </div>
+        <div style="flex:1;background:#1e293b;border-radius:8px;padding:12px;">
+          <div style="color:#94a3b8;font-size:10px;margin-bottom:4px;">다이어그램</div>
+          <div style="background:#0f172a;border-radius:6px;padding:8px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="color:#e2e8f0;font-size:10px;">📊 주문 관리 ERD</span>
+          </div>
+        </div>
+      </div>
+      <!-- Full modal overlay -->
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+        <div style="background:#1e293b;border-radius:10px;padding:16px;width:260px;border:1px solid #334155;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="color:#f1f5f9;font-size:12px;font-weight:600;">👥 멤버 관리</div>
+            <span style="color:#64748b;cursor:pointer;">✕</span>
+          </div>
+          <div style="background:#0f172a;border-radius:6px;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;padding:8px 10px;border-bottom:1px solid #1e293b;gap:8px;">
+              <div style="width:22px;height:22px;background:#6366f1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;">J</div>
+              <div style="flex:1;color:#e2e8f0;font-size:10px;">junho@co.com</div>
+              <span style="color:#94a3b8;font-size:9px;">Owner</span>
+            </div>
+            <div style="display:flex;align-items:center;padding:8px 10px;gap:8px;">
+              <div style="width:22px;height:22px;background:#10b981;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;">K</div>
+              <div style="flex:1;color:#e2e8f0;font-size:10px;">kim@co.com</div>
+              <span style="background:#0f172a;border:1px solid #475569;border-radius:4px;padding:2px 6px;color:#94a3b8;font-size:9px;">Editor ▾</span>
+              <span style="color:#ef4444;font-size:11px;">✕</span>
+            </div>
+          </div>
+          <button style="width:100%;background:#6366f1;color:white;border:none;border-radius:6px;padding:7px;font-size:10px;">+ 멤버 초대</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — 전체 화면 모달</h3>
+      <p>조직 영역에서 "멤버 관리" 클릭 → 배경 어두워지며 모달 팝업으로 멤버 전체 관리.</p>
+    </div>
+  </div>
+
+</div>

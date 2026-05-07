@@ -1,0 +1,163 @@
+<h2>멤버 관리 UI — 실제 디자인</h2>
+<p class="subtitle">ERDify 실제 색상 기준 목업</p>
+
+<div style="font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;">
+<div style="background:#fff;border-radius:12px;border:1px solid #DEE3E9;overflow:hidden;display:flex;height:520px;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+
+  <!-- Sidebar -->
+  <div style="width:240px;background:#fff;border-right:1px solid #DEE3E9;display:flex;flex-direction:column;flex-shrink:0;">
+    <!-- Topbar area -->
+    <div style="height:48px;border-bottom:1px solid #DEE3E9;display:flex;align-items:center;padding:0 14px;">
+      <div style="font-size:15px;font-weight:800;color:#0064E0;letter-spacing:-0.5px;">ERDify</div>
+    </div>
+
+    <!-- Org selector -->
+    <div style="display:flex;align-items:center;gap:8px;padding:12px;border-bottom:1px solid #DEE3E9;cursor:pointer;background:#F8F9FB;">
+      <div style="width:30px;height:30px;border-radius:10px;background:#EEF4FF;color:#0064E0;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">L</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:#1C2B33;">LegalTech Co</div>
+        <div style="font-size:10px;color:#5D6C7B;">Owner</div>
+      </div>
+      <div style="font-size:10px;color:#BCC0C4;">▾</div>
+    </div>
+
+    <!-- Tree -->
+    <div style="flex:1;overflow-y:auto;padding:8px 0;">
+      <!-- Projects section label -->
+      <div style="font-size:9px;font-weight:700;color:#BCC0C4;letter-spacing:0.7px;text-transform:uppercase;padding:6px 14px 4px;">프로젝트</div>
+
+      <!-- Project row -->
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;">
+        <span style="font-size:10px;color:#BCC0C4;width:12px;text-align:center;">▾</span>
+        <span style="font-size:11px;color:#5D6C7B;flex:1;">📁 기본 프로젝트</span>
+      </div>
+      <!-- ERD items under project -->
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 4px 34px;cursor:pointer;">
+        <div style="width:5px;height:5px;border-radius:50%;background:#CBD2D9;flex-shrink:0;"></div>
+        <span style="font-size:10px;color:#5D6C7B;">주문 관리 ERD</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 4px 34px;cursor:pointer;">
+        <div style="width:5px;height:5px;border-radius:50%;background:#CBD2D9;flex-shrink:0;"></div>
+        <span style="font-size:10px;color:#5D6C7B;">사용자 ERD</span>
+      </div>
+
+      <!-- Members menu item (active) -->
+      <div style="margin-top:8px;font-size:9px;font-weight:700;color:#BCC0C4;letter-spacing:0.7px;text-transform:uppercase;padding:6px 14px 4px;">관리</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;background:#EEF4FF;cursor:pointer;border-right:2px solid #0064E0;">
+        <span style="font-size:11px;">👥</span>
+        <span style="font-size:11px;color:#0064E0;font-weight:600;">멤버 관리</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+    <!-- Topbar -->
+    <div style="height:48px;border-bottom:1px solid #DEE3E9;display:flex;align-items:center;padding:0 20px;gap:12px;">
+      <div style="flex:1;"></div>
+      <div style="width:200px;background:#F8F9FB;border:1px solid #DEE3E9;border-radius:8px;padding:6px 12px;font-size:11px;color:#BCC0C4;">🔍 검색...</div>
+      <div style="width:30px;height:30px;background:#0064E0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600;">J</div>
+    </div>
+
+    <!-- Page content -->
+    <div style="flex:1;overflow-y:auto;padding:24px;">
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#1C2B33;">멤버 관리</div>
+          <div style="font-size:11px;color:#5D6C7B;margin-top:2px;">LegalTech Co</div>
+        </div>
+        <button style="background:#0064E0;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">+ 멤버 초대</button>
+      </div>
+
+      <!-- Current members -->
+      <div style="font-size:9px;font-weight:700;color:#BCC0C4;letter-spacing:0.7px;text-transform:uppercase;margin-bottom:8px;">현재 멤버 · 3명</div>
+      <div style="background:#fff;border:1px solid #DEE3E9;border-radius:8px;overflow:hidden;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+
+        <div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #F1F4F7;gap:12px;">
+          <div style="width:32px;height:32px;background:#0064E0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;flex-shrink:0;">J</div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:500;color:#1C2B33;">junho@legaltech.com</div>
+            <div style="font-size:10px;color:#BCC0C4;">나</div>
+          </div>
+          <div style="background:#F1F4F7;border-radius:5px;padding:3px 10px;font-size:10px;color:#5D6C7B;font-weight:600;">Owner</div>
+        </div>
+
+        <div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #F1F4F7;gap:12px;">
+          <div style="width:32px;height:32px;background:#31A24C;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;flex-shrink:0;">K</div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:500;color:#1C2B33;">kim@legaltech.com</div>
+          </div>
+          <select style="background:#fff;border:1px solid #DEE3E9;border-radius:6px;padding:4px 8px;font-size:10px;color:#1C2B33;cursor:pointer;outline:none;font-family:inherit;">
+            <option>Editor</option><option>Viewer</option><option>Owner</option>
+          </select>
+          <button style="background:transparent;border:1px solid #E41E3F40;border-radius:6px;padding:4px 10px;color:#E41E3F;font-size:10px;cursor:pointer;font-family:inherit;">내보내기</button>
+        </div>
+
+        <div style="display:flex;align-items:center;padding:12px 16px;gap:12px;">
+          <div style="width:32px;height:32px;background:#5D6C7B;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;flex-shrink:0;">L</div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:500;color:#1C2B33;">lee@legaltech.com</div>
+          </div>
+          <select style="background:#fff;border:1px solid #DEE3E9;border-radius:6px;padding:4px 8px;font-size:10px;color:#1C2B33;cursor:pointer;outline:none;font-family:inherit;">
+            <option>Viewer</option><option>Editor</option><option>Owner</option>
+          </select>
+          <button style="background:transparent;border:1px solid #E41E3F40;border-radius:6px;padding:4px 10px;color:#E41E3F;font-size:10px;cursor:pointer;font-family:inherit;">내보내기</button>
+        </div>
+      </div>
+
+      <!-- Pending invites -->
+      <div style="font-size:9px;font-weight:700;color:#BCC0C4;letter-spacing:0.7px;text-transform:uppercase;margin-bottom:8px;">대기 중인 초대 · 2개</div>
+      <div style="background:#fff;border:1px solid #DEE3E9;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+
+        <div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #F1F4F7;gap:12px;">
+          <div style="width:32px;height:32px;background:#F1F4F7;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#BCC0C4;font-size:14px;flex-shrink:0;">✉</div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:500;color:#1C2B33;">park@newuser.com</div>
+            <div style="font-size:10px;color:#BCC0C4;">만료: 6일 후</div>
+          </div>
+          <div style="background:#EEF4FF;border-radius:5px;padding:3px 10px;font-size:10px;color:#0064E0;font-weight:500;">Editor · 대기중</div>
+          <button style="background:transparent;border:1px solid #DEE3E9;border-radius:6px;padding:4px 10px;color:#5D6C7B;font-size:10px;cursor:pointer;font-family:inherit;">취소</button>
+        </div>
+
+        <div style="display:flex;align-items:center;padding:12px 16px;gap:12px;">
+          <div style="width:32px;height:32px;background:#F1F4F7;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#BCC0C4;font-size:14px;flex-shrink:0;">✉</div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:500;color:#1C2B33;">choi@another.com</div>
+            <div style="font-size:10px;color:#E41E3F;">만료: 1일 후 ⚠</div>
+          </div>
+          <div style="background:#EEF4FF;border-radius:5px;padding:3px 10px;font-size:10px;color:#0064E0;font-weight:500;">Viewer · 대기중</div>
+          <button style="background:transparent;border:1px solid #DEE3E9;border-radius:6px;padding:4px 10px;color:#5D6C7B;font-size:10px;cursor:pointer;font-family:inherit;">취소</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invite modal overlay -->
+  <div style="position:absolute;inset:0;background:rgba(28,43,51,0.4);display:flex;align-items:center;justify-content:center;border-radius:12px;">
+    <div style="background:#fff;border-radius:14px;padding:24px;width:320px;box-shadow:0 24px 64px rgba(0,0,0,0.14),0 4px 12px rgba(0,0,0,0.08);border:1px solid #DEE3E9;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="font-size:15px;font-weight:700;color:#1C2B33;">멤버 초대</div>
+        <button style="background:none;border:none;color:#BCC0C4;font-size:18px;cursor:pointer;line-height:1;">✕</button>
+      </div>
+
+      <div style="font-size:11px;color:#5D6C7B;margin-bottom:4px;">이메일</div>
+      <input style="width:100%;background:#fff;border:1.5px solid #E41E3F;border-radius:8px;padding:9px 12px;font-size:12px;color:#1C2B33;margin-bottom:6px;outline:none;box-sizing:border-box;font-family:inherit;" value="unknown@notregistered.com" readonly />
+
+      <!-- Not registered warning -->
+      <div style="background:#FFF5F7;border:1px solid #E41E3F30;border-radius:8px;padding:10px 12px;margin-bottom:16px;">
+        <div style="font-size:11px;color:#E41E3F;margin-bottom:8px;">⚠ 아직 ERDify에 가입하지 않은 이메일이에요.</div>
+        <button style="width:100%;background:#0064E0;color:#fff;border:none;border-radius:6px;padding:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;">가입 초대 메일 보내기</button>
+      </div>
+
+      <div style="font-size:11px;color:#5D6C7B;margin-bottom:4px;">역할</div>
+      <select style="width:100%;background:#F8F9FB;border:1px solid #DEE3E9;border-radius:8px;padding:9px 12px;font-size:12px;color:#BCC0C4;margin-bottom:16px;outline:none;cursor:not-allowed;font-family:inherit;" disabled>
+        <option>Editor</option>
+      </select>
+
+      <button style="width:100%;background:#F1F4F7;color:#BCC0C4;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:600;cursor:not-allowed;font-family:inherit;">초대 보내기</button>
+    </div>
+  </div>
+
+</div>
+</div>
