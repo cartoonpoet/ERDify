@@ -151,10 +151,32 @@ export const useRealtimeCollaboration = (diagramId: string) => {
     });
 
     socket.on("am:init", (bytes: number[]) => {
-      const doc = Automerge.load<DiagramDocument>(Uint8Array.from(bytes));
-      amDocRef.current = doc;
+      const serverDoc = Automerge.load<DiagramDocument>(Uint8Array.from(bytes));
+
+      // If there are unsaved local changes (e.g. from an import that happened before
+      // the WebSocket was ready, or during a reconnect), do NOT overwrite them.
+      // Instead, re-apply the local diff on top of the fresh server state and re-emit.
+      const { isDirty, document: localDoc } = useEditorStore.getState();
+      if (isDirty && localDoc) {
+        const baseDoc = amDocRef.current
+          ? (JSON.parse(JSON.stringify(amDocRef.current)) as DiagramDocument)
+          : (JSON.parse(JSON.stringify(serverDoc)) as DiagramDocument);
+
+        const mergedDoc = Automerge.change(serverDoc, (draft) => {
+          applyDiff(draft as DiagramDocument, baseDoc, localDoc);
+        });
+        const pendingChange = Automerge.getLastLocalChange(mergedDoc);
+        amDocRef.current = mergedDoc;
+        if (pendingChange) {
+          socket.emit("am:change", Array.from(pendingChange));
+        }
+        // Keep the existing local store state (don't call setDocument)
+        return;
+      }
+
+      amDocRef.current = serverDoc;
       isRemoteRef.current = true;
-      setDocument(JSON.parse(JSON.stringify(doc)) as DiagramDocument);
+      setDocument(JSON.parse(JSON.stringify(serverDoc)) as DiagramDocument);
       isRemoteRef.current = false;
     });
 
@@ -162,9 +184,16 @@ export const useRealtimeCollaboration = (diagramId: string) => {
       if (!amDocRef.current) return;
       const [newDoc] = Automerge.applyChanges(amDocRef.current, [Uint8Array.from(change)]);
       amDocRef.current = newDoc;
+      // Preserve dirty flag: if we had unsaved local changes, the merged Automerge doc
+      // already includes them (via CRDT merge), but setDocument would clear isDirty and
+      // stop autosave from persisting them to the DB.
+      const wasDirty = useEditorStore.getState().isDirty;
       isRemoteRef.current = true;
       setDocument(JSON.parse(JSON.stringify(newDoc)) as DiagramDocument);
       isRemoteRef.current = false;
+      if (wasDirty) {
+        useEditorStore.setState({ isDirty: true });
+      }
     });
 
     socket.on("presence:state", (presence: Collaborator[]) => {
