@@ -42,6 +42,7 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
   const [activeTab, setActiveTab] = useState<TabType>("mysql");
   const [name, setName] = useState("");
   const [exerdFile, setExerdFile] = useState<File | null>(null);
+  const [sqlFiles, setSqlFiles] = useState<File[]>([]);
   const [ddlText, setDdlText] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [isDdlDragOver, setIsDdlDragOver] = useState(false);
@@ -65,22 +66,28 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
     }
   }
 
-  const acceptSqlFile = async (file: File) => {
-    if (!file.name.endsWith(".sql")) {
+  const acceptSqlFiles = (files: FileList | File[]) => {
+    const arr = Array.from(files);
+    const invalid = arr.filter((f) => !f.name.endsWith(".sql"));
+    if (invalid.length > 0) {
       setError(".sql 파일만 지원합니다.");
       return;
     }
-    const text = await file.text();
-    setDdlText(text);
-    if (!name.trim()) setName(file.name.replace(/\.sql$/, ""));
+    setSqlFiles((prev) => {
+      const existing = new Set(prev.map((f) => f.name));
+      return [...prev, ...arr.filter((f) => !existing.has(f.name))];
+    });
+    if (!name.trim() && arr[0]) setName(arr[0].name.replace(/\.sql$/, ""));
     setError(null);
   };
 
   const handleSqlFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) acceptSqlFile(file);
+    if (e.target.files) acceptSqlFiles(e.target.files);
     e.target.value = "";
   };
+
+  const removeSqlFile = (fileName: string) =>
+    setSqlFiles((prev) => prev.filter((f) => f.name !== fileName));
 
   function acceptExerdFile(file: File) {
     if (!file.name.endsWith(".exerd") && !file.name.endsWith(".xml")) {
@@ -112,16 +119,11 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
   async function handleSubmit() {
     setError(null);
     const diagramName = name.trim();
-    if (!diagramName) {
-      setError("다이어그램 이름을 입력하세요.");
-      return;
-    }
-    if (activeTab === "exerd" && !exerdFile) {
-      setError("ExERD 파일을 선택하세요.");
-      return;
-    }
-    if (activeTab !== "exerd" && !ddlText.trim()) {
-      setError("DDL SQL을 입력하세요.");
+    if (!diagramName) { setError("다이어그램 이름을 입력하세요."); return; }
+
+    if (activeTab === "exerd" && !exerdFile) { setError("ExERD 파일을 선택하세요."); return; }
+    if (activeTab !== "exerd" && sqlFiles.length === 0 && !ddlText.trim()) {
+      setError("DDL SQL을 입력하거나 파일을 선택하세요.");
       return;
     }
 
@@ -141,7 +143,12 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
           metadata: { revision: 1, stableObjectIds: true, createdAt: now, updatedAt: now },
         };
       } else {
-        content = parseDdl(ddlText, dialect);
+        let sqlContent = ddlText;
+        if (sqlFiles.length > 0) {
+          const texts = await Promise.all(sqlFiles.map((f) => f.text()));
+          sqlContent = texts.join("\n\n");
+        }
+        content = parseDdl(sqlContent, dialect);
       }
       const created = await createDiagram(projectId, { name: diagramName, dialect, content });
       onImported(created.id);
@@ -158,17 +165,15 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
     setName("");
     setActiveTab("mysql");
     setExerdFile(null);
+    setSqlFiles([]);
     setDdlText("");
     setError(null);
   }
 
-  function handleClose() {
-    resetState();
-    onClose();
-  }
+  function handleClose() { resetState(); onClose(); }
 
   const canSubmit = !loading && !!name.trim() &&
-    (activeTab === "exerd" ? !!exerdFile : !!ddlText.trim());
+    (activeTab === "exerd" ? !!exerdFile : (sqlFiles.length > 0 || !!ddlText.trim()));
 
   return (
     <Modal open={open} onClose={handleClose} title="DDL 가져오기" maxWidth="680px">
@@ -210,7 +215,10 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
             <div className={sqlBrowseRow}>
               <div>
                 <div className={sectionTitle}>SQL 불러넣기</div>
-                <div className={sectionDesc}>CREATE TABLE 구문을 입력하거나 .sql 파일을 드래그하세요.</div>
+                <div className={sectionDesc}>
+                  .sql 파일을 선택하거나 SQL을 직접 입력하세요.
+                  스키마별로 분리된 파일을 여러 개 선택하면 하나의 ERD로 합칩니다.
+                </div>
               </div>
               <button
                 type="button"
@@ -221,26 +229,51 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
               </button>
             </div>
           </div>
-          <DarkCodeEditor
-            value={ddlText}
-            onChange={handleDdlChange}
-            onFileDrop={acceptSqlFile}
-            height="300px"
-            placeholder={"CREATE TABLE users (\n  id INT NOT NULL,\n  name VARCHAR(100)\n);"}
-            isDragOver={isDdlDragOver}
-            onDragOver={(e) => { e.preventDefault(); setIsDdlDragOver(true); }}
-            onDragLeave={() => setIsDdlDragOver(false)}
-          />
+
+          {/* 선택된 파일 목록 */}
+          {sqlFiles.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
+              {sqlFiles.map((f) => (
+                <div key={f.name} className={fileChosen}>
+                  <span className={fileChosenName}>{f.name}</span>
+                  <button
+                    type="button"
+                    className={fileClearBtn}
+                    onClick={() => removeSqlFile(f.name)}
+                    aria-label={`${f.name} 제거`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* SQL 직접 입력 (파일 없을 때) */}
+          {sqlFiles.length === 0 && (
+            <DarkCodeEditor
+              value={ddlText}
+              onChange={handleDdlChange}
+              onFileDrop={(file) => acceptSqlFiles([file])}
+              height="280px"
+              placeholder={"CREATE TABLE users (\n  id INT NOT NULL,\n  name VARCHAR(100)\n);"}
+              isDragOver={isDdlDragOver}
+              onDragOver={(e) => { e.preventDefault(); setIsDdlDragOver(true); }}
+              onDragLeave={() => setIsDdlDragOver(false)}
+            />
+          )}
+
           <input
             ref={sqlFileInputRef}
             type="file"
             accept=".sql"
+            multiple
             style={{ display: "none" }}
             onChange={handleSqlFileChange}
           />
           <div className={hintBox}>
             <span className={hintIcon}>✦</span>
-            <span>COMMENT는 논리명으로 자동 매핑됩니다. FK는 관계선으로 변환됩니다.</span>
+            <span>COMMENT는 논리명으로 자동 매핑됩니다. FK는 관계선으로 변환됩니다. 스키마 한정자(schema.table)도 인식합니다.</span>
           </div>
         </>
       ) : (

@@ -17,6 +17,7 @@ import { ShareDiagramModal } from "../components/ShareDiagramModal";
 import { FkSetupModal } from "../components/FkSetupModal";
 import { RelDeleteConfirmModal } from "../components/RelDeleteConfirmModal";
 import { SchemaFilterSidebar } from "../components/SchemaFilterSidebar";
+import { ImportIntoEditorModal } from "../components/ImportIntoEditorModal";
 import { useDiagramAutosave } from "../hooks/useDiagramAutosave";
 import { useVersionHistory } from "../hooks/useVersionHistory";
 import { useRealtimeCollaboration } from "../hooks/useRealtimeCollaboration";
@@ -31,6 +32,7 @@ export const EditorPage = () => {
   const [showExport, setShowExport] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showMcpActivity, setShowMcpActivity] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen } = useEditorStore();
 
@@ -98,6 +100,13 @@ export const EditorPage = () => {
         <span className={css.diagramName}>{data?.name}</span>
         <span className={css.statusText}>{isDirty ? "수정됨" : "저장됨"}</span>
         <div className={css.spacer} />
+        <button
+          onClick={() => setShowImport(true)}
+          className={css.topbarBtn({ variant: "secondary" })}
+          title="DDL 가져오기"
+        >
+          가져오기
+        </button>
         <button
           onClick={() => setSearchOpen(true)}
           className={css.topbarBtn({ variant: "secondary" })}
@@ -206,6 +215,7 @@ export const EditorPage = () => {
       />
       <FkSetupModal />
       <RelDeleteConfirmModal />
+      <ImportIntoEditorModal open={showImport} onClose={() => setShowImport(false)} />
     </div>
   );
 };

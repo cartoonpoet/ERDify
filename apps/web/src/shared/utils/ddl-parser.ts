@@ -6,6 +6,26 @@ function stripIdentifierQuotes(s: string): string {
   return s.replace(/^["'`]|["'`]$/g, "");
 }
 
+// Parses "schema"."table", [schema].[table], schema.table, or just table
+function parseSchemaAndTable(raw: string): { schema: string | null; name: string } {
+  const trimmed = raw.trim();
+  // MSSQL: [schema].[table]
+  const mssql = trimmed.match(/^\[([^\]]*)\]\.\[([^\]]*)\]$/);
+  if (mssql) return { schema: mssql[1]! || null, name: mssql[2]! };
+  // Quoted: "schema"."table" or `schema`.`table`
+  const quoted = trimmed.match(/^(["'`])([^"'`]+)\1\.(["'`])([^"'`]+)\3$/);
+  if (quoted) return { schema: quoted[2]! || null, name: quoted[4]! };
+  // Dotted unquoted: schema.table
+  const dot = trimmed.lastIndexOf(".");
+  if (dot !== -1) {
+    return {
+      schema: stripIdentifierQuotes(trimmed.slice(0, dot)) || null,
+      name: stripIdentifierQuotes(trimmed.slice(dot + 1)),
+    };
+  }
+  return { schema: null, name: stripIdentifierQuotes(trimmed) };
+}
+
 function removeComments(sql: string): string {
   sql = sql.replace(/\/\*[\s\S]*?\*\//g, "");
   sql = sql.replace(/--[^\n]*/g, "");
@@ -83,6 +103,7 @@ function parseColumnType(tokens: string[]): string {
 interface ParsedFK {
   constraintName: string;
   srcCols: string[];
+  tgtSchema: string | null;
   tgtTable: string;
   tgtCols: string[];
   onDelete: DiagramRelationship["onDelete"];
@@ -104,7 +125,7 @@ function parseFkClause(line: string, constraintName: string): ParsedFK | null {
   if (!fkMatch) return null;
 
   const srcCols = (fkMatch[1] ?? "").split(",").map((c) => stripIdentifierQuotes(c.trim()));
-  const tgtTable = stripIdentifierQuotes((fkMatch[2] ?? "").trim());
+  const { schema: tgtSchema, name: tgtTable } = parseSchemaAndTable((fkMatch[2] ?? "").trim());
   const tgtCols = (fkMatch[3] ?? "").split(",").map((c) => stripIdentifierQuotes(c.trim()));
   const rest = fkMatch[4] ?? "";
 
@@ -112,22 +133,24 @@ function parseFkClause(line: string, constraintName: string): ParsedFK | null {
   let onUpdate: DiagramRelationship["onUpdate"] = "no-action";
 
   const delMatch = rest.match(/ON\s+DELETE\s+(\w+)(?:\s+(\w+))?/i);
-  if (delMatch) {
-    onDelete = parseReferentialAction(delMatch[1] ?? "");
-  }
+  if (delMatch) onDelete = parseReferentialAction(delMatch[1] ?? "");
   const updMatch = rest.match(/ON\s+UPDATE\s+(\w+)(?:\s+(\w+))?/i);
-  if (updMatch) {
-    onUpdate = parseReferentialAction(updMatch[1] ?? "");
-  }
+  if (updMatch) onUpdate = parseReferentialAction(updMatch[1] ?? "");
 
-  return { constraintName, srcCols, tgtTable, tgtCols, onDelete, onUpdate };
+  return { constraintName, srcCols, tgtSchema, tgtTable, tgtCols, onDelete, onUpdate };
 }
 
-function parseCreateTable(stmt: string): { tableName: string; tableComment: string | null; columns: Omit<DiagramColumn, "id">[]; fks: ParsedFK[] } | null {
+function parseCreateTable(stmt: string): {
+  schema: string | null;
+  tableName: string;
+  tableComment: string | null;
+  columns: Omit<DiagramColumn, "id">[];
+  fks: ParsedFK[];
+} | null {
   const tableMatch = stmt.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([^\s(]+)\s*\(/i);
   if (!tableMatch) return null;
 
-  const tableName = stripIdentifierQuotes(tableMatch[1] ?? "");
+  const { schema, name: tableName } = parseSchemaAndTable(tableMatch[1] ?? "");
 
   const bodyStart = stmt.indexOf("(");
   const bodyEnd = stmt.lastIndexOf(")");
@@ -136,7 +159,6 @@ function parseCreateTable(stmt: string): { tableName: string; tableComment: stri
   const body = stmt.slice(bodyStart + 1, bodyEnd);
   const lines = splitTopLevelCommas(body);
 
-  // Extract table-level COMMENT after closing paren (MySQL/MariaDB style)
   const afterBody = stmt.slice(bodyEnd + 1);
   let tableComment: string | null = null;
   const tableCommentMatch = afterBody.match(/COMMENT\s*=?\s*('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
@@ -200,33 +222,19 @@ function parseCreateTable(stmt: string): { tableName: string; tableComment: stri
     const typeTokens = tokens.slice(1);
     const colType = cleanMySqlType(parseColumnType(typeTokens));
 
-    const upperAll = upperLine;
-    const nullable = !/NOT\s+NULL/i.test(upperAll);
-    const primaryKey = /\bPRIMARY\s+KEY\b/i.test(upperAll);
-    const unique = /\bUNIQUE\b/i.test(upperAll) && !primaryKey;
+    const nullable = !/NOT\s+NULL/i.test(upperLine);
+    const primaryKey = /\bPRIMARY\s+KEY\b/i.test(upperLine);
+    const unique = /\bUNIQUE\b/i.test(upperLine) && !primaryKey;
 
     let defaultValue: string | null = null;
     const defMatch = line.match(/DEFAULT\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*"|`(?:[^`]|\\`)*`|\S+)/i);
-    if (defMatch) {
-      defaultValue = defMatch[1] ?? null;
-    }
+    if (defMatch) defaultValue = defMatch[1] ?? null;
 
     let comment: string | null = null;
     const colCommentMatch = line.match(/COMMENT\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
-    if (colCommentMatch) {
-      comment = (colCommentMatch[1] ?? "").replace(/^['"]|['"]$/g, "");
-    }
+    if (colCommentMatch) comment = (colCommentMatch[1] ?? "").replace(/^['"]|['"]$/g, "");
 
-    columns.push({
-      name: colName,
-      type: colType,
-      nullable,
-      primaryKey,
-      unique,
-      defaultValue,
-      comment,
-      ordinal: columns.length,
-    });
+    columns.push({ name: colName, type: colType, nullable, primaryKey, unique, defaultValue, comment, ordinal: columns.length });
   }
 
   for (const col of columns) {
@@ -234,30 +242,42 @@ function parseCreateTable(stmt: string): { tableName: string; tableComment: stri
     if (uniqueCols.includes(col.name)) col.unique = true;
   }
 
-  return { tableName, tableComment, columns, fks };
+  return { schema, tableName, tableComment, columns, fks };
 }
 
-function parseAlterTableFk(stmt: string): { tableName: string; fk: ParsedFK } | null {
-  const match = stmt.match(
-    /ALTER\s+TABLE\s+([^\s]+)\s+ADD\s+(?:CONSTRAINT\s+([^\s]+)\s+)?FOREIGN\s+KEY(.*)/i,
-  );
+function parseAlterTableFk(stmt: string): { schema: string | null; tableName: string; fk: ParsedFK } | null {
+  const match = stmt.match(/ALTER\s+TABLE\s+([^\s]+)\s+ADD\s+(?:CONSTRAINT\s+([^\s]+)\s+)?FOREIGN\s+KEY(.*)/i);
   if (!match) return null;
 
-  const tableName = stripIdentifierQuotes(match[1] ?? "");
+  const { schema, name: tableName } = parseSchemaAndTable(match[1] ?? "");
   const constraintName = match[2] ? stripIdentifierQuotes(match[2]) : "";
   const rest = "FOREIGN KEY" + (match[3] ?? "");
   const fk = parseFkClause(rest, constraintName);
   if (!fk) return null;
 
-  return { tableName, fk };
+  return { schema, tableName, fk };
 }
 
 export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument {
   const cleaned = removeComments(sql);
   const statements = cleaned.split(/;|^\s*GO\s*$/im).map((s) => s.trim()).filter(Boolean);
 
+  // entityMap keyed by both "schema.table" (if schema) and "table" (fallback)
   const entityMap = new Map<string, DiagramEntity>();
-  const pendingFks: { sourceTable: string; fk: ParsedFK }[] = [];
+  const pendingFks: { sourceSchema: string | null; sourceTable: string; fk: ParsedFK }[] = [];
+
+  const registerEntity = (entity: DiagramEntity, schema: string | null, tableName: string) => {
+    if (schema) {
+      entityMap.set(`${schema}.${tableName}`, entity);
+      // Only register unqualified if no collision
+      if (!entityMap.has(tableName)) entityMap.set(tableName, entity);
+    } else {
+      entityMap.set(tableName, entity);
+    }
+  };
+
+  const lookupEntity = (schema: string | null, tableName: string): DiagramEntity | undefined =>
+    (schema ? (entityMap.get(`${schema}.${tableName}`) ?? entityMap.get(tableName)) : entityMap.get(tableName));
 
   for (const stmt of statements) {
     if (/^CREATE\s+TABLE/i.test(stmt)) {
@@ -266,46 +286,53 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
 
       const entity: DiagramEntity = {
         id: uuid(),
+        schema: result.schema,
         name: result.tableName,
         logicalName: null,
         comment: result.tableComment,
         color: null,
         columns: result.columns.map((c) => ({ ...c, id: uuid() })),
       };
-      entityMap.set(result.tableName, entity);
+      registerEntity(entity, result.schema, result.tableName);
 
       for (const fk of result.fks) {
-        pendingFks.push({ sourceTable: result.tableName, fk });
+        pendingFks.push({ sourceSchema: result.schema, sourceTable: result.tableName, fk });
       }
     } else if (/^ALTER\s+TABLE/i.test(stmt)) {
       const result = parseAlterTableFk(stmt);
       if (result) {
-        pendingFks.push({ sourceTable: result.tableName, fk: result.fk });
+        pendingFks.push({ sourceSchema: result.schema, sourceTable: result.tableName, fk: result.fk });
       }
     } else if (/^COMMENT\s+ON\s+TABLE\s+/i.test(stmt)) {
       const m = stmt.match(/COMMENT\s+ON\s+TABLE\s+([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
       if (m) {
-        const entity = entityMap.get(stripIdentifierQuotes(m[1] ?? ""));
+        const { schema, name } = parseSchemaAndTable(m[1] ?? "");
+        const entity = lookupEntity(schema, name);
         if (entity) entity.comment = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
       }
     } else if (/^COMMENT\s+ON\s+COLUMN\s+/i.test(stmt)) {
-      const m = stmt.match(/COMMENT\s+ON\s+COLUMN\s+([^\s.]+)\.([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
+      // Handles: schema.table.column or table.column
+      const m = stmt.match(/COMMENT\s+ON\s+COLUMN\s+([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
       if (m) {
-        const entity = entityMap.get(stripIdentifierQuotes(m[1] ?? ""));
+        const parts = (m[1] ?? "").split(".");
+        const colName = stripIdentifierQuotes(parts[parts.length - 1]!);
+        const tableRef = parts.slice(0, -1).join(".");
+        const { schema, name: tableName } = parseSchemaAndTable(tableRef);
+        const entity = lookupEntity(schema, tableName);
         if (entity) {
-          const col = entity.columns.find((c) => c.name === stripIdentifierQuotes(m[2] ?? ""));
-          if (col) col.comment = (m[3] ?? "").replace(/^['"]|['"]$/g, "");
+          const col = entity.columns.find((c) => c.name === colName);
+          if (col) col.comment = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
         }
       }
     }
   }
 
-  const entities = Array.from(entityMap.values());
+  const entities = Array.from(new Set(entityMap.values())); // deduplicate (qualified + unqualified keys)
   const relationships: DiagramRelationship[] = [];
 
-  for (const { sourceTable, fk } of pendingFks) {
-    const srcEntity = entityMap.get(sourceTable);
-    const tgtEntity = entityMap.get(fk.tgtTable);
+  for (const { sourceSchema, sourceTable, fk } of pendingFks) {
+    const srcEntity = lookupEntity(sourceSchema, sourceTable);
+    const tgtEntity = lookupEntity(fk.tgtSchema, fk.tgtTable);
     if (!srcEntity || !tgtEntity) continue;
 
     const srcColIds = fk.srcCols
@@ -316,12 +343,9 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
       .map((name) => tgtEntity.columns.find((c) => c.name === name)?.id)
       .filter((id): id is string => !!id);
 
-    const name =
-      fk.constraintName || `fk_${srcEntity.name}_${tgtEntity.name}`;
-
     relationships.push({
       id: uuid(),
-      name,
+      name: fk.constraintName || `fk_${srcEntity.name}_${tgtEntity.name}`,
       sourceEntityId: srcEntity.id,
       sourceColumnIds: srcColIds,
       targetEntityId: tgtEntity.id,
@@ -333,13 +357,12 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
     });
   }
 
-  // Pack entities into columns, accounting for variable table heights
+  // Pack entities into columns
   const NODE_W = 280;
   const COL_GAP = 48;
   const ROW_GAP = 36;
   const N_COLS = Math.min(8, Math.max(4, Math.ceil(Math.sqrt(entities.length))));
-  const estimateH = (e: { columns: unknown[] }) =>
-    38 + 28 + e.columns.length * 30 + ROW_GAP;
+  const estimateH = (e: { columns: unknown[] }) => 38 + 28 + e.columns.length * 30 + ROW_GAP;
 
   const colHeights = Array<number>(N_COLS).fill(0);
   const entityPositions: Record<string, { x: number; y: number }> = {};
