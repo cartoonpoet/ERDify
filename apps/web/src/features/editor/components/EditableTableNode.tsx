@@ -122,7 +122,20 @@ const SchemaSelector = ({
   onChange: (s: string | null) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const [inputVal, setInputVal] = useState("");
   const color = schema ? getSchemaColor(schema, allSchemas) : "#CBD2D9";
+
+  const filtered = inputVal.trim()
+    ? allSchemas.filter((s) => s.toLowerCase().includes(inputVal.toLowerCase()))
+    : allSchemas;
+
+  const handleSelect = (s: string) => { onChange(s); setOpen(false); setInputVal(""); };
+  const handleClose = () => { setOpen(false); setInputVal(""); };
+
+  const commitInput = () => {
+    const trimmed = inputVal.trim();
+    if (trimmed) handleSelect(trimmed);
+  };
 
   return (
     <div style={{ position: "relative" }}>
@@ -143,21 +156,41 @@ const SchemaSelector = ({
       </button>
       {open && (
         <>
-          <div className="nodrag nopan" onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 999 }} />
+          <div className="nodrag nopan" onClick={handleClose} style={{ position: "fixed", inset: 0, zIndex: 999 }} />
           <div
             className="nodrag nopan"
             style={{
               position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 1000,
               background: "#fff", border: "1px solid #DEE3E9", borderRadius: 8,
-              boxShadow: "0 4px 12px rgba(0,0,0,.1)", minWidth: 140, overflow: "hidden",
+              boxShadow: "0 4px 12px rgba(0,0,0,.1)", minWidth: 160, overflow: "hidden",
             }}
           >
-            {allSchemas.map((s) => (
+            {/* 새 스키마 입력 */}
+            <div style={{ padding: "6px 8px", borderBottom: "1px solid #F1F4F7" }}>
+              <input
+                autoFocus
+                className="nodrag"
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); commitInput(); }
+                  if (e.key === "Escape") handleClose();
+                }}
+                placeholder="스키마 입력 또는 선택..."
+                style={{
+                  width: "100%", padding: "4px 8px", fontSize: 11,
+                  border: "1px solid #DEE3E9", borderRadius: 5,
+                  outline: "none", boxSizing: "border-box",
+                }}
+              />
+            </div>
+            {/* 기존 스키마 목록 */}
+            {filtered.map((s) => (
               <button
                 key={s}
                 type="button"
                 className="nodrag"
-                onMouseDown={(e) => { e.preventDefault(); onChange(s); setOpen(false); }}
+                onMouseDown={(e) => { e.preventDefault(); handleSelect(s); }}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
                   width: "100%", padding: "6px 10px", background: s === schema ? "#EEF4FF" : "none",
@@ -170,13 +203,30 @@ const SchemaSelector = ({
                 {s}
               </button>
             ))}
+            {/* 새 항목 추가 제안 */}
+            {inputVal.trim() && !allSchemas.includes(inputVal.trim()) && (
+              <button
+                type="button"
+                className="nodrag"
+                onMouseDown={(e) => { e.preventDefault(); commitInput(); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  width: "100%", padding: "6px 10px", background: "none",
+                  border: "none", textAlign: "left", cursor: "pointer",
+                  fontSize: 11, color: "#0064E0",
+                }}
+              >
+                + "{inputVal.trim()}" 스키마 생성
+              </button>
+            )}
+            {/* 스키마 해제 */}
             {schema && (
               <>
                 <div style={{ height: 1, background: "#F1F4F7" }} />
                 <button
                   type="button"
                   className="nodrag"
-                  onMouseDown={(e) => { e.preventDefault(); onChange(null); setOpen(false); }}
+                  onMouseDown={(e) => { e.preventDefault(); onChange(null); handleClose(); }}
                   style={{
                     display: "flex", alignItems: "center", gap: 6,
                     width: "100%", padding: "6px 10px", background: "none",
