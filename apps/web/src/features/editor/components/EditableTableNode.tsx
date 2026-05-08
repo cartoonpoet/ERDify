@@ -278,6 +278,24 @@ const ColorPicker = ({ value, onChange }: { value: string | null; onChange: (c: 
   );
 };
 
+const SchemaStrip = ({ schema, allSchemas }: { schema: string; allSchemas: string[] }) => {
+  const color = getSchemaColor(schema, allSchemas);
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 5,
+      padding: "3px 10px 3px 12px",
+      fontSize: 9, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
+      borderBottom: `1px solid ${color}30`,
+      background: `${color}10`,
+      color,
+      flexShrink: 0,
+    }}>
+      <div style={{ width: 5, height: 5, borderRadius: "50%", background: color, flexShrink: 0 }} />
+      {schema}
+    </div>
+  );
+};
+
 const IndexColumnSelect = ({
   entityColumns,
   selectedIds,
@@ -370,9 +388,9 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
         style={{
           background: "#ffffff",
           border: `2px solid ${borderColor}`,
-          ...(schemaColor ? { borderLeft: `3px solid ${schemaColor}` } : {}),
+          ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
           borderRadius: 6,
-          minWidth: 180,
+          minWidth: 380,
           fontFamily: "monospace",
           fontSize: 12,
           boxShadow,
@@ -383,13 +401,14 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
         {collaboratorColor && (
           <div className={css.collaboratorDot} style={{ background: collaboratorColor }} />
         )}
+        {entity.schema && <SchemaStrip schema={entity.schema} allSchemas={allSchemas} />}
         <div
           style={{
             background: collaboratorColor ?? entity.color ?? DEFAULT_HEADER_COLOR,
             color: "#ffffff",
             padding: "6px 10px",
             fontWeight: 700,
-            borderRadius: "4px 4px 0 0",
+            borderRadius: entity.schema ? 0 : "4px 4px 0 0",
             fontSize: 13,
           }}
         >
@@ -400,35 +419,47 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
             </div>
           )}
         </div>
+        {/* 컬럼 헤더 */}
+        <div style={{
+          display: "flex", alignItems: "center",
+          padding: "3px 8px 3px 10px",
+          background: "#F8FAFB", borderBottom: "1px solid #E5E7EB",
+          fontSize: 9, color: "#9ca3af", fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase",
+        }}>
+          <span style={{ width: 24, flexShrink: 0, textAlign: "center" }}>PK</span>
+          <span style={{ width: 20, flexShrink: 0, textAlign: "center" }}>FK</span>
+          <span style={{ width: 28, flexShrink: 0, textAlign: "center" }}>?</span>
+          <span style={{ width: 24, flexShrink: 0, textAlign: "center" }}>UQ</span>
+          <span style={{ flex: 1 }}>논리명</span>
+          <span style={{ flex: 1.2 }}>컬럼명</span>
+          <span style={{ width: 90, flexShrink: 0 }}>타입</span>
+        </div>
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
           {entity.columns.map((col) => (
-            <li
-              key={col.id}
-              style={{
-                padding: "3px 10px",
-                borderBottom: "1px solid #f3f4f6",
-                display: "flex",
-                gap: 6,
-                alignItems: "center",
-              }}
-            >
-              {col.primaryKey && <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: 10 }}>PK</span>}
-              {fkColumnIds.has(col.id) && (
-                <span
-                  style={{ width: 7, height: 7, borderRadius: "50%", background: "#3b82f6", display: "inline-block", flexShrink: 0 }}
-                  aria-label="FK"
-                  title="Foreign Key"
-                />
-              )}
-              {col.unique && !col.primaryKey && <span style={{ color: "#6366f1", fontSize: 9, fontWeight: 700 }}>UQ</span>}
-              <span style={{ flex: 1, color: "#111827" }}>
-                {col.comment && (
-                  <span style={{ display: "block", fontSize: 9, color: "#6366f1", marginBottom: 1 }}>{col.comment}</span>
+            <li key={col.id} style={{ display: "flex", alignItems: "center", padding: "4px 8px 4px 10px", borderBottom: "1px solid #F1F4F7" }}>
+              <div style={{ width: 24, flexShrink: 0, textAlign: "center" }}>
+                {col.primaryKey && <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: 8 }}>PK</span>}
+              </div>
+              <div style={{ width: 20, flexShrink: 0, display: "flex", justifyContent: "center" }}>
+                {fkColumnIds.has(col.id) && (
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3b82f6", display: "inline-block", flexShrink: 0 }} aria-label="FK" title="Foreign Key" />
                 )}
+              </div>
+              <div style={{ width: 28, flexShrink: 0, textAlign: "center" }}>
+                {col.nullable && <span style={{ color: "#9ca3af", fontSize: 10 }}>?</span>}
+              </div>
+              <div style={{ width: 24, flexShrink: 0, textAlign: "center" }}>
+                {col.unique && !col.primaryKey && <span style={{ color: "#6366f1", fontSize: 8, fontWeight: 700 }}>UQ</span>}
+              </div>
+              <div style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 9, color: "#8b5cf6" }}>
+                {col.comment ?? ""}
+              </div>
+              <div style={{ flex: 1.2, minWidth: 0, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {col.name}
-              </span>
-              <span style={{ color: "#6b7280", fontSize: 10 }}>{col.type}</span>
-              {col.nullable && <span style={{ color: "#9ca3af" }}>?</span>}
+              </div>
+              <div style={{ width: 90, flexShrink: 0, color: "#6b7280", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {col.type}
+              </div>
             </li>
           ))}
           {entity.columns.length === 0 && (
@@ -470,7 +501,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
       style={{
         background: "#ffffff",
         border: `2px solid ${borderColor}`,
-        ...(schemaColor ? { borderLeft: `3px solid ${schemaColor}` } : {}),
+        ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
         borderRadius: 6,
         minWidth: 420,
         fontFamily: "monospace",
@@ -480,6 +511,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
       }}
     >
       <Handle type="target" position={Position.Left} />
+      {entity.schema && <SchemaStrip schema={entity.schema} allSchemas={allSchemas} />}
 
       {/* 헤더 */}
       <div className={css.headerEditRow} style={{ background: entity.color ?? DEFAULT_HEADER_COLOR }}>
