@@ -10,6 +10,7 @@ import {
   removeEntity,
   removeIndex,
   renameEntity,
+  setEntitySchema,
   updateColumn,
   updateEntityColor,
   updateEntityComment,
@@ -18,6 +19,7 @@ import {
 import type { DiagramColumn, DiagramIndex } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
 import type { EditableTableNodeType } from "../stores/useEditorStore";
+import { getSchemaColor, getSchemasFromDocument } from "../../../shared/utils/schema-colors";
 import * as css from "./editable-table-node.css";
 
 const DEFAULT_HEADER_COLOR = "#0064E0";
@@ -105,6 +107,89 @@ const TypeSelect = ({ value, onChange, label }: { value: string; onChange: (val:
             </button>
           ))}
         </div>
+      )}
+    </div>
+  );
+};
+
+const SchemaSelector = ({
+  schema,
+  allSchemas,
+  onChange,
+}: {
+  schema: string | null | undefined;
+  allSchemas: string[];
+  onChange: (s: string | null) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const color = schema ? getSchemaColor(schema, allSchemas) : "#CBD2D9";
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        type="button"
+        className="nodrag"
+        onClick={() => setOpen((o) => !o)}
+        title="스키마 변경"
+        style={{
+          display: "flex", alignItems: "center", gap: 4,
+          background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+          borderRadius: 5, padding: "2px 6px", cursor: "pointer",
+          fontSize: 10, color: "#fff", fontWeight: 500,
+        }}
+      >
+        <div style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
+        {schema ?? "스키마"} ▾
+      </button>
+      {open && (
+        <>
+          <div className="nodrag nopan" onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 999 }} />
+          <div
+            className="nodrag nopan"
+            style={{
+              position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 1000,
+              background: "#fff", border: "1px solid #DEE3E9", borderRadius: 8,
+              boxShadow: "0 4px 12px rgba(0,0,0,.1)", minWidth: 140, overflow: "hidden",
+            }}
+          >
+            {allSchemas.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className="nodrag"
+                onMouseDown={(e) => { e.preventDefault(); onChange(s); setOpen(false); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  width: "100%", padding: "6px 10px", background: s === schema ? "#EEF4FF" : "none",
+                  border: "none", textAlign: "left", cursor: "pointer",
+                  fontSize: 11, color: s === schema ? "#0064E0" : "#374151",
+                  fontWeight: s === schema ? 500 : 400,
+                }}
+              >
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: getSchemaColor(s, allSchemas), flexShrink: 0 }} />
+                {s}
+              </button>
+            ))}
+            {schema && (
+              <>
+                <div style={{ height: 1, background: "#F1F4F7" }} />
+                <button
+                  type="button"
+                  className="nodrag"
+                  onMouseDown={(e) => { e.preventDefault(); onChange(null); setOpen(false); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    width: "100%", padding: "6px 10px", background: "none",
+                    border: "none", textAlign: "left", cursor: "pointer",
+                    fontSize: 11, color: "#9CA3AF",
+                  }}
+                >
+                  없음 (해제)
+                </button>
+              </>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -218,6 +303,9 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
   );
   const entityIndexes = document?.indexes.filter((i) => i.entityId === entity.id) ?? [];
 
+  const allSchemas = document ? getSchemasFromDocument(document.entities) : [];
+  const schemaColor = entity.schema ? getSchemaColor(entity.schema, allSchemas) : null;
+
   const borderColor = collaboratorColor ?? (selected ? "var(--color-primary, #0064E0)" : "#d1d5db");
   const boxShadow = collaboratorColor
     ? `0 0 0 3px ${collaboratorColor}40`
@@ -232,6 +320,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
         style={{
           background: "#ffffff",
           border: `2px solid ${borderColor}`,
+          ...(schemaColor ? { borderLeft: `3px solid ${schemaColor}` } : {}),
           borderRadius: 6,
           minWidth: 180,
           fontFamily: "monospace",
@@ -331,6 +420,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
       style={{
         background: "#ffffff",
         border: `2px solid ${borderColor}`,
+        ...(schemaColor ? { borderLeft: `3px solid ${schemaColor}` } : {}),
         borderRadius: 6,
         minWidth: 420,
         fontFamily: "monospace",
@@ -363,6 +453,11 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
             applyCommand((doc) => renameEntity(doc, entity.id, e.target.value))
           }
+        />
+        <SchemaSelector
+          schema={entity.schema}
+          allSchemas={allSchemas}
+          onChange={(s) => applyCommand((doc) => setEntitySchema(doc, entity.id, s))}
         />
         <button
           type="button"

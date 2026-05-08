@@ -31,9 +31,15 @@ function columnDdl(col: DiagramColumn, dialect: DiagramDocument["dialect"]): str
   return `  ${parts.join(" ")}`;
 }
 
+function qualifiedName(entity: DiagramEntity, dialect: DiagramDocument["dialect"]): string {
+  if (!entity.schema) return quote(entity.name, dialect);
+  if (dialect === "mssql") return `[${entity.schema}].${quote(entity.name, dialect)}`;
+  return `${quote(entity.schema, dialect)}.${quote(entity.name, dialect)}`;
+}
+
 function entityDdl(entity: DiagramEntity, dialect: DiagramDocument["dialect"]): string {
   const lines: string[] = [];
-  lines.push(`CREATE TABLE ${quote(entity.name, dialect)} (`);
+  lines.push(`CREATE TABLE ${qualifiedName(entity, dialect)} (`);
 
   const sorted = [...entity.columns].sort((a, b) => a.ordinal - b.ordinal);
   const pkCols = sorted.filter((c) => c.primaryKey);
@@ -61,12 +67,12 @@ function commentsDdl(entity: DiagramEntity, dialect: DiagramDocument["dialect"])
   if (dialect === "postgresql") {
     const parts: string[] = [];
     if (entity.comment) {
-      parts.push(`COMMENT ON TABLE ${quote(entity.name, dialect)} IS '${escapeComment(entity.comment)}';`);
+      parts.push(`COMMENT ON TABLE ${qualifiedName(entity, dialect)} IS '${escapeComment(entity.comment)}';`);
     }
     for (const col of entity.columns) {
       if (col.comment) {
         parts.push(
-          `COMMENT ON COLUMN ${quote(entity.name, dialect)}.${quote(col.name, dialect)} IS '${escapeComment(col.comment)}';`
+          `COMMENT ON COLUMN ${qualifiedName(entity, dialect)}.${quote(col.name, dialect)} IS '${escapeComment(col.comment)}';`
         );
       }
     }
@@ -86,7 +92,7 @@ function indexDdl(index: DiagramIndex, entity: DiagramEntity, dialect: DiagramDo
     .join(", ");
   if (!cols) return "";
   const keyword = index.unique ? "CREATE UNIQUE INDEX" : "CREATE INDEX";
-  return `${keyword} ${quote(index.name, dialect)} ON ${quote(entity.name, dialect)} (${cols});`;
+  return `${keyword} ${quote(index.name, dialect)} ON ${qualifiedName(entity, dialect)} (${cols});`;
 }
 
 function fkDdl(
@@ -115,10 +121,10 @@ function fkDdl(
     .join(", ");
 
   return [
-    `ALTER TABLE ${quote(sourceEntity.name, dialect)}`,
+    `ALTER TABLE ${qualifiedName(sourceEntity, dialect)}`,
     `  ADD CONSTRAINT ${quote(constraintName, dialect)}`,
     `  FOREIGN KEY (${srcCols})`,
-    `  REFERENCES ${quote(targetEntity.name, dialect)} (${tgtCols})`,
+    `  REFERENCES ${qualifiedName(targetEntity, dialect)} (${tgtCols})`,
     `  ON DELETE ${referentialAction(rel.onDelete)}`,
     `  ON UPDATE ${referentialAction(rel.onUpdate)};`,
   ].join("\n");

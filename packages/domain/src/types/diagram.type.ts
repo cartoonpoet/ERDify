@@ -18,6 +18,7 @@ export interface DiagramColumn {
 
 export interface DiagramEntity {
   id: string;
+  schema?: string | null;
   name: string;
   logicalName: string | null;
   comment: string | null;

@@ -111,6 +111,9 @@ interface EditorState {
   collaborators: Collaborator[];
   pendingConnection: PendingConnection | null;
   pendingRelDelete: PendingRelDelete | null;
+  hiddenSchemas: Set<string>;
+  schemaFilterExpanded: boolean;
+  groupViewEnabled: boolean;
 
   setDocument: (doc: DiagramDocument) => void;
   applyCommand: (fn: (doc: DiagramDocument) => DiagramDocument) => void;
@@ -125,6 +128,9 @@ interface EditorState {
   setSearchOpen: (open: boolean) => void;
   setPendingConnection: (p: PendingConnection | null) => void;
   setPendingRelDelete: (p: PendingRelDelete | null) => void;
+  toggleSchemaVisibility: (schema: string) => void;
+  setSchemaFilterExpanded: (expanded: boolean) => void;
+  setGroupViewEnabled: (enabled: boolean) => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -139,6 +145,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   collaborators: [],
   pendingConnection: null,
   pendingRelDelete: null,
+  hiddenSchemas: new Set<string>(),
+  schemaFilterExpanded: true,
+  groupViewEnabled: true,
 
   setDocument: (doc) =>
     set((state) => ({
@@ -188,4 +197,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setPendingConnection: (p) => set({ pendingConnection: p }),
   setPendingRelDelete: (p) => set({ pendingRelDelete: p }),
+
+  toggleSchemaVisibility: (schema) =>
+    set((state) => {
+      const next = new Set(state.hiddenSchemas);
+      if (next.has(schema)) next.delete(schema);
+      else next.add(schema);
+      return { hiddenSchemas: next };
+    }),
+
+  setSchemaFilterExpanded: (expanded) => set({ schemaFilterExpanded: expanded }),
+
+  setGroupViewEnabled: (enabled) => set({ groupViewEnabled: enabled }),
 }));

@@ -16,6 +16,7 @@ import { ExportModal } from "../components/ExportModal";
 import { ShareDiagramModal } from "../components/ShareDiagramModal";
 import { FkSetupModal } from "../components/FkSetupModal";
 import { RelDeleteConfirmModal } from "../components/RelDeleteConfirmModal";
+import { SchemaFilterSidebar } from "../components/SchemaFilterSidebar";
 import { useDiagramAutosave } from "../hooks/useDiagramAutosave";
 import { useVersionHistory } from "../hooks/useVersionHistory";
 import { useRealtimeCollaboration } from "../hooks/useRealtimeCollaboration";
@@ -160,6 +161,7 @@ export const EditorPage = () => {
       </div>
 
       <div className={css.content}>
+        <SchemaFilterSidebar />
         <div className={css.canvasArea}>
           <EditorCanvas />
           {selectedRelationshipId && popoverPos && (

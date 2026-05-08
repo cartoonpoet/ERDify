@@ -2,10 +2,11 @@ import type { DiagramDocument, DiagramEntity, EntityPosition } from "../types/in
 
 export function addEntity(
   doc: DiagramDocument,
-  input: { id: string; name: string; position?: EntityPosition }
+  input: { id: string; name: string; schema?: string | null; position?: EntityPosition }
 ): DiagramDocument {
   const entity: DiagramEntity = {
     id: input.id,
+    schema: input.schema ?? null,
     name: input.name,
     logicalName: null,
     comment: null,
@@ -52,6 +53,17 @@ export function updateEntityComment(
   return {
     ...doc,
     entities: doc.entities.map((e) => (e.id === entityId ? { ...e, comment } : e))
+  };
+}
+
+export function setEntitySchema(
+  doc: DiagramDocument,
+  entityId: string,
+  schema: string | null
+): DiagramDocument {
+  return {
+    ...doc,
+    entities: doc.entities.map((e) => (e.id === entityId ? { ...e, schema } : e))
   };
 }
 

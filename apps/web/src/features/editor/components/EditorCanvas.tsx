@@ -1,18 +1,46 @@
 import { randomUUID } from "../../../shared/utils/uuid";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import type { MouseEvent, CSSProperties } from "react";
 import { ReactFlow, Background, Controls, MiniMap, useReactFlow } from "@xyflow/react";
-import type { Edge, EdgeChange, NodeChange, NodeSelectionChange, Connection } from "@xyflow/react";
+import type { Node, Edge, EdgeChange, NodeChange, NodeSelectionChange, Connection } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { updateEntityPosition, addRelationship, removeRelationship, addEntity } from "@erdify/domain";
 import type { DiagramRelationship, DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
 import type { EditableTableNodeType, UnmatchedPkInput } from "../stores/useEditorStore";
+import { getSchemaColor, getSchemasFromDocument } from "../../../shared/utils/schema-colors";
 import { EditableTableNode } from "./EditableTableNode";
 import { CardinalityEdge } from "./CardinalityEdge";
 import { SearchPanel } from "./SearchPanel";
 
-const nodeTypes = { editableTable: EditableTableNode };
+const SchemaZoneNode = ({ data }: { data: { label: string; color: string } }) => (
+  <div
+    style={{
+      width: "100%",
+      height: "100%",
+      background: `${data.color}12`,
+      border: `1.5px dashed ${data.color}50`,
+      borderRadius: 14,
+      pointerEvents: "none",
+    }}
+  >
+    <div
+      style={{
+        padding: "8px 12px",
+        fontSize: 10,
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        color: data.color,
+        opacity: 0.6,
+      }}
+    >
+      {data.label}
+    </div>
+  </div>
+);
+
+const nodeTypes = { editableTable: EditableTableNode, schemaZone: SchemaZoneNode };
 const edgeTypes = { cardinality: CardinalityEdge };
 
 const toSnake = (s: string) =>
@@ -81,91 +109,154 @@ type ContextMenuState = {
   clientY: number;
 };
 
-function computeAutoLayout(doc: DiagramDocument, measuredSizes: Map<string, { w: number; h: number }>) {
-  const NODE_W = 280;
-  const H_GAP = 96;
-  const V_GAP = 80;
-  const GROUP_H_PAD = 180;
-  const GROUP_V_PAD = 120;
-
+function layoutComponents(
+  components: string[][],
+  inDegree: Map<string, number>,
+  doc: DiagramDocument,
+  measuredSizes: Map<string, { w: number; h: number }>,
+  originX: number,
+  originY: number,
+  NODE_W: number,
+  H_GAP: number,
+  V_GAP: number,
+  COMP_H_GAP: number,
+): { positions: Record<string, { x: number; y: number }>; groupW: number; groupH: number } {
   const estimateH = (id: string, colCount: number) =>
     (measuredSizes.get(id)?.h ?? (38 + 28 + colCount * 30)) + V_GAP;
-  const estimateW = (id: string) =>
-    (measuredSizes.get(id)?.w ?? NODE_W) + H_GAP;
+  const estimateW = (id: string) => (measuredSizes.get(id)?.w ?? NODE_W) + H_GAP;
 
-  // Build undirected adjacency graph for connected-component detection
-  const adj = new Map<string, Set<string>>();
-  for (const e of doc.entities) adj.set(e.id, new Set());
-  for (const r of doc.relationships) {
-    adj.get(r.sourceEntityId)?.add(r.targetEntityId);
-    adj.get(r.targetEntityId)?.add(r.sourceEntityId);
-  }
-
-  // BFS — find connected components (each = one "cluster" of related tables)
-  const visited = new Set<string>();
-  const components: string[][] = [];
-  for (const e of doc.entities) {
-    if (visited.has(e.id)) continue;
-    const comp: string[] = [];
-    const queue = [e.id];
-    while (queue.length > 0) {
-      const id = queue.shift()!;
-      if (visited.has(id)) continue;
-      visited.add(id);
-      comp.push(id);
-      for (const nbr of adj.get(id) ?? []) {
-        if (!visited.has(nbr)) queue.push(nbr);
-      }
-    }
-    components.push(comp);
-  }
-
-  // Largest/most-connected clusters first
-  components.sort((a, b) => b.length - a.length);
-
-  // In-degree: tables referenced by FKs (parent tables) go first within a cluster
-  const inDegree = new Map<string, number>(doc.entities.map((e) => [e.id, 0]));
-  for (const r of doc.relationships) {
-    inDegree.set(r.targetEntityId, (inDegree.get(r.targetEntityId) ?? 0) + 1);
-  }
-
-  // Arrange clusters in a wrapping row-grid
-  const GROUPS_PER_ROW = Math.max(1, Math.ceil(Math.sqrt(components.length)));
+  const sorted = [...components].sort((a, b) => b.length - a.length);
+  const COMPS_PER_ROW = Math.max(1, Math.ceil(Math.sqrt(sorted.length)));
   const positions: Record<string, { x: number; y: number }> = {};
 
-  let originX = 0;
-  let originY = 0;
+  let compX = originX;
+  let compY = originY;
   let rowMaxH = 0;
-  let groupCol = 0;
+  let compCol = 0;
 
-  for (const comp of components) {
-    const sorted = [...comp].sort((a, b) => (inDegree.get(b) ?? 0) - (inDegree.get(a) ?? 0));
-
-    const nCols = Math.min(4, Math.max(1, Math.ceil(Math.sqrt(sorted.length))));
+  for (const comp of sorted) {
+    const sortedComp = [...comp].sort((a, b) => (inDegree.get(b) ?? 0) - (inDegree.get(a) ?? 0));
+    const nCols = Math.min(4, Math.max(1, Math.ceil(Math.sqrt(sortedComp.length))));
     const colWidths = Array<number>(nCols).fill(0);
     const colHeights = Array<number>(nCols).fill(0);
 
-    for (const id of sorted) {
+    for (const id of sortedComp) {
       const entity = doc.entities.find((e) => e.id === id)!;
       const col = colHeights.indexOf(Math.min(...colHeights));
-      const x = colWidths.slice(0, col).reduce((s, w) => s + w, 0);
-      positions[id] = { x: originX + x, y: originY + colHeights[col]! };
+      const xOff = colWidths.slice(0, col).reduce((s, w) => s + w, 0);
+      positions[id] = { x: compX + xOff, y: compY + colHeights[col]! };
       colHeights[col] = colHeights[col]! + estimateH(id, entity.columns.length);
       colWidths[col] = Math.max(colWidths[col]!, estimateW(id));
     }
 
-    const groupW = colWidths.reduce((s, w) => s + w, 0);
-    const groupH = Math.max(...colHeights);
-    rowMaxH = Math.max(rowMaxH, groupH);
+    const compW = colWidths.reduce((s, w) => s + w, 0);
+    const compH = Math.max(...colHeights);
+    rowMaxH = Math.max(rowMaxH, compH);
 
-    groupCol++;
-    if (groupCol >= GROUPS_PER_ROW) {
-      originX = 0;
-      originY += rowMaxH + GROUP_V_PAD;
+    compCol++;
+    if (compCol >= COMPS_PER_ROW) {
+      compX = originX;
+      compY += rowMaxH + COMP_H_GAP;
       rowMaxH = 0;
-      groupCol = 0;
+      compCol = 0;
     } else {
-      originX += groupW + GROUP_H_PAD;
+      compX += compW + COMP_H_GAP;
+    }
+  }
+
+  const allX = Object.values(positions).map((p) => p.x);
+  const allY = Object.values(positions).map((p) => p.y);
+  const groupW = allX.length ? Math.max(...allX) - originX + NODE_W + H_GAP : 0;
+  const groupH = allY.length ? Math.max(...allY) - originY + 120 + V_GAP : 0;
+
+  return { positions, groupW, groupH };
+}
+
+function bfsComponents(entityIds: string[], adj: Map<string, Set<string>>): string[][] {
+  const visited = new Set<string>();
+  return entityIds.reduce<string[][]>((acc, id) => {
+    if (visited.has(id)) return acc;
+    const comp: string[] = [];
+    const queue = [id];
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      if (visited.has(curr)) continue;
+      visited.add(curr);
+      comp.push(curr);
+      for (const nbr of adj.get(curr) ?? []) {
+        if (!visited.has(nbr)) queue.push(nbr);
+      }
+    }
+    return [...acc, comp];
+  }, []);
+}
+
+function computeAutoLayout(doc: DiagramDocument, measuredSizes: Map<string, { w: number; h: number }>) {
+  const NODE_W = 280;
+  const H_GAP = 96;
+  const V_GAP = 80;
+  const SCHEMA_H_GAP = 140;
+  const SCHEMA_V_GAP = 100;
+  const SCHEMA_PAD = 40;
+  const COMP_H_GAP = 80;
+
+  // Group entities by schema (null → "__none__")
+  const schemaGroups = doc.entities.reduce<Map<string, string[]>>((acc, e) => {
+    const key = e.schema ?? "__none__";
+    return acc.set(key, [...(acc.get(key) ?? []), e.id]);
+  }, new Map());
+
+  const schemaKeys = [...schemaGroups.keys()].sort((a, b) =>
+    a === "__none__" ? 1 : b === "__none__" ? -1 : a.localeCompare(b)
+  );
+
+  const inDegree = doc.relationships.reduce<Map<string, number>>(
+    (acc, r) => acc.set(r.targetEntityId, (acc.get(r.targetEntityId) ?? 0) + 1),
+    new Map(doc.entities.map((e) => [e.id, 0]))
+  );
+
+  const SCHEMAS_PER_ROW = Math.max(1, Math.ceil(Math.sqrt(schemaKeys.length)));
+  const positions: Record<string, { x: number; y: number }> = {};
+
+  let schemaX = 0;
+  let schemaY = 0;
+  let rowMaxH = 0;
+  let schemaCol = 0;
+
+  for (const key of schemaKeys) {
+    const entityIds = schemaGroups.get(key) ?? [];
+
+    // Build intra-schema adjacency
+    const groupSet = new Set(entityIds);
+    const adj = entityIds.reduce<Map<string, Set<string>>>((m, id) => m.set(id, new Set()), new Map());
+    for (const r of doc.relationships) {
+      if (groupSet.has(r.sourceEntityId) && groupSet.has(r.targetEntityId)) {
+        adj.get(r.sourceEntityId)?.add(r.targetEntityId);
+        adj.get(r.targetEntityId)?.add(r.sourceEntityId);
+      }
+    }
+
+    const components = bfsComponents(entityIds, adj);
+    const { positions: compPositions, groupW, groupH } = layoutComponents(
+      components, inDegree, doc, measuredSizes,
+      schemaX + SCHEMA_PAD, schemaY + SCHEMA_PAD,
+      NODE_W, H_GAP, V_GAP, COMP_H_GAP,
+    );
+
+    Object.assign(positions, compPositions);
+
+    const totalH = groupH + SCHEMA_PAD * 2;
+    const totalW = groupW + SCHEMA_PAD * 2;
+    rowMaxH = Math.max(rowMaxH, totalH);
+
+    schemaCol++;
+    if (schemaCol >= SCHEMAS_PER_ROW) {
+      schemaX = 0;
+      schemaY += rowMaxH + SCHEMA_V_GAP;
+      rowMaxH = 0;
+      schemaCol = 0;
+    } else {
+      schemaX += totalW + SCHEMA_H_GAP;
     }
   }
 
@@ -207,6 +298,8 @@ const ContextMenuInner = ({
   const { screenToFlowPosition, fitView, getNodes } = useReactFlow();
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const document = useEditorStore((s) => s.document);
+  const groupViewEnabled = useEditorStore((s) => s.groupViewEnabled);
+  const setGroupViewEnabled = useEditorStore((s) => s.setGroupViewEnabled);
 
   const handleAddTable = () => {
     const flowPos = screenToFlowPosition({ x: state.clientX, y: state.clientY });
@@ -290,6 +383,17 @@ const ContextMenuInner = ({
         <span style={{ fontSize: 13 }}>⊞</span>
         테이블 자동 정렬
       </button>
+      <div style={{ height: 1, background: "#f1f5f9", margin: "0 8px" }} />
+      <button
+        type="button"
+        onClick={() => { setGroupViewEnabled(!groupViewEnabled); onClose(); }}
+        style={menuItemStyle}
+        onMouseEnter={onEnter}
+        onMouseLeave={onLeave}
+      >
+        <span style={{ fontSize: 13 }}>{groupViewEnabled ? "◻" : "▦"}</span>
+        {groupViewEnabled ? "그룹 숨기기" : "그룹 보기"}
+      </button>
     </div>
   );
 };
@@ -310,6 +414,65 @@ export const EditorCanvas = () => {
   const setPopoverPos = useEditorStore((s) => s.setPopoverPos);
   const setSelectedEntity = useEditorStore((s) => s.setSelectedEntity);
   const setPendingConnection = useEditorStore((s) => s.setPendingConnection);
+  const hiddenSchemas = useEditorStore((s) => s.hiddenSchemas);
+  const groupViewEnabled = useEditorStore((s) => s.groupViewEnabled);
+
+  const allSchemas = useMemo(
+    () => (document ? getSchemasFromDocument(document.entities) : []),
+    [document]
+  );
+
+  const zoneNodes = useMemo((): Node[] => {
+    if (!document || !groupViewEnabled || allSchemas.length === 0) return [];
+    const NODE_W = 280;
+    const NODE_H_EST = 120;
+    const PAD = 32;
+    return allSchemas.flatMap((schema) => {
+      const schemaEntities = document.entities.filter((e) => e.schema === schema);
+      if (schemaEntities.length === 0) return [];
+      const positions = schemaEntities.map(
+        (e) => document.layout.entityPositions[e.id] ?? { x: 0, y: 0 }
+      );
+      const xs = positions.map((p) => p.x);
+      const ys = positions.map((p) => p.y);
+      const minX = Math.min(...xs);
+      const minY = Math.min(...ys);
+      const maxX = Math.max(...xs);
+      const maxY = Math.max(...ys);
+      return [{
+        id: `__zone__${schema}`,
+        type: "schemaZone" as const,
+        position: { x: minX - PAD, y: minY - PAD },
+        data: { label: schema, color: getSchemaColor(schema, allSchemas) },
+        style: { width: maxX - minX + NODE_W + PAD * 2, height: maxY - minY + NODE_H_EST + PAD * 2 },
+        selectable: false,
+        draggable: false,
+        zIndex: -1,
+      }];
+    });
+  }, [document, groupViewEnabled, allSchemas]);
+
+  const displayNodes = useMemo((): Node[] => {
+    const dimmedEntityNodes = nodes.map((node) => {
+      const schema = node.data.entity.schema ?? null;
+      const isHidden = schema !== null && hiddenSchemas.has(schema);
+      return isHidden ? { ...node, style: { ...node.style, opacity: 0.15 } } : node;
+    });
+    return [...zoneNodes, ...dimmedEntityNodes];
+  }, [nodes, zoneNodes, hiddenSchemas]);
+
+  const displayEdges = useMemo(() => {
+    if (!document || hiddenSchemas.size === 0) return edges;
+    const entitySchemaMap = new Map(document.entities.map((e) => [e.id, e.schema ?? null]));
+    return edges.map((edge) => {
+      const srcSchema = entitySchemaMap.get(edge.source) ?? null;
+      const tgtSchema = entitySchemaMap.get(edge.target) ?? null;
+      const isHidden =
+        (srcSchema !== null && hiddenSchemas.has(srcSchema)) ||
+        (tgtSchema !== null && hiddenSchemas.has(tgtSchema));
+      return isHidden ? { ...edge, style: { ...edge.style, opacity: 0.1 } } : edge;
+    });
+  }, [edges, hiddenSchemas, document]);
 
   if (!document) return null;
 
@@ -393,8 +556,8 @@ export const EditorCanvas = () => {
   return (
     <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={displayNodes as unknown as EditableTableNodeType[]}
+        edges={displayEdges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
