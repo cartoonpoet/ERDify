@@ -1,11 +1,11 @@
 // apps/web/src/features/editor/stores/diagramSlice.ts
 import type { Edge, NodeChange } from "@xyflow/react";
-import { applyNodeChanges } from "@xyflow/react";
+import { applyNodeChanges as applyXyflowNodeChanges } from "@xyflow/react";
 import type { DiagramDocument } from "@erdify/domain";
 import type { StateCreator } from "zustand";
 import type { EditableTableNodeType } from "./editor-store.types";
 import { docToEdges, docToNodes, updateNodes } from "./editor-store.helpers";
-import type { EditorState } from "./useEditorStore";
+import type { EditorState } from "./editor-store.types";
 
 export interface DiagramSlice {
   document: DiagramDocument | null;
@@ -49,7 +49,7 @@ export const createDiagramSlice: StateCreator<EditorState, [], [], DiagramSlice>
 
   applyNodeChanges: (changes) => {
     const { nodes } = get();
-    set({ nodes: applyNodeChanges(changes, nodes) });
+    set({ nodes: applyXyflowNodeChanges(changes, nodes) });
   },
 
   setCanEdit: (canEdit) => set({ canEdit }),

@@ -2,7 +2,7 @@
 import type { StateCreator } from "zustand";
 import type { Collaborator } from "./editor-store.types";
 import { updateNodes } from "./editor-store.helpers";
-import type { EditorState } from "./useEditorStore";
+import type { EditorState } from "./editor-store.types";
 
 export interface CollaboratorsSlice {
   collaborators: Collaborator[];

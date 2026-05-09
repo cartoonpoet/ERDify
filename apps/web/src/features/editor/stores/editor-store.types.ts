@@ -1,6 +1,10 @@
 // apps/web/src/features/editor/stores/editor-store.types.ts
 import type { Node } from "@xyflow/react";
 import type { DiagramEntity } from "@erdify/domain";
+import type { DiagramSlice } from "./diagramSlice";
+import type { UISlice } from "./uiSlice";
+import type { CollaboratorsSlice } from "./collaboratorsSlice";
+import type { PendingSlice } from "./pendingSlice";
 
 export type UnmatchedPkInput = {
   pkColId: string;
@@ -34,3 +38,5 @@ export interface Collaborator {
   color: string;
   selectedEntityId: string | null;
 }
+
+export type EditorState = DiagramSlice & UISlice & CollaboratorsSlice & PendingSlice;

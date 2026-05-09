@@ -1,6 +1,6 @@
 // apps/web/src/features/editor/stores/uiSlice.ts
 import type { StateCreator } from "zustand";
-import type { EditorState } from "./useEditorStore";
+import type { EditorState } from "./editor-store.types";
 
 export interface UISlice {
   selectedEntityId: string | null;
