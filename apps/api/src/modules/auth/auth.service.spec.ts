@@ -23,14 +23,14 @@ describe("AuthService", () => {
   let userRepo: MockRepo<User>;
   let apiKeyRepo: MockRepo<ApiKey>;
   let inviteRepo: { find: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
-  let memberRepo: { findOne: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
+  let memberRepo: { findOne: ReturnType<typeof vi.fn>; find: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
   let jwtService: { sign: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     inviteRepo = { find: vi.fn(), save: vi.fn() };
-    memberRepo = { findOne: vi.fn().mockResolvedValue(null), create: vi.fn(), save: vi.fn() };
+    memberRepo = { findOne: vi.fn().mockResolvedValue(null), find: vi.fn(), create: vi.fn(), save: vi.fn() };
     jwtService = { sign: vi.fn() };
     service = new AuthService(
       userRepo as unknown as Repository<User>,
@@ -72,17 +72,25 @@ describe("AuthService", () => {
 
       const pendingInvite = { id: "inv-1", orgId: "org-1", email: "new@b.com", role: "editor", acceptedAt: null, expiresAt: new Date(Date.now() + 86400000) };
       vi.mocked(inviteRepo.find).mockResolvedValue([pendingInvite] as unknown as Invite[]);
+      vi.mocked(memberRepo.find).mockResolvedValue([]); // no existing members
       vi.mocked(memberRepo.create).mockReturnValue({ organizationId: "org-1", userId: "new-user", role: "editor" } as OrganizationMember);
       vi.mocked(memberRepo.save).mockResolvedValue({} as OrganizationMember);
       vi.mocked(inviteRepo.save).mockResolvedValue({} as Invite);
 
       await service.register({ email: "new@b.com", password: "pass1234", name: "New" });
 
+      expect(memberRepo.find).toHaveBeenCalledWith({
+        where: { organizationId: expect.any(Object), userId: "new-user" }
+      });
       expect(memberRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ organizationId: "org-1", userId: "new-user", role: "editor" })
+        expect.arrayContaining([
+          expect.objectContaining({ organizationId: "org-1", userId: "new-user", role: "editor" })
+        ])
       );
       expect(inviteRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ acceptedAt: expect.any(Date) })
+        expect.arrayContaining([
+          expect.objectContaining({ acceptedAt: expect.any(Date) })
+        ])
       );
     });
   });

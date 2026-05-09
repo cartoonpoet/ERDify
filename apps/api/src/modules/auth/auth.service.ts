@@ -6,7 +6,7 @@ import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ApiKey, Invite, OrganizationMember, User } from "@erdify/db";
 import * as bcrypt from "bcryptjs";
-import { IsNull, MoreThan, type Repository } from "typeorm";
+import { IsNull, MoreThan, In, type Repository } from "typeorm";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { CreateApiKeyDto } from "./dto/create-api-key.dto";
 import type { LoginDto } from "./dto/login.dto";
@@ -64,17 +64,22 @@ export class AuthService {
     const pendingInvites = await this.inviteRepo.find({
       where: { email: dto.email, acceptedAt: IsNull(), expiresAt: MoreThan(new Date()) },
     });
-    for (const invite of pendingInvites) {
-      const existingMember = await this.memberRepo.findOne({
-        where: { organizationId: invite.orgId, userId: saved.id },
+
+    if (pendingInvites.length > 0) {
+      const orgIds = pendingInvites.map((i) => i.orgId);
+      const existingMembers = await this.memberRepo.find({
+        where: { organizationId: In(orgIds), userId: saved.id },
       });
-      if (!existingMember) {
-        await this.memberRepo.save(
-          this.memberRepo.create({ organizationId: invite.orgId, userId: saved.id, role: invite.role })
-        );
-      }
-      invite.acceptedAt = new Date();
-      await this.inviteRepo.save(invite);
+      const existingOrgIds = new Set(existingMembers.map((m) => m.organizationId));
+
+      const newMembers = pendingInvites
+        .filter((i) => !existingOrgIds.has(i.orgId))
+        .map((i) => this.memberRepo.create({ organizationId: i.orgId, userId: saved.id, role: i.role }));
+
+      await this.memberRepo.save(newMembers);
+      await this.inviteRepo.save(
+        pendingInvites.map((i) => Object.assign(i, { acceptedAt: new Date() }))
+      );
     }
 
     return { accessToken: this.jwtService.sign({ sub: saved.id, email: saved.email }) };
