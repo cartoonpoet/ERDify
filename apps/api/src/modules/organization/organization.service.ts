@@ -41,9 +41,11 @@ export class OrganizationService {
   }
 
   async findOne(orgId: string, userId: string): Promise<Organization> {
-    const membership = await this.memberRepo.findOne({ where: { organizationId: orgId, userId } });
+    const [membership, org] = await Promise.all([
+      this.memberRepo.findOne({ where: { organizationId: orgId, userId } }),
+      this.orgRepo.findOne({ where: { id: orgId } }),
+    ]);
     if (!membership) throw new ForbiddenException();
-    const org = await this.orgRepo.findOne({ where: { id: orgId } });
     if (!org) throw new NotFoundException("Organization not found");
     return org;
   }
@@ -100,8 +102,18 @@ export class OrganizationService {
     const membership = await this.memberRepo.findOne({ where: { organizationId: orgId, userId: requesterId } });
     if (!membership) throw new ForbiddenException();
     const members = await this.memberRepo.find({
+      select: {
+        userId: true,
+        role: true,
+        joinedAt: true,
+        user: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      },
       where: { organizationId: orgId },
-      relations: ["user"],
+      relations: { user: true },
       order: { joinedAt: "ASC" },
     });
     return members.map((m) => ({
