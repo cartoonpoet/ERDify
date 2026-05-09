@@ -4,12 +4,12 @@ import { RelDeleteConfirmModal } from "./RelDeleteConfirmModal";
 import { useEditorStore } from "@/store/useEditorStore";
 import * as erdifyDomain from "@erdify/domain";
 
-vi.mock("../stores/useEditorStore");
+vi.mock("@/store/useEditorStore");
 vi.mock("@erdify/domain", () => ({
   removeRelationship: vi.fn((doc) => doc),
   removeColumn: vi.fn((doc) => doc),
 }));
-vi.mock("../../../design-system/Modal", () => ({
+vi.mock("@/components/Modal", () => ({
   Modal: ({ open, children, title }: { open: boolean; children: React.ReactNode; title?: string }) =>
     open ? <div role="dialog">{title && <div>{title}</div>}{children}</div> : null,
 }));

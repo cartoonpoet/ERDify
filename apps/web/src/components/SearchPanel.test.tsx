@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { SearchPanel } from "./SearchPanel";
 import { useEditorStore } from "@/store/useEditorStore";
 
-vi.mock("../stores/useEditorStore");
+vi.mock("@/store/useEditorStore");
 vi.mock("@xyflow/react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@xyflow/react")>();
   return {

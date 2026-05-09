@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { RelationshipPopover } from "./RelationshipPopover";
 import { useEditorStore } from "@/store/useEditorStore";
 
-vi.mock("../stores/useEditorStore");
+vi.mock("@/store/useEditorStore");
 vi.mock("@erdify/domain", () => ({
   updateRelationship: vi.fn((doc) => doc),
   removeRelationship: vi.fn((doc) => doc),

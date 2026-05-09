@@ -1,5 +1,5 @@
 import { style, keyframes } from "@vanilla-extract/css";
-import { vars } from "@/style/tokens.css";
+import { vars } from "../../style/tokens.css";
 
 const pulse = keyframes({
   "0%, 100%": { opacity: 1 },

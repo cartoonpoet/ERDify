@@ -5,18 +5,18 @@ import { useEditorStore } from "@/store/useEditorStore";
 import { generateDdl, generateOrm } from "@erdify/domain";
 import { copyToClipboard } from "@/utils/clipboard";
 
-vi.mock("../stores/useEditorStore");
+vi.mock("@/store/useEditorStore");
 
 vi.mock("@erdify/domain", () => ({
   generateDdl: vi.fn(),
   generateOrm: vi.fn(),
 }));
 
-vi.mock("../../../shared/utils/clipboard", () => ({
+vi.mock("@/utils/clipboard", () => ({
   copyToClipboard: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../../shared/components/DarkCodeEditor", () => ({
+vi.mock("@/components/DarkCodeEditor", () => ({
   DarkCodeEditor: ({ value }: { value: string }) => (
     <pre data-testid="code-editor">{value}</pre>
   ),
@@ -35,7 +35,7 @@ vi.mock("./ExportModal.css", () => ({
   emptyText: "",
 }));
 
-vi.mock("../../../design-system/Modal", () => ({
+vi.mock("@/components/Modal", () => ({
   Modal: ({
     open,
     children,

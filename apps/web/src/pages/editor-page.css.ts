@@ -1,6 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { recipe } from "@vanilla-extract/recipes";
-import { vars } from "@/style/tokens.css";
+import { vars } from "../style/tokens.css";
 
 export const root = style({
   display: "flex",

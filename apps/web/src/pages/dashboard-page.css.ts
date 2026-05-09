@@ -1,5 +1,5 @@
 import { style } from "@vanilla-extract/css";
-import { vars } from "@/style/tokens.css";
+import { vars } from "../style/tokens.css";
 
 export const shell = style({
   display: "grid",

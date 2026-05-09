@@ -1,5 +1,5 @@
 import { style, styleVariants } from "@vanilla-extract/css";
-import { vars } from "@/style/tokens.css";
+import { vars } from "../style/tokens.css";
 
 export const mainArea = style({
   background: vars.color.surfaceTertiary,

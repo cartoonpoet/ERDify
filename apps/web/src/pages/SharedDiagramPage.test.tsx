@@ -10,13 +10,13 @@ vi.mock("@/api/diagrams.api", () => ({
   getPublicDiagram: vi.fn(),
 }));
 
-vi.mock("../../editor/stores/useEditorStore");
+vi.mock("@/store/useEditorStore");
 
-vi.mock("../../editor/components/EditorCanvas", () => ({
+vi.mock("@/components/EditorCanvas", () => ({
   EditorCanvas: () => React.createElement("div", { "data-testid": "editor-canvas" }),
 }));
 
-vi.mock("../../../design-system/Skeleton", () => ({
+vi.mock("@/components/Skeleton", () => ({
   Skeleton: () => React.createElement("div", { "data-testid": "skeleton" }),
 }));
 

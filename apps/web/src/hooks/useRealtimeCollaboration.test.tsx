@@ -40,7 +40,7 @@ const { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, mockSubscribe
     return { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, mockSubscribe, storeHook };
   });
 
-vi.mock("../stores/useEditorStore", () => ({
+vi.mock("@/store/useEditorStore", () => ({
   useEditorStore: storeHook
 }));
 

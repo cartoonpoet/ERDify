@@ -6,7 +6,7 @@ import * as clipboardUtil from "@/utils/clipboard";
 import { ApiKeysPanel } from "./ApiKeysPanel";
 
 vi.mock("@/api/api-keys.api");
-vi.mock("../../../shared/utils/clipboard", () => ({
+vi.mock("@/utils/clipboard", () => ({
   copyToClipboard: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("./api-keys-panel.css", () => ({

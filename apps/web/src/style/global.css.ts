@@ -1,5 +1,5 @@
 import { globalStyle } from "@vanilla-extract/css";
-import { vars } from "@/style/tokens.css";
+import { vars } from "./tokens.css";
 
 globalStyle("*, *::before, *::after", {
   boxSizing: "border-box",
