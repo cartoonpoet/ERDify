@@ -1,5 +1,5 @@
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
-import type { Diagram, DiagramVersion, OrganizationMember, Project } from "@erdify/db";
+import type { Diagram, DiagramVersion, Organization, OrganizationMember, Project } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { DiagramsService } from "./diagrams.service";
 import { DiagramsCrudService } from "./services/diagrams-crud.service";
@@ -34,7 +34,7 @@ type MockRepo<_T> = {
 };
 
 const makeProject = (o: Partial<Project> = {}): Project =>
-  ({ id: "proj-1", organizationId: "org-1", ...o }) as Project;
+  ({ id: "proj-1", organizationId: "org-1", name: "Test Project", ...o }) as Project;
 
 const makeDiagram = (o: Partial<Diagram> = {}): Diagram =>
   ({ id: "diag-1", projectId: "proj-1", name: "ERD", content: {} as object, ...o }) as Diagram;
@@ -78,12 +78,14 @@ describe("DiagramsService", () => {
   let diagramRepo: MockRepo<Diagram>;
   let versionRepo: MockRepo<DiagramVersion>;
   let projectRepo: MockRepo<Project>;
+  let orgRepo: MockRepo<Organization>;
   let memberRepo: MockRepo<OrganizationMember>;
 
   beforeEach(() => {
     diagramRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
     versionRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
     projectRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
+    orgRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
     memberRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
 
     const authService = new AuthorizationService(memberRepo as unknown as Repository<OrganizationMember>);
@@ -92,6 +94,7 @@ describe("DiagramsService", () => {
     const crud = new DiagramsCrudService(
       diagramRepo as unknown as Repository<Diagram>,
       projectRepo as unknown as Repository<Project>,
+      orgRepo as unknown as Repository<Organization>,
       authService
     );
     const schema = new DiagramsSchemaService(
@@ -161,10 +164,13 @@ describe("DiagramsService", () => {
       const diagram = makeDiagram();
       diagramRepo.findOne.mockResolvedValue(diagram);
       projectRepo.findOne.mockResolvedValue(makeProject());
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
       memberRepo.findOne.mockResolvedValue(makeMember());
       expect(await service.findOne("diag-1", "user-1")).toEqual({
         ...diagram,
         organizationId: "org-1",
+        organizationName: "Test Org",
+        projectName: "Test Project",
         myRole: "editor",
       });
     });
