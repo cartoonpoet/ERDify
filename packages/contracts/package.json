@@ -19,6 +19,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@erdify/domain": "workspace:*",
     "zod": "^3.24.3"
   },
   "devDependencies": {
