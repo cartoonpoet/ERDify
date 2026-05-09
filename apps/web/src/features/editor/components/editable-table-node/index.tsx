@@ -70,7 +70,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
         {entity.schema && <SchemaStrip schema={entity.schema} allSchemas={allSchemas} />}
         <div
           style={{
-            background: collaboratorColor ?? entity.color ?? DEFAULT_HEADER_COLOR,
+            background: collaboratorColor ?? entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR,
             color: "#ffffff",
             padding: "6px 10px",
             fontWeight: 700,
@@ -180,7 +180,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
       {entity.schema && <SchemaStrip schema={entity.schema} allSchemas={allSchemas} />}
 
       {/* 헤더 */}
-      <div className={css.headerEditRow} style={{ background: entity.color ?? DEFAULT_HEADER_COLOR }}>
+      <div className={css.headerEditRow} style={{ background: entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR }}>
         <ColorPicker
           value={entity.color ?? null}
           onChange={(color) => applyCommand((doc) => updateEntityColor(doc, entity.id, color))}
