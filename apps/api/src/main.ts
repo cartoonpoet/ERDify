@@ -23,6 +23,7 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.setGlobalPrefix("api");
   app.useStaticAssets(join(__dirname, "..", "uploads"), { prefix: "/uploads" });
 
   app.useGlobalPipes(
