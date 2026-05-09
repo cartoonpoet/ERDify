@@ -8,7 +8,7 @@ import { deleteDiagram } from "../../../shared/api/diagrams.api";
 import { getMe, logout } from "../../../shared/api/auth.api";
 import { API_BASE_URL } from "../../../shared/api/httpClient";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
-import { UnifiedSidebar } from "../components/UnifiedSidebar";
+import { UnifiedSidebar } from "../components/unified-sidebar";
 import { CreateOrgModal } from "../components/CreateOrgModal";
 import { CreateProjectModal } from "../components/CreateProjectModal";
 import { CreateDiagramModal } from "../components/CreateDiagramModal";
