@@ -1,0 +1,92 @@
+import { style } from "@vanilla-extract/css";
+import { vars } from "@/style/tokens.css";
+
+export const page = style({
+  minHeight: "100vh",
+  background: vars.color.surfaceSecondary,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: vars.space["6"],
+});
+
+export const card = style({
+  background: vars.color.surface,
+  borderRadius: vars.radius.xl,
+  boxShadow: vars.shadow.lg,
+  padding: `${vars.space["8"]} ${vars.space["7"]}`,
+  width: "100%",
+  maxWidth: "380px",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+});
+
+export const brand = style({
+  display: "flex",
+  alignItems: "center",
+  marginBottom: "4px",
+});
+
+export const brandLogo = style({
+  display: "block",
+  width: "138px",
+  height: "36px",
+});
+
+export const tagline = style({
+  fontSize: "13px",
+  color: vars.color.textSecondary,
+  marginBottom: vars.space["7"],
+});
+
+export const form = style({
+  width: "100%",
+  display: "flex",
+  flexDirection: "column",
+  gap: vars.space["3"],
+});
+
+export const authLink = style({
+  textAlign: "center",
+  fontSize: "13px",
+  color: vars.color.textSecondary,
+  marginTop: vars.space["2"],
+});
+
+export const authLinkAnchor = style({
+  color: vars.color.primary,
+  fontWeight: "500",
+  cursor: "pointer",
+  selectors: { "&:hover": { textDecoration: "underline" } },
+});
+
+export const strengthBars = style({
+  display: "flex",
+  gap: "4px",
+  marginTop: "6px",
+});
+
+export const strengthBar = style({
+  flex: 1,
+  height: "3px",
+  borderRadius: "2px",
+  background: vars.color.border,
+  transition: "background 200ms ease",
+});
+
+export const strengthBarFilled = style({
+  background: vars.color.success,
+});
+
+export const sessionBanner = style({
+  width: "100%",
+  padding: `${vars.space["2"]} ${vars.space["3"]}`,
+  borderRadius: vars.radius.md,
+  background: "#fef3c7",
+  border: "1px solid #f59e0b",
+  color: "#92400e",
+  fontSize: "13px",
+  textAlign: "center",
+  marginBottom: vars.space["2"],
+});

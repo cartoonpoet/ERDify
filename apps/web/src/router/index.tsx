@@ -1,0 +1,57 @@
+import { lazy, Suspense } from "react";
+import { Route, Routes } from "react-router-dom";
+import { ProtectedRoute } from "./ProtectedRoute";
+import { QueryErrorBoundary } from "@/components/QueryErrorBoundary";
+
+const LoginPage = lazy(() => import("@/pages/LoginPage").then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import("@/pages/RegisterPage").then(m => ({ default: m.RegisterPage })));
+const EditorPage = lazy(() => import("@/pages/EditorPage").then(m => ({ default: m.EditorPage })));
+const DashboardPage = lazy(() => import("@/pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
+const DiagramGrid = lazy(() => import("@/components/DiagramGrid").then(m => ({ default: m.DiagramGrid })));
+const MemberManagementPage = lazy(() => import("@/pages/MemberManagementPage").then(m => ({ default: m.MemberManagementPage })));
+const ApiKeysPanel = lazy(() => import("@/pages/ApiKeysPanel").then(m => ({ default: m.ApiKeysPanel })));
+const RootRedirect = lazy(() => import("@/pages/RootRedirect").then(m => ({ default: m.RootRedirect })));
+const SharedDiagramPage = lazy(() => import("@/pages/SharedDiagramPage").then(m => ({ default: m.SharedDiagramPage })));
+const NotFoundPage = lazy(() => import("@/pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
+
+export const Router = () => (
+  <Suspense fallback={null}>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/share/:shareToken"
+        element={
+          <QueryErrorBoundary variant="page">
+            <SharedDiagramPage />
+          </QueryErrorBoundary>
+        }
+      />
+      <Route element={<ProtectedRoute />}>
+        <Route
+          path="/diagrams/:diagramId"
+          element={
+            <QueryErrorBoundary variant="page">
+              <EditorPage />
+            </QueryErrorBoundary>
+          }
+        />
+        <Route path="/" element={<RootRedirect />} />
+        <Route
+          path="/:orgId"
+          element={
+            <QueryErrorBoundary variant="page">
+              <DashboardPage />
+            </QueryErrorBoundary>
+          }
+        >
+          <Route index element={<DiagramGrid />} />
+          <Route path="members" element={<MemberManagementPage />} />
+          <Route path="api-keys" element={<ApiKeysPanel />} />
+          <Route path=":projectId" element={<DiagramGrid />} />
+        </Route>
+      </Route>
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  </Suspense>
+);
