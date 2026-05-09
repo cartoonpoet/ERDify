@@ -1,13 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { PropsWithChildren } from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { BrowserRouter, useNavigate } from "react-router-dom";
 import type { AxiosError } from "axios";
 import { setNavigate } from "../../shared/api/httpClient";
 
 const NavigateSetter = () => {
   const navigate = useNavigate();
-  useEffect(() => { setNavigate(navigate); }, [navigate]);
+  setNavigate(navigate);
   return null;
 };
 

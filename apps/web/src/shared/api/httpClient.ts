@@ -9,6 +9,9 @@ export const setNavigate = (fn: NavigateFn | null) => { _navigate = fn; };
 
 export const onResponseError = (error: unknown): Promise<never> => {
   if (axios.isAxiosError(error) && error.response?.status === 401) {
+    // Note: this redirects with reason=expired for ALL 401s, including cold-start
+    // (user never logged in). Distinguishing "expired" from "never logged in"
+    // would require checking auth state here, which is not wired up yet.
     _navigate?.("/login?reason=expired");
   }
   return Promise.reject(error);

@@ -37,7 +37,14 @@ export const Router = () => (
           }
         />
         <Route path="/" element={<RootRedirect />} />
-        <Route path="/:orgId" element={<DashboardPage />}>
+        <Route
+          path="/:orgId"
+          element={
+            <QueryErrorBoundary variant="page">
+              <DashboardPage />
+            </QueryErrorBoundary>
+          }
+        >
           <Route index element={<DiagramGrid />} />
           <Route path="members" element={<MemberManagementPage />} />
           <Route path="api-keys" element={<ApiKeysPanel />} />
