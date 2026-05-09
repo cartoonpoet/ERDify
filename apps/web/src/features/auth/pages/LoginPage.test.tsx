@@ -9,9 +9,9 @@ vi.mock("../../../shared/stores/useAuthStore", () => ({
     selector({ token: null, setToken: vi.fn(), clearToken: vi.fn() })
 }));
 
-function renderLoginPage() {
+function renderLoginPage(initialPath = "/login") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialPath]}>
       <LoginPage />
     </MemoryRouter>
   );
@@ -43,5 +43,19 @@ describe("LoginPage", () => {
         "이메일 또는 비밀번호가 올바르지 않습니다."
       );
     });
+  });
+
+  it("shows session expiry banner when reason=expired", () => {
+    renderLoginPage("/login?reason=expired");
+    expect(
+      screen.getByText("세션이 만료되었습니다. 다시 로그인해 주세요.")
+    ).toBeInTheDocument();
+  });
+
+  it("does not show session expiry banner without reason param", () => {
+    renderLoginPage();
+    expect(
+      screen.queryByText("세션이 만료되었습니다. 다시 로그인해 주세요.")
+    ).not.toBeInTheDocument();
   });
 });

@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { login } from "../../../shared/api/auth.api";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
 import { Button, Input } from "../../../design-system";
 import {
-  page, card, brand, brandLogo, tagline, form, authLink, authLinkAnchor,
+  page, card, brand, brandLogo, tagline, form, authLink, authLinkAnchor, sessionBanner,
 } from "./auth-page.css";
 
 export const LoginPage = () => {
@@ -14,6 +14,8 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isSessionExpired = searchParams.get("reason") === "expired";
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -36,6 +38,11 @@ export const LoginPage = () => {
         <div className={brand}>
           <img src="/logo.svg" alt="ERDify" className={brandLogo} />
         </div>
+        {isSessionExpired && (
+          <div className={sessionBanner}>
+            세션이 만료되었습니다. 다시 로그인해 주세요.
+          </div>
+        )}
         <div className={tagline}>AI와 함께, 팀과 함께 스키마를 관리하세요</div>
         <form className={form} onSubmit={handleSubmit} aria-label="로그인">
           <Input

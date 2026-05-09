@@ -78,3 +78,15 @@ export const strengthBar = style({
 export const strengthBarFilled = style({
   background: vars.color.success,
 });
+
+export const sessionBanner = style({
+  width: "100%",
+  padding: `${vars.space["2"]} ${vars.space["3"]}`,
+  borderRadius: vars.radius.md,
+  background: "#fef3c7",
+  border: "1px solid #f59e0b",
+  color: "#92400e",
+  fontSize: "13px",
+  textAlign: "center",
+  marginBottom: vars.space["2"],
+});
