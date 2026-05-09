@@ -15,8 +15,8 @@ export const pageFallback = style([base, {
 }]);
 
 export const inlineFallback = style([base, {
-  flex: 1,
-  minHeight: 0,
+  width: "100%",
+  height: "100%",
 }]);
 
 export const icon = style({
