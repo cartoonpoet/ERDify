@@ -18,7 +18,6 @@ import type { EditableTableNodeType } from "../../stores/useEditorStore";
 import { getSchemaColor, getSchemasFromDocument } from "../../../../shared/utils/schema-colors";
 import { DEFAULT_HEADER_COLOR, makeColumn, makeIndex } from "./constants";
 import { TypeSelect } from "./TypeSelect";
-import { SchemaSelector } from "./SchemaSelector";
 import { SchemaStrip } from "./SchemaStrip";
 import { IndexColumnSelect } from "./IndexColumnSelect";
 import * as css from "./editable-table-node.css";
@@ -66,7 +65,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
         {collaboratorColor && (
           <div className={css.collaboratorDot} style={{ background: collaboratorColor }} />
         )}
-        {entity.schema && <SchemaStrip schema={entity.schema} allSchemas={allSchemas} />}
+        {entity.schema && <SchemaStrip schema={entity.schema} allSchemas={allSchemas} schemaColors={schemaColors} />}
         <div
           style={{
             background: collaboratorColor ?? entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR,
@@ -176,10 +175,15 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
       }}
     >
       <Handle type="target" position={Position.Left} />
-      {entity.schema && <SchemaStrip schema={entity.schema} allSchemas={allSchemas} />}
+      <SchemaStrip
+        schema={entity.schema ?? null}
+        allSchemas={allSchemas}
+        schemaColors={schemaColors}
+        onChange={(s) => applyCommand((doc) => setEntitySchema(doc, entity.id, s))}
+      />
 
       {/* 헤더 */}
-      <div className={css.headerEditRow} style={{ background: entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR }}>
+      <div className={css.headerEditRow} style={{ background: entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR, borderRadius: 0 }}>
         <input
           className={`${css.tableCommentInput} nodrag`}
           value={entity.comment ?? ""}
@@ -196,11 +200,6 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
             applyCommand((doc) => renameEntity(doc, entity.id, e.target.value))
           }
-        />
-        <SchemaSelector
-          schema={entity.schema}
-          allSchemas={allSchemas}
-          onChange={(s) => applyCommand((doc) => setEntitySchema(doc, entity.id, s))}
         />
         <button
           type="button"
