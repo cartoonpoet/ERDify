@@ -4,10 +4,9 @@ set -euo pipefail
 REPO_DIR=/opt/erdify/repo
 APP_COMPOSE="sudo docker compose -p erdify -f $REPO_DIR/docker-compose.app.yml --env-file $REPO_DIR/.env"
 
-echo "==> Testing and reloading nginx config (pre-deploy)..."
-sudo docker exec erdify-shared-nginx-1 nginx -t && \
-  sudo docker exec erdify-shared-nginx-1 nginx -s reload || \
-  sudo docker restart erdify-shared-nginx-1
+echo "==> Restarting nginx (pre-deploy, picks up new config via bind mount)..."
+sudo docker restart erdify-shared-nginx-1
+sudo docker exec erdify-shared-nginx-1 nginx -t
 
 echo "==> Pulling latest images..."
 $APP_COMPOSE pull
