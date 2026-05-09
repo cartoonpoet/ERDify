@@ -1,0 +1,284 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+const APP_URL = 'http://erdify-app.kro.kr';
+---
+
+<Layout title="이용약관 — ERDify" description="ERDify 서비스 이용약관">
+  <SiteHeader />
+
+  <main class="doc-wrap">
+    <div class="container">
+      <h1 class="doc-title">이용약관</h1>
+      <p class="doc-date">시행일: 2026년 5월 1일</p>
+
+      <div class="doc-body">
+
+        <section>
+          <h2>제1조 (목적)</h2>
+          <p>이 약관은 ERDify(이하 "회사")가 제공하는 ERD 설계 및 협업 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리·의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.</p>
+        </section>
+
+        <section>
+          <h2>제2조 (정의)</h2>
+          <p>이 약관에서 사용하는 용어의 정의는 다음과 같습니다.</p>
+          <ol>
+            <li><strong>"서비스"</strong>란 회사가 제공하는 ERD 설계, 실시간 협업, DDL 가져오기/내보내기, AI 연동, ORM 코드 생성 등 일체의 관련 서비스를 말합니다.</li>
+            <li><strong>"이용자"</strong>란 이 약관에 따라 서비스에 접속하여 회사가 제공하는 서비스를 이용하는 회원 및 비회원을 말합니다.</li>
+            <li><strong>"회원"</strong>이란 회사에 개인정보를 제공하여 회원등록을 한 자로서, 회사의 서비스를 계속적으로 이용할 수 있는 자를 말합니다.</li>
+            <li><strong>"다이어그램"</strong>이란 이용자가 서비스를 통해 생성하거나 편집한 ERD(Entity Relationship Diagram) 문서를 말합니다.</li>
+            <li><strong>"조직"</strong>이란 하나 이상의 회원이 협업 목적으로 구성한 그룹 단위를 말합니다.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제3조 (약관의 효력 및 변경)</h2>
+          <ol>
+            <li>이 약관은 서비스를 이용하고자 하는 모든 이용자에게 적용됩니다.</li>
+            <li>회사는 관련 법령을 위배하지 않는 범위에서 이 약관을 변경할 수 있습니다.</li>
+            <li>약관을 변경하는 경우, 회사는 변경 내용과 시행일을 명시하여 시행일 7일 전(이용자에게 불리한 변경의 경우 30일 전)부터 서비스 내 공지사항 또는 이메일을 통해 공지합니다.</li>
+            <li>이용자가 개정 약관 시행일 이후에도 서비스를 계속 이용하는 경우, 변경된 약관에 동의한 것으로 봅니다.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제4조 (서비스의 제공 및 변경)</h2>
+          <ol>
+            <li>회사는 다음과 같은 서비스를 제공합니다.
+              <ul>
+                <li>ERD(Entity Relationship Diagram) 작성 및 편집</li>
+                <li>실시간 다중 사용자 협업</li>
+                <li>DDL(Data Definition Language) 가져오기 및 내보내기</li>
+                <li>MCP(Model Context Protocol) 기반 AI 연동</li>
+                <li>ORM 코드(TypeORM, Prisma, SQLAlchemy 등) 생성</li>
+                <li>버전 관리 및 변경 이력 조회</li>
+                <li>기타 회사가 추가 개발하거나 제휴 계약을 통해 제공하는 서비스</li>
+              </ul>
+            </li>
+            <li>회사는 서비스의 내용을 변경할 수 있으며, 이 경우 변경된 서비스의 내용을 공지합니다.</li>
+            <li>회사는 서비스의 품질 향상을 위해 정기적으로 점검을 실시할 수 있으며, 점검 일정은 사전에 공지합니다. 단, 긴급 점검의 경우 사전 공지 없이 진행할 수 있습니다.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제5조 (회원가입)</h2>
+          <ol>
+            <li>서비스 이용을 원하는 자는 회사가 정한 절차에 따라 회원가입을 신청할 수 있습니다.</li>
+            <li>회사는 다음 각 호에 해당하는 신청에 대하여 승낙하지 않거나 사후에 이용계약을 해지할 수 있습니다.
+              <ul>
+                <li>실명이 아니거나 타인의 명의를 이용한 경우</li>
+                <li>허위 정보를 기재하거나 회사가 요구하는 정보를 기재하지 않은 경우</li>
+                <li>만 14세 미만의 아동인 경우</li>
+                <li>이전에 약관 위반으로 회원 자격이 상실된 경우</li>
+              </ul>
+            </li>
+            <li>회원가입 계약은 회사의 승낙이 회원에게 도달한 시점에 성립합니다.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제6조 (회원 탈퇴 및 자격 상실)</h2>
+          <ol>
+            <li>회원은 언제든지 서비스 내 계정 설정 메뉴 또는 이메일 요청을 통해 탈퇴를 요청할 수 있으며, 회사는 즉시 처리합니다.</li>
+            <li>회원이 다음 각 호의 사유에 해당하는 경우, 회사는 사전 통보 없이 회원 자격을 제한 또는 박탈할 수 있습니다.
+              <ul>
+                <li>타인의 서비스 이용을 방해하거나 명예를 손상시키는 경우</li>
+                <li>서비스를 이용하여 법령 또는 이 약관이 금지하는 행위를 하는 경우</li>
+                <li>서버나 네트워크에 과도한 부하를 유발하는 자동화된 요청을 발송하는 경우</li>
+                <li>타인의 계정을 무단으로 사용하는 경우</li>
+              </ul>
+            </li>
+            <li>회원 탈퇴 시, 해당 회원이 단독으로 소유한 조직 및 다이어그램 데이터는 즉시 삭제됩니다. 단, 다른 구성원이 있는 조직의 데이터는 별도로 처리됩니다.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제7조 (이용자의 의무)</h2>
+          <ol>
+            <li>이용자는 다음 각 호의 행위를 해서는 안 됩니다.
+              <ul>
+                <li>신청 또는 변경 시 허위 내용을 등록하는 행위</li>
+                <li>회사의 서비스에 게시된 정보를 무단으로 변경하는 행위</li>
+                <li>회사가 정한 정보 이외의 정보(컴퓨터 프로그램 등)를 송신 또는 게시하는 행위</li>
+                <li>회사 및 제3자의 저작권 등 지식재산권을 침해하는 행위</li>
+                <li>회사 및 제3자의 명예를 손상시키거나 업무를 방해하는 행위</li>
+                <li>외설 또는 폭력적인 내용을 서비스에 게시하는 행위</li>
+                <li>서비스를 이용하여 영리를 추구하는 행위(회사의 사전 서면 동의 없이)</li>
+              </ul>
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제8조 (지식재산권)</h2>
+          <ol>
+            <li>서비스에 관한 저작권 및 지식재산권은 회사에 귀속됩니다.</li>
+            <li>이용자가 서비스를 통해 작성한 다이어그램, DDL, 데이터 등 콘텐츠에 대한 권리는 해당 이용자에게 귀속됩니다.</li>
+            <li>이용자는 서비스를 이용함으로써 얻은 정보를 회사의 사전 승낙 없이 복제, 송신, 출판, 배포, 방송 등 기타 방법에 의하여 영리 목적으로 이용하거나 제3자에게 이용하게 하여서는 안 됩니다.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제9조 (면책조항)</h2>
+          <ol>
+            <li>회사는 천재지변 또는 이에 준하는 불가항력으로 인하여 서비스를 제공할 수 없는 경우에는 서비스 제공에 관한 책임이 면제됩니다.</li>
+            <li>회사는 이용자의 귀책사유로 인한 서비스 이용 장애에 대하여 책임을 지지 않습니다.</li>
+            <li>회사는 이용자가 서비스에 게재한 정보, 자료, 사실의 신뢰도 및 정확성 등에 관하여 책임을 지지 않습니다.</li>
+            <li>서비스는 현재 베타 서비스로 제공되며, 일부 기능이 불완전하거나 예고 없이 변경될 수 있습니다.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제10조 (준거법 및 관할법원)</h2>
+          <ol>
+            <li>이 약관의 해석 및 회사와 이용자 간의 분쟁에 대해서는 대한민국의 법령을 적용합니다.</li>
+            <li>서비스 이용으로 발생한 분쟁에 대해 소송이 제기될 경우 민사소송법상의 관할법원을 관할 법원으로 합니다.</li>
+          </ol>
+        </section>
+
+        <section class="addendum">
+          <h2>부칙</h2>
+          <p>이 약관은 2026년 5월 1일부터 시행합니다.</p>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a href="/" class="logo">
+          <img src="/logo.svg" alt="ERDify" class="logo-image" style="filter: brightness(0) invert(1);" />
+        </a>
+        <p class="footer-tagline">AI와 함께하는<br/>실시간 협업 ERD 도구</p>
+        <a href="mailto:cartoonpoet@gmail.com" class="footer-email">cartoonpoet@gmail.com</a>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <span class="footer-col-title">제품</span>
+          <a href="/#features">기능</a>
+          <a href="/#integrations">AI 연동</a>
+          <a href="/#pricing">가격</a>
+          <a href={APP_URL}>앱 열기</a>
+        </div>
+        <div class="footer-col">
+          <span class="footer-col-title">지원</span>
+          <a href="/contact">문의하기</a>
+          <a href="mailto:cartoonpoet@gmail.com">이메일 문의</a>
+          <a href="/docs/">개발자 센터</a>
+        </div>
+        <div class="footer-col">
+          <span class="footer-col-title">법적 고지</span>
+          <a href="/terms">이용약관</a>
+          <a href="/privacy">개인정보처리방침</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container footer-bottom-inner">
+        <span>© 2026 ERDify. All rights reserved.</span>
+        <div class="footer-bottom-links">
+          <a href="/terms">이용약관</a>
+          <a href="/privacy">개인정보처리방침</a>
+          <a href="/contact">문의</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</Layout>
+
+<style>
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Document ── */
+  .doc-wrap { padding: 72px 0 100px; }
+  .doc-title {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #111827;
+    margin-bottom: 10px;
+  }
+  .doc-date {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-bottom: 56px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid #f1f4f7;
+  }
+
+  .doc-body { display: flex; flex-direction: column; gap: 48px; }
+
+  section { display: flex; flex-direction: column; gap: 14px; }
+
+  section h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111827;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f4f7;
+  }
+
+  section p, section li {
+    font-size: 14.5px;
+    color: #4b5563;
+    line-height: 1.8;
+  }
+
+  section ol, section ul {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  section ul { list-style: disc; }
+  section ol { list-style: decimal; }
+
+  section li > ul {
+    margin-top: 6px;
+    padding-left: 18px;
+    gap: 4px;
+  }
+
+  strong { color: #374151; font-weight: 600; }
+
+  .addendum {
+    padding-top: 16px;
+    border-top: 2px solid #f1f4f7;
+  }
+
+  /* ── Footer ── */
+  .footer { background: #0d1520; color: rgba(255,255,255,0.6); padding: 72px 0 0; }
+  .footer .container { max-width: 1160px; }
+  .footer-inner {
+    display: flex; gap: 80px;
+    padding-bottom: 56px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .footer-brand { flex: 1; min-width: 200px; }
+  .footer-brand .logo { display: block; margin-bottom: 16px; }
+  .footer-brand .logo img { width: 110px; height: auto; display: block; }
+  .footer-tagline { font-size: 13px; line-height: 1.7; opacity: 0.45; margin-bottom: 14px; }
+  .footer-email { font-size: 12px; color: rgba(255,255,255,0.4); text-decoration: none; transition: color .15s; font-family: monospace; }
+  .footer-email:hover { color: rgba(255,255,255,0.8); }
+  .footer-links { display: flex; gap: 56px; flex-wrap: wrap; }
+  .footer-col { display: flex; flex-direction: column; gap: 12px; }
+  .footer-col-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 4px; }
+  .footer-col a { font-size: 13.5px; color: rgba(255,255,255,0.55); transition: color 0.15s; }
+  .footer-col a:hover { color: #fff; }
+  .footer-bottom { padding: 20px 0; }
+  .footer-bottom-inner { display: flex; justify-content: space-between; align-items: center; }
+  .footer-bottom span { font-size: 12px; opacity: 0.3; }
+  .footer-bottom-links { display: flex; gap: 20px; }
+  .footer-bottom-links a { font-size: 12px; color: rgba(255,255,255,0.3); transition: color .15s; }
+  .footer-bottom-links a:hover { color: rgba(255,255,255,0.6); }
+
+  @media (max-width: 700px) {
+    .doc-title { font-size: 26px; }
+    .footer-inner { flex-direction: column; gap: 32px; }
+    .footer-links { flex-wrap: wrap; gap: 32px; }
+    .footer-bottom-inner { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>

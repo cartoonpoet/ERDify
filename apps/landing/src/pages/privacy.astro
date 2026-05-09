@@ -1,0 +1,429 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+const APP_URL = 'http://erdify-app.kro.kr';
+---
+
+<Layout title="개인정보처리방침 — ERDify" description="ERDify 개인정보처리방침">
+  <SiteHeader />
+
+  <main class="doc-wrap">
+    <div class="container">
+      <h1 class="doc-title">개인정보처리방침</h1>
+      <p class="doc-date">시행일: 2026년 5월 1일 &nbsp;|&nbsp; 최종 수정일: 2026년 5월 1일</p>
+
+      <div class="doc-intro">
+        <p>ERDify(이하 "회사")는 이용자의 개인정보를 중요시하며, 「개인정보 보호법」 등 관련 법령을 준수합니다. 이 개인정보처리방침은 회사가 제공하는 서비스 이용 과정에서 수집하는 개인정보의 항목, 수집 목적, 보유 기간 및 처리 방법 등을 안내합니다.</p>
+      </div>
+
+      <div class="doc-body">
+
+        <section>
+          <h2>제1조 수집하는 개인정보 항목 및 수집 방법</h2>
+
+          <h3>① 수집 항목</h3>
+          <p>회사는 서비스 제공을 위해 다음과 같은 개인정보를 수집합니다.</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>구분</th>
+                  <th>수집 항목</th>
+                  <th>수집 시점</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>필수</td>
+                  <td>이메일 주소, 비밀번호(암호화 저장)</td>
+                  <td>회원가입 시</td>
+                </tr>
+                <tr>
+                  <td>선택</td>
+                  <td>이름(닉네임), 프로필 이미지</td>
+                  <td>프로필 설정 시</td>
+                </tr>
+                <tr>
+                  <td>자동 수집</td>
+                  <td>IP 주소, 접속 일시, 브라우저 종류, OS 정보, 서비스 이용 기록</td>
+                  <td>서비스 이용 시</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>② 수집 방법</h3>
+          <ul>
+            <li>홈페이지 및 앱을 통한 직접 입력</li>
+            <li>서비스 이용 과정에서 자동으로 생성·수집</li>
+            <li>Google 등 소셜 로그인 연동 시 해당 플랫폼으로부터 제공</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>제2조 개인정보 수집 및 이용 목적</h2>
+          <p>회사는 수집한 개인정보를 다음의 목적을 위해 이용합니다.</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>목적</th>
+                  <th>내용</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>회원 관리</td>
+                  <td>회원가입 및 본인 확인, 계정 관리, 고지사항 전달</td>
+                </tr>
+                <tr>
+                  <td>서비스 제공</td>
+                  <td>ERD 작성, 실시간 협업, AI 연동, 버전 관리 기능 제공</td>
+                </tr>
+                <tr>
+                  <td>서비스 개선</td>
+                  <td>서비스 이용 현황 분석, 버그 파악, 신규 기능 개발</td>
+                </tr>
+                <tr>
+                  <td>고객 지원</td>
+                  <td>문의 답변, 불만 처리, 공지사항 전달</td>
+                </tr>
+                <tr>
+                  <td>보안</td>
+                  <td>부정 이용 방지, 보안 사고 탐지 및 대응</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <h2>제3조 개인정보 보유 및 이용 기간</h2>
+          <ol>
+            <li>회사는 이용자의 개인정보를 수집·이용 목적이 달성된 후에는 해당 정보를 지체 없이 파기합니다.</li>
+            <li>단, 다음의 정보에 대해서는 아래의 이유로 명시한 기간 동안 보존합니다.</li>
+          </ol>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>보존 항목</th>
+                  <th>보존 기간</th>
+                  <th>근거</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>회원 계정 정보</td>
+                  <td>회원 탈퇴 후 즉시 삭제</td>
+                  <td>회사 내부 방침</td>
+                </tr>
+                <tr>
+                  <td>서비스 이용 기록</td>
+                  <td>3개월</td>
+                  <td>통신비밀보호법</td>
+                </tr>
+                <tr>
+                  <td>소비자 불만 및 분쟁 처리 기록</td>
+                  <td>3년</td>
+                  <td>전자상거래법</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <h2>제4조 개인정보의 제3자 제공</h2>
+          <ol>
+            <li>회사는 이용자의 개인정보를 원칙적으로 외부에 제공하지 않습니다.</li>
+            <li>다만, 다음의 경우에는 예외로 합니다.
+              <ul>
+                <li>이용자가 사전에 동의한 경우</li>
+                <li>법령의 규정에 의거하거나, 수사 목적으로 법령에 정해진 절차와 방법에 따라 수사기관의 요구가 있는 경우</li>
+              </ul>
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제5조 개인정보 처리 위탁</h2>
+          <p>회사는 서비스 제공을 위해 다음과 같이 개인정보 처리 업무를 위탁하고 있습니다.</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>수탁 업체</th>
+                  <th>위탁 업무</th>
+                  <th>보유 기간</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Amazon Web Services (AWS)</td>
+                  <td>서버 인프라 및 데이터 저장</td>
+                  <td>서비스 이용 기간</td>
+                </tr>
+                <tr>
+                  <td>Google Analytics</td>
+                  <td>서비스 이용 통계 분석</td>
+                  <td>수집일로부터 26개월</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <h2>제6조 이용자의 권리와 행사 방법</h2>
+          <p>이용자는 언제든지 다음과 같은 개인정보 보호 관련 권리를 행사할 수 있습니다.</p>
+          <ul>
+            <li><strong>열람 요청:</strong> 보유 중인 개인정보의 열람을 요청할 수 있습니다.</li>
+            <li><strong>정정·삭제 요청:</strong> 개인정보가 부정확하거나 불필요한 경우 정정 또는 삭제를 요청할 수 있습니다.</li>
+            <li><strong>처리정지 요청:</strong> 개인정보 처리의 정지를 요청할 수 있습니다.</li>
+            <li><strong>동의 철회:</strong> 개인정보 수집·이용에 대한 동의를 언제든지 철회할 수 있습니다(단, 일부 서비스 이용이 제한될 수 있습니다).</li>
+          </ul>
+          <p>위 권리 행사는 서비스 내 설정 메뉴 또는 <a href="mailto:cartoonpoet@gmail.com">cartoonpoet@gmail.com</a>으로 이메일을 통해 요청하실 수 있으며, 회사는 10일 이내에 처리 결과를 회신합니다.</p>
+        </section>
+
+        <section>
+          <h2>제7조 개인정보의 파기</h2>
+          <ol>
+            <li>회사는 개인정보 보유 기간이 경과하거나 처리 목적이 달성된 경우, 해당 개인정보를 지체 없이 파기합니다.</li>
+            <li>전자적 파일 형태의 개인정보는 복구 및 재생이 불가능한 방법으로 완전 삭제하며, 종이로 출력된 개인정보는 분쇄 또는 소각합니다.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제8조 쿠키(Cookie) 사용</h2>
+          <ol>
+            <li>회사는 이용자에게 맞춤형 서비스를 제공하기 위해 쿠키를 사용합니다.</li>
+            <li>쿠키는 웹사이트를 운영하는 데 이용되는 서버가 이용자의 브라우저에 보내는 소량의 정보이며 이용자의 기기에 저장됩니다.</li>
+            <li>이용자는 브라우저 설정을 통해 쿠키 저장을 거부할 수 있으나, 이 경우 일부 서비스 이용에 어려움이 있을 수 있습니다.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>제9조 개인정보 보호책임자</h2>
+          <p>회사는 개인정보 처리에 관한 업무를 총괄해서 책임지고, 이용자의 개인정보 관련 문의사항 및 불만 처리를 위해 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>
+
+          <div class="info-box">
+            <div class="info-row"><span class="info-label">성명</span><span>손준호</span></div>
+            <div class="info-row"><span class="info-label">이메일</span><a href="mailto:cartoonpoet@gmail.com">cartoonpoet@gmail.com</a></div>
+          </div>
+
+          <p>이용자는 서비스를 이용하면서 발생하는 모든 개인정보 보호 관련 문의, 불만 처리, 피해 구제 등에 관한 사항을 개인정보 보호책임자에게 문의하실 수 있습니다. 회사는 이용자의 문의에 대해 신속하게 답변 및 처리해 드릴 것입니다.</p>
+        </section>
+
+        <section>
+          <h2>제10조 개인정보처리방침의 변경</h2>
+          <p>이 개인정보처리방침은 2026년 5월 1일부터 적용되며, 법령 및 방침에 따른 변경 내용의 추가·삭제 및 정정이 있는 경우에는 변경 사항의 시행 7일 전부터 서비스 공지사항 또는 이메일을 통하여 고지합니다.</p>
+        </section>
+
+        <section class="addendum">
+          <h2>부칙</h2>
+          <p>이 개인정보처리방침은 2026년 5월 1일부터 시행합니다.</p>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a href="/" class="logo">
+          <img src="/logo.svg" alt="ERDify" class="logo-image" style="filter: brightness(0) invert(1);" />
+        </a>
+        <p class="footer-tagline">AI와 함께하는<br/>실시간 협업 ERD 도구</p>
+        <a href="mailto:cartoonpoet@gmail.com" class="footer-email">cartoonpoet@gmail.com</a>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <span class="footer-col-title">제품</span>
+          <a href="/#features">기능</a>
+          <a href="/#integrations">AI 연동</a>
+          <a href="/#pricing">가격</a>
+          <a href={APP_URL}>앱 열기</a>
+        </div>
+        <div class="footer-col">
+          <span class="footer-col-title">지원</span>
+          <a href="/contact">문의하기</a>
+          <a href="mailto:cartoonpoet@gmail.com">이메일 문의</a>
+          <a href="/docs/">개발자 센터</a>
+        </div>
+        <div class="footer-col">
+          <span class="footer-col-title">법적 고지</span>
+          <a href="/terms">이용약관</a>
+          <a href="/privacy">개인정보처리방침</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container footer-bottom-inner">
+        <span>© 2026 ERDify. All rights reserved.</span>
+        <div class="footer-bottom-links">
+          <a href="/terms">이용약관</a>
+          <a href="/privacy">개인정보처리방침</a>
+          <a href="/contact">문의</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</Layout>
+
+<style>
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Document ── */
+  .doc-wrap { padding: 72px 0 100px; }
+  .doc-title {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #111827;
+    margin-bottom: 10px;
+  }
+  .doc-date {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-bottom: 24px;
+  }
+  .doc-intro {
+    background: #f8fafc;
+    border-left: 3px solid #0064E0;
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin-bottom: 48px;
+  }
+  .doc-intro p {
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.8;
+  }
+
+  .doc-body { display: flex; flex-direction: column; gap: 48px; }
+
+  section { display: flex; flex-direction: column; gap: 16px; }
+
+  section h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111827;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f4f7;
+  }
+
+  section h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #374151;
+    margin-top: 4px;
+  }
+
+  section p, section li {
+    font-size: 14.5px;
+    color: #4b5563;
+    line-height: 1.8;
+  }
+
+  section p a {
+    color: #0064E0;
+    text-decoration: underline;
+  }
+
+  section ol, section ul {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  section ul { list-style: disc; }
+  section ol { list-style: decimal; }
+
+  section li > ul {
+    margin-top: 6px;
+    padding-left: 18px;
+    gap: 4px;
+  }
+
+  strong { color: #374151; font-weight: 600; }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid #e5e7eb; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead tr { background: #f8fafc; }
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 14px;
+    color: #4b5563;
+    border-bottom: 1px solid #f1f4f7;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  tr:last-child td { border-bottom: none; }
+
+  /* Info box */
+  .info-box {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .info-row { display: flex; gap: 16px; font-size: 14px; }
+  .info-label { font-weight: 600; color: #374151; width: 60px; flex-shrink: 0; }
+  .info-row a { color: #0064E0; }
+
+  .addendum {
+    padding-top: 16px;
+    border-top: 2px solid #f1f4f7;
+  }
+
+  /* ── Footer ── */
+  .footer { background: #0d1520; color: rgba(255,255,255,0.6); padding: 72px 0 0; }
+  .footer .container { max-width: 1160px; }
+  .footer-inner {
+    display: flex; gap: 80px;
+    padding-bottom: 56px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .footer-brand { flex: 1; min-width: 200px; }
+  .footer-brand .logo { display: block; margin-bottom: 16px; }
+  .footer-brand .logo img { width: 110px; height: auto; display: block; }
+  .footer-tagline { font-size: 13px; line-height: 1.7; opacity: 0.45; margin-bottom: 14px; }
+  .footer-email { font-size: 12px; color: rgba(255,255,255,0.4); text-decoration: none; transition: color .15s; font-family: monospace; }
+  .footer-email:hover { color: rgba(255,255,255,0.8); }
+  .footer-links { display: flex; gap: 56px; flex-wrap: wrap; }
+  .footer-col { display: flex; flex-direction: column; gap: 12px; }
+  .footer-col-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 4px; }
+  .footer-col a { font-size: 13.5px; color: rgba(255,255,255,0.55); transition: color 0.15s; }
+  .footer-col a:hover { color: #fff; }
+  .footer-bottom { padding: 20px 0; }
+  .footer-bottom-inner { display: flex; justify-content: space-between; align-items: center; }
+  .footer-bottom span { font-size: 12px; opacity: 0.3; }
+  .footer-bottom-links { display: flex; gap: 20px; }
+  .footer-bottom-links a { font-size: 12px; color: rgba(255,255,255,0.3); transition: color .15s; }
+  .footer-bottom-links a:hover { color: rgba(255,255,255,0.6); }
+
+  @media (max-width: 700px) {
+    .doc-title { font-size: 26px; }
+    .footer-inner { flex-direction: column; gap: 32px; }
+    .footer-links { flex-wrap: wrap; gap: 32px; }
+    .footer-bottom-inner { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
