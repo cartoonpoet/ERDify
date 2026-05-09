@@ -1,4 +1,5 @@
 import type { DiagramDocument } from "@erdify/domain";
+import type { MemberRoleType } from "../members/member.types";
 
 export type SharePreset = "1h" | "1d" | "7d" | "30d";
 
@@ -11,7 +12,7 @@ export interface DiagramResponse {
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
-  myRole: "owner" | "editor" | "viewer";
+  myRole: MemberRoleType;
   shareToken: string | null;
   shareExpiresAt: string | null;
 }
