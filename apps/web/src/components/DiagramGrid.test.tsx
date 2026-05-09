@@ -37,13 +37,13 @@ const makeContent = (dialect: "postgresql" | "mysql") => ({
 
 const diagrams: DiagramResponse[] = [
   {
-    id: "d1", projectId: "p1", organizationId: "org-1", name: "User Schema",
+    id: "d1", projectId: "p1", organizationId: "org-1", organizationName: "Test Org", projectName: "Test Project", name: "User Schema",
     content: makeContent("postgresql"), createdBy: "user-1",
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), myRole: "editor" as const,
     shareToken: null, shareExpiresAt: null,
   },
   {
-    id: "d2", projectId: "p1", organizationId: "org-1", name: "Order Schema",
+    id: "d2", projectId: "p1", organizationId: "org-1", organizationName: "Test Org", projectName: "Test Project", name: "Order Schema",
     content: makeContent("mysql"), createdBy: "user-2",
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), myRole: "editor" as const,
     shareToken: null, shareExpiresAt: null,

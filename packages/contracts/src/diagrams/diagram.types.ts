@@ -7,6 +7,8 @@ export interface DiagramResponse {
   id: string;
   projectId: string;
   organizationId: string;
+  organizationName: string;
+  projectName: string;
   name: string;
   content: DiagramDocument;
   createdBy: string | null;

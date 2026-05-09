@@ -97,7 +97,13 @@ export const EditorPage = () => {
         >
           ←
         </button>
-        <span className={css.diagramName}>{data?.name}</span>
+        <div className={css.breadcrumb}>
+          <span className={css.breadcrumbSegment}>{data?.organizationName}</span>
+          <span className={css.breadcrumbSep}>›</span>
+          <span className={css.breadcrumbSegment}>{data?.projectName}</span>
+          <span className={css.breadcrumbSep}>›</span>
+          <span className={css.breadcrumbCurrent}>{data?.name}</span>
+        </div>
         <span className={css.statusText}>{isDirty ? "수정됨" : "저장됨"}</span>
         <div className={css.spacer} />
         <button

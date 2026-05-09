@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { Diagram, DiagramVersion, McpSession, Project } from "@erdify/db";
+import { Diagram, DiagramVersion, McpSession, Organization, Project } from "@erdify/db";
 import { AuthModule } from "../auth/auth.module";
 import { CommonModule } from "../../common/common.module";
 import { PublicDiagramsController } from "./public-diagrams.controller";
@@ -15,7 +15,7 @@ import { McpSessionsService } from "./mcp-sessions.service";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Diagram, DiagramVersion, McpSession, Project]),
+    TypeOrmModule.forFeature([Diagram, DiagramVersion, McpSession, Organization, Project]),
     AuthModule,
     CommonModule,
   ],

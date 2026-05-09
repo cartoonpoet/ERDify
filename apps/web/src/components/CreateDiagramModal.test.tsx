@@ -23,7 +23,7 @@ vi.mock("../../../design-system", () => ({
 const makeDiagramResponse = (id = "d-1") => ({
   id,
   projectId: "proj-1",
-  organizationId: "org-1",
+  organizationId: "org-1", organizationName: "Test Org", projectName: "Test Project",
   name: "User Schema",
   content: {
     format: "erdify.schema.v1" as const,

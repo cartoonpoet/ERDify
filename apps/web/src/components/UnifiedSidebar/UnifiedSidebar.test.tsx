@@ -51,7 +51,7 @@ const makeContent = (dialect: "postgresql" | "mysql") => ({
 
 const diagrams: DiagramResponse[] = [
   {
-    id: "d1", projectId: "p1", organizationId: "org-1", name: "사용자 스키마",
+    id: "d1", projectId: "p1", organizationId: "org-1", organizationName: "Test Org", projectName: "Test Project", name: "사용자 스키마",
     content: makeContent("postgresql"), createdBy: "u1",
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), myRole: "editor" as const,
     shareToken: null, shareExpiresAt: null,

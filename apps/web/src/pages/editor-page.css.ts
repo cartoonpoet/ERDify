@@ -38,9 +38,26 @@ export const backBtn = style({
   },
 });
 
-export const diagramName = style({
+export const breadcrumb = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "4px",
+  fontSize: "13px",
+});
+
+export const breadcrumbSegment = style({
+  color: vars.color.textSecondary,
+  fontWeight: 500,
+});
+
+export const breadcrumbSep = style({
+  color: vars.color.textDisabled,
+  fontSize: "11px",
+  userSelect: "none",
+});
+
+export const breadcrumbCurrent = style({
   fontWeight: "600",
-  fontSize: "14px",
   color: vars.color.textPrimary,
 });
 

@@ -59,7 +59,7 @@ describe("useVersionHistory", () => {
     const restored: DiagramResponse = {
       id: "diag-1",
       projectId: "proj-1",
-      organizationId: "org-1",
+      organizationId: "org-1", organizationName: "Test Org", projectName: "Test Project",
       name: "restored",
       content: doc,
       createdBy: "user-1",

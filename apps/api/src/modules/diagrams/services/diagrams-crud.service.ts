@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Diagram, Project } from "@erdify/db";
+import { Diagram, Organization, Project } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { AuthorizationService } from "../../../common/services/authorization.service";
 import type { DiagramDocument } from "@erdify/domain";
@@ -15,15 +15,19 @@ export class DiagramsCrudService {
     private readonly diagramRepo: Repository<Diagram>,
     @InjectRepository(Project)
     private readonly projectRepo: Repository<Project>,
+    @InjectRepository(Organization)
+    private readonly orgRepo: Repository<Organization>,
     private readonly authorizationService: AuthorizationService
   ) {}
 
-  async getDiagramWithOrg(diagramId: string): Promise<{ diagram: Diagram; orgId: string }> {
+  async getDiagramWithOrg(diagramId: string): Promise<{ diagram: Diagram; orgId: string; projectName: string; orgName: string }> {
     const diagram = await this.diagramRepo.findOne({ where: { id: diagramId } });
     if (!diagram) throw new NotFoundException("Diagram not found");
     const project = await this.projectRepo.findOne({ where: { id: diagram.projectId } });
     if (!project) throw new NotFoundException("Project not found");
-    return { diagram, orgId: project.organizationId };
+    const org = await this.orgRepo.findOne({ where: { id: project.organizationId } });
+    if (!org) throw new NotFoundException("Organization not found");
+    return { diagram, orgId: project.organizationId, projectName: project.name, orgName: org.name };
   }
 
   async create(projectId: string, userId: string, dto: CreateDiagramDto): Promise<Diagram> {
@@ -61,10 +65,10 @@ export class DiagramsCrudService {
   async findOne(
     diagramId: string,
     userId: string
-  ): Promise<Diagram & { organizationId: string; myRole: string }> {
-    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
+  ): Promise<Diagram & { organizationId: string; organizationName: string; projectName: string; myRole: string }> {
+    const { diagram, orgId, orgName, projectName } = await this.getDiagramWithOrg(diagramId);
     const member = await this.authorizationService.requireMember(orgId, userId);
-    return { ...diagram, organizationId: orgId, myRole: member.role };
+    return { ...diagram, organizationId: orgId, organizationName: orgName, projectName, myRole: member.role };
   }
 
   async update(diagramId: string, userId: string, dto: UpdateDiagramDto): Promise<Diagram> {
