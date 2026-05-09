@@ -111,27 +111,79 @@ type ContextMenuState = {
 };
 
 // ReactFlow 내부 컴포넌트 — useReactFlow 사용 가능
-const ClickableMiniMap = ({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) => {
+const ClickableMiniMap = ({
+  containerRef,
+  document,
+}: {
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  document: DiagramDocument | null;
+}) => {
   const { setViewport, getViewport } = useReactFlow();
+
+  const allSchemas = document ? getSchemasFromDocument(document.entities) : [];
+
+  const nodeColor = (node: Node) => {
+    const data = node.data as { entity: { color?: string | null; schema?: string | null } };
+    if (data.entity?.color) return data.entity.color;
+    if (data.entity?.schema) return getSchemaColor(data.entity.schema, allSchemas);
+    return "#60a5fa";
+  };
+
   return (
-    <MiniMap
-      nodeColor={(node) => (node.data as { entity: { color?: string | null } }).entity?.color ?? "#60a5fa"}
-      maskColor="rgba(240,244,248,0.7)"
-      style={{ bottom: 56, right: 8 }}
-      onClick={(_event, position) => {
-        const { zoom } = getViewport();
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        setViewport(
-          {
-            x: rect.width / 2 - position.x * zoom,
-            y: rect.height / 2 - position.y * zoom,
-            zoom,
-          },
-          { duration: 300 }
-        );
-      }}
-    />
+    <div style={{ position: "absolute", bottom: 56, right: 8, display: "flex", flexDirection: "column", gap: 0 }}>
+      {/* 스키마 범례 */}
+      {allSchemas.length > 0 && (
+        <div
+          style={{
+            background: "rgba(255,255,255,0.92)",
+            border: "1px solid #e2e8f0",
+            borderRadius: "6px 6px 0 0",
+            padding: "5px 8px",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "4px 8px",
+            maxWidth: 200,
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          {allSchemas.map((schema) => (
+            <div key={schema} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: getSchemaColor(schema, allSchemas),
+                  flexShrink: 0,
+                }}
+              />
+              <span style={{ fontSize: 9, color: "#374151", fontFamily: "monospace", whiteSpace: "nowrap" }}>
+                {schema}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* 미니맵 */}
+      <MiniMap
+        nodeColor={nodeColor}
+        maskColor="rgba(240,244,248,0.7)"
+        style={{ position: "static", margin: 0, borderRadius: allSchemas.length > 0 ? "0 0 6px 6px" : 6 }}
+        onClick={(_event, position) => {
+          const { zoom } = getViewport();
+          const rect = containerRef.current?.getBoundingClientRect();
+          if (!rect) return;
+          setViewport(
+            {
+              x: rect.width / 2 - position.x * zoom,
+              y: rect.height / 2 - position.y * zoom,
+              zoom,
+            },
+            { duration: 300 }
+          );
+        }}
+      />
+    </div>
   );
 };
 
@@ -323,7 +375,7 @@ export const EditorCanvas = () => {
       >
         <Background />
         <Controls />
-        <ClickableMiniMap containerRef={containerRef} />
+        <ClickableMiniMap containerRef={containerRef} document={document} />
         {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
         {contextMenu && (
           <CanvasContextMenu

@@ -10,7 +10,6 @@ import {
   renameEntity,
   setEntitySchema,
   updateColumn,
-  updateEntityColor,
   updateEntityComment,
   updateIndex,
 } from "@erdify/domain";
@@ -20,7 +19,6 @@ import { getSchemaColor, getSchemasFromDocument } from "../../../../shared/utils
 import { DEFAULT_HEADER_COLOR, makeColumn, makeIndex } from "./constants";
 import { TypeSelect } from "./TypeSelect";
 import { SchemaSelector } from "./SchemaSelector";
-import { ColorPicker } from "./ColorPicker";
 import { SchemaStrip } from "./SchemaStrip";
 import { IndexColumnSelect } from "./IndexColumnSelect";
 import * as css from "./editable-table-node.css";
@@ -181,10 +179,6 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
 
       {/* 헤더 */}
       <div className={css.headerEditRow} style={{ background: entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR }}>
-        <ColorPicker
-          value={entity.color ?? null}
-          onChange={(color) => applyCommand((doc) => updateEntityColor(doc, entity.id, color))}
-        />
         <input
           className={`${css.tableCommentInput} nodrag`}
           value={entity.comment ?? ""}
