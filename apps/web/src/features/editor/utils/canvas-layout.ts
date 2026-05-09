@@ -18,6 +18,7 @@ function layoutComponents(
     (measuredSizes.get(id)?.h ?? (38 + 28 + colCount * 30)) + V_GAP;
   const estimateW = (id: string) => (measuredSizes.get(id)?.w ?? NODE_W) + H_GAP;
 
+  const NODE_H_FALLBACK = 120;
   const sorted = [...components].sort((a, b) => b.length - a.length);
   const COMPS_PER_ROW = Math.max(1, Math.ceil(Math.sqrt(sorted.length)));
   const positions: Record<string, { x: number; y: number }> = {};
@@ -60,7 +61,7 @@ function layoutComponents(
   const allX = Object.values(positions).map((p) => p.x);
   const allY = Object.values(positions).map((p) => p.y);
   const groupW = allX.length ? Math.max(...allX) - originX + NODE_W + H_GAP : 0;
-  const groupH = allY.length ? Math.max(...allY) - originY + 120 + V_GAP : 0;
+  const groupH = allY.length ? Math.max(...allY) - originY + NODE_H_FALLBACK + V_GAP : 0;
 
   return { positions, groupW, groupH };
 }
