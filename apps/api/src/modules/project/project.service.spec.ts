@@ -1,6 +1,7 @@
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import type { OrganizationMember, Project } from "@erdify/db";
 import type { Repository } from "typeorm";
+import { AuthorizationService } from "../../common/services/authorization.service";
 import { ProjectService } from "./project.service";
 
 type MockRepo<_T> = {
@@ -21,13 +22,15 @@ describe("ProjectService", () => {
   let service: ProjectService;
   let projectRepo: MockRepo<Project>;
   let memberRepo: MockRepo<OrganizationMember>;
+  let authorizationService: AuthorizationService;
 
   beforeEach(() => {
     projectRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
     memberRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
+    authorizationService = new AuthorizationService(memberRepo as unknown as Repository<OrganizationMember>);
     service = new ProjectService(
       projectRepo as unknown as Repository<Project>,
-      memberRepo as unknown as Repository<OrganizationMember>
+      authorizationService
     );
   });
 
