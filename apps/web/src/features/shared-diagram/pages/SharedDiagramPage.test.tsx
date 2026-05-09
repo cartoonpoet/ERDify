@@ -26,8 +26,6 @@ vi.mock("./shared-diagram-page.css", () => ({
   content: "",
   diagramName: "",
   readOnlyBadge: "",
-  errorPage: "",
-  errorTitle: "",
 }));
 
 const mockSetDocument = vi.fn();
@@ -74,24 +72,6 @@ describe("SharedDiagramPage", () => {
     vi.mocked(getPublicDiagram).mockReturnValue(new Promise(() => {}));
     wrap("tok123");
     expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
-  });
-
-  it("error 403 — shows '링크가 만료되었습니다'", async () => {
-    const err = { response: { status: 403 } };
-    vi.mocked(getPublicDiagram).mockRejectedValue(err);
-    wrap("tok123");
-    await waitFor(() =>
-      expect(screen.getByText("링크가 만료되었습니다")).toBeInTheDocument()
-    );
-  });
-
-  it("error 404 — shows '존재하지 않는 공유 링크입니다'", async () => {
-    const err = { response: { status: 404 } };
-    vi.mocked(getPublicDiagram).mockRejectedValue(err);
-    wrap("tok123");
-    await waitFor(() =>
-      expect(screen.getByText("존재하지 않는 공유 링크입니다")).toBeInTheDocument()
-    );
   });
 
   it("success — setDocument and setCanEdit(false) called, diagram name, badge, and canvas shown", async () => {

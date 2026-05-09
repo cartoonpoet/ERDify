@@ -8,6 +8,7 @@ import { deleteDiagram } from "../../../shared/api/diagrams.api";
 import { getMe, logout } from "../../../shared/api/auth.api";
 import { API_BASE_URL } from "../../../shared/api/httpClient";
 import { useAuthStore } from "../../../shared/stores/useAuthStore";
+import { QueryErrorBoundary } from "../../../shared/components/QueryErrorBoundary";
 import { UnifiedSidebar } from "../components/unified-sidebar";
 import { CreateOrgModal } from "../components/CreateOrgModal";
 import { CreateProjectModal } from "../components/CreateProjectModal";
@@ -155,7 +156,9 @@ export const DashboardPage = () => {
           onCreateDiagram={() => setDiagramModalOpen(true)}
         />
 
-        <Outlet context={outletCtx} />
+        <QueryErrorBoundary variant="inline">
+          <Outlet context={outletCtx} />
+        </QueryErrorBoundary>
       </div>
 
       <CreateOrgModal

@@ -37,20 +37,3 @@ export const content = style({
   display: "flex",
   overflow: "hidden",
 });
-
-export const errorPage = style({
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  height: "100vh",
-  gap: vars.space["3"],
-  color: vars.color.textSecondary,
-  fontSize: "14px",
-});
-
-export const errorTitle = style({
-  fontSize: "18px",
-  fontWeight: "700",
-  color: vars.color.textPrimary,
-});
