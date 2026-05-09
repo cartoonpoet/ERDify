@@ -2,6 +2,7 @@ import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Diagram } from "@erdify/db";
 import { NotFoundException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import * as Automerge from "@automerge/automerge";
 import { CollaborationService } from "./collaboration.service";
 
@@ -29,7 +30,8 @@ describe("CollaborationService", () => {
     const module = await Test.createTestingModule({
       providers: [
         CollaborationService,
-        { provide: getRepositoryToken(Diagram), useValue: mockRepo }
+        { provide: getRepositoryToken(Diagram), useValue: mockRepo },
+        { provide: ConfigService, useValue: { get: vi.fn().mockReturnValue(30_000) } },
       ]
     }).compile();
     service = module.get(CollaborationService);

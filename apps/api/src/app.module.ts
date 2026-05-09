@@ -11,10 +11,11 @@ import { OrganizationModule } from "./modules/organization/organization.module";
 import { ProjectModule } from "./modules/project/project.module";
 import { CollaborationModule } from "./modules/collaboration/collaboration.module";
 import { EmailModule } from "./modules/email/email.module";
+import appConfig from "./common/config/app.config";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, load: [appConfig] }),
     EventEmitterModule.forRoot(),
     // 기본: 1분에 60요청. 로그인/회원가입은 @Throttle로 별도 엄격하게 제한
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),

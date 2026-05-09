@@ -4,6 +4,7 @@ import { Diagram } from "@erdify/db";
 import type { Repository } from "typeorm";
 import * as Automerge from "@automerge/automerge";
 import type { DiagramDocument } from "@erdify/domain";
+import { ConfigService } from "@nestjs/config";
 
 export interface CollaboratorPresence {
   userId: string;
@@ -24,11 +25,15 @@ const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"
 @Injectable()
 export class CollaborationService {
   private rooms = new Map<string, RoomState>();
+  private readonly persistIntervalMs: number;
 
   constructor(
     @InjectRepository(Diagram)
-    private readonly diagramRepo: Repository<Diagram>
-  ) {}
+    private readonly diagramRepo: Repository<Diagram>,
+    private readonly config: ConfigService
+  ) {
+    this.persistIntervalMs = this.config.get<number>("app.persistIntervalMs", 30_000);
+  }
 
   async joinRoom(diagramId: string): Promise<Uint8Array> {
     let room = this.rooms.get(diagramId);
@@ -91,7 +96,7 @@ export class CollaborationService {
     const room = this.rooms.get(diagramId);
     if (!room) return;
     clearTimeout(room.persistTimer);
-    room.persistTimer = setTimeout(() => void this.persistNow(diagramId), 30_000);
+    room.persistTimer = setTimeout(() => void this.persistNow(diagramId), this.persistIntervalMs);
   }
 
   async persistNow(diagramId: string): Promise<void> {

@@ -13,15 +13,15 @@ export class AddColumnDto {
 
   @IsOptional()
   @IsBoolean()
-  nullable?: boolean;
+  nullable?: boolean = true;
 
   @IsOptional()
   @IsBoolean()
-  primaryKey?: boolean;
+  primaryKey?: boolean = false;
 
   @IsOptional()
   @IsBoolean()
-  unique?: boolean;
+  unique?: boolean = false;
 
   @IsOptional()
   defaultValue?: string | null;

@@ -20,6 +20,7 @@ import { EmailService } from "../email/email.service";
 @Injectable()
 export class OrganizationService {
   private readonly logger = new Logger(OrganizationService.name);
+  private readonly inviteExpiryMs: number;
 
   constructor(
     @InjectRepository(Organization)
@@ -32,7 +33,10 @@ export class OrganizationService {
     private readonly inviteRepo: Repository<Invite>,
     private readonly emailService: EmailService,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    this.inviteExpiryMs =
+      this.config.get<number>("app.inviteExpiryDays", 7) * 24 * 60 * 60 * 1000;
+  }
 
   async create(userId: string, dto: CreateOrganizationDto): Promise<Organization> {
     const org = this.orgRepo.create({ id: randomUUID(), name: dto.name, ownerId: userId });
@@ -174,7 +178,7 @@ export class OrganizationService {
     }
 
     // 미가입자 — pending invite 생성
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + this.inviteExpiryMs);
     const existingInvite = await this.inviteRepo.findOne({
       where: { orgId, email, acceptedAt: IsNull() },
     });
