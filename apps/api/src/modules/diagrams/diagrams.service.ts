@@ -1,383 +1,117 @@
-import { randomUUID } from "crypto";
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Diagram, DiagramVersion, OrganizationMember, Project } from "@erdify/db";
-import type { Repository } from "typeorm";
+import { Injectable } from "@nestjs/common";
+import type { Diagram, DiagramVersion } from "@erdify/db";
 import type { CreateDiagramDto } from "./dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
 import type { SharePreset } from "./dto/share-diagram.dto";
-import type { DiagramColumn, DiagramDocument, DiagramRelationship } from "@erdify/domain";
 import type { AddTableDto } from "./dto/add-table.dto";
 import type { UpdateTableDto } from "./dto/update-table.dto";
 import type { AddColumnDto } from "./dto/add-column.dto";
 import type { UpdateColumnDto } from "./dto/update-column.dto";
 import type { AddRelationshipDto } from "./dto/add-relationship.dto";
 import type { UpdateRelationshipDto } from "./dto/update-relationship.dto";
-
-type DomainModule = typeof import("@erdify/domain");
-
-const importEsm = new Function("specifier", "return import(specifier)") as (
-  specifier: string
-) => Promise<DomainModule>;
-
-let domainModulePromise: Promise<DomainModule> | undefined;
-
-function loadDomainModule(): Promise<DomainModule> {
-  domainModulePromise ??= importEsm("@erdify/domain");
-  return domainModulePromise;
-}
-
-/** @internal Inject a pre-resolved module in tests to bypass new Function dynamic import. */
-export function _setDomainModuleForTest(m: DomainModule): void {
-  domainModulePromise = Promise.resolve(m);
-}
+import { DiagramsCrudService } from "./services/diagrams-crud.service";
+import { DiagramsSchemaService } from "./services/diagrams-schema.service";
+import { DiagramsVersionService } from "./services/diagrams-version.service";
+import { DiagramsShareService } from "./services/diagrams-share.service";
 
 @Injectable()
 export class DiagramsService {
   constructor(
-    @InjectRepository(Diagram)
-    private readonly diagramRepo: Repository<Diagram>,
-    @InjectRepository(DiagramVersion)
-    private readonly versionRepo: Repository<DiagramVersion>,
-    @InjectRepository(Project)
-    private readonly projectRepo: Repository<Project>,
-    @InjectRepository(OrganizationMember)
-    private readonly memberRepo: Repository<OrganizationMember>
+    private readonly crud: DiagramsCrudService,
+    private readonly schema: DiagramsSchemaService,
+    private readonly version: DiagramsVersionService,
+    private readonly share: DiagramsShareService
   ) {}
 
-  private async getProject(projectId: string): Promise<Project> {
-    const project = await this.projectRepo.findOne({ where: { id: projectId } });
-    if (!project) throw new NotFoundException("Project not found");
-    return project;
+  create(projectId: string, userId: string, dto: CreateDiagramDto): Promise<Diagram> {
+    return this.crud.create(projectId, userId, dto);
   }
 
-  private async requireMember(orgId: string, userId: string) {
-    const m = await this.memberRepo.findOne({ where: { organizationId: orgId, userId } });
-    if (!m) throw new ForbiddenException();
-    return m;
+  findAll(projectId: string, userId: string): Promise<Diagram[]> {
+    return this.crud.findAll(projectId, userId);
   }
 
-  private async requireEditorOrOwner(orgId: string, userId: string) {
-    const m = await this.requireMember(orgId, userId);
-    if (m.role === "viewer") throw new ForbiddenException();
-    return m;
+  findOne(diagramId: string, userId: string): Promise<Diagram & { organizationId: string; myRole: string }> {
+    return this.crud.findOne(diagramId, userId);
   }
 
-  private async getDiagramWithOrg(diagramId: string): Promise<{ diagram: Diagram; orgId: string }> {
-    const diagram = await this.diagramRepo.findOne({ where: { id: diagramId } });
-    if (!diagram) throw new NotFoundException("Diagram not found");
-    const project = await this.getProject(diagram.projectId);
-    return { diagram, orgId: project.organizationId };
+  update(diagramId: string, userId: string, dto: UpdateDiagramDto): Promise<Diagram> {
+    return this.crud.update(diagramId, userId, dto);
   }
 
-  private async applySchemaCommand(
-    diagramId: string,
-    userId: string,
-    fn: (doc: DiagramDocument) => DiagramDocument
-  ): Promise<Diagram> {
-    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireEditorOrOwner(orgId, userId);
-    const doc = diagram.content as unknown as DiagramDocument;
-    if (!doc || !Array.isArray(doc.entities)) {
-      throw new NotFoundException("Diagram content is malformed");
-    }
-    diagram.content = fn(doc) as unknown as object;
-    return this.diagramRepo.save(diagram);
+  remove(diagramId: string, userId: string): Promise<void> {
+    return this.crud.remove(diagramId, userId);
   }
 
-  async create(projectId: string, userId: string, dto: CreateDiagramDto): Promise<Diagram> {
-    const project = await this.getProject(projectId);
-    await this.requireEditorOrOwner(project.organizationId, userId);
-    const now = new Date().toISOString();
-    const id = randomUUID();
-    const content: object = dto.content
-      ? { ...(dto.content as object), id }
-      : {
-          format: "erdify.schema.v1",
-          id,
-          name: dto.name,
-          dialect: dto.dialect,
-          entities: [],
-          relationships: [],
-          indexes: [],
-          views: [],
-          layout: { entityPositions: {} },
-          metadata: { revision: 1, stableObjectIds: true, createdAt: now, updatedAt: now }
-        };
-    return this.diagramRepo.save(this.diagramRepo.create({ id, projectId, name: dto.name, content, createdBy: userId }));
+  canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {
+    return this.crud.canAccessDiagram(diagramId, userId);
   }
 
-  async findAll(projectId: string, userId: string): Promise<Diagram[]> {
-    const project = await this.getProject(projectId);
-    await this.requireMember(project.organizationId, userId);
-    return this.diagramRepo.find({ where: { projectId } });
+  assertReadAccess(diagramId: string, userId: string): Promise<void> {
+    return this.crud.assertReadAccess(diagramId, userId);
   }
 
-  async findOne(diagramId: string, userId: string): Promise<Diagram & { organizationId: string; myRole: string }> {
-    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
-    const member = await this.requireMember(orgId, userId);
-    return { ...diagram, organizationId: orgId, myRole: member.role };
+  assertEditorAccess(diagramId: string, userId: string): Promise<void> {
+    return this.crud.assertEditorAccess(diagramId, userId);
   }
 
-  async canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {
-    try {
-      const { orgId } = await this.getDiagramWithOrg(diagramId);
-      await this.requireMember(orgId, userId);
-      return true;
-    } catch {
-      return false;
-    }
+  saveVersion(diagramId: string, userId: string): Promise<DiagramVersion> {
+    return this.version.saveVersion(diagramId, userId);
   }
 
-  /** Throws ForbiddenException / NotFoundException if user cannot read the diagram. */
-  async assertReadAccess(diagramId: string, userId: string): Promise<void> {
-    const { orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireMember(orgId, userId);
+  findVersions(diagramId: string, userId: string): Promise<DiagramVersion[]> {
+    return this.version.findVersions(diagramId, userId);
   }
 
-  /** Throws ForbiddenException / NotFoundException if user lacks editor-or-owner access. */
-  async assertEditorAccess(diagramId: string, userId: string): Promise<void> {
-    const { orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireEditorOrOwner(orgId, userId);
+  restoreVersion(diagramId: string, versionId: string, userId: string): Promise<Diagram> {
+    return this.version.restoreVersion(diagramId, versionId, userId);
   }
 
-  async update(diagramId: string, userId: string, dto: UpdateDiagramDto): Promise<Diagram> {
-    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireEditorOrOwner(orgId, userId);
-    Object.assign(diagram, dto);
-    return this.diagramRepo.save(diagram);
+  generateShareLink(diagramId: string, userId: string, preset: SharePreset): Promise<{ shareToken: string; expiresAt: Date }> {
+    return this.share.generateShareLink(diagramId, userId, preset);
   }
 
-  async saveVersion(diagramId: string, userId: string): Promise<DiagramVersion> {
-    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireEditorOrOwner(orgId, userId);
-    const last = await this.versionRepo.findOne({
-      where: { diagramId },
-      order: { revision: "DESC" }
-    });
-    const revision = (last?.revision ?? 0) + 1;
-    return this.versionRepo.save(
-      this.versionRepo.create({ id: randomUUID(), diagramId, content: diagram.content, revision, createdBy: userId })
-    );
+  revokeShareLink(diagramId: string, userId: string): Promise<void> {
+    return this.share.revokeShareLink(diagramId, userId);
   }
 
-  async findVersions(diagramId: string, userId: string): Promise<DiagramVersion[]> {
-    const { orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireMember(orgId, userId);
-    return this.versionRepo.find({ where: { diagramId }, order: { revision: "DESC" } });
+  getPublicDiagram(shareToken: string): Promise<{ id: string; name: string; content: object }> {
+    return this.share.getPublicDiagram(shareToken);
   }
 
-  async restoreVersion(diagramId: string, versionId: string, userId: string): Promise<Diagram> {
-    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireEditorOrOwner(orgId, userId);
-
-    const version = await this.versionRepo.findOne({ where: { id: versionId, diagramId } });
-    if (!version) throw new NotFoundException("Version not found");
-
-    diagram.content = version.content;
-    return this.diagramRepo.save(diagram);
+  addTable(diagramId: string, userId: string, dto: AddTableDto): Promise<Diagram> {
+    return this.schema.addTable(diagramId, userId, dto);
   }
 
-  async remove(diagramId: string, userId: string): Promise<void> {
-    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireEditorOrOwner(orgId, userId);
-    await this.diagramRepo.remove(diagram);
+  updateTable(diagramId: string, tableId: string, userId: string, dto: UpdateTableDto): Promise<Diagram> {
+    return this.schema.updateTable(diagramId, tableId, userId, dto);
   }
 
-  private static presetToMs: Record<SharePreset, number> = {
-    "1h": 3_600_000,
-    "1d": 86_400_000,
-    "7d": 604_800_000,
-    "30d": 2_592_000_000,
-  };
-
-  async generateShareLink(
-    diagramId: string,
-    userId: string,
-    preset: SharePreset
-  ): Promise<{ shareToken: string; expiresAt: Date }> {
-    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireEditorOrOwner(orgId, userId);
-
-    const shareToken = randomUUID();
-    const expiresAt = new Date(Date.now() + DiagramsService.presetToMs[preset]);
-    diagram.shareToken = shareToken;
-    diagram.shareExpiresAt = expiresAt;
-    await this.diagramRepo.save(diagram);
-
-    return { shareToken, expiresAt };
+  removeTable(diagramId: string, tableId: string, userId: string): Promise<void> {
+    return this.schema.removeTable(diagramId, tableId, userId);
   }
 
-  async revokeShareLink(diagramId: string, userId: string): Promise<void> {
-    const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
-    await this.requireEditorOrOwner(orgId, userId);
-
-    diagram.shareToken = null;
-    diagram.shareExpiresAt = null;
-    await this.diagramRepo.save(diagram);
+  addColumn(diagramId: string, tableId: string, userId: string, dto: AddColumnDto): Promise<Diagram> {
+    return this.schema.addColumn(diagramId, tableId, userId, dto);
   }
 
-  async getPublicDiagram(shareToken: string): Promise<{ id: string; name: string; content: object }> {
-    const diagram = await this.diagramRepo.findOne({ where: { shareToken } });
-    if (!diagram) throw new NotFoundException("Share link not found");
-    if (!diagram.shareExpiresAt || diagram.shareExpiresAt < new Date()) {
-      throw new ForbiddenException("SHARE_LINK_EXPIRED");
-    }
-    return { id: diagram.id, name: diagram.name, content: diagram.content };
+  updateColumn(diagramId: string, tableId: string, columnId: string, userId: string, dto: UpdateColumnDto): Promise<Diagram> {
+    return this.schema.updateColumn(diagramId, tableId, columnId, userId, dto);
   }
 
-  async addTable(diagramId: string, userId: string, dto: AddTableDto): Promise<Diagram> {
-    const domain = await loadDomainModule();
-    const entityId = randomUUID();
-    const hasPosition = dto.x !== undefined && dto.y !== undefined;
-    return this.applySchemaCommand(diagramId, userId, (doc) =>
-      domain.addEntity(doc, {
-        id: entityId,
-        name: dto.name,
-        ...(hasPosition ? { position: { x: dto.x!, y: dto.y! } } : {}),
-      })
-    );
+  removeColumn(diagramId: string, tableId: string, columnId: string, userId: string): Promise<void> {
+    return this.schema.removeColumn(diagramId, tableId, columnId, userId);
   }
 
-  async updateTable(
-    diagramId: string,
-    tableId: string,
-    userId: string,
-    dto: UpdateTableDto
-  ): Promise<Diagram> {
-    const domain = await loadDomainModule();
-    return this.applySchemaCommand(diagramId, userId, (doc) => {
-      if (!doc.entities.some((e) => e.id === tableId)) throw new NotFoundException("Table not found");
-      let updated = doc;
-      if (dto.name !== undefined) updated = domain.renameEntity(updated, tableId, dto.name);
-      if (dto.color !== undefined) updated = domain.updateEntityColor(updated, tableId, dto.color ?? null);
-      if (dto.comment !== undefined) updated = domain.updateEntityComment(updated, tableId, dto.comment ?? null);
-      return updated;
-    });
+  addRelationship(diagramId: string, userId: string, dto: AddRelationshipDto): Promise<Diagram> {
+    return this.schema.addRelationship(diagramId, userId, dto);
   }
 
-  async removeTable(diagramId: string, tableId: string, userId: string): Promise<void> {
-    const domain = await loadDomainModule();
-    await this.applySchemaCommand(diagramId, userId, (doc) => {
-      if (!doc.entities.some((e) => e.id === tableId)) throw new NotFoundException("Table not found");
-      return domain.removeEntity(doc, tableId);
-    });
+  updateRelationship(diagramId: string, relId: string, userId: string, dto: UpdateRelationshipDto): Promise<Diagram> {
+    return this.schema.updateRelationship(diagramId, relId, userId, dto);
   }
 
-  async addColumn(
-    diagramId: string,
-    tableId: string,
-    userId: string,
-    dto: AddColumnDto
-  ): Promise<Diagram> {
-    const domain = await loadDomainModule();
-    return this.applySchemaCommand(diagramId, userId, (doc) => {
-      const entity = doc.entities.find((e) => e.id === tableId);
-      if (!entity) throw new NotFoundException("Table not found");
-      const column: DiagramColumn = {
-        id: randomUUID(),
-        name: dto.name,
-        type: dto.type,
-        nullable: dto.nullable ?? true,
-        primaryKey: dto.primaryKey ?? false,
-        unique: dto.unique ?? false,
-        defaultValue: dto.defaultValue ?? null,
-        comment: null,
-        ordinal: entity.columns.length,
-      };
-      return domain.addColumn(doc, tableId, column);
-    });
-  }
-
-  async updateColumn(
-    diagramId: string,
-    tableId: string,
-    columnId: string,
-    userId: string,
-    dto: UpdateColumnDto
-  ): Promise<Diagram> {
-    const domain = await loadDomainModule();
-    return this.applySchemaCommand(diagramId, userId, (doc) => {
-      const entity = doc.entities.find((e) => e.id === tableId);
-      if (!entity) throw new NotFoundException("Table not found");
-      if (!entity.columns.some((c) => c.id === columnId)) throw new NotFoundException("Column not found");
-      const changes: Partial<Omit<DiagramColumn, "id">> = {};
-      if (dto.name !== undefined) changes.name = dto.name;
-      if (dto.type !== undefined) changes.type = dto.type;
-      if (dto.nullable !== undefined) changes.nullable = dto.nullable;
-      if (dto.primaryKey !== undefined) changes.primaryKey = dto.primaryKey;
-      if (dto.unique !== undefined) changes.unique = dto.unique;
-      if (dto.defaultValue !== undefined) changes.defaultValue = dto.defaultValue ?? null;
-      if (dto.comment !== undefined) changes.comment = dto.comment ?? null;
-      return domain.updateColumn(doc, tableId, columnId, changes);
-    });
-  }
-
-  async removeColumn(
-    diagramId: string,
-    tableId: string,
-    columnId: string,
-    userId: string
-  ): Promise<void> {
-    const domain = await loadDomainModule();
-    await this.applySchemaCommand(diagramId, userId, (doc) => {
-      const entity = doc.entities.find((e) => e.id === tableId);
-      if (!entity) throw new NotFoundException("Table not found");
-      if (!entity.columns.some((c) => c.id === columnId)) throw new NotFoundException("Column not found");
-      return domain.removeColumn(doc, tableId, columnId);
-    });
-  }
-
-  async addRelationship(
-    diagramId: string,
-    userId: string,
-    dto: AddRelationshipDto
-  ): Promise<Diagram> {
-    const domain = await loadDomainModule();
-    const relationship: DiagramRelationship = {
-      id: randomUUID(),
-      name: "",
-      sourceEntityId: dto.sourceEntityId,
-      sourceColumnIds: dto.sourceColumnIds,
-      targetEntityId: dto.targetEntityId,
-      targetColumnIds: dto.targetColumnIds,
-      cardinality: dto.cardinality,
-      onDelete: dto.onDelete ?? "no-action",
-      onUpdate: dto.onUpdate ?? "no-action",
-      identifying: dto.identifying ?? false,
-    };
-    return this.applySchemaCommand(diagramId, userId, (doc) =>
-      domain.addRelationship(doc, relationship)
-    );
-  }
-
-  async updateRelationship(
-    diagramId: string,
-    relId: string,
-    userId: string,
-    dto: UpdateRelationshipDto
-  ): Promise<Diagram> {
-    const domain = await loadDomainModule();
-    return this.applySchemaCommand(diagramId, userId, (doc) => {
-      if (!doc.relationships.some((r) => r.id === relId))
-        throw new NotFoundException("Relationship not found");
-      const changes: Partial<Omit<DiagramRelationship, "id">> = {};
-      if (dto.sourceColumnIds !== undefined) changes.sourceColumnIds = dto.sourceColumnIds;
-      if (dto.targetColumnIds !== undefined) changes.targetColumnIds = dto.targetColumnIds;
-      if (dto.cardinality !== undefined) changes.cardinality = dto.cardinality;
-      if (dto.onDelete !== undefined) changes.onDelete = dto.onDelete;
-      if (dto.onUpdate !== undefined) changes.onUpdate = dto.onUpdate;
-      if (dto.identifying !== undefined) changes.identifying = dto.identifying;
-      return domain.updateRelationship(doc, relId, changes);
-    });
-  }
-
-  async removeRelationship(diagramId: string, relId: string, userId: string): Promise<void> {
-    const domain = await loadDomainModule();
-    await this.applySchemaCommand(diagramId, userId, (doc) => {
-      if (!doc.relationships.some((r) => r.id === relId))
-        throw new NotFoundException("Relationship not found");
-      return domain.removeRelationship(doc, relId);
-    });
+  removeRelationship(diagramId: string, relId: string, userId: string): Promise<void> {
+    return this.schema.removeRelationship(diagramId, relId, userId);
   }
 }

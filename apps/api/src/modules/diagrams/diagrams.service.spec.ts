@@ -1,7 +1,13 @@
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import type { Diagram, DiagramVersion, OrganizationMember, Project } from "@erdify/db";
 import type { Repository } from "typeorm";
-import { DiagramsService, _setDomainModuleForTest } from "./diagrams.service";
+import { DiagramsService } from "./diagrams.service";
+import { DiagramsCrudService } from "./services/diagrams-crud.service";
+import { DiagramsSchemaService } from "./services/diagrams-schema.service";
+import { DiagramsVersionService } from "./services/diagrams-version.service";
+import { DiagramsShareService } from "./services/diagrams-share.service";
+import { AuthorizationService } from "../../common/services/authorization.service";
+import type { DomainLoaderService } from "../../common/services/domain-loader.service";
 import type { DiagramDocument } from "@erdify/domain";
 import * as erdifyDomain from "@erdify/domain";
 
@@ -24,6 +30,7 @@ type MockRepo<_T> = {
   find: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
   save: ReturnType<typeof vi.fn>;
+  remove?: ReturnType<typeof vi.fn>;
 };
 
 const makeProject = (o: Partial<Project> = {}): Project =>
@@ -74,17 +81,38 @@ describe("DiagramsService", () => {
   let memberRepo: MockRepo<OrganizationMember>;
 
   beforeEach(() => {
-    diagramRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
+    diagramRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
     versionRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
     projectRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
     memberRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
-    service = new DiagramsService(
+
+    const authService = new AuthorizationService(memberRepo as unknown as Repository<OrganizationMember>);
+    const domainLoader = { load: vi.fn().mockResolvedValue(erdifyDomain) } as unknown as DomainLoaderService;
+
+    const crud = new DiagramsCrudService(
+      diagramRepo as unknown as Repository<Diagram>,
+      projectRepo as unknown as Repository<Project>,
+      authService
+    );
+    const schema = new DiagramsSchemaService(
+      diagramRepo as unknown as Repository<Diagram>,
+      projectRepo as unknown as Repository<Project>,
+      authService,
+      domainLoader
+    );
+    const version = new DiagramsVersionService(
       diagramRepo as unknown as Repository<Diagram>,
       versionRepo as unknown as Repository<DiagramVersion>,
       projectRepo as unknown as Repository<Project>,
-      memberRepo as unknown as Repository<OrganizationMember>
+      authService
     );
-    _setDomainModuleForTest(erdifyDomain);
+    const share = new DiagramsShareService(
+      diagramRepo as unknown as Repository<Diagram>,
+      projectRepo as unknown as Repository<Project>,
+      authService
+    );
+
+    service = new DiagramsService(crud, schema, version, share);
   });
 
   describe("create", () => {
