@@ -8,10 +8,10 @@ import type { DiagramDialect } from "@erdify/domain";
 
 export type TabType = DiagramDialect | "exerd";
 
-function extractFirstTableName(sql: string): string | null {
+const extractFirstTableName = (sql: string): string | null => {
   const m = sql.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:\[?[\w.]+\]?\.)?[\["`]?([\w]+)[\]"`]?\s*\(/i);
   return m ? (m[1] ?? null) : null;
-}
+};
 
 interface UseDiagramImportOptions {
   projectId: string;

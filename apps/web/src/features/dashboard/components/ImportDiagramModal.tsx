@@ -13,8 +13,6 @@ import {
   errorText, footer, cancelBtn,
 } from "./ImportDiagramModal.css";
 
-type TabType = DiagramDialect | "exerd";
-
 const DIALECT_TABS: { label: string; value: DiagramDialect }[] = [
   { label: "MySQL", value: "mysql" },
   { label: "PostgreSQL", value: "postgresql" },
