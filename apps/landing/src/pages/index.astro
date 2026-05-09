@@ -118,26 +118,120 @@ const APP_URL = 'http://erdify-app.kro.kr';
   </section>
 
   <!-- DEMO VIDEO -->
-  <section class="demo" id="demo">
+  <!-- PRODUCT SHOWCASE -->
+  <section class="showcase" id="demo">
     <div class="container">
-      <div class="demo-wrapper">
-        <div class="demo-video">
-          {YOUTUBE_ID !== 'YOUR_YOUTUBE_ID' ? (
-            <iframe
-              src={`https://www.youtube.com/embed/${YOUTUBE_ID}?rel=0&modestbranding=1`}
-              title="ERDify 데모"
-              frameborder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-            ></iframe>
-          ) : (
-            <div class="video-placeholder">
-              <div class="play-btn">▶</div>
-              <p>데모 영상</p>
-              <span>YouTube ID를 설정하세요</span>
-            </div>
-          )}
+      <div class="showcase-header">
+        <div class="badge">제품 미리보기</div>
+        <h2>설계부터 배포까지, 하나의 화면에서</h2>
+        <p>AI 채팅, 스키마 편집, 팀 협업 — ERDify의 모든 기능을 경험하세요.</p>
+      </div>
+      <!-- Browser mockup -->
+      <div class="browser-frame">
+        <div class="browser-bar">
+          <div class="browser-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <div class="browser-address">erdify-app.kro.kr</div>
         </div>
+        <div class="browser-body">
+          <!-- Simulated app header -->
+          <div class="app-header">
+            <div class="app-logo-sm">ERDify</div>
+            <div class="app-breadcrumb">
+              <span class="bc-org">My Org</span>
+              <span class="bc-sep">/</span>
+              <span class="bc-proj">커머스 프로젝트</span>
+              <span class="bc-sep">/</span>
+              <span class="bc-diag">주문 스키마 v2</span>
+            </div>
+            <div class="app-header-right">
+              <div class="collab-avatar" style="background:#8b5cf6">J</div>
+              <div class="collab-avatar" style="background:#10b981;margin-left:-8px">K</div>
+              <div class="btn-sm-blue">DDL 내보내기</div>
+            </div>
+          </div>
+          <!-- Simulated canvas -->
+          <div class="app-canvas">
+            <!-- Left: schema sidebar -->
+            <div class="schema-sidebar">
+              <div class="ss-title">스키마 필터</div>
+              <div class="ss-item ss-active"><span class="ss-dot" style="background:#3b82f6"></span>auth</div>
+              <div class="ss-item"><span class="ss-dot" style="background:#8b5cf6"></span>order</div>
+              <div class="ss-item"><span class="ss-dot" style="background:#10b981"></span>product</div>
+              <div class="ss-item"><span class="ss-dot" style="background:#f59e0b"></span>payment</div>
+            </div>
+            <!-- Center: ERD canvas -->
+            <div class="erd-canvas">
+              <!-- Table node 1 -->
+              <div class="erd-table" style="top:40px;left:60px">
+                <div class="erd-schema-strip" style="background:rgba(59,130,246,.08);color:#3b82f6;border-bottom:1px solid rgba(59,130,246,.15)">
+                  <span class="erd-schema-dot" style="background:#3b82f6"></span>auth
+                </div>
+                <div class="erd-thead" style="background:#3b82f6">users</div>
+                <div class="erd-col erd-col-pk"><span class="badge-pk">PK</span><span>id</span><span class="col-type">bigint</span></div>
+                <div class="erd-col"><span class="badge-fk" style="opacity:0"></span><span>email</span><span class="col-type">varchar</span></div>
+                <div class="erd-col"><span class="badge-fk" style="opacity:0"></span><span>name</span><span class="col-type">varchar</span></div>
+                <div class="erd-col"><span class="badge-fk" style="opacity:0"></span><span>created_at</span><span class="col-type">datetime</span></div>
+              </div>
+              <!-- Table node 2 -->
+              <div class="erd-table erd-table--selected" style="top:40px;left:320px">
+                <div class="erd-schema-strip" style="background:rgba(139,92,246,.08);color:#8b5cf6;border-bottom:1px solid rgba(139,92,246,.15)">
+                  <span class="erd-schema-dot" style="background:#8b5cf6"></span>order
+                </div>
+                <div class="erd-thead" style="background:#8b5cf6">orders</div>
+                <div class="erd-col erd-col-pk"><span class="badge-pk">PK</span><span>id</span><span class="col-type">bigint</span></div>
+                <div class="erd-col"><span class="badge-fk">FK</span><span>user_id</span><span class="col-type">bigint</span></div>
+                <div class="erd-col"><span class="badge-fk" style="opacity:0"></span><span>status</span><span class="col-type">varchar</span></div>
+                <div class="erd-col"><span class="badge-fk" style="opacity:0"></span><span>total</span><span class="col-type">decimal</span></div>
+              </div>
+              <!-- Table node 3 -->
+              <div class="erd-table" style="top:260px;left:320px">
+                <div class="erd-schema-strip" style="background:rgba(16,185,129,.08);color:#10b981;border-bottom:1px solid rgba(16,185,129,.15)">
+                  <span class="erd-schema-dot" style="background:#10b981"></span>product
+                </div>
+                <div class="erd-thead" style="background:#10b981">products</div>
+                <div class="erd-col erd-col-pk"><span class="badge-pk">PK</span><span>id</span><span class="col-type">bigint</span></div>
+                <div class="erd-col"><span class="badge-fk" style="opacity:0"></span><span>name</span><span class="col-type">varchar</span></div>
+                <div class="erd-col"><span class="badge-fk" style="opacity:0"></span><span>price</span><span class="col-type">decimal</span></div>
+              </div>
+              <!-- SVG relationship arrows -->
+              <svg class="erd-svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none">
+                <!-- users → orders -->
+                <line x1="228" y1="98" x2="320" y2="98" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+                <circle cx="228" cy="98" r="3" fill="#8b5cf6" opacity="0.6"/>
+                <circle cx="320" cy="98" r="3" fill="#8b5cf6" opacity="0.6"/>
+              </svg>
+            </div>
+            <!-- Right: AI chat panel -->
+            <div class="ai-panel">
+              <div class="ai-panel-title">
+                <span class="ai-icon">✦</span> AI 어시스턴트
+              </div>
+              <div class="ai-messages">
+                <div class="ai-msg ai-msg--user">orders 테이블에 배송지 주소 컬럼들 추가해줘</div>
+                <div class="ai-msg ai-msg--ai">
+                  <div class="ai-msg-badge">ERDify AI</div>
+                  orders 테이블에 배송 관련 컬럼 4개를 추가했습니다.
+                  <div class="ai-code-block">+ shipping_name varchar(100)<br/>+ shipping_phone varchar(20)<br/>+ shipping_addr text<br/>+ shipping_zip varchar(10)</div>
+                </div>
+              </div>
+              <div class="ai-input-row">
+                <div class="ai-input">스키마에 대해 질문하세요...</div>
+                <div class="ai-send">↑</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Feature pills -->
+      <div class="showcase-pills">
+        <div class="pill">🤖 AI로 스키마 수정</div>
+        <div class="pill">👥 실시간 팀 협업</div>
+        <div class="pill">⇅ DDL 가져오기/내보내기</div>
+        <div class="pill">🎨 스키마별 색상 분류</div>
       </div>
     </div>
   </section>
@@ -597,24 +691,38 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
         <a href="/" class="logo">
           <img src="/logo.svg" alt="ERDify" class="logo-image" style="filter: brightness(0) invert(1);" />
         </a>
-        <p>실시간 협업 ERD 도구</p>
+        <p class="footer-tagline">AI와 함께하는<br/>실시간 협업 ERD 도구</p>
+        <a href="mailto:support@erdify.com" class="footer-email">support@erdify.com</a>
       </div>
       <div class="footer-links">
         <div class="footer-col">
           <span class="footer-col-title">제품</span>
-          <a href="#features">기능</a>
-          <a href="#pricing">가격</a>
+          <a href="/#features">기능</a>
+          <a href="/#integrations">AI 연동</a>
+          <a href="/#pricing">가격</a>
           <a href={APP_URL}>앱 열기</a>
         </div>
         <div class="footer-col">
           <span class="footer-col-title">지원</span>
-          <a href="mailto:support@erdify.com">문의하기</a>
+          <a href="/contact">문의하기</a>
+          <a href="mailto:support@erdify.com">이메일 문의</a>
+          <a href="/docs/">개발자 센터</a>
+        </div>
+        <div class="footer-col">
+          <span class="footer-col-title">법적 고지</span>
+          <a href="/terms">이용약관</a>
+          <a href="/privacy">개인정보처리방침</a>
         </div>
       </div>
     </div>
     <div class="footer-bottom">
-      <div class="container">
+      <div class="container footer-bottom-inner">
         <span>© 2026 ERDify. All rights reserved.</span>
+        <div class="footer-bottom-links">
+          <a href="/terms">이용약관</a>
+          <a href="/privacy">개인정보처리방침</a>
+          <a href="/contact">문의</a>
+        </div>
       </div>
     </div>
   </footer>
@@ -720,45 +828,125 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
   .stat-divider { width: 1px; height: 32px; background: var(--border); }
 
   /* ── Demo Video ── */
-  .demo { padding: 0 0 100px; }
-  .demo-wrapper {
-    background: linear-gradient(135deg, #EEF4FF 0%, #F0F4FF 100%);
-    border-radius: 20px;
-    padding: 24px;
-    border: 1px solid rgba(0,100,224,0.12);
-    box-shadow: 0 24px 64px rgba(0,100,224,0.08), 0 4px 12px rgba(0,0,0,0.04);
-  }
-  .demo-video {
-    position: relative;
-    border-radius: 12px;
+  /* ── Product Showcase ── */
+  .showcase { padding: 0 0 100px; }
+  .showcase-header { text-align: center; margin-bottom: 48px; }
+  .showcase-header h2 { font-size: 36px; font-weight: 800; margin-bottom: 14px; letter-spacing: -0.02em; }
+  .showcase-header p { font-size: 17px; color: var(--text-sub); }
+
+  /* Browser frame */
+  .browser-frame {
+    border-radius: 14px;
     overflow: hidden;
-    aspect-ratio: 16/9;
-    background: #1C2B33;
+    box-shadow: 0 32px 80px rgba(0,50,120,0.13), 0 4px 16px rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.08);
+    background: #fff;
   }
-  .demo-video iframe { width: 100%; height: 100%; }
-  .video-placeholder {
-    width: 100%;
-    height: 100%;
+  .browser-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: #f1f4f8;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .browser-dots { display: flex; gap: 6px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot-red { background: #ff5f57; }
+  .dot-yellow { background: #febc2e; }
+  .dot-green { background: #28c840; }
+  .browser-address {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #dde1e7;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: #6b7280;
+    font-family: monospace;
+    max-width: 280px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  /* Simulated app inside browser */
+  .browser-body { background: #F0F4F8; }
+  .app-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    height: 44px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .app-logo-sm { font-size: 13px; font-weight: 800; color: #0064E0; letter-spacing: -0.02em; flex-shrink: 0; }
+  .app-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; flex: 1; }
+  .bc-org, .bc-proj { color: #6b7280; }
+  .bc-sep { color: #d1d5db; }
+  .bc-diag { color: #111827; font-weight: 600; }
+  .app-header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .collab-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; border: 2px solid #fff; }
+  .btn-sm-blue { background: #0064E0; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; white-space: nowrap; }
+
+  /* Canvas area */
+  .app-canvas { display: flex; height: 420px; }
+  .schema-sidebar { width: 140px; flex-shrink: 0; background: #fff; border-right: 1px solid #DEE3E9; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; }
+  .ss-title { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #9ca3af; padding: 0 4px; margin-bottom: 4px; }
+  .ss-item { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 6px; font-size: 11px; color: #374151; font-family: monospace; cursor: pointer; }
+  .ss-active { background: #EEF4FF; color: #0064E0; font-weight: 600; }
+  .ss-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  .erd-canvas { flex: 1; position: relative; overflow: hidden; }
+  .erd-svg { position: absolute; inset: 0; pointer-events: none; }
+
+  /* ERD Table nodes */
+  .erd-table {
+    position: absolute;
+    background: #fff;
+    border: 2px solid #d1d5db;
+    border-left: 4px solid #ccc;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: monospace;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    min-width: 170px;
+  }
+  .erd-table--selected { border-color: #0064E0; box-shadow: 0 4px 16px rgba(0,100,224,.15); }
+  .erd-schema-strip { display: flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 8px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .erd-schema-dot { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; }
+  .erd-thead { color: #fff; padding: 5px 8px; font-weight: 700; font-size: 12px; }
+  .erd-col { display: flex; align-items: center; gap: 5px; padding: 3px 8px; border-bottom: 1px solid #f1f4f7; }
+  .erd-col:last-child { border-bottom: none; }
+  .erd-col-pk { background: #fffbf0; }
+  .badge-pk { font-size: 7px; font-weight: 700; color: #f59e0b; width: 16px; flex-shrink: 0; }
+  .badge-fk { font-size: 7px; font-weight: 700; color: #3b82f6; width: 16px; flex-shrink: 0; }
+  .col-type { margin-left: auto; color: #9ca3af; font-size: 10px; }
+
+  /* AI panel */
+  .ai-panel {
+    width: 260px;
+    flex-shrink: 0;
+    background: #fff;
+    border-left: 1px solid #DEE3E9;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: rgba(255,255,255,0.6);
   }
-  .play-btn {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    color: #fff;
-  }
-  .video-placeholder p { font-size: 18px; font-weight: 600; color: #fff; }
-  .video-placeholder span { font-size: 13px; text-align: center; }
+  .ai-panel-title { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid #f1f4f7; font-size: 12px; font-weight: 700; color: #374151; }
+  .ai-icon { color: #8b5cf6; }
+  .ai-messages { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+  .ai-msg { font-size: 11px; line-height: 1.5; }
+  .ai-msg--user { background: #EEF4FF; border-radius: 8px; padding: 7px 10px; color: #1e40af; align-self: flex-end; max-width: 90%; }
+  .ai-msg--ai { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px; color: #374151; }
+  .ai-msg-badge { font-size: 9px; font-weight: 700; color: #8b5cf6; margin-bottom: 4px; }
+  .ai-code-block { background: #1e293b; color: #86efac; font-family: monospace; font-size: 9.5px; border-radius: 5px; padding: 6px 8px; margin-top: 6px; line-height: 1.7; }
+  .ai-input-row { display: flex; gap: 6px; padding: 8px; border-top: 1px solid #f1f4f7; }
+  .ai-input { flex: 1; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 5px 8px; font-size: 11px; color: #9ca3af; }
+  .ai-send { width: 26px; height: 26px; background: #0064E0; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; flex-shrink: 0; }
+
+  /* Feature pills */
+  .showcase-pills { display: flex; gap: 10px; justify-content: center; margin-top: 28px; flex-wrap: wrap; }
+  .pill { background: #fff; border: 1px solid #e2e8f0; border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 500; color: #374151; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
 
   /* ── Section Header ── */
   .section-header {
@@ -1480,25 +1668,30 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
   .cta-banner p { font-size: 17px; opacity: 0.85; margin-bottom: 36px; }
 
   /* ── Footer ── */
-  .footer { background: #0f1923; color: rgba(255,255,255,0.7); padding: 64px 0 0; }
+  .footer { background: #0d1520; color: rgba(255,255,255,0.6); padding: 72px 0 0; }
   .footer-inner {
     display: flex;
     gap: 80px;
-    padding-bottom: 48px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: 56px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
   }
-  .footer-brand { flex: 1; }
-  .footer-brand .logo { color: #fff; margin-bottom: 12px; }
+  .footer-brand { flex: 1; min-width: 200px; }
+  .footer-brand .logo { display: block; margin-bottom: 16px; }
   .footer-brand .logo img { width: 110px; height: auto; display: block; }
-  .footer-brand p { font-size: 13px; opacity: 0.5; }
-  .footer-links { display: flex; gap: 60px; }
+  .footer-tagline { font-size: 13px; line-height: 1.7; opacity: 0.45; margin-bottom: 14px; }
+  .footer-email { font-size: 12px; color: rgba(255,255,255,0.4); text-decoration: none; transition: color .15s; font-family: monospace; }
+  .footer-email:hover { color: rgba(255,255,255,0.8); }
+  .footer-links { display: flex; gap: 56px; flex-wrap: wrap; }
   .footer-col { display: flex; flex-direction: column; gap: 12px; }
-  .footer-col-title { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
-  .footer-col a { font-size: 14px; transition: color 0.15s; }
+  .footer-col-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 4px; }
+  .footer-col a { font-size: 13.5px; color: rgba(255,255,255,0.55); transition: color 0.15s; }
   .footer-col a:hover { color: #fff; }
-  .footer-bottom { padding: 20px 0; }
-  .footer-bottom .container { display: flex; justify-content: center; }
-  .footer-bottom span { font-size: 12px; opacity: 0.4; }
+  .footer-bottom { padding: 20px 0; border-top: none; }
+  .footer-bottom-inner { display: flex; justify-content: space-between; align-items: center; }
+  .footer-bottom span { font-size: 12px; opacity: 0.3; }
+  .footer-bottom-links { display: flex; gap: 20px; }
+  .footer-bottom-links a { font-size: 12px; color: rgba(255,255,255,0.3); transition: color .15s; }
+  .footer-bottom-links a:hover { color: rgba(255,255,255,0.6); }
 
   /* ── Responsive ── */
   @media (max-width: 900px) {
