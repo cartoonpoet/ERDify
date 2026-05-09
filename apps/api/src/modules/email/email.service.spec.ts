@@ -139,16 +139,14 @@ describe("EmailService", () => {
       expect(callArgs.html).toContain("editor");
     });
 
-    it("logs warn and does not throw when sendMail fails", async () => {
-      const warnSpy = vi.spyOn(service["logger"], "warn");
+    it("logs error and returns false when sendMail fails", async () => {
+      const errorSpy = vi.spyOn(service["logger"], "error");
       mockSendMail.mockRejectedValue(new Error("SMTP connection refused"));
 
-      await expect(service.sendInviteEmail(defaultParams)).resolves.toBeUndefined();
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("invitee@example.com")
-      );
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("SMTP connection refused")
+      await expect(service.sendInviteEmail(defaultParams)).resolves.toBe(false);
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("invitee@example.com"),
+        expect.anything()
       );
     });
 

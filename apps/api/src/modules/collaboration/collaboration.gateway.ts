@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import {
   ConnectedSocket,
   MessageBody,
@@ -25,6 +26,7 @@ import { DiagramsService } from "../diagrams/diagrams.service";
 })
 export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server!: Server;
+  private readonly logger = new Logger(CollaborationGateway.name);
 
   constructor(
     private readonly collaborationService: CollaborationService,
@@ -49,7 +51,8 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
       const payload = this.jwtService.verify<JwtPayload>(token);
       client.data.userId = payload.sub;
       client.data.email = payload.email;
-    } catch {
+    } catch (err) {
+      this.logger.error("WebSocket connection rejected", (err as Error).message);
       client.disconnect();
     }
   }
@@ -92,7 +95,8 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
       );
       const presence = this.collaborationService.getPresence(diagramId);
       this.server.to(diagramId).emit("presence:state", presence);
-    } catch {
+    } catch (err) {
+      this.logger.error("Failed to join diagram", (err as Error).stack);
       client.emit("error", { message: "Failed to join diagram" });
       client.disconnect();
     }

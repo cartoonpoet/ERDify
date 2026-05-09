@@ -29,7 +29,7 @@ export class EmailService {
     });
   }
 
-  async sendInviteEmail(params: InviteEmailParams): Promise<void> {
+  async sendInviteEmail(params: InviteEmailParams): Promise<boolean> {
     try {
       await this.transporter.sendMail({
         from: this.config.get<string>("SMTP_FROM", "noreply@erdify.app"),
@@ -56,8 +56,13 @@ export class EmailService {
           </div>
         `,
       });
+      return true;
     } catch (err) {
-      this.logger.warn(`Failed to send invite email to ${params.to}: ${(err as Error).message}`);
+      this.logger.error(
+        `Failed to send invite email to ${params.to}`,
+        (err as Error).stack
+      );
+      return false;
     }
   }
 }

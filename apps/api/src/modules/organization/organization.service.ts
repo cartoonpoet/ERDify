@@ -4,6 +4,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -18,6 +19,8 @@ import { EmailService } from "../email/email.service";
 
 @Injectable()
 export class OrganizationService {
+  private readonly logger = new Logger(OrganizationService.name);
+
   constructor(
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
@@ -199,13 +202,16 @@ export class OrganizationService {
       this.userRepo.findOne({ where: { id: requesterId } }),
     ]);
     const appUrl = this.config.get<string>("APP_URL", "https://erdify.app");
-    await this.emailService.sendInviteEmail({
+    const sent = await this.emailService.sendInviteEmail({
       to: email,
       orgName: org!.name,
       inviterName: inviter!.name,
       role,
       inviteUrl: `${appUrl}/register?inviteEmail=${encodeURIComponent(email)}`,
     });
+    if (!sent) {
+      this.logger.warn(`Invite email not delivered to ${email}`);
+    }
 
     return { status: "pending" };
   }
