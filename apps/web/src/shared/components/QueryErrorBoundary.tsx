@@ -28,23 +28,23 @@ const ErrorFallback = ({ error, variant }: { error: unknown; variant: "page" | "
       <div className={css.icon}>{icon}</div>
       <div className={css.title}>{title}</div>
       <div className={css.desc}>{desc}</div>
-      <button className={css.backBtn} onClick={() => navigate(-1)}>돌아가기</button>
+      <button type="button" className={css.backBtn} onClick={() => navigate(-1)}>돌아가기</button>
     </div>
   );
 };
 
 type Props = { children: ReactNode; variant: "page" | "inline" };
-type State = { error: unknown };
+type State = { hasError: boolean; error: unknown };
 
 export class QueryErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  state: State = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: unknown): State {
-    return { error };
+    return { hasError: true, error };
   }
 
   render() {
-    if (this.state.error !== null) {
+    if (this.state.hasError) {
       return <ErrorFallback error={this.state.error} variant={this.props.variant} />;
     }
     return this.props.children;
