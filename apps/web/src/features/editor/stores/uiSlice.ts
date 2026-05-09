@@ -10,6 +10,7 @@ export interface UISlice {
   hiddenSchemas: Set<string>;
   schemaFilterExpanded: boolean;
   groupViewEnabled: boolean;
+  schemaColors: Record<string, string>;
   setSelectedEntity: (id: string | null) => void;
   setSelectedRelationship: (id: string | null) => void;
   setPopoverPos: (pos: { x: number; y: number } | null) => void;
@@ -17,6 +18,7 @@ export interface UISlice {
   toggleSchemaVisibility: (schema: string) => void;
   setSchemaFilterExpanded: (expanded: boolean) => void;
   setGroupViewEnabled: (enabled: boolean) => void;
+  setSchemaColor: (schema: string, color: string) => void;
 }
 
 export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) => ({
@@ -27,6 +29,7 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
   hiddenSchemas: new Set<string>(),
   schemaFilterExpanded: true,
   groupViewEnabled: true,
+  schemaColors: {},
 
   setSelectedEntity: (id) => set({ selectedEntityId: id, selectedRelationshipId: null, popoverPos: null }),
   setSelectedRelationship: (id) => set({ selectedRelationshipId: id, selectedEntityId: null }),
@@ -41,4 +44,6 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
     }),
   setSchemaFilterExpanded: (expanded) => set({ schemaFilterExpanded: expanded }),
   setGroupViewEnabled: (enabled) => set({ groupViewEnabled: enabled }),
+  setSchemaColor: (schema, color) =>
+    set((state) => ({ schemaColors: { ...state.schemaColors, [schema]: color } })),
 });

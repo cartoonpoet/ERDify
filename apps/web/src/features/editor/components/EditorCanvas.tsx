@@ -114,9 +114,11 @@ type ContextMenuState = {
 const ClickableMiniMap = ({
   containerRef,
   document,
+  schemaColors,
 }: {
   containerRef: React.RefObject<HTMLDivElement | null>;
   document: DiagramDocument | null;
+  schemaColors: Record<string, string>;
 }) => {
   const { setViewport, getViewport } = useReactFlow();
 
@@ -125,7 +127,7 @@ const ClickableMiniMap = ({
   const nodeColor = (node: Node) => {
     const data = node.data as { entity: { color?: string | null; schema?: string | null } };
     if (data.entity?.color) return data.entity.color;
-    if (data.entity?.schema) return getSchemaColor(data.entity.schema, allSchemas);
+    if (data.entity?.schema) return getSchemaColor(data.entity.schema, allSchemas, schemaColors);
     return "#60a5fa";
   };
 
@@ -153,7 +155,7 @@ const ClickableMiniMap = ({
                   width: 8,
                   height: 8,
                   borderRadius: "50%",
-                  background: getSchemaColor(schema, allSchemas),
+                  background: getSchemaColor(schema, allSchemas, schemaColors),
                   flexShrink: 0,
                 }}
               />
@@ -192,6 +194,7 @@ export const EditorCanvas = () => {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   const document = useEditorStore((s) => s.document);
+  const schemaColors = useEditorStore((s) => s.schemaColors);
   const nodes = useEditorStore((s) => s.nodes);
   const edges = useEditorStore((s) => s.edges);
   const searchOpen = useEditorStore((s) => s.searchOpen);
@@ -375,7 +378,7 @@ export const EditorCanvas = () => {
       >
         <Background />
         <Controls />
-        <ClickableMiniMap containerRef={containerRef} document={document} />
+        <ClickableMiniMap containerRef={containerRef} document={document} schemaColors={schemaColors} />
         {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
         {contextMenu && (
           <CanvasContextMenu

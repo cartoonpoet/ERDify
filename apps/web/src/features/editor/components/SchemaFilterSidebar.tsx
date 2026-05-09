@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useEditorStore } from "../stores/useEditorStore";
 import { getSchemaColor, getSchemasFromDocument } from "../../../shared/utils/schema-colors";
 
@@ -7,6 +8,8 @@ export const SchemaFilterSidebar = () => {
   const expanded = useEditorStore((s) => s.schemaFilterExpanded);
   const toggleSchema = useEditorStore((s) => s.toggleSchemaVisibility);
   const setExpanded = useEditorStore((s) => s.setSchemaFilterExpanded);
+  const schemaColors = useEditorStore((s) => s.schemaColors);
+  const setSchemaColor = useEditorStore((s) => s.setSchemaColor);
 
   if (!document) return null;
 
@@ -84,13 +87,14 @@ export const SchemaFilterSidebar = () => {
 
           {/* Per-schema */}
           {schemas.map((schema) => (
-            <FilterRow
+            <ColorableFilterRow
               key={schema}
-              color={getSchemaColor(schema, schemas)}
+              color={getSchemaColor(schema, schemas, schemaColors)}
               label={schema}
               count={document.entities.filter((e) => e.schema === schema).length}
               checked={!hiddenSchemas.has(schema)}
               onClick={() => toggleSchema(schema)}
+              onColorChange={(color) => setSchemaColor(schema, color)}
             />
           ))}
 
@@ -120,11 +124,77 @@ export const SchemaFilterSidebar = () => {
                 opacity: hiddenSchemas.has(schema) ? 0.3 : 1,
               }}
             >
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: getSchemaColor(schema, schemas) }} />
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: getSchemaColor(schema, schemas, schemaColors) }} />
             </div>
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+const ColorableFilterRow = ({
+  color, label, count, checked, onClick, onColorChange,
+}: {
+  color: string;
+  label: string;
+  count: number;
+  checked: boolean;
+  onClick: () => void;
+  onColorChange: (color: string) => void;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div
+      style={{
+        display: "flex", alignItems: "center", gap: 7,
+        padding: "5px 4px", borderRadius: 6,
+      }}
+    >
+      {/* 가시성 토글 체크박스 */}
+      <div
+        onClick={onClick}
+        style={{
+          width: 13, height: 13, borderRadius: 3,
+          border: `1.5px solid ${checked ? color : "#CBD2D9"}`,
+          background: checked ? color : "transparent",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0, cursor: "pointer",
+        }}
+      >
+        {checked && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+      </div>
+
+      {/* 색상 변경 버튼 */}
+      <div
+        title="색상 변경"
+        onClick={() => inputRef.current?.click()}
+        style={{
+          width: 7, height: 7, borderRadius: "50%",
+          background: color, flexShrink: 0, cursor: "pointer",
+          outline: "2px solid transparent",
+          transition: "outline-color .12s",
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.outlineColor = color; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.outlineColor = "transparent"; }}
+      />
+      <input
+        ref={inputRef}
+        type="color"
+        value={color}
+        onChange={(e) => onColorChange(e.target.value)}
+        style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
+        aria-label={`${label} 스키마 색상`}
+      />
+
+      <span
+        onClick={onClick}
+        style={{ fontSize: 12, color: "#1C2B33", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}
+      >
+        {label}
+      </span>
+      <span style={{ fontSize: 10, color: "#5D6C7B" }}>{count}</span>
     </div>
   );
 };

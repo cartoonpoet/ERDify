@@ -11,7 +11,12 @@ export const SCHEMA_PALETTE = [
   "#6b7280",
 ] as const;
 
-export function getSchemaColor(schemaName: string, allSchemas: string[]): string {
+export function getSchemaColor(
+  schemaName: string,
+  allSchemas: string[],
+  overrides: Record<string, string> = {}
+): string {
+  if (overrides[schemaName]) return overrides[schemaName];
   const sorted = [...allSchemas].sort();
   const index = sorted.indexOf(schemaName);
   if (index === -1) return "#6b7280";

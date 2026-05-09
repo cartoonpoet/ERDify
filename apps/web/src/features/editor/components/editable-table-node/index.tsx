@@ -29,6 +29,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
   const setSelectedEntity = useEditorStore((s) => s.setSelectedEntity);
   const canEdit = useEditorStore((s) => s.canEdit);
   const document = useEditorStore((s) => s.document);
+  const schemaColors = useEditorStore((s) => s.schemaColors);
 
   const fkColumnIds = new Set(
     document?.relationships.flatMap((r) => [...r.sourceColumnIds, ...r.targetColumnIds]) ?? []
@@ -36,7 +37,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
   const entityIndexes = document?.indexes.filter((i) => i.entityId === entity.id) ?? [];
 
   const allSchemas = document ? getSchemasFromDocument(document.entities) : [];
-  const schemaColor = entity.schema ? getSchemaColor(entity.schema, allSchemas) : null;
+  const schemaColor = entity.schema ? getSchemaColor(entity.schema, allSchemas, schemaColors) : null;
 
   const borderColor = collaboratorColor ?? (selected ? "var(--color-primary, #0064E0)" : "#d1d5db");
   const boxShadow = collaboratorColor
