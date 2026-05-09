@@ -29,11 +29,13 @@ const { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, mockSubscribe
     const mockSetCollaborators = vi.fn();
     const mockSubscribeUnsub = vi.fn();
     const mockSubscribe = vi.fn(() => mockSubscribeUnsub);
+    const mockGetState = vi.fn(() => ({ isDirty: false, document: null }));
+    const mockSetState = vi.fn();
     const storeHook = Object.assign(
       vi.fn((selector: (s: { document: null; setDocument: typeof mockSetDocument; setCollaborators: typeof mockSetCollaborators }) => unknown) =>
         selector({ document: null, setDocument: mockSetDocument, setCollaborators: mockSetCollaborators })
       ),
-      { subscribe: mockSubscribe }
+      { subscribe: mockSubscribe, getState: mockGetState, setState: mockSetState }
     );
     return { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, mockSubscribe, storeHook };
   });
