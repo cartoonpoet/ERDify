@@ -13,5 +13,5 @@ COPY apps/api/docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 EXPOSE 4000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=3 \
-  CMD wget -q -O /dev/null http://localhost:4000/health || exit 1
+  CMD wget -q -O /dev/null http://localhost:4000/api/health || exit 1
 ENTRYPOINT ["/entrypoint.sh"]
