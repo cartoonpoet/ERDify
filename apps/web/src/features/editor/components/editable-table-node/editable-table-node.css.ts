@@ -1,5 +1,5 @@
 import { style } from "@vanilla-extract/css";
-import { vars } from "../../../design-system/tokens.css";
+import { vars } from "../../../../design-system/tokens.css";
 
 export const headerEditRow = style({
   background: vars.color.primary,

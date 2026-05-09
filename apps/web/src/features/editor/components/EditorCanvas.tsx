@@ -9,7 +9,7 @@ import type { DiagramRelationship, DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "../stores/useEditorStore";
 import type { EditableTableNodeType, UnmatchedPkInput } from "../stores/useEditorStore";
 import { getSchemaColor, getSchemasFromDocument } from "../../../shared/utils/schema-colors";
-import { EditableTableNode } from "./EditableTableNode";
+import { EditableTableNode } from "./editable-table-node";
 import { CardinalityEdge } from "./CardinalityEdge";
 import { SearchPanel } from "./SearchPanel";
 
