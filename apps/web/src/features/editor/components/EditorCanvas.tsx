@@ -132,7 +132,7 @@ const ClickableMiniMap = ({
   };
 
   return (
-    <div style={{ position: "absolute", bottom: 56, right: 8, display: "flex", flexDirection: "column", gap: 0 }}>
+    <div style={{ position: "absolute", bottom: 56, right: 8, display: "flex", flexDirection: "column", gap: 0, zIndex: 5 }}>
       {/* 스키마 범례 */}
       {allSchemas.length > 0 && (
         <div

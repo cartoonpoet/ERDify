@@ -211,7 +211,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           aria-label={`${entity.name} 테이블 삭제`}
           title="테이블 삭제"
         >
-          삭제
+          ✕
         </button>
       </div>
 

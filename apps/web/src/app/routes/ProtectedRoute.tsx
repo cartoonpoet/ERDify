@@ -7,7 +7,7 @@ export const ProtectedRoute = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
 
-  const { isError, isPending } = useQuery({
+  const { isPending } = useQuery({
     queryKey: ["auth-check"],
     queryFn: async () => {
       const user = await getMe();

@@ -25,20 +25,23 @@ export const tableNameInput = style({
 
 export const deleteEntityBtn = style({
   flexShrink: 0,
+  width: 20,
+  height: 20,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   background: "rgba(255,255,255,0.15)",
-  border: "1px solid rgba(255,255,255,0.4)",
-  borderRadius: 4,
-  color: "#ffffff",
+  border: "none",
+  borderRadius: "50%",
+  color: "rgba(255,255,255,0.75)",
   cursor: "pointer",
-  fontSize: 11,
-  fontWeight: 600,
+  fontSize: 13,
   lineHeight: 1,
-  padding: "2px 6px",
-  whiteSpace: "nowrap",
+  padding: 0,
   selectors: {
     "&:hover": {
       background: vars.color.error,
-      borderColor: vars.color.error,
+      color: "#ffffff",
     },
     "&:focus-visible": {
       outline: `2px solid #fff`,
@@ -196,61 +199,6 @@ export const addColumnBtn = style({
 
 export const addColumnWrapper = style({
   padding: "4px 8px",
-});
-
-export const colorPickerWrapper = style({
-  position: "relative",
-  flexShrink: 0,
-});
-
-export const colorSwatch = style({
-  width: 16,
-  height: 16,
-  borderRadius: 3,
-  border: "2px solid rgba(255,255,255,0.5)",
-  cursor: "pointer",
-  padding: 0,
-  flexShrink: 0,
-  selectors: {
-    "&:hover": { borderColor: "#ffffff" },
-    "&:focus-visible": {
-      outline: `2px solid #fff`,
-      outlineOffset: 2,
-    },
-  },
-});
-
-export const colorDropdown = style({
-  position: "absolute",
-  top: "calc(100% + 4px)",
-  left: 0,
-  background: "#1f2937",
-  border: "1px solid rgba(255,255,255,0.15)",
-  borderRadius: 6,
-  boxShadow: vars.shadow.lg,
-  zIndex: 9999,
-  padding: 6,
-  display: "flex",
-  gap: 4,
-  flexWrap: "wrap",
-  width: 116,
-});
-
-export const colorOption = style({
-  width: 20,
-  height: 20,
-  borderRadius: 4,
-  border: "2px solid transparent",
-  cursor: "pointer",
-  padding: 0,
-  flexShrink: 0,
-  selectors: {
-    "&:hover": { transform: "scale(1.2)" },
-    "&:focus-visible": {
-      outline: "2px solid #fff",
-      outlineOffset: 2,
-    },
-  },
 });
 
 export const collaboratorDot = style({
