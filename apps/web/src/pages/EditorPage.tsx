@@ -34,7 +34,7 @@ export const EditorPage = () => {
   const [showMcpActivity, setShowMcpActivity] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
-  const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen } = useEditorStore();
+  const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen, undo, canEdit } = useEditorStore();
 
   const mcpSeenAt = diagramId
     ? (() => {
@@ -60,14 +60,22 @@ export const EditorPage = () => {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isEditingText = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+
       if ((e.ctrlKey || e.metaKey) && e.key === "f") {
         e.preventDefault();
         setSearchOpen(true);
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && canEdit && !isEditingText) {
+        e.preventDefault();
+        undo();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [setSearchOpen]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setSearchOpen, undo, canEdit]);
 
   useRealtimeCollaboration(diagramId ?? "");
   useDiagramAutosave(diagramId ?? "");

@@ -4,7 +4,7 @@ import { Link, useParams, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { MoreVertical, Share2, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
 import { listDiagrams } from "@/api/diagrams.api";
 import { listProjects } from "@/api/projects.api";
 import { getMe } from "@/api/auth.api";
@@ -19,6 +19,7 @@ import {
   ctxBtn, ctxMenu, ctxItem, ctxItemDanger, ctxDivider,
 } from "./DiagramGrid.css";
 import { ShareDiagramModal } from "@/components/ShareDiagramModal";
+import { EditDiagramModal } from "@/components/EditDiagramModal";
 
 type FilterType = "all" | "recent" | "mine";
 
@@ -83,6 +84,7 @@ export const DiagramGrid = () => {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [shareDiagramItem, setShareDiagramItem] = useState<DiagramResponse | null>(null);
+  const [editDiagramItem, setEditDiagramItem] = useState<DiagramResponse | null>(null);
 
   const filtered = applyFilter(diagrams, activeFilter, currentUserId, searchQuery || undefined);
 
@@ -170,6 +172,15 @@ export const DiagramGrid = () => {
                   <button
                     className={ctxItem}
                     onClick={() => {
+                      setEditDiagramItem(diagram);
+                      setMenuOpenId(null);
+                    }}
+                  >
+                    <Pencil size={13} aria-hidden="true" /> 수정
+                  </button>
+                  <button
+                    className={ctxItem}
+                    onClick={() => {
                       setShareDiagramItem(diagram);
                       setMenuOpenId(null);
                     }}
@@ -207,6 +218,14 @@ export const DiagramGrid = () => {
           initialShareToken={shareDiagramItem.shareToken}
           initialExpiresAt={shareDiagramItem.shareExpiresAt}
           onClose={() => setShareDiagramItem(null)}
+        />
+      )}
+      {editDiagramItem && (
+        <EditDiagramModal
+          open={!!editDiagramItem}
+          diagram={editDiagramItem}
+          projectName={projectName ?? ""}
+          onClose={() => setEditDiagramItem(null)}
         />
       )}
     </div>

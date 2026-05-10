@@ -2,9 +2,9 @@ import { randomUUID } from "@/utils/uuid";
 import { useRef, useState, useMemo } from "react";
 import type { MouseEvent } from "react";
 import { ReactFlow, Background, Controls, MiniMap, useReactFlow } from "@xyflow/react";
-import type { Node, Edge, EdgeChange, NodeChange, NodeSelectionChange, Connection } from "@xyflow/react";
+import type { Node, Edge, EdgeChange, NodeChange, NodeSelectionChange, NodeRemoveChange, Connection } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { updateEntityPosition, addRelationship, removeRelationship } from "@erdify/domain";
+import { updateEntityPosition, addRelationship, removeRelationship, removeEntity } from "@erdify/domain";
 import type { DiagramRelationship, DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "@/store/useEditorStore";
 import type { EditableTableNodeType, UnmatchedPkInput } from "@/store/useEditorStore";
@@ -270,10 +270,19 @@ export const EditorCanvas = () => {
 
   function onNodesChange(changes: NodeChange<EditableTableNodeType>[]) {
     applyNodeChanges(changes);
+
     const selectionChanges = changes.filter((c): c is NodeSelectionChange => c.type === "select");
     if (selectionChanges.length > 0) {
       const selected = selectionChanges.find((c) => c.selected);
       setSelectedEntity(selected?.id ?? null);
+    }
+
+    if (canEdit) {
+      const removeChanges = changes.filter((c): c is NodeRemoveChange => c.type === "remove");
+      if (removeChanges.length > 0) {
+        applyCommand((doc) => removeChanges.reduce((d, c) => removeEntity(d, c.id), doc));
+        setSelectedEntity(null);
+      }
     }
   }
 
@@ -370,7 +379,8 @@ export const EditorCanvas = () => {
             clientY: event.clientY,
           });
         }}
-        deleteKeyCode="Delete"
+        deleteKeyCode={["Delete", "Backspace"]}
+        multiSelectionKeyCode={["Control", "Meta"]}
         zoomOnScroll={false}
         panOnScroll
         fitView
