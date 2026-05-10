@@ -238,7 +238,9 @@ jobs:
           script: |
             echo "$DEPLOY_TOKEN" | sudo docker login ghcr.io -u "$GH_ACTOR" --password-stdin
             cd /opt/erdify/repo
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
+            git clean -fd
             chmod +x scripts/setup.sh scripts/deploy.sh
             bash scripts/setup.sh
             bash scripts/deploy.sh
