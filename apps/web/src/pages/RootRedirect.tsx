@@ -13,8 +13,8 @@ export const RootRedirect = () => {
   });
 
   if (isLoading) return null;
-  const firstOrg = orgs[0];
-  if (firstOrg) return <Navigate to={`/${firstOrg.id}`} replace />;
+  const firstOrg = Array.isArray(orgs) ? orgs[0] : undefined;
+  if (firstOrg?.id) return <Navigate to={`/${firstOrg.id}`} replace />;
 
   return (
     <>
