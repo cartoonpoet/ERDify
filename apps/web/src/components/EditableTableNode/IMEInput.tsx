@@ -1,32 +1,34 @@
-import { useState, useRef, useEffect } from "react";
-import type { InputHTMLAttributes, ChangeEvent, CompositionEvent } from "react";
+import { useRef, useEffect } from "react";
+import type { InputHTMLAttributes } from "react";
 
-interface IMEInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> {
+interface IMEInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "value" | "defaultValue"> {
   value: string;
   onChange: (value: string) => void;
 }
 
 export const IMEInput = ({ value, onChange, ...props }: IMEInputProps) => {
-  const [local, setLocal] = useState(value);
-  const composing = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const composingRef = useRef(false);
 
   useEffect(() => {
-    if (!composing.current) setLocal(value);
+    if (!composingRef.current && inputRef.current && inputRef.current.value !== value) {
+      inputRef.current.value = value;
+    }
   }, [value]);
 
   return (
     <input
       {...props}
-      value={local}
-      onChange={(e: ChangeEvent<HTMLInputElement>) => {
-        setLocal(e.target.value);
-        if (!composing.current) onChange(e.target.value);
+      ref={inputRef}
+      defaultValue={value}
+      onChange={(e) => {
+        if (!composingRef.current) onChange(e.target.value);
       }}
       onCompositionStart={() => {
-        composing.current = true;
+        composingRef.current = true;
       }}
-      onCompositionEnd={(e: CompositionEvent<HTMLInputElement>) => {
-        composing.current = false;
+      onCompositionEnd={(e) => {
+        composingRef.current = false;
         onChange(e.currentTarget.value);
       }}
     />
