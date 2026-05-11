@@ -4,7 +4,7 @@ import SiteHeader from '../components/SiteHeader.astro';
 interface Props {
   title?: string;
   description?: string;
-  activePage?: 'overview' | 'mcp' | 'api';
+  activePage?: 'overview' | 'mcp' | 'cli' | 'api';
 }
 const {
   title = 'Developer Center — ERDify',
@@ -25,6 +25,12 @@ const nav = [
     group: 'MCP 연동',
     items: [
       { label: 'MCP 가이드', href: '/docs/mcp-integration', key: 'mcp' },
+    ],
+  },
+  {
+    group: 'CLI',
+    items: [
+      { label: 'CLI 가이드', href: '/docs/cli', key: 'cli' },
     ],
   },
   {

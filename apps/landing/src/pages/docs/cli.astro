@@ -1,0 +1,347 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+---
+
+<DocsLayout title="CLI 가이드 — ERDify Developer Center" activePage="cli"
+  description="@erdify/cli — 터미널에서 ERD를 직접 제어하는 커맨드라인 도구">
+
+  <div class="page-header">
+    <h1>CLI 가이드</h1>
+    <p class="page-lead"><code>@erdify/cli</code>를 설치하면 터미널에서 다이어그램 조회·수정·DDL 추출을 바로 실행할 수 있습니다. 스크립트 자동화, CI/CD 파이프라인, AI 도구 셸 명령에 최적화되어 있습니다.</p>
+  </div>
+
+  <!-- 설치 -->
+  <section class="doc-section">
+    <h2>설치</h2>
+    <div class="code-block">
+      <div class="code-meta">
+        <span class="code-file">Terminal</span>
+        <button class="code-copy" data-copy="install">복사</button>
+      </div>
+      <pre id="copy-install">{`npm install -g @erdify/cli`}</pre>
+    </div>
+
+    <h3>로그인</h3>
+    <p>API 키를 config 파일에 저장합니다. 최초 1회만 실행하면 됩니다.</p>
+    <div class="code-block">
+      <div class="code-meta">
+        <span class="code-file">Terminal</span>
+        <button class="code-copy" data-copy="login">복사</button>
+      </div>
+      <pre id="copy-login">{`# API 키 직접 지정
+erdify login --key erd_your_api_key_here
+
+# 또는 대화형 입력
+erdify login
+
+# 현재 설정 확인
+erdify whoami`}</pre>
+    </div>
+    <div class="info-box">
+      <strong>환경변수 우선</strong>
+      <p><code>ERDIFY_API_KEY</code> 환경변수가 설정되어 있으면 config 파일보다 우선 적용됩니다. CI/CD에서 유용합니다.</p>
+    </div>
+  </section>
+
+  <!-- 조회 커맨드 -->
+  <section class="doc-section">
+    <h2>조회</h2>
+
+    <h3>목록 조회</h3>
+    <div class="code-block">
+      <div class="code-meta">
+        <span class="code-file">Terminal</span>
+        <button class="code-copy" data-copy="list">복사</button>
+      </div>
+      <pre id="copy-list">{`erdify list orgs                    # 조직 목록
+erdify list projects <orgId>        # 프로젝트 목록
+erdify list diagrams <projectId>    # 다이어그램 목록`}</pre>
+    </div>
+
+    <h3>다이어그램 상세 조회</h3>
+    <div class="code-block">
+      <div class="code-meta">
+        <span class="code-file">Terminal</span>
+        <button class="code-copy" data-copy="get">복사</button>
+      </div>
+      <pre id="copy-get">{`erdify get diagram <diagramId>      # 테이블·컬럼·관계 요약
+erdify get ddl <diagramId>          # DDL SQL 출력`}</pre>
+    </div>
+  </section>
+
+  <!-- 수정 커맨드 -->
+  <section class="doc-section">
+    <h2>수정</h2>
+
+    <h3>테이블</h3>
+    <div class="code-block">
+      <div class="code-meta">
+        <span class="code-file">Terminal</span>
+        <button class="code-copy" data-copy="table">복사</button>
+      </div>
+      <pre id="copy-table">{`erdify add table <diagramId> <name>
+erdify remove table <diagramId> <tableId>
+# alias: erdify rm table ...`}</pre>
+    </div>
+
+    <h3>컬럼</h3>
+    <div class="code-block">
+      <div class="code-meta">
+        <span class="code-file">Terminal</span>
+        <button class="code-copy" data-copy="column">복사</button>
+      </div>
+      <pre id="copy-column">{`# 추가
+erdify add column <diagramId> <tableId> <name> \\
+  --type <type>         # SQL 타입 (필수): uuid, varchar, integer, timestamp ...
+  [--pk]                # Primary Key
+  [--not-null]          # NOT NULL
+  [--unique]            # UNIQUE
+  [--default <value>]   # 기본값
+
+# 수정
+erdify update column <diagramId> <tableId> <columnId> \\
+  [--name <name>]       # 컬럼명 변경
+  [--type <type>]       # 타입 변경
+  [--pk true|false]     # PK 설정/해제
+  [--not-null true|false]
+  [--unique true|false]
+  [--default null]      # 기본값 제거
+
+# 삭제
+erdify remove column <diagramId> <tableId> <columnId>`}</pre>
+    </div>
+
+    <h3>관계 (FK)</h3>
+    <div class="code-block">
+      <div class="code-meta">
+        <span class="code-file">Terminal</span>
+        <button class="code-copy" data-copy="rel">복사</button>
+      </div>
+      <pre id="copy-rel">{`# 추가
+erdify add rel <diagramId> <srcTableId> <tgtTableId> <cardinality>
+# cardinality: one-to-one | one-to-many | many-to-one
+
+# 삭제
+erdify remove rel <diagramId> <relationshipId>`}</pre>
+    </div>
+  </section>
+
+  <!-- 실전 예시 -->
+  <section class="doc-section">
+    <h2>실전 예시 — 결제 테이블 추가</h2>
+    <div class="code-block">
+      <div class="code-meta">
+        <span class="code-file">Terminal</span>
+        <button class="code-copy" data-copy="example">복사</button>
+      </div>
+      <pre id="copy-example">{`# 1. 다이어그램 ID 확인
+erdify list orgs
+# my-org  (id: org_abc)
+erdify list projects org_abc
+# my-project  (id: proj_xyz)
+erdify list diagrams proj_xyz
+# main-erd  (id: diag_123, ...)
+
+# 2. 현재 스키마 확인
+erdify get diagram diag_123
+# Tables (1):
+#   users [tableId: tbl_users]
+
+# 3. orders 테이블 추가
+erdify add table diag_123 orders
+# Table "orders" added. tableId=tbl_orders
+
+# 4. 컬럼 추가
+erdify add column diag_123 tbl_orders id --type uuid --pk --not-null
+erdify add column diag_123 tbl_orders user_id --type uuid --not-null
+erdify add column diag_123 tbl_orders total --type "decimal(10,2)" --not-null
+erdify add column diag_123 tbl_orders created_at --type timestamp --not-null
+
+# 5. FK 관계 설정 (orders → users)
+erdify add rel diag_123 tbl_orders tbl_users many-to-one
+
+# 6. DDL 확인
+erdify get ddl diag_123`}</pre>
+    </div>
+  </section>
+
+  <!-- MCP vs CLI -->
+  <section class="doc-section">
+    <h2>MCP vs CLI</h2>
+    <table class="tool-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>MCP</th>
+          <th>CLI</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>사용 방법</td>
+          <td>AI 도구에서 자연어</td>
+          <td>터미널 직접 실행</td>
+        </tr>
+        <tr>
+          <td>토큰 소모</td>
+          <td>높음 (프로토콜 오버헤드)</td>
+          <td>없음</td>
+        </tr>
+        <tr>
+          <td>자동화</td>
+          <td>제한적</td>
+          <td>스크립트 · CI/CD 가능</td>
+        </tr>
+        <tr>
+          <td>적합한 상황</td>
+          <td>AI와 대화하며 설계</td>
+          <td>반복 작업 · 파이프라인</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="page-nav">
+    <a href="/docs/mcp-integration" class="page-nav-prev">← MCP 가이드</a>
+    <a href="/docs/api-reference" class="page-nav-next">REST API →</a>
+  </div>
+</DocsLayout>
+
+<style>
+  .page-header { margin-bottom: 48px; }
+  .page-header h1 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+  .page-lead { font-size: 16px; color: var(--text-sub); line-height: 1.7; }
+  .page-lead code {
+    font-family: monospace;
+    font-size: 14px;
+    background: rgba(0,0,0,0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--text);
+  }
+
+  .doc-section { margin-bottom: 56px; }
+  .doc-section h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .doc-section h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 24px 0 12px;
+    color: var(--text);
+  }
+  .doc-section p { font-size: 14.5px; color: var(--text-sub); line-height: 1.75; margin-bottom: 16px; }
+
+  .info-box {
+    background: #EEF4FF;
+    border: 1px solid rgba(0,100,224,0.15);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+  .info-box strong { display: block; font-size: 14px; color: var(--primary); margin-bottom: 6px; }
+  .info-box p { font-size: 13.5px; color: var(--text-sub); margin: 0; }
+  .info-box code {
+    font-family: monospace;
+    font-size: 12.5px;
+    background: rgba(0,100,224,0.1);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--primary);
+  }
+
+  .code-block {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .code-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: #1a2733;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .code-file { font-size: 11px; color: rgba(255,255,255,0.45); font-family: monospace; }
+  .code-copy {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: sans-serif;
+  }
+  .code-copy:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .code-copy--copied { border-color: #34d399 !important; color: #34d399 !important; }
+  .code-block pre {
+    margin: 0;
+    padding: 20px;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #e2e8f0;
+    background: #0f1923;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .tool-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-top: 16px;
+  }
+  .tool-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tool-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-sub);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .tool-table tr:last-child td { border-bottom: none; }
+
+  .page-nav {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  .page-nav a { font-size: 14px; font-weight: 600; color: var(--primary); }
+  .page-nav a:hover { text-decoration: underline; }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.code-copy').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.copy!;
+      const code = document.getElementById(`copy-${key}`)?.textContent ?? '';
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '✓ 복사됨';
+        btn.classList.add('code-copy--copied');
+        setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('code-copy--copied'); }, 2000);
+      });
+    });
+  });
+</script>

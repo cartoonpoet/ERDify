@@ -13,7 +13,7 @@ const APP_URL = 'http://erdify-app.kro.kr';
   <!-- HERO -->
   <section class="hero">
     <div class="container">
-      <div class="badge">✦ MCP 지원 — Cursor · Claude · Gemini · Codex</div>
+      <div class="badge">✦ MCP · CLI — Cursor · Claude · Gemini · Codex</div>
       <h1 class="hero-title">
         AI와 함께<br /><span class="highlight">스키마를 관리</span>하세요
       </h1>
@@ -193,6 +193,11 @@ const APP_URL = 'http://erdify-app.kro.kr';
           <h3>테이블 검색</h3>
           <p>Ctrl+F로 테이블·컬럼을 즉시 검색하고 캔버스에서 바로 이동합니다. 수백 개의 테이블도 빠르게 탐색하세요.</p>
         </div>
+        <div class="feature-card">
+          <div class="feature-icon">⌘</div>
+          <h3>CLI 도구</h3>
+          <p>터미널에서 ERD를 직접 제어하세요. npm으로 설치하고 API 키 하나로 테이블·컬럼·관계를 스크립트와 CI/CD에서 자동화합니다.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -220,6 +225,13 @@ const APP_URL = 'http://erdify-app.kro.kr';
           <div class="ac-mode-text">
             <span class="ac-mode-title">REST API</span>
             <span class="ac-mode-desc">직접 통합 · 자동화 · CI/CD</span>
+          </div>
+        </button>
+        <button class="ac-mode" data-mode="cli">
+          <span class="ac-mode-icon">⌘</span>
+          <div class="ac-mode-text">
+            <span class="ac-mode-title">CLI</span>
+            <span class="ac-mode-desc">터미널 직접 실행 · 스크립트 자동화</span>
           </div>
         </button>
       </div>
@@ -493,6 +505,36 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
           <a href={`${APP_URL}/settings/api`} class="it-note-link">키 발급하기 →</a>
         </div>
       </div>
+
+      <!-- ── CLI mode ── -->
+      <div class="ac-content ac-content--hidden" data-content="cli">
+        <div class="it-panel">
+          <div class="it-meta">
+            <div class="it-file-badge">💻 Terminal</div>
+            <button class="it-copy" data-copy="cli-quick">복사</button>
+          </div>
+          <pre class="it-code" id="code-cli-quick">{`# 설치
+npm install -g @erdify/cli
+erdify login --key erd_your_api_key_here
+
+# 조회
+erdify list orgs
+erdify list projects <orgId>
+erdify get diagram <diagramId>
+erdify get ddl <diagramId>
+
+# 수정
+erdify add table <diagramId> users
+erdify add column <diagramId> <tableId> id --type uuid --pk --not-null
+erdify add column <diagramId> <tableId> email --type varchar --not-null --unique
+erdify add rel <diagramId> <srcTableId> <tgtTableId> one-to-many`}</pre>
+        </div>
+        <div class="it-note">
+          <span>📦</span>
+          <span>Node.js 18 이상이 필요합니다. API 키는 <strong>설정 → API</strong>에서 발급받으세요.</span>
+          <a href="/docs/cli" class="it-note-link">CLI 문서 보기 →</a>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -584,6 +626,7 @@ print(projects)  # [{"id": ..., "name": ..., "updatedAt": ...}, ...]`}</pre>
             <li class="plan-feature--highlight">🤖 AI (MCP) 연동 — Cursor · Claude · Gemini</li>
             <li class="plan-feature--highlight">⚡ 실시간 팀 협업</li>
             <li>✓ REST API 액세스</li>
+            <li class="plan-feature--highlight">⌘ CLI 도구 (npm install -g @erdify/cli)</li>
           </ul>
           <a href={`${APP_URL}/register`} class="plan-cta plan-cta--primary">무료로 시작하기 →</a>
         </div>
