@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BrowserRouter, useNavigate } from "react-router-dom";
 import type { AxiosError } from "axios";
 import { setNavigate } from "@/api/httpClient";
+import { UpdateBanner } from "@/components/UpdateBanner";
 
 const NavigateSetter = () => {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ export const AppProviders = ({ children }: PropsWithChildren) => {
       <QueryClientProvider client={queryClient}>
         <NavigateSetter />
         {children}
+        <UpdateBanner />
       </QueryClientProvider>
     </BrowserRouter>
   );

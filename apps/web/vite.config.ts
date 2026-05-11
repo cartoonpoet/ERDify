@@ -1,11 +1,24 @@
 import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
 import react from "@vitejs/plugin-react";
 import wasm from "vite-plugin-wasm";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import path from "path";
+import { writeFileSync } from "fs";
+
+const buildTime = Date.now();
+
+const versionPlugin: Plugin = {
+  name: "version-file",
+  closeBundle() {
+    writeFileSync("dist/version.json", JSON.stringify({ buildTime }));
+  },
+};
 
 export default defineConfig({
-  plugins: [wasm(), react(), vanillaExtractPlugin()],
+  plugins: [wasm(), react(), vanillaExtractPlugin(), versionPlugin],
+  define: {
+    __BUILD_TIME__: buildTime,
+  },
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },
   },
