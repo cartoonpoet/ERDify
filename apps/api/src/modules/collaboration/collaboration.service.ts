@@ -82,7 +82,11 @@ export class CollaborationService {
     if (room.presence.size === 0) {
       clearTimeout(room.persistTimer);
       await this.persistNow(diagramId);
-      this.rooms.delete(diagramId);
+      // Recheck after async persist: a reconnecting client may have re-joined
+      // during the DB write and added itself back to room.presence.
+      if (room.presence.size === 0) {
+        this.rooms.delete(diagramId);
+      }
     }
   }
 
