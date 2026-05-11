@@ -1,6 +1,6 @@
 import { Handle, Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
-import type { ChangeEvent } from "react";
+import { IMEInput } from "./IMEInput";
 import {
   addColumn,
   addIndex,
@@ -186,22 +186,18 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
 
       {/* 헤더 */}
       <div className={css.headerEditRow} style={{ background: entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR, borderRadius: 0 }}>
-        <input
+        <IMEInput
           className={`${css.tableCommentInput} nodrag`}
           value={entity.comment ?? ""}
           placeholder="논리명 (선택)"
           aria-label="테이블 논리명"
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            applyCommand((doc) => updateEntityComment(doc, entity.id, e.target.value || null))
-          }
+          onChange={(v) => applyCommand((doc) => updateEntityComment(doc, entity.id, v || null))}
         />
-        <input
+        <IMEInput
           className={`${css.tableNameInput} nodrag`}
           value={entity.name}
           aria-label="테이블명"
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            applyCommand((doc) => renameEntity(doc, entity.id, e.target.value))
-          }
+          onChange={(v) => applyCommand((doc) => renameEntity(doc, entity.id, v))}
         />
         <button
           type="button"
@@ -273,23 +269,19 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
             />
           </div>
           {/* 논리명 */}
-          <input
+          <IMEInput
             className={`${css.logicalNameInput} nodrag`}
             value={col.comment ?? ""}
             placeholder="논리명..."
             aria-label={`${col.name} 논리명`}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              applyCommand((doc) => updateColumn(doc, entity.id, col.id, { comment: e.target.value || null }))
-            }
+            onChange={(v) => applyCommand((doc) => updateColumn(doc, entity.id, col.id, { comment: v || null }))}
           />
           {/* 컬럼명 */}
-          <input
+          <IMEInput
             className={`${css.columnNameInput} nodrag`}
             value={col.name}
             aria-label="컬럼명"
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: e.target.value }))
-            }
+            onChange={(v) => applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: v }))}
           />
           {/* 타입 */}
           <TypeSelect
@@ -344,14 +336,12 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
 
         {entityIndexes.map((idx) => (
           <div key={idx.id} className={css.indexRow}>
-            <input
+            <IMEInput
               className={`${css.indexNameInput} nodrag`}
               value={idx.name}
               placeholder="인덱스명..."
               aria-label="인덱스명"
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                applyCommand((doc) => updateIndex(doc, idx.id, { name: e.target.value }))
-              }
+              onChange={(v) => applyCommand((doc) => updateIndex(doc, idx.id, { name: v }))}
             />
             <IndexColumnSelect
               entityColumns={entity.columns}
