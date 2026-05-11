@@ -14,6 +14,17 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-flow': ['@xyflow/react'],
+          'vendor-automerge': ['@automerge/automerge'],
+          'vendor-axios': ['axios'],
+        },
+      },
+    },
   },
   optimizeDeps: {
     exclude: ["@automerge/automerge"]

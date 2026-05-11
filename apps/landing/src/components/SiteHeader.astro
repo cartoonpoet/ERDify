@@ -152,4 +152,21 @@ const APP_URL = 'http://erdify-app.kro.kr';
       mobileNav.setAttribute('aria-hidden', 'true');
     });
   });
+
+  // Prefetch app pages on first hover so navigation feels instant
+  let prefetched = false;
+  function prefetchApp() {
+    if (prefetched) return;
+    prefetched = true;
+    for (const path of ['/login', '/register']) {
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = `http://erdify-app.kro.kr${path}`;
+      document.head.appendChild(link);
+    }
+  }
+  document.querySelectorAll<HTMLAnchorElement>('a[href*="erdify-app.kro.kr"]').forEach((a) => {
+    a.addEventListener('mouseenter', prefetchApp, { once: true });
+    a.addEventListener('touchstart', prefetchApp, { once: true, passive: true });
+  });
 </script>

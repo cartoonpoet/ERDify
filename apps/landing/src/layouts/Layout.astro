@@ -17,6 +17,9 @@ const {
     <meta name="description" content={description} />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Pre-warm connection to app server so navigation feels instant -->
+    <link rel="preconnect" href="http://erdify-app.kro.kr" crossorigin />
+    <link rel="dns-prefetch" href="http://erdify-app.kro.kr" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
     <link
       rel="stylesheet"
