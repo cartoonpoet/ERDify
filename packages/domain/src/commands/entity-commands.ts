@@ -1,4 +1,4 @@
-import type { DiagramDocument, DiagramEntity, EntityPosition } from "../types/index.js";
+import type { DiagramDocument, DiagramEntity, EntityPosition, SeedRow } from "../types/index.js";
 
 export function addEntity(
   doc: DiagramDocument,
@@ -64,6 +64,13 @@ export function setEntitySchema(
   return {
     ...doc,
     entities: doc.entities.map((e) => (e.id === entityId ? { ...e, schema } : e))
+  };
+}
+
+export function setSeedData(doc: DiagramDocument, entityId: string, rows: SeedRow[]): DiagramDocument {
+  return {
+    ...doc,
+    entities: doc.entities.map((e) => e.id === entityId ? { ...e, seedData: rows } : e),
   };
 }
 

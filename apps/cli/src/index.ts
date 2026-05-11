@@ -6,6 +6,8 @@ import {
   addEntity,
   addRelationship,
   generateDdl,
+  generateSeedSql,
+  generateSetupSql,
   removeColumn,
   removeEntity,
   removeRelationship,
@@ -155,6 +157,24 @@ get
     const diagram = await client.getDiagram(diagramId).catch(handleError);
     const ddl = generateDdl(diagram.content).trim() || "-- No tables defined";
     console.log(ddl);
+  });
+
+get
+  .command("seed <diagramId>")
+  .description("Generate INSERT seed SQL for a diagram")
+  .action(async (diagramId: string) => {
+    const diagram = await client.getDiagram(diagramId).catch(handleError);
+    const sql = generateSeedSql(diagram.content).trim() || "-- No seed data defined";
+    console.log(sql);
+  });
+
+get
+  .command("setup <diagramId>")
+  .description("Generate DDL + seed SQL (ready to pipe into your DB)")
+  .action(async (diagramId: string) => {
+    const diagram = await client.getDiagram(diagramId).catch(handleError);
+    const sql = generateSetupSql(diagram.content).trim() || "-- Nothing to generate";
+    console.log(sql);
   });
 
 // ── add ───────────────────────────────────────────────────────────────────────

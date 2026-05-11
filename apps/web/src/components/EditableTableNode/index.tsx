@@ -9,10 +9,12 @@ import {
   removeIndex,
   renameEntity,
   setEntitySchema,
+  setSeedData,
   updateColumn,
   updateEntityComment,
   updateIndex,
 } from "@erdify/domain";
+import type { SeedRow } from "@erdify/domain";
 import { useEditorStore } from "@/store/useEditorStore";
 import type { EditableTableNodeType } from "@/store/useEditorStore";
 import { getSchemaColor, getSchemasFromDocument } from "@/utils/schema-colors";
@@ -383,6 +385,81 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           </div>
         )}
       </div>
+
+      {/* 시드 데이터 섹션 */}
+      {(() => {
+        const sortedCols = [...entity.columns].sort((a, b) => a.ordinal - b.ordinal);
+        const seedRows = entity.seedData ?? [];
+
+        const updateRow = (rowIdx: number, colId: string, value: string) => {
+          const next = seedRows.map((r, i) => i === rowIdx ? { ...r, [colId]: value } : r);
+          applyCommand((doc) => setSeedData(doc, entity.id, next));
+        };
+
+        const addRow = () => {
+          applyCommand((doc) => setSeedData(doc, entity.id, [...seedRows, {} as SeedRow]));
+        };
+
+        const removeRow = (rowIdx: number) => {
+          applyCommand((doc) => setSeedData(doc, entity.id, seedRows.filter((_, i) => i !== rowIdx)));
+        };
+
+        return (
+          <div className={css.indexSection}>
+            <div className={css.indexSectionHeader}>
+              <span className={css.indexSectionLabel}>Seed Data</span>
+              <button type="button" className={`${css.indexAddBtn} nodrag`} onClick={addRow} aria-label="시드 데이터 행 추가">
+                + 추가
+              </button>
+            </div>
+
+            {sortedCols.length > 0 && seedRows.length > 0 && (
+              <div style={{ overflowX: "auto" }}>
+                {/* 컬럼 헤더 */}
+                <div style={{ display: "flex", gap: 3, marginBottom: 3, paddingLeft: 2 }}>
+                  {sortedCols.map((col) => (
+                    <div key={col.id} style={{ width: 72, flexShrink: 0, fontSize: 8, color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {col.name}
+                    </div>
+                  ))}
+                  <div style={{ width: 18 }} />
+                </div>
+                {/* 데이터 행 */}
+                {seedRows.map((row, rowIdx) => (
+                  <div key={rowIdx} style={{ display: "flex", gap: 3, marginBottom: 3, alignItems: "center" }}>
+                    {sortedCols.map((col) => (
+                      <input
+                        key={col.id}
+                        className="nodrag"
+                        style={{ width: 72, flexShrink: 0, fontSize: 10, padding: "2px 4px", border: "1px solid #e5e7eb", borderRadius: 3, fontFamily: "monospace", background: "#fff", color: "#111827" }}
+                        value={row[col.id] ?? ""}
+                        placeholder="NULL"
+                        aria-label={`${entity.name}.${col.name} 시드값`}
+                        onChange={(e) => updateRow(rowIdx, col.id, e.target.value)}
+                      />
+                    ))}
+                    <button
+                      type="button"
+                      className={`${css.indexDeleteBtn} nodrag`}
+                      onClick={() => removeRow(rowIdx)}
+                      aria-label={`${rowIdx + 1}번 행 삭제`}
+                      title="행 삭제"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {seedRows.length === 0 && (
+              <div style={{ fontSize: 9, color: "#c4c9d4", fontStyle: "italic", paddingLeft: 2 }}>
+                시드 데이터 없음
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <Handle type="source" position={Position.Right} />
     </div>

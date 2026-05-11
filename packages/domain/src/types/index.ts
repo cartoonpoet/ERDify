@@ -10,5 +10,6 @@ export type {
   DiagramValidationResult,
   EntityPosition,
   ReferentialAction,
-  RelationshipCardinality
+  RelationshipCardinality,
+  SeedRow,
 } from "./diagram.type.js";

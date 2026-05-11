@@ -16,6 +16,9 @@ export interface DiagramColumn {
   ordinal: number;
 }
 
+// columnId → value (빈 문자열은 NULL로 처리)
+export type SeedRow = Record<string, string>;
+
 export interface DiagramEntity {
   id: string;
   schema?: string | null;
@@ -24,6 +27,7 @@ export interface DiagramEntity {
   comment: string | null;
   color: string | null;
   columns: DiagramColumn[];
+  seedData?: SeedRow[];
 }
 
 export interface DiagramRelationship {
