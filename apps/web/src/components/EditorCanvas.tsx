@@ -380,7 +380,9 @@ export const EditorCanvas = () => {
           });
         }}
         deleteKeyCode={["Delete", "Backspace"]}
-        multiSelectionKeyCode={["Control", "Meta"]}
+        multiSelectionKeyCode={["Control", "Meta", "Shift"]}
+        selectionOnDrag
+        panOnDrag={false}
         zoomOnScroll={false}
         panOnScroll
         fitView
