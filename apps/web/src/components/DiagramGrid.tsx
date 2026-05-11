@@ -224,7 +224,6 @@ export const DiagramGrid = () => {
         <EditDiagramModal
           open={!!editDiagramItem}
           diagram={editDiagramItem}
-          projectName={projectName ?? ""}
           onClose={() => setEditDiagramItem(null)}
         />
       )}

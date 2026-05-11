@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Modal, Button, Input } from "@/components";
 import { updateDiagram } from "@/api/diagrams.api";
-import { updateProject } from "@/api/projects.api";
 import type { DiagramResponse } from "@/api/diagrams.api";
 import { form, footer, selectInput } from "./modal-form.css";
 
@@ -10,41 +9,30 @@ interface EditDiagramModalProps {
   open: boolean;
   onClose: () => void;
   diagram: DiagramResponse;
-  projectName: string;
 }
 
-export const EditDiagramModal = ({ open, onClose, diagram, projectName }: EditDiagramModalProps) => {
+export const EditDiagramModal = ({ open, onClose, diagram }: EditDiagramModalProps) => {
   const queryClient = useQueryClient();
 
   const [name, setName] = useState(diagram.name);
   const [dialect, setDialect] = useState(diagram.content.dialect);
-  const [projName, setProjName] = useState(projectName);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
-    const trimmedProjName = projName.trim();
-    if (!trimmedName || !trimmedProjName) return;
+    if (!trimmedName) return;
 
     setLoading(true);
     setError(null);
     try {
-      const diagramChanged = trimmedName !== diagram.name || dialect !== diagram.content.dialect;
-      const projectChanged = trimmedProjName !== projectName;
-
-      if (diagramChanged) {
+      if (trimmedName !== diagram.name || dialect !== diagram.content.dialect) {
         await updateDiagram(diagram.id, {
           name: trimmedName,
           content: { ...diagram.content, dialect },
         });
         queryClient.invalidateQueries({ queryKey: ["diagrams", diagram.projectId] });
-      }
-
-      if (projectChanged) {
-        await updateProject(diagram.organizationId, diagram.projectId, { name: trimmedProjName });
-        queryClient.invalidateQueries({ queryKey: ["projects", diagram.organizationId] });
       }
 
       onClose();
@@ -65,6 +53,7 @@ export const EditDiagramModal = ({ open, onClose, diagram, projectName }: EditDi
           onChange={(e) => setName(e.target.value)}
           required
           autoFocus
+          {...(error ? { error } : {})}
         />
         <div>
           <label style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "4px" }}>
@@ -81,21 +70,13 @@ export const EditDiagramModal = ({ open, onClose, diagram, projectName }: EditDi
             <option value="mssql">MSSQL</option>
           </select>
         </div>
-        <Input
-          id="edit-project-name"
-          label="프로젝트 이름"
-          value={projName}
-          onChange={(e) => setProjName(e.target.value)}
-          required
-          {...(error ? { error } : {})}
-        />
         <div className={footer}>
           <Button variant="secondary" size="md" type="button" onClick={onClose}>취소</Button>
           <Button
             variant="primary"
             size="md"
             type="submit"
-            disabled={loading || !name.trim() || !projName.trim()}
+            disabled={loading || !name.trim()}
           >
             {loading ? "저장 중..." : "저장"}
           </Button>
