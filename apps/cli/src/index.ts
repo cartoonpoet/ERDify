@@ -11,13 +11,13 @@ import {
   removeRelationship,
   updateColumn,
 } from "@erdify/domain";
-import type { DiagramColumn, DiagramRelationship, RelationshipCardinality } from "@erdify/domain";
+import type { DiagramColumn, DiagramDocument, DiagramRelationship, RelationshipCardinality } from "@erdify/domain";
 import { client } from "./client.js";
 import { getApiKey, getApiUrl, readConfig, writeConfig } from "./config.js";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function formatDiagram(name: string, doc: import("@erdify/domain").DiagramDocument): string {
+function formatDiagram(name: string, doc: DiagramDocument): string {
   const lines: string[] = [`Diagram: "${name}" (${doc.dialect})`, ""];
   lines.push(`Tables (${doc.entities.length}):`);
   for (const entity of doc.entities) {

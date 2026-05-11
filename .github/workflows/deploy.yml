@@ -306,7 +306,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build CLI
-        run: pnpm --filter @erdify/cli build
+        run: pnpm turbo run build --filter=@erdify/cli
       - name: Publish to npm (skip if version already exists)
         run: |
           cd apps/cli
