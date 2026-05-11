@@ -7,8 +7,8 @@ import type { Collaborator } from "@/store/useEditorStore";
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
 export interface CollaborationSocketHandlers {
-  onInit: (bytes: number[]) => void;
-  onChange: (change: number[]) => void;
+  onInit: (bytes: number[]) => void | Promise<void>;
+  onChange: (change: number[]) => void | Promise<void>;
   onPresenceState: (presence: Collaborator[]) => void;
   onOutgoingChange: (socket: Socket) => () => void;
   onDisconnect: () => void;

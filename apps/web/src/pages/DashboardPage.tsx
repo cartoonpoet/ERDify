@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/api/auth.api";
@@ -36,6 +37,9 @@ export const DashboardPage = () => {
   const { activeModal, openModal, closeModal, searchQuery, searchProjectId, setSearch } = useDashboardStore();
   const { deleteOrg, deleteProject, deleteDiagram, handleLogout, onOrgCreated, onProjectCreated, onDiagramCreated, onDiagramImported } = useDashboardActions();
   const { menuOpen, toggleMenu, closeMenu, handleBlur } = useAvatarMenu();
+
+  // Prefetch automerge WASM in the background so the editor opens instantly
+  useEffect(() => { void import("@automerge/automerge"); }, []);
 
   // resets naturally when projectId changes — no useEffect needed
   const currentSearch = searchProjectId === projectId ? searchQuery : "";

@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import * as Automerge from "@automerge/automerge";
+import type { Doc } from "@automerge/automerge";
 import type { Socket } from "socket.io-client";
 import type { DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "@/store/useEditorStore";
@@ -10,15 +10,23 @@ import { usePresence } from "./usePresence";
 
 export type { Collaborator };
 
+// Kick off the WASM download lazily — doesn't block EditorPage from rendering
+let _amPromise: Promise<typeof import("@automerge/automerge")> | null = null;
+function loadAutomerge() {
+  _amPromise ??= import("@automerge/automerge");
+  return _amPromise;
+}
+
 export const useRealtimeCollaboration = (diagramId: string) => {
-  const amDocRef = useRef<Automerge.Doc<DiagramDocument> | null>(null);
+  const amDocRef = useRef<Doc<DiagramDocument> | null>(null);
   const isRemoteRef = useRef(false);
 
   const setDocument = useEditorStore((s) => s.setDocument);
   const setCollaborators = useEditorStore((s) => s.setCollaborators);
 
   const socketRef = useCollaborationSocket(diagramId, {
-    onInit: (bytes) => {
+    onInit: async (bytes) => {
+      const Automerge = await loadAutomerge();
       const serverDoc = Automerge.load<DiagramDocument>(Uint8Array.from(bytes));
       const { isDirty, document: localDoc } = useEditorStore.getState();
       if (isDirty && localDoc) {
@@ -41,8 +49,9 @@ export const useRealtimeCollaboration = (diagramId: string) => {
       isRemoteRef.current = false;
     },
 
-    onChange: (change) => {
+    onChange: async (change) => {
       if (!amDocRef.current) return;
+      const Automerge = await loadAutomerge();
       const [newDoc] = Automerge.applyChanges(amDocRef.current, [Uint8Array.from(change)]);
       amDocRef.current = newDoc;
       const wasDirty = useEditorStore.getState().isDirty;
@@ -55,11 +64,12 @@ export const useRealtimeCollaboration = (diagramId: string) => {
     onPresenceState: (presence) => setCollaborators(presence),
 
     onOutgoingChange: (socket: Socket) =>
-      useEditorStore.subscribe((state, prevState) => {
+      useEditorStore.subscribe(async (state, prevState) => {
         if (state.document === prevState.document) return;
         const newDoc = state.document;
         const prevDoc = prevState.document;
         if (isRemoteRef.current || !newDoc || !prevDoc || !amDocRef.current || !socket.connected) return;
+        const Automerge = await loadAutomerge();
         const newAmDoc = Automerge.change(amDocRef.current, (draft) => {
           applyDiff(draft as DiagramDocument, prevDoc, newDoc);
         });
