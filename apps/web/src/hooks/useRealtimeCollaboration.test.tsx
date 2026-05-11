@@ -92,7 +92,7 @@ describe("useRealtimeCollaboration", () => {
     expect(mockSocket.emit).toHaveBeenCalledWith("join", { diagramId: "d1" });
   });
 
-  it("calls setDocument with doc content on am:init", () => {
+  it("calls setDocument with doc content on am:init", async () => {
     renderHook(() => useRealtimeCollaboration("d1"));
 
     const doc = Automerge.from(makeEmptyDoc() as unknown as Record<string, unknown>);
@@ -101,14 +101,14 @@ describe("useRealtimeCollaboration", () => {
     const initCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
       (c: unknown[]) => c[0] === "am:init"
     );
-    act(() => { (initCall![1] as (b: number[]) => void)(Array.from(bytes)); });
+    await act(async () => { await (initCall![1] as (b: number[]) => Promise<void>)(Array.from(bytes)); });
 
     expect(mockSetDocument).toHaveBeenCalledWith(
       expect.objectContaining({ entities: [], format: "erdify.schema.v1" })
     );
   });
 
-  it("calls setDocument on am:change with updated content", () => {
+  it("calls setDocument on am:change with updated content", async () => {
     renderHook(() => useRealtimeCollaboration("d1"));
 
     const doc = Automerge.from(makeEmptyDoc() as unknown as Record<string, unknown>);
@@ -116,7 +116,7 @@ describe("useRealtimeCollaboration", () => {
     const initCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
       (c: unknown[]) => c[0] === "am:init"
     );
-    act(() => { (initCall![1] as (b: number[]) => void)(Array.from(initBytes)); });
+    await act(async () => { await (initCall![1] as (b: number[]) => Promise<void>)(Array.from(initBytes)); });
 
     const newDoc = Automerge.change(doc, (d) => {
       (d.entities as DiagramDocument["entities"]).push({
@@ -128,7 +128,7 @@ describe("useRealtimeCollaboration", () => {
     const changeCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
       (c: unknown[]) => c[0] === "am:change"
     );
-    act(() => { (changeCall![1] as (b: number[]) => void)(Array.from(change)); });
+    await act(async () => { await (changeCall![1] as (b: number[]) => Promise<void>)(Array.from(change)); });
 
     expect(mockSetDocument).toHaveBeenLastCalledWith(
       expect.objectContaining({ entities: expect.arrayContaining([expect.objectContaining({ id: "e1" })]) })
