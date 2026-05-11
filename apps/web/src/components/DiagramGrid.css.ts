@@ -66,6 +66,7 @@ export const grid = style({
 
 export const diagramCardWrapper = style({
   position: "relative",
+  alignSelf: "start",
 });
 
 export const diagramCard = style({
