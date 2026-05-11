@@ -1,4 +1,4 @@
-import type { DiagramDocument, DiagramDialect, DiagramEntity, DiagramColumn, DiagramRelationship } from "@erdify/domain";
+import type { DiagramDocument, DiagramDialect, DiagramEntity, DiagramColumn, DiagramRelationship, SeedRow } from "@erdify/domain";
 import { randomUUID as uuid } from "./uuid";
 
 function stripIdentifierQuotes(s: string): string {
@@ -258,6 +258,101 @@ function parseAlterTableFk(stmt: string): { schema: string | null; tableName: st
   return { schema, tableName, fk };
 }
 
+// Splits the inner content of a single VALUES row, stripping string quotes
+function splitInsertValues(inner: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let inString = false;
+  let stringChar = "";
+  let current = "";
+  let i = 0;
+
+  while (i < inner.length) {
+    const ch = inner[i]!;
+
+    if (!inString && (ch === "'" || ch === '"' || ch === "`")) {
+      inString = true;
+      stringChar = ch;
+      i++;
+      continue;
+    }
+
+    if (inString) {
+      if (ch === stringChar) {
+        // Handle SQL escaped quote: '' inside single-quoted strings
+        if (ch === "'" && inner[i + 1] === "'") {
+          current += "'";
+          i += 2;
+          continue;
+        }
+        inString = false;
+        i++;
+        continue;
+      }
+      current += ch;
+      i++;
+      continue;
+    }
+
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+
+    if (ch === "," && depth === 0) {
+      parts.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+    i++;
+  }
+
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+}
+
+// Finds top-level (...) groups in a VALUES clause and returns their parsed rows
+function parseInsertValuesList(valuesStr: string): string[][] {
+  const rows: string[][] = [];
+  let i = 0;
+  const s = valuesStr.trim();
+
+  while (i < s.length) {
+    while (i < s.length && s[i] !== "(") i++;
+    if (i >= s.length) break;
+
+    let depth = 0;
+    let inString = false;
+    let stringChar = "";
+    let j = i;
+
+    while (j < s.length) {
+      const ch = s[j]!;
+      if (!inString && (ch === "'" || ch === '"' || ch === "`")) {
+        inString = true;
+        stringChar = ch;
+      } else if (inString && ch === stringChar) {
+        if (ch === "'" && s[j + 1] === "'") { j += 2; continue; }
+        inString = false;
+      }
+      if (!inString) {
+        if (ch === "(") depth++;
+        else if (ch === ")") {
+          depth--;
+          if (depth === 0) {
+            rows.push(splitInsertValues(s.slice(i + 1, j)));
+            i = j + 1;
+            break;
+          }
+        }
+      }
+      j++;
+    }
+    if (j >= s.length) break;
+  }
+
+  return rows;
+}
+
 export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument {
   const cleaned = removeComments(sql);
   const statements = cleaned.split(/;|^\s*GO\s*$/im).map((s) => s.trim()).filter(Boolean);
@@ -265,6 +360,7 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
   // entityMap keyed by both "schema.table" (if schema) and "table" (fallback)
   const entityMap = new Map<string, DiagramEntity>();
   const pendingFks: { sourceSchema: string | null; sourceTable: string; fk: ParsedFK }[] = [];
+  const pendingInserts: string[] = [];
 
   const registerEntity = (entity: DiagramEntity, schema: string | null, tableName: string) => {
     if (schema) {
@@ -324,6 +420,39 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
           if (col) col.comment = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
         }
       }
+    } else if (/^INSERT\s+INTO\s+/i.test(stmt)) {
+      pendingInserts.push(stmt);
+    }
+  }
+
+  // Second pass: populate seed data from INSERT statements
+  for (const stmt of pendingInserts) {
+    const m = stmt.match(/^INSERT\s+INTO\s+([^\s(]+)\s*\(([^)]+)\)\s+VALUES\s+([\s\S]+)$/i);
+    if (!m) continue;
+
+    const { schema, name: tableName } = parseSchemaAndTable((m[1] ?? "").trim());
+    const entity = lookupEntity(schema, tableName);
+    if (!entity) continue;
+
+    const colNames = splitTopLevelCommas(m[2] ?? "").map((c) => stripIdentifierQuotes(c.trim()));
+    const valueRows = parseInsertValuesList(m[3] ?? "");
+
+    const seedRows: SeedRow[] = [];
+    for (const values of valueRows) {
+      const row: SeedRow = {};
+      for (let i = 0; i < colNames.length && i < values.length; i++) {
+        const colName = colNames[i]!;
+        const col = entity.columns.find((c) => c.name === colName);
+        if (col) {
+          const val = values[i]!;
+          if (val.toUpperCase() !== "NULL") row[col.id] = val;
+        }
+      }
+      if (Object.keys(row).length > 0) seedRows.push(row);
+    }
+
+    if (seedRows.length > 0) {
+      entity.seedData = [...(entity.seedData ?? []), ...seedRows];
     }
   }
 
