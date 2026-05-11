@@ -66,6 +66,7 @@ export const grid = style({
 
 export const diagramCardWrapper = style({
   position: "relative",
+  alignSelf: "start",
 });
 
 export const diagramCard = style({
@@ -76,7 +77,6 @@ export const diagramCard = style({
   cursor: "pointer",
   textDecoration: "none",
   display: "block",
-  height: "100%",
   transition: "box-shadow 200ms ease, transform 200ms ease",
   color: "inherit",
   selectors: {
@@ -241,6 +241,8 @@ export const newCard = style({
   fontWeight: "500",
   cursor: "pointer",
   fontFamily: vars.font.family,
+  alignSelf: "start",
+  height: "142px",
   transition: "border-color 200ms ease, color 200ms ease, background 200ms ease",
   selectors: {
     "&:hover": {
