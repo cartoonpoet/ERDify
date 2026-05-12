@@ -383,6 +383,7 @@ export const EditorCanvas = () => {
         multiSelectionKeyCode={["Control", "Meta", "Shift"]}
         selectionOnDrag
         panOnDrag={false}
+        nodesFocusable={false}
         zoomOnScroll={false}
         panOnScroll
         fitView

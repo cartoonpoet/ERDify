@@ -187,14 +187,14 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
       {/* 헤더 */}
       <div className={css.headerEditRow} style={{ background: entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR, borderRadius: 0 }}>
         <IMEInput
-          className={`${css.tableCommentInput} nodrag`}
+          className={`${css.tableCommentInput} nodrag nokey`}
           value={entity.comment ?? ""}
           placeholder="논리명 (선택)"
           aria-label="테이블 논리명"
           onChange={(v) => applyCommand((doc) => updateEntityComment(doc, entity.id, v || null))}
         />
         <IMEInput
-          className={`${css.tableNameInput} nodrag`}
+          className={`${css.tableNameInput} nodrag nokey`}
           value={entity.name}
           aria-label="테이블명"
           onChange={(v) => applyCommand((doc) => renameEntity(doc, entity.id, v))}
@@ -270,7 +270,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           </div>
           {/* 논리명 */}
           <IMEInput
-            className={`${css.logicalNameInput} nodrag`}
+            className={`${css.logicalNameInput} nodrag nokey`}
             value={col.comment ?? ""}
             placeholder="논리명..."
             aria-label={`${col.name} 논리명`}
@@ -278,7 +278,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
           />
           {/* 컬럼명 */}
           <IMEInput
-            className={`${css.columnNameInput} nodrag`}
+            className={`${css.columnNameInput} nodrag nokey`}
             value={col.name}
             aria-label="컬럼명"
             onChange={(v) => applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: v }))}
@@ -337,7 +337,7 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
         {entityIndexes.map((idx) => (
           <div key={idx.id} className={css.indexRow}>
             <IMEInput
-              className={`${css.indexNameInput} nodrag`}
+              className={`${css.indexNameInput} nodrag nokey`}
               value={idx.name}
               placeholder="인덱스명..."
               aria-label="인덱스명"
