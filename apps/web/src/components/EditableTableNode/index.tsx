@@ -418,14 +418,14 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
                 {seedRows.map((row, rowIdx) => (
                   <div key={rowIdx} style={{ display: "flex", gap: 3, marginBottom: 3, alignItems: "center" }}>
                     {sortedCols.map((col) => (
-                      <input
+                      <IMEInput
                         key={col.id}
                         className="nodrag"
                         style={{ width: 72, flexShrink: 0, fontSize: 10, padding: "2px 4px", border: "1px solid #e5e7eb", borderRadius: 3, fontFamily: "monospace", background: "#fff", color: "#111827" }}
                         value={row[col.id] ?? ""}
                         placeholder="NULL"
                         aria-label={`${entity.name}.${col.name} 시드값`}
-                        onChange={(e) => updateRow(rowIdx, col.id, e.target.value)}
+                        onChange={(v) => updateRow(rowIdx, col.id, v)}
                       />
                     ))}
                     <button

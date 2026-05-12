@@ -379,7 +379,7 @@ export const EditorCanvas = () => {
             clientY: event.clientY,
           });
         }}
-        deleteKeyCode={["Delete", "Backspace"]}
+        deleteKeyCode={["Delete"]}
         multiSelectionKeyCode={["Control", "Meta", "Shift"]}
         selectionOnDrag
         panOnDrag={false}
