@@ -8,45 +8,50 @@ interface IMEInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onC
 
 export const IMEInput = ({ value, onChange, ...props }: IMEInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const composingRef = useRef(false);
-  // Chrome fires an `input` event immediately after `compositionend` with the
-  // same committed value — we track it here to skip that redundant call so
-  // `applyCommand` isn't invoked twice for one composition.
-  const pendingCompositionValueRef = useRef<string | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
+  // Native DOM events bypass React's synthetic event system entirely.
+  // React's onChange normalization can interfere with IME composition by
+  // re-setting the DOM value mid-composition.
   useEffect(() => {
-    if (!composingRef.current && inputRef.current && inputRef.current.value !== value) {
-      inputRef.current.value = value;
-    }
+    const el = inputRef.current;
+    if (!el) return;
+
+    let composing = false;
+    // Chrome fires one extra `input` event synchronously after `compositionend`.
+    // `skipNextInput` absorbs it so we don't call onChange twice.
+    let skipNextInput = false;
+
+    const onCompositionStart = () => { composing = true; };
+    const onCompositionEnd = () => {
+      composing = false;
+      skipNextInput = true;
+      onChangeRef.current(el.value);
+    };
+    const onInput = () => {
+      if (composing) return;
+      if (skipNextInput) { skipNextInput = false; return; }
+      onChangeRef.current(el.value);
+    };
+
+    el.addEventListener("compositionstart", onCompositionStart);
+    el.addEventListener("compositionend", onCompositionEnd);
+    el.addEventListener("input", onInput);
+    return () => {
+      el.removeEventListener("compositionstart", onCompositionStart);
+      el.removeEventListener("compositionend", onCompositionEnd);
+      el.removeEventListener("input", onInput);
+    };
+  }, []);
+
+  // Sync externally-changed value (e.g. collaborator edit) only when
+  // this input doesn't have focus — never interrupt an active edit session.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el || el === document.activeElement) return;
+    if (el.value !== value) el.value = value;
   }, [value]);
 
-  return (
-    <input
-      {...props}
-      ref={inputRef}
-      defaultValue={value}
-      onCompositionStart={() => {
-        composingRef.current = true;
-      }}
-      onCompositionEnd={(e) => {
-        composingRef.current = false;
-        pendingCompositionValueRef.current = e.currentTarget.value;
-        onChange(e.currentTarget.value);
-      }}
-      onChange={(e) => {
-        if (composingRef.current) return;
-
-        const pending = pendingCompositionValueRef.current;
-        if (pending !== null) {
-          pendingCompositionValueRef.current = null;
-          // If the value matches what compositionEnd already reported,
-          // skip — this is Chrome's echo `input` event after compositionend.
-          // If it differs (e.g. space was appended), fall through to sync.
-          if (e.target.value === pending) return;
-        }
-
-        onChange(e.target.value);
-      }}
-    />
-  );
+  return <input {...props} ref={inputRef} defaultValue={value} />;
 };
