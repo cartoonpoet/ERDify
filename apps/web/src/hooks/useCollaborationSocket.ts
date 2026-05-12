@@ -36,13 +36,10 @@ export const useCollaborationSocket = (
     });
     socketRef.current = socket;
 
-    socket.on("connect", () => { console.log("[socket] connected, joining", diagramId); socket.emit("join", { diagramId }); });
-    socket.on("connect_error", (err) => console.error("[socket] connect_error", err.message));
-    socket.on("disconnect", (reason) => console.warn("[socket] disconnect", reason));
-    socket.on("error", (err) => console.error("[socket] error", err));
-    socket.on("am:init", (bytes: number[]) => { console.log("[socket] am:init", bytes.length, "bytes"); handlersRef.current.onInit(bytes); });
+    socket.on("connect", () => socket.emit("join", { diagramId }));
+    socket.on("am:init", (bytes: number[]) => handlersRef.current.onInit(bytes));
     socket.on("am:change", (change: number[]) => handlersRef.current.onChange(change));
-    socket.on("presence:state", (presence: Collaborator[]) => { console.log("[socket] presence:state", presence); handlersRef.current.onPresenceState(presence); });
+    socket.on("presence:state", (presence: Collaborator[]) => handlersRef.current.onPresenceState(presence));
 
     const unsubOutgoing = handlersRef.current.onOutgoingChange(socket);
 
