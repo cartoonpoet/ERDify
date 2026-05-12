@@ -4,10 +4,12 @@ import type { Socket } from "socket.io-client";
 import type { RefObject } from "react";
 import type { Collaborator } from "@/store/useEditorStore";
 
-const SOCKET_ORIGIN = (() => {
-  const raw = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:4000";
-  try { return new URL(raw).origin; } catch { return "http://localhost:4000"; }
-})();
+const SOCKET_ORIGIN = import.meta.env.PROD
+  ? window.location.origin
+  : (() => {
+      const raw = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:4000";
+      try { return new URL(raw).origin; } catch { return "http://localhost:4000"; }
+    })();
 
 export interface CollaborationSocketHandlers {
   onInit: (bytes: number[]) => void | Promise<void>;
