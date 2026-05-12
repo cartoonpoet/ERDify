@@ -61,6 +61,9 @@ export function applyDiff(
       if (draftEntity.color !== nextEntity.color) draftEntity.color = nextEntity.color;
       const prevCols = prevEntity?.columns ?? [];
       applyColumnDiff(draftEntity.columns as DiagramColumn[], prevCols, nextEntity.columns);
+      if (prevEntity?.seedData !== nextEntity.seedData) {
+        (draftEntity as DiagramEntity).seedData = nextEntity.seedData ? nextEntity.seedData.map((r) => ({ ...r })) : undefined;
+      }
     }
   }
 
