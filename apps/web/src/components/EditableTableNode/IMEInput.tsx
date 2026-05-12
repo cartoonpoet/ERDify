@@ -9,49 +9,58 @@ interface IMEInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onC
 export const IMEInput = ({ value, onChange, ...props }: IMEInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const onChangeRef = useRef(onChange);
+  const composingRef = useRef(false);
+  const focusedRef = useRef(false);
+  // Freeze defaultValue at mount — React's reconciler writes node.defaultValue
+  // whenever this prop changes, and any DOM attribute write during Korean IME
+  // composition on macOS cancels the in-progress syllable.
+  const initialValue = useRef(value);
+
   onChangeRef.current = onChange;
 
-  // Native DOM events bypass React's synthetic event system entirely.
-  // React's onChange normalization can interfere with IME composition by
-  // re-setting the DOM value mid-composition.
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
 
-    let composing = false;
-    // Chrome fires one extra `input` event synchronously after `compositionend`.
-    // `skipNextInput` absorbs it so we don't call onChange twice.
-    let skipNextInput = false;
-
-    const onCompositionStart = () => { composing = true; };
-    const onCompositionEnd = () => {
-      composing = false;
-      skipNextInput = true;
+    const onCompositionStart = () => { composingRef.current = true; };
+    // Don't emit onChange here: macOS Korean IME fires compositionend between
+    // every syllable, so calling onChange mid-word triggers a React re-render
+    // that can disturb the IME composition range and eat the next character.
+    // Instead we flush on the echo `input` event (if it fires before the next
+    // compositionstart) and always on blur.
+    const onCompositionEnd = () => { composingRef.current = false; };
+    const onInput = () => {
+      if (composingRef.current) return;
       onChangeRef.current(el.value);
     };
-    const onInput = () => {
-      if (composing) return;
-      if (skipNextInput) { skipNextInput = false; return; }
+    const onFocus = () => { focusedRef.current = true; };
+    const onBlur = () => {
+      focusedRef.current = false;
+      composingRef.current = false;
       onChangeRef.current(el.value);
     };
 
     el.addEventListener("compositionstart", onCompositionStart);
     el.addEventListener("compositionend", onCompositionEnd);
     el.addEventListener("input", onInput);
+    el.addEventListener("focus", onFocus);
+    el.addEventListener("blur", onBlur);
     return () => {
       el.removeEventListener("compositionstart", onCompositionStart);
       el.removeEventListener("compositionend", onCompositionEnd);
       el.removeEventListener("input", onInput);
+      el.removeEventListener("focus", onFocus);
+      el.removeEventListener("blur", onBlur);
     };
   }, []);
 
-  // Sync externally-changed value (e.g. collaborator edit) only when
-  // this input doesn't have focus — never interrupt an active edit session.
+  // Sync collaborator edits to DOM only when this input is neither focused
+  // nor composing — never overwrite what the user is actively typing.
   useEffect(() => {
     const el = inputRef.current;
-    if (!el || el === document.activeElement) return;
+    if (!el || composingRef.current || focusedRef.current) return;
     if (el.value !== value) el.value = value;
   }, [value]);
 
-  return <input {...props} ref={inputRef} defaultValue={value} />;
+  return <input {...props} ref={inputRef} defaultValue={initialValue.current} />;
 };
