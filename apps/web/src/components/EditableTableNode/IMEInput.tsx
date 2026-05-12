@@ -22,15 +22,17 @@ export const IMEInput = ({ value, onChange, ...props }: IMEInputProps) => {
     const el = inputRef.current;
     if (!el) return;
 
+    let skipNextInput = false;
+
     const onCompositionStart = () => { composingRef.current = true; };
-    // Don't emit onChange here: macOS Korean IME fires compositionend between
-    // every syllable, so calling onChange mid-word triggers a React re-render
-    // that can disturb the IME composition range and eat the next character.
-    // Instead we flush on the echo `input` event (if it fires before the next
-    // compositionstart) and always on blur.
-    const onCompositionEnd = () => { composingRef.current = false; };
+    const onCompositionEnd = () => {
+      composingRef.current = false;
+      skipNextInput = true;
+      onChangeRef.current(el.value);
+    };
     const onInput = () => {
       if (composingRef.current) return;
+      if (skipNextInput) { skipNextInput = false; return; }
       onChangeRef.current(el.value);
     };
     const onFocus = () => { focusedRef.current = true; };

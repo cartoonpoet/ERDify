@@ -4,7 +4,10 @@ import type { Socket } from "socket.io-client";
 import type { RefObject } from "react";
 import type { Collaborator } from "@/store/useEditorStore";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+const SOCKET_ORIGIN = (() => {
+  const raw = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:4000";
+  try { return new URL(raw).origin; } catch { return "http://localhost:4000"; }
+})();
 
 export interface CollaborationSocketHandlers {
   onInit: (bytes: number[]) => void | Promise<void>;
@@ -25,7 +28,7 @@ export const useCollaborationSocket = (
   useEffect(() => {
     if (!diagramId) return;
 
-    const socket = io(`${API_BASE}/collaboration`, {
+    const socket = io(`${SOCKET_ORIGIN}/collaboration`, {
       withCredentials: true,
       transports: ["websocket"],
     });
