@@ -1,15 +1,13 @@
 import { useRef, useState, type FormEvent, type ChangeEvent, type DragEvent } from "react";
 import { Modal, Button, Input } from "@/components";
 import { getMe, updateProfile, uploadAvatar, changePassword } from "@/api/auth.api";
-import { API_BASE_URL } from "@/api/httpClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { form, footer } from "./modal-form.css";
 import * as css from "./ProfileModal.css";
 
 function resolveUrl(path: string | null | undefined): string | null {
   if (!path) return null;
-  if (path.startsWith("http")) return path;
-  return `${API_BASE_URL}${path}`;
+  return path;
 }
 
 interface ProfileModalProps {

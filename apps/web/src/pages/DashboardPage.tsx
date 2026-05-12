@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useParams, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/api/auth.api";
-import { API_BASE_URL } from "@/api/httpClient";
 import { QueryErrorBoundary } from "@/components/QueryErrorBoundary";
 import { UnifiedSidebar } from "@/components/UnifiedSidebar";
 import { CreateOrgModal } from "../components/CreateOrgModal";
@@ -74,7 +73,7 @@ export const DashboardPage = () => {
         <div className={avatarWrapper} tabIndex={-1} onBlur={handleBlur}>
           {me?.avatarUrl ? (
             <img
-              src={me.avatarUrl.startsWith("http") ? me.avatarUrl : `${API_BASE_URL}${me.avatarUrl}`}
+              src={me.avatarUrl}
               alt="프로필"
               className={avatarImg}
               onClick={toggleMenu}
