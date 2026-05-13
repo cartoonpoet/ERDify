@@ -69,8 +69,12 @@ export const RegisterPage = () => {
       await sendVerification(email);
       setCodeSent(true);
       setResendCooldown(60);
-    } catch {
-      setCodeError("인증 코드 발송에 실패했습니다. 이메일을 확인해주세요.");
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      setCodeError(status === 409
+        ? "이미 가입된 이메일입니다. 로그인해 주세요."
+        : "인증 코드 발송에 실패했습니다. 이메일을 확인해주세요."
+      );
     } finally {
       setSendingCode(false);
     }
