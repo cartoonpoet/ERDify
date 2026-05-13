@@ -179,6 +179,7 @@ export class OrganizationService {
 
     // 미가입자 — pending invite 생성
     const expiresAt = new Date(Date.now() + this.inviteExpiryMs);
+    let inviteToken: string;
     const existingInvite = await this.inviteRepo.findOne({
       where: { orgId, email, acceptedAt: IsNull() },
     });
@@ -188,13 +189,15 @@ export class OrganizationService {
       existingInvite.expiresAt = expiresAt;
       existingInvite.invitedById = requesterId;
       await this.inviteRepo.save(existingInvite);
+      inviteToken = existingInvite.token;
     } else {
+      inviteToken = randomUUID();
       await this.inviteRepo.save({
         id: randomUUID(),
         orgId,
         email,
         role,
-        token: randomUUID(),
+        token: inviteToken,
         invitedById: requesterId,
         expiresAt,
         acceptedAt: null,
@@ -211,7 +214,7 @@ export class OrganizationService {
       orgName: org!.name,
       inviterName: inviter!.name,
       role,
-      inviteUrl: `${appUrl}/register?inviteEmail=${encodeURIComponent(email)}`,
+      inviteUrl: `${appUrl}/register?inviteToken=${inviteToken}`,
     });
     if (!sent) {
       this.logger.warn(`Invite email not delivered to ${email}`);

@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Throttle } from "@nestjs/throttler";
+import { IsEmail, IsString, Length } from "class-validator";
 import { AuthService } from "./auth.service";
 import type { UserProfile, ApiKeyInfo, ApiKeyCreated } from "./auth.service";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
@@ -12,6 +13,20 @@ import { CreateApiKeyDto } from "./dto/create-api-key.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
+
+class SendVerificationDto {
+  @IsEmail()
+  email!: string;
+}
+
+class VerifyCodeDto {
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @Length(6, 6)
+  code!: string;
+}
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -26,6 +41,24 @@ const ALLOWED_AVATAR_MIMES = new Set(["image/jpeg", "image/png", "image/gif", "i
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
+  @Post("send-verification")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async sendVerification(@Body() dto: SendVerificationDto): Promise<void> {
+    await this.authService.sendVerificationCode(dto.email);
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Post("verify-code")
+  verifyCode(@Body() dto: VerifyCodeDto): { verifiedToken: string } {
+    return this.authService.verifyCode(dto.email, dto.code);
+  }
+
+  @Get("invite/:token")
+  getInvite(@Param("token") token: string): Promise<{ email: string; verifiedToken: string }> {
+    return this.authService.getInviteByToken(token);
+  }
 
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post("register")

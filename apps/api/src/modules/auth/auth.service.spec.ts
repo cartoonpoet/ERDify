@@ -24,32 +24,37 @@ describe("AuthService", () => {
   let apiKeyRepo: MockRepo<ApiKey>;
   let inviteRepo: { find: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
   let memberRepo: { findOne: ReturnType<typeof vi.fn>; find: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
-  let jwtService: { sign: ReturnType<typeof vi.fn> };
+  let jwtService: { sign: ReturnType<typeof vi.fn>; verify: ReturnType<typeof vi.fn> };
+  let emailService: { sendVerificationEmail: ReturnType<typeof vi.fn>; sendInviteEmail: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     inviteRepo = { find: vi.fn(), save: vi.fn() };
     memberRepo = { findOne: vi.fn().mockResolvedValue(null), find: vi.fn(), create: vi.fn(), save: vi.fn() };
-    jwtService = { sign: vi.fn() };
+    jwtService = { sign: vi.fn(), verify: vi.fn() };
+    emailService = { sendVerificationEmail: vi.fn(), sendInviteEmail: vi.fn() };
     service = new AuthService(
       userRepo as unknown as Repository<User>,
       apiKeyRepo as unknown as Repository<ApiKey>,
       inviteRepo as unknown as Repository<Invite>,
       memberRepo as unknown as Repository<OrganizationMember>,
-      jwtService as unknown as JwtService
+      jwtService as unknown as JwtService,
+      emailService as never,
     );
   });
 
   describe("register", () => {
     it("throws ConflictException if email already exists", async () => {
+      vi.mocked(jwtService.verify).mockReturnValue({ purpose: "email-verification", email: "a@b.com" });
       vi.mocked(userRepo.findOne).mockResolvedValue({ id: "1" } as User);
       await expect(
-        service.register({ email: "a@b.com", password: "pass1234", name: "A" })
+        service.register({ email: "a@b.com", password: "pass1234", name: "A", verifiedToken: "tok" })
       ).rejects.toThrow(ConflictException);
     });
 
     it("hashes password and returns accessToken", async () => {
+      vi.mocked(jwtService.verify).mockReturnValue({ purpose: "email-verification", email: "a@b.com" });
       vi.mocked(userRepo.findOne).mockResolvedValue(null);
       vi.mocked(userRepo.create).mockReturnValue({ id: "uuid", email: "a@b.com" } as User);
       vi.mocked(userRepo.save).mockResolvedValue({ id: "uuid", email: "a@b.com" } as User);
@@ -57,13 +62,14 @@ describe("AuthService", () => {
       vi.mocked(jwtService.sign).mockReturnValue("token");
       vi.mocked(inviteRepo.find).mockResolvedValue([]);
 
-      const result = await service.register({ email: "a@b.com", password: "pass1234", name: "A" });
+      const result = await service.register({ email: "a@b.com", password: "pass1234", name: "A", verifiedToken: "tok" });
 
       expect(bcrypt.hash).toHaveBeenCalledWith("pass1234", 10);
       expect(result).toEqual({ accessToken: "token" });
     });
 
     it("auto-accepts pending invites on register", async () => {
+      vi.mocked(jwtService.verify).mockReturnValue({ purpose: "email-verification", email: "new@b.com" });
       vi.mocked(userRepo.findOne).mockResolvedValue(null);
       vi.mocked(userRepo.create).mockReturnValue({ id: "new-user", email: "new@b.com" } as User);
       vi.mocked(userRepo.save).mockResolvedValue({ id: "new-user", email: "new@b.com" } as User);
@@ -77,7 +83,7 @@ describe("AuthService", () => {
       vi.mocked(memberRepo.save).mockResolvedValue({} as OrganizationMember);
       vi.mocked(inviteRepo.save).mockResolvedValue({} as Invite);
 
-      await service.register({ email: "new@b.com", password: "pass1234", name: "New" });
+      await service.register({ email: "new@b.com", password: "pass1234", name: "New", verifiedToken: "tok" });
 
       expect(memberRepo.find).toHaveBeenCalledWith({
         where: { organizationId: expect.any(Object), userId: "new-user" }

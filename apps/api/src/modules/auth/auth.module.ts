@@ -4,6 +4,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ApiKey, Invite, OrganizationMember, User } from "@erdify/db";
+import { EmailModule } from "../email/email.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { FlexAuthGuard } from "./guards/flex-auth.guard";
@@ -12,6 +13,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, ApiKey, Invite, OrganizationMember]),
+    EmailModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

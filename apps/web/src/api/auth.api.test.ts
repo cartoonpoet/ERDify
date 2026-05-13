@@ -12,8 +12,9 @@ describe("auth.api", () => {
 
   it("register는 POST /auth/register를 호출하고 void를 반환한다", async () => {
     vi.mocked(httpClient.post).mockResolvedValue({ data: undefined });
-    const result = await register({ email: "a@b.com", password: "pw", name: "Alice" });
-    expect(httpClient.post).toHaveBeenCalledWith("/auth/register", { email: "a@b.com", password: "pw", name: "Alice" });
+    const body = { email: "a@b.com", password: "pw", name: "Alice", verifiedToken: "tok" };
+    const result = await register(body);
+    expect(httpClient.post).toHaveBeenCalledWith("/auth/register", body);
     expect(result).toBeUndefined();
   });
 
@@ -32,7 +33,7 @@ describe("auth.api", () => {
   });
 
   it("getMe는 GET /auth/me를 호출하고 r.data를 반환한다", async () => {
-    const profile = { id: "u1", email: "a@b.com", name: "Alice", avatarUrl: null };
+    const profile = { id: "u1", email: "a@b.com", name: "Alice", phone: null, avatarUrl: null };
     vi.mocked(httpClient.get).mockResolvedValue({ data: profile });
     const result = await getMe();
     expect(httpClient.get).toHaveBeenCalledWith("/auth/me");
@@ -40,7 +41,7 @@ describe("auth.api", () => {
   });
 
   it("updateProfile은 PATCH /auth/profile를 호출하고 r.data를 반환한다", async () => {
-    const profile = { id: "u1", email: "a@b.com", name: "Bob", avatarUrl: null };
+    const profile = { id: "u1", email: "a@b.com", name: "Bob", phone: null, avatarUrl: null };
     vi.mocked(httpClient.patch).mockResolvedValue({ data: profile });
     const result = await updateProfile({ name: "Bob" });
     expect(httpClient.patch).toHaveBeenCalledWith("/auth/profile", { name: "Bob" });
@@ -48,7 +49,7 @@ describe("auth.api", () => {
   });
 
   it("uploadAvatar는 POST /auth/avatar를 FormData와 함께 호출하고 r.data를 반환한다", async () => {
-    const profile = { id: "u1", email: "a@b.com", name: "Alice", avatarUrl: "http://example.com/avatar.png" };
+    const profile = { id: "u1", email: "a@b.com", name: "Alice", phone: null, avatarUrl: "http://example.com/avatar.png" };
     vi.mocked(httpClient.post).mockResolvedValue({ data: profile });
     const file = new File(["content"], "avatar.png", { type: "image/png" });
     const result = await uploadAvatar(file);

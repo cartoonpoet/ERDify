@@ -3,7 +3,16 @@ import { httpClient } from "./httpClient";
 
 export type { UserProfile };
 
-export function register(body: { email: string; password: string; name: string }): Promise<void> {
+export function sendVerification(email: string): Promise<void> {
+  return httpClient.post("/auth/send-verification", { email }).then(() => undefined);
+}
+export function verifyCode(email: string, code: string): Promise<{ verifiedToken: string }> {
+  return httpClient.post<{ verifiedToken: string }>("/auth/verify-code", { email, code }).then((r) => r.data);
+}
+export function getInvite(token: string): Promise<{ email: string; verifiedToken: string }> {
+  return httpClient.get<{ email: string; verifiedToken: string }>(`/auth/invite/${token}`).then((r) => r.data);
+}
+export function register(body: { email: string; password: string; name: string; phone?: string; verifiedToken: string }): Promise<void> {
   return httpClient.post("/auth/register", body).then(() => undefined);
 }
 export function login(body: { email: string; password: string }): Promise<void> {

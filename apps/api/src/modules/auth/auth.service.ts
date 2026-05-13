@@ -1,12 +1,14 @@
 import { createHash, randomBytes, randomUUID } from "crypto";
 import { extname, join } from "path";
 import { writeFile, unlink } from "fs/promises";
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ApiKey, Invite, OrganizationMember, User } from "@erdify/db";
 import * as bcrypt from "bcryptjs";
 import { IsNull, MoreThan, In, type Repository } from "typeorm";
+import { encrypt, decrypt } from "../../common/utils/field-cipher";
+import { EmailService } from "../email/email.service";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { CreateApiKeyDto } from "./dto/create-api-key.dto";
 import type { LoginDto } from "./dto/login.dto";
@@ -14,10 +16,16 @@ import type { RegisterDto } from "./dto/register.dto";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
 import type { JwtPayload } from "./strategies/jwt.strategy";
 
+interface VerificationEntry {
+  code: string;
+  expiresAt: number;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
   name: string;
+  phone: string | null;
   avatarUrl: string | null;
 }
 
@@ -40,6 +48,8 @@ export interface ApiKeyCreated {
 
 @Injectable()
 export class AuthService {
+  private readonly verificationCodes = new Map<string, VerificationEntry>();
+
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
@@ -49,15 +59,59 @@ export class AuthService {
     private readonly inviteRepo: Repository<Invite>,
     @InjectRepository(OrganizationMember)
     private readonly memberRepo: Repository<OrganizationMember>,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
+  async sendVerificationCode(email: string): Promise<void> {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    this.verificationCodes.set(email, { code, expiresAt: Date.now() + 5 * 60 * 1000 });
+    await this.emailService.sendVerificationEmail({ to: email, code });
+  }
+
+  verifyCode(email: string, code: string): { verifiedToken: string } {
+    const entry = this.verificationCodes.get(email);
+    if (!entry || entry.code !== code || Date.now() > entry.expiresAt) {
+      throw new BadRequestException("인증 코드가 올바르지 않거나 만료되었습니다.");
+    }
+    this.verificationCodes.delete(email);
+    const verifiedToken = this.jwtService.sign(
+      { purpose: "email-verification", email },
+      { expiresIn: "30m" }
+    );
+    return { verifiedToken };
+  }
+
+  async getInviteByToken(token: string): Promise<{ email: string; verifiedToken: string }> {
+    const invite = await this.inviteRepo.findOne({
+      where: { token, acceptedAt: IsNull(), expiresAt: MoreThan(new Date()) },
+    });
+    if (!invite) throw new NotFoundException("유효하지 않거나 만료된 초대입니다.");
+    const verifiedToken = this.jwtService.sign(
+      { purpose: "email-verification", email: invite.email },
+      { expiresIn: "30m" }
+    );
+    return { email: invite.email, verifiedToken };
+  }
+
   async register(dto: RegisterDto): Promise<{ accessToken: string }> {
+    // verifiedToken must confirm this exact email
+    let payload: { purpose?: string; email?: string };
+    try {
+      payload = this.jwtService.verify<{ purpose: string; email: string }>(dto.verifiedToken);
+    } catch {
+      throw new BadRequestException("이메일 인증이 완료되지 않았습니다.");
+    }
+    if (payload.purpose !== "email-verification" || payload.email !== dto.email) {
+      throw new BadRequestException("이메일 인증이 완료되지 않았습니다.");
+    }
+
     const existing = await this.userRepo.findOne({ where: { email: dto.email } });
     if (existing) throw new ConflictException("Email already registered");
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const user = this.userRepo.create({ id: randomUUID(), email: dto.email, passwordHash, name: dto.name });
+    const phone = dto.phone ? encrypt(dto.phone) : null;
+    const user = this.userRepo.create({ id: randomUUID(), email: dto.email, passwordHash, name: dto.name, phone });
     const saved = await this.userRepo.save(user);
 
     // auto-accept pending invites
@@ -165,7 +219,7 @@ export class AuthService {
   async getMe(userId: string): Promise<UserProfile> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException("User not found");
-    return { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl };
+    return { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, phone: user.phone ? decrypt(user.phone) : null };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto): Promise<UserProfile> {
@@ -173,7 +227,7 @@ export class AuthService {
     if (!user) throw new NotFoundException("User not found");
     if (dto.name !== undefined) user.name = dto.name;
     const saved = await this.userRepo.save(user);
-    return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl };
+    return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl, phone: saved.phone ? decrypt(saved.phone) : null };
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
@@ -203,6 +257,6 @@ export class AuthService {
 
     user.avatarUrl = `/uploads/avatars/${filename}`;
     const saved = await this.userRepo.save(user);
-    return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl };
+    return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl, phone: saved.phone ? decrypt(saved.phone) : null };
   }
 }

@@ -62,12 +62,22 @@ vi.mock("../../../design-system", () => ({
   ),
 }));
 
-function renderRegisterPage() {
+function renderRegisterPage(search = "") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/register${search}`]}>
       <RegisterPage />
     </MemoryRouter>
   );
+}
+
+// 초대 경로로 렌더하면 이메일이 자동 인증됨
+async function renderVerifiedPage(email = "test@example.com") {
+  vi.mocked(authApi.getInvite).mockResolvedValue({ email, verifiedToken: "vtok" });
+  renderRegisterPage("?inviteToken=abc");
+  // getInvite 비동기 완료 대기
+  await waitFor(() => {
+    expect(screen.getByText("초대로 인증 완료")).toBeInTheDocument();
+  });
 }
 
 describe("RegisterPage", () => {
@@ -89,17 +99,11 @@ describe("RegisterPage", () => {
 
   it("successful submit calls register with form values, then setAuthenticated(true), then navigate('/')", async () => {
     vi.mocked(authApi.register).mockResolvedValue(undefined as never);
-    renderRegisterPage();
+    await renderVerifiedPage("test@example.com");
 
-    fireEvent.change(screen.getByPlaceholderText("홍길동"), {
-      target: { value: "홍길동" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("name@company.com"), {
-      target: { value: "test@example.com" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("8자 이상"), {
-      target: { value: "Password1" },
-    });
+    fireEvent.change(screen.getByPlaceholderText("홍길동"), { target: { value: "홍길동" } });
+    fireEvent.change(screen.getByPlaceholderText("8자 이상"), { target: { value: "Password1" } });
+    fireEvent.change(screen.getByPlaceholderText("비밀번호 재입력"), { target: { value: "Password1" } });
     fireEvent.submit(screen.getByRole("form", { name: "회원가입" }));
 
     await waitFor(() => {
@@ -107,6 +111,7 @@ describe("RegisterPage", () => {
         name: "홍길동",
         email: "test@example.com",
         password: "Password1",
+        verifiedToken: "vtok",
       });
     });
     expect(mockSetAuthenticated).toHaveBeenCalledWith(true);
@@ -115,14 +120,15 @@ describe("RegisterPage", () => {
 
   it("failed submit shows error text", async () => {
     vi.mocked(authApi.register).mockRejectedValue(new Error("Conflict"));
-    renderRegisterPage();
+    await renderVerifiedPage();
 
+    fireEvent.change(screen.getByPlaceholderText("홍길동"), { target: { value: "홍길동" } });
+    fireEvent.change(screen.getByPlaceholderText("8자 이상"), { target: { value: "Password1" } });
+    fireEvent.change(screen.getByPlaceholderText("비밀번호 재입력"), { target: { value: "Password1" } });
     fireEvent.submit(screen.getByRole("form", { name: "회원가입" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "회원가입에 실패했습니다. 이미 사용 중인 이메일일 수 있습니다."
-      );
+      expect(screen.getByText("회원가입에 실패했습니다. 이미 사용 중인 이메일일 수 있습니다.")).toBeInTheDocument();
     });
   });
 
@@ -131,8 +137,11 @@ describe("RegisterPage", () => {
     vi.mocked(authApi.register).mockReturnValue(
       new Promise<never>((resolve) => { resolveRegister = resolve as () => void; })
     );
-    renderRegisterPage();
+    await renderVerifiedPage();
 
+    fireEvent.change(screen.getByPlaceholderText("홍길동"), { target: { value: "홍길동" } });
+    fireEvent.change(screen.getByPlaceholderText("8자 이상"), { target: { value: "Password1" } });
+    fireEvent.change(screen.getByPlaceholderText("비밀번호 재입력"), { target: { value: "Password1" } });
     fireEvent.submit(screen.getByRole("form", { name: "회원가입" }));
 
     await waitFor(() => {

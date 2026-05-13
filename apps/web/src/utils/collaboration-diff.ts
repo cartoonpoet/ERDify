@@ -62,7 +62,11 @@ export function applyDiff(
       const prevCols = prevEntity?.columns ?? [];
       applyColumnDiff(draftEntity.columns as DiagramColumn[], prevCols, nextEntity.columns);
       if (prevEntity?.seedData !== nextEntity.seedData) {
-        (draftEntity as DiagramEntity).seedData = nextEntity.seedData ? nextEntity.seedData.map((r) => ({ ...r })) : undefined;
+        if (nextEntity.seedData) {
+          (draftEntity as DiagramEntity).seedData = nextEntity.seedData.map((r) => ({ ...r }));
+        } else {
+          delete (draftEntity as DiagramEntity).seedData;
+        }
       }
     }
   }
