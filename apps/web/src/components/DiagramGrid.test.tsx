@@ -110,7 +110,7 @@ describe("DiagramGrid", () => {
       { id: "p1", name: "Test Project", organizationId: "org-1", description: null, createdAt: "", updatedAt: "" },
     ]);
     vi.mocked(getMe).mockResolvedValue({
-      id: "user-1", email: "test@test.com", name: "Test User", avatarUrl: null,
+      id: "user-1", email: "test@test.com", name: "Test User", phone: null, avatarUrl: null,
     });
   });
 

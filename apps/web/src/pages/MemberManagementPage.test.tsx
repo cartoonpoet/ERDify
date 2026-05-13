@@ -30,7 +30,7 @@ const wrap = (orgId = "org-1") =>
 
 describe("MemberManagementPage", () => {
   beforeEach(() => {
-    vi.mocked(getMe).mockResolvedValue({ id: "u1", email: "a@b.com", name: "Test User", avatarUrl: null });
+    vi.mocked(getMe).mockResolvedValue({ id: "u1", email: "a@b.com", name: "Test User", phone: null, avatarUrl: null });
     vi.mocked(listMyOrganizations).mockResolvedValue([
       { id: "org-1", name: "Acme Corp", ownerId: "u1", createdAt: "", updatedAt: "" },
     ]);
