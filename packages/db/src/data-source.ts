@@ -22,6 +22,7 @@ import { CreateApiKeysTable1746000000009 } from "./migrations/1746000000009-Crea
 import { CreateMcpSessionsTable1746000000010 } from "./migrations/1746000000010-CreateMcpSessionsTable";
 import { AddNameExpiresAtToApiKeys1746000000011 } from "./migrations/1746000000011-AddNameExpiresAtToApiKeys";
 import { CreateInvitesTable1746000000012 } from "./migrations/1746000000012-CreateInvitesTable";
+import { AddPhoneToUsers1746000000013 } from "./migrations/1746000000013-AddPhoneToUsers";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -43,5 +44,6 @@ export const AppDataSource = new DataSource({
     CreateMcpSessionsTable1746000000010,
     AddNameExpiresAtToApiKeys1746000000011,
     CreateInvitesTable1746000000012,
+    AddPhoneToUsers1746000000013,
   ]
 });
