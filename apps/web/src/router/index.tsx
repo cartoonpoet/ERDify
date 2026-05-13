@@ -40,19 +40,20 @@ export const Router = () => (
             </QueryErrorBoundary>
           }
         />
-        <Route path="/" element={<RootRedirect />} />
         <Route
-          path="/:orgId"
           element={
             <QueryErrorBoundary variant="page">
               <DashboardPage />
             </QueryErrorBoundary>
           }
         >
-          <Route index element={<DiagramGrid />} />
-          <Route path="members" element={<MemberManagementPage />} />
-          <Route path="api-keys" element={<ApiKeysPanel />} />
-          <Route path=":projectId" element={<DiagramGrid />} />
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="/:orgId">
+            <Route index element={<DiagramGrid />} />
+            <Route path="members" element={<MemberManagementPage />} />
+            <Route path="api-keys" element={<ApiKeysPanel />} />
+            <Route path=":projectId" element={<DiagramGrid />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />

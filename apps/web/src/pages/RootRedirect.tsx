@@ -1,31 +1,23 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { listMyOrganizations } from "@/api/organizations.api";
-import { CreateOrgModal } from "../components/CreateOrgModal";
+import { useDashboardStore } from "@/store/useDashboardStore";
 
 export const RootRedirect = () => {
-  const queryClient = useQueryClient();
-  const [orgModalOpen, setOrgModalOpen] = useState(false);
   const { data: orgs = [], isLoading } = useQuery({
     queryKey: ["orgs"],
     queryFn: listMyOrganizations,
   });
+  const openModal = useDashboardStore((s) => s.openModal);
+
+  useEffect(() => {
+    if (!isLoading && orgs.length === 0) openModal("org");
+  }, [isLoading, orgs.length, openModal]);
 
   if (isLoading) return null;
-  const firstOrg = Array.isArray(orgs) ? orgs[0] : undefined;
+  const firstOrg = orgs[0];
   if (firstOrg?.id) return <Navigate to={`/${firstOrg.id}`} replace />;
 
-  return (
-    <>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-        <button onClick={() => setOrgModalOpen(true)}>+ 새 조직 만들기</button>
-      </div>
-      <CreateOrgModal
-        open={orgModalOpen}
-        onClose={() => setOrgModalOpen(false)}
-        onCreated={() => void queryClient.invalidateQueries({ queryKey: ["orgs"] })}
-      />
-    </>
-  );
+  return null;
 };
