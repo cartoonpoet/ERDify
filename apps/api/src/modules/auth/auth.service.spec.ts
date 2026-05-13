@@ -1,7 +1,7 @@
 import * as bcrypt from "bcryptjs";
 import { ConflictException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import type { JwtService } from "@nestjs/jwt";
-import type { ApiKey, Invite, OrganizationMember, User } from "@erdify/db";
+import type { ApiKey, Invite, Organization, OrganizationMember, User } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { AuthService } from "./auth.service";
 
@@ -24,6 +24,7 @@ describe("AuthService", () => {
   let apiKeyRepo: MockRepo<ApiKey>;
   let inviteRepo: { find: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
   let memberRepo: { findOne: ReturnType<typeof vi.fn>; find: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
+  let orgRepo: { find: ReturnType<typeof vi.fn>; remove: ReturnType<typeof vi.fn> };
   let jwtService: { sign: ReturnType<typeof vi.fn>; verify: ReturnType<typeof vi.fn> };
   let emailService: { sendVerificationEmail: ReturnType<typeof vi.fn>; sendInviteEmail: ReturnType<typeof vi.fn> };
 
@@ -31,6 +32,7 @@ describe("AuthService", () => {
     userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     inviteRepo = { find: vi.fn(), save: vi.fn() };
+    orgRepo = { find: vi.fn().mockResolvedValue([]), remove: vi.fn() };
     memberRepo = { findOne: vi.fn().mockResolvedValue(null), find: vi.fn(), create: vi.fn(), save: vi.fn() };
     jwtService = { sign: vi.fn(), verify: vi.fn() };
     emailService = { sendVerificationEmail: vi.fn(), sendInviteEmail: vi.fn() };
@@ -38,6 +40,7 @@ describe("AuthService", () => {
       userRepo as unknown as Repository<User>,
       apiKeyRepo as unknown as Repository<ApiKey>,
       inviteRepo as unknown as Repository<Invite>,
+      orgRepo as unknown as Repository<Organization>,
       memberRepo as unknown as Repository<OrganizationMember>,
       jwtService as unknown as JwtService,
       emailService as never,

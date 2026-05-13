@@ -4,7 +4,7 @@ import { writeFile, unlink } from "fs/promises";
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ApiKey, Invite, OrganizationMember, User } from "@erdify/db";
+import { ApiKey, Invite, Organization, OrganizationMember, User } from "@erdify/db";
 import * as bcrypt from "bcryptjs";
 import { IsNull, MoreThan, In, type Repository } from "typeorm";
 import { encrypt, decrypt } from "../../common/utils/field-cipher";
@@ -57,6 +57,8 @@ export class AuthService {
     private readonly apiKeyRepo: Repository<ApiKey>,
     @InjectRepository(Invite)
     private readonly inviteRepo: Repository<Invite>,
+    @InjectRepository(Organization)
+    private readonly orgRepo: Repository<Organization>,
     @InjectRepository(OrganizationMember)
     private readonly memberRepo: Repository<OrganizationMember>,
     private readonly jwtService: JwtService,
@@ -230,6 +232,16 @@ export class AuthService {
     if (dto.name !== undefined) user.name = dto.name;
     const saved = await this.userRepo.save(user);
     return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl, phone: saved.phone ? decrypt(saved.phone) : null };
+  }
+
+  async deleteAccount(userId: string): Promise<void> {
+    // owner_id has no CASCADE, so delete owned orgs first (cascades to projects/diagrams)
+    const ownedOrgs = await this.orgRepo.find({ where: { ownerId: userId } });
+    if (ownedOrgs.length > 0) {
+      await this.orgRepo.remove(ownedOrgs);
+    }
+    // memberships, api_keys, invites cascade-delete with the user
+    await this.userRepo.delete(userId);
   }
 
   async forgotPassword(email: string): Promise<void> {

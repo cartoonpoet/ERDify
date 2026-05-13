@@ -117,6 +117,17 @@ export class AuthController {
     res.clearCookie("access_token", { path: "/" });
   }
 
+  @Delete("me")
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteAccount(
+    @CurrentUser() user: JwtPayload,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    await this.authService.deleteAccount(user.sub);
+    res.clearCookie("access_token", { path: "/" });
+  }
+
   // ── API Keys ────────────────────────────────────────────────────────────────
 
   @Post("api-keys")
