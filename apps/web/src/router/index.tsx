@@ -5,6 +5,8 @@ import { QueryErrorBoundary } from "@/components/QueryErrorBoundary";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage").then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import("@/pages/RegisterPage").then(m => ({ default: m.RegisterPage })));
+const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPasswordPage").then(m => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage").then(m => ({ default: m.ResetPasswordPage })));
 const EditorPage = lazy(() => import("@/pages/EditorPage").then(m => ({ default: m.EditorPage })));
 const DashboardPage = lazy(() => import("@/pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
 const DiagramGrid = lazy(() => import("@/components/DiagramGrid").then(m => ({ default: m.DiagramGrid })));
@@ -19,6 +21,8 @@ export const Router = () => (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         path="/share/:shareToken"
         element={

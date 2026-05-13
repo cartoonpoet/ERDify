@@ -2,7 +2,7 @@ import type { Response } from "express";
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Throttle } from "@nestjs/throttler";
-import { IsEmail, IsString, Length } from "class-validator";
+import { IsEmail, IsString, Length, MinLength } from "class-validator";
 import { AuthService } from "./auth.service";
 import type { UserProfile, ApiKeyInfo, ApiKeyCreated } from "./auth.service";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
@@ -26,6 +26,20 @@ class VerifyCodeDto {
   @IsString()
   @Length(6, 6)
   code!: string;
+}
+
+class ForgotPasswordDto {
+  @IsEmail()
+  email!: string;
+}
+
+class ResetPasswordDto {
+  @IsString()
+  token!: string;
+
+  @IsString()
+  @MinLength(8)
+  newPassword!: string;
 }
 
 const COOKIE_OPTIONS = {
@@ -53,6 +67,20 @@ export class AuthController {
   @Post("verify-code")
   verifyCode(@Body() dto: VerifyCodeDto): { verifiedToken: string } {
     return this.authService.verifyCode(dto.email, dto.code);
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
+  @Post("forgot-password")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
+    await this.authService.forgotPassword(dto.email);
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("reset-password")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
+    await this.authService.resetPassword(dto.token, dto.newPassword);
   }
 
   @Get("invite/:token")

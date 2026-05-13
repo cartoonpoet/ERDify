@@ -37,3 +37,9 @@ export function uploadAvatar(file: File): Promise<UserProfile> {
 export function changePassword(body: { currentPassword: string; newPassword: string }): Promise<void> {
   return httpClient.patch<void>("/auth/password", body).then((r) => r.data);
 }
+export function forgotPassword(email: string): Promise<void> {
+  return httpClient.post("/auth/forgot-password", { email }).then(() => undefined);
+}
+export function resetPassword(token: string, newPassword: string): Promise<void> {
+  return httpClient.post("/auth/reset-password", { token, newPassword }).then(() => undefined);
+}

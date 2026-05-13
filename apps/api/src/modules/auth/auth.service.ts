@@ -230,6 +230,36 @@ export class AuthService {
     return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl, phone: saved.phone ? decrypt(saved.phone) : null };
   }
 
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) return; // 이메일 존재 여부 노출 방지
+    const token = this.jwtService.sign(
+      { sub: user.id, purpose: "password-reset" },
+      { expiresIn: "30m" }
+    );
+    const appUrl = process.env["APP_URL"] ?? "http://localhost:5173";
+    await this.emailService.sendPasswordResetEmail({
+      to: email,
+      resetUrl: `${appUrl}/reset-password?token=${token}`,
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    let payload: { sub?: string; purpose?: string };
+    try {
+      payload = this.jwtService.verify<{ sub: string; purpose: string }>(token);
+    } catch {
+      throw new BadRequestException("유효하지 않거나 만료된 링크입니다.");
+    }
+    if (payload.purpose !== "password-reset" || !payload.sub) {
+      throw new BadRequestException("유효하지 않거나 만료된 링크입니다.");
+    }
+    const user = await this.userRepo.findOne({ where: { id: payload.sub } });
+    if (!user) throw new NotFoundException("사용자를 찾을 수 없습니다.");
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.userRepo.save(user);
+  }
+
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException("User not found");
