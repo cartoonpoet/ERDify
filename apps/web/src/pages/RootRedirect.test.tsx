@@ -6,8 +6,11 @@ import { RootRedirect } from "./RootRedirect";
 vi.mock("@/api/organizations.api", () => ({
   listMyOrganizations: vi.fn(),
 }));
-vi.mock("../components/CreateOrgModal", () => ({
-  CreateOrgModal: () => null,
+
+const mockOpenModal = vi.fn();
+vi.mock("@/store/useDashboardStore", () => ({
+  useDashboardStore: (selector: (s: { openModal: typeof mockOpenModal }) => unknown) =>
+    selector({ openModal: mockOpenModal }),
 }));
 
 import { listMyOrganizations } from "@/api/organizations.api";
@@ -28,6 +31,8 @@ const wrap = (initialPath = "/") =>
   );
 
 describe("RootRedirect", () => {
+  beforeEach(() => vi.clearAllMocks());
+
   it("orgs가 있으면 첫 번째 org 경로로 리다이렉트한다", async () => {
     vi.mocked(listMyOrganizations).mockResolvedValue([
       { id: "org-1", name: "Acme", ownerId: "u1", createdAt: "", updatedAt: "" },
@@ -36,10 +41,14 @@ describe("RootRedirect", () => {
     expect(await screen.findByText("org page")).toBeInTheDocument();
   });
 
-  it("orgs가 없으면 '새 조직 만들기' 버튼을 표시한다", async () => {
+  it("orgs가 없으면 org 생성 모달을 연다", async () => {
     vi.mocked(listMyOrganizations).mockResolvedValue([]);
     wrap();
-    expect(await screen.findByText("+ 새 조직 만들기")).toBeInTheDocument();
+    await screen.findByText("org page").catch(() => null); // let async settle
+    // waitFor openModal to be called
+    await vi.waitFor(() => {
+      expect(mockOpenModal).toHaveBeenCalledWith("org");
+    });
   });
 
   it("로딩 중에는 아무것도 렌더링하지 않는다", () => {
