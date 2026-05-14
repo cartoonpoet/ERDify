@@ -36,12 +36,11 @@ export const EditorPage = () => {
 
   const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen, undo, canEdit } = useEditorStore();
 
-  const mcpSeenAt = diagramId
-    ? (() => {
-        const v = localStorage.getItem(`mcp_seen_${diagramId}`);
-        return v ? parseInt(v, 10) : null;
-      })()
-    : null;
+  const [mcpSeenAt] = useState<number | null>(() => {
+    if (!diagramId) return null;
+    const v = localStorage.getItem(`mcp_seen_${diagramId}`);
+    return v ? parseInt(v, 10) : null;
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["diagram", diagramId],
