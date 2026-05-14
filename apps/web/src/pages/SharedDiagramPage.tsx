@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getPublicDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/store/useEditorStore";
 import { EditorCanvas } from "@/components/EditorCanvas";
-import { Skeleton } from "@/components/Skeleton";
+import { Skeleton } from "@/shared/components/Skeleton";
 import * as css from "./shared-diagram-page.css";
 
 export const SharedDiagramPage = () => {

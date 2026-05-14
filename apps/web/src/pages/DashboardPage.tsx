@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useParams, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/shared/api/auth.api";
-import { QueryErrorBoundary } from "@/components/QueryErrorBoundary";
+import { QueryErrorBoundary } from "@/shared/components/QueryErrorBoundary";
 import { UnifiedSidebar } from "@/components/UnifiedSidebar";
 import { CreateOrgModal } from "../components/CreateOrgModal";
 import { CreateProjectModal } from "../components/CreateProjectModal";

@@ -9,7 +9,7 @@ vi.mock("@erdify/domain", () => ({
   removeRelationship: vi.fn((doc) => doc),
   removeColumn: vi.fn((doc) => doc),
 }));
-vi.mock("@/components/Modal", () => ({
+vi.mock("@/shared/components/Modal", () => ({
   Modal: ({ open, children, title }: { open: boolean; children: React.ReactNode; title?: string }) =>
     open ? <div role="dialog">{title && <div>{title}</div>}{children}</div> : null,
 }));

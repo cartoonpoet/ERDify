@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Skeleton } from "@/components/Skeleton";
+import { Skeleton } from "@/shared/components/Skeleton";
 import * as css from "./editor-page.css";
 
 export const EditorPageSkeleton = () => {

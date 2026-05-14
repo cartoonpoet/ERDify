@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent, type ChangeEvent, type DragEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthStore } from "@/shared/store/useAuthStore";
 import { Modal, Button, Input } from "@/components";
 import { getMe, updateProfile, uploadAvatar, changePassword, deleteAccount } from "@/shared/api/auth.api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

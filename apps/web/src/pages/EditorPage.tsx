@@ -13,7 +13,7 @@ import { McpActivityDrawer } from "../components/McpActivityDrawer";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceIndicator } from "../components/PresenceIndicator";
 import { ExportModal } from "../components/ExportModal";
-import { ShareDiagramModal } from "../components/ShareDiagramModal";
+import { ShareDiagramModal } from "@/shared/components/ShareDiagramModal";
 import { FkSetupModal } from "../components/FkSetupModal";
 import { RelDeleteConfirmModal } from "../components/RelDeleteConfirmModal";
 import { SchemaFilterSidebar } from "../components/SchemaFilterSidebar";

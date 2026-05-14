@@ -4,7 +4,7 @@ import { deleteOrganization } from "@/shared/api/organizations.api";
 import { deleteProject } from "@/shared/api/projects.api";
 import { deleteDiagram } from "@/shared/api/diagrams.api";
 import { logout } from "@/shared/api/auth.api";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthStore } from "@/shared/store/useAuthStore";
 
 export const useDashboardActions = () => {
   const navigate = useNavigate();

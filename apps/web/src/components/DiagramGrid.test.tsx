@@ -14,7 +14,7 @@ vi.mock("@/shared/api/projects.api", () => ({
 vi.mock("@/shared/api/auth.api", () => ({
   getMe: vi.fn(),
 }));
-vi.mock("../../editor/components/ShareDiagramModal", () => ({
+vi.mock("@/shared/components/ShareDiagramModal", () => ({
   ShareDiagramModal: () => null,
 }));
 

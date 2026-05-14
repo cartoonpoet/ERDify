@@ -9,7 +9,7 @@ vi.mock("@/shared/api/auth.api");
 let mockIsAuthenticated: boolean | null = null;
 const mockSetAuthenticated = vi.fn();
 
-vi.mock("@/store/useAuthStore", () => ({
+vi.mock("@/shared/store/useAuthStore", () => ({
   useAuthStore: (selector: (s: { isAuthenticated: boolean | null; setAuthenticated: typeof mockSetAuthenticated }) => unknown) =>
     selector({ isAuthenticated: mockIsAuthenticated, setAuthenticated: mockSetAuthenticated }),
 }));

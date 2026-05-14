@@ -1,4 +1,4 @@
-import { Modal } from "@/components/Modal";
+import { Modal } from "@/shared/components/Modal";
 import { removeRelationship, removeColumn } from "@erdify/domain";
 import { useEditorStore } from "@/store/useEditorStore";
 import * as css from "./invite-modal.css";

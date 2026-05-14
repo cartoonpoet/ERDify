@@ -1,6 +1,6 @@
-export { Button } from "./Button";
-export { Input } from "./Input";
-export { Card } from "./Card";
-export { Skeleton } from "./Skeleton";
-export { Modal } from "./Modal";
+export { Button } from "@/shared/components/Button";
+export { Input } from "@/shared/components/Input";
+export { Card } from "@/shared/components/Card";
+export { Skeleton } from "@/shared/components/Skeleton";
+export { Modal } from "@/shared/components/Modal";
 export { vars } from "@/style/tokens.css";

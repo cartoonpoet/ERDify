@@ -1,6 +1,6 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { Modal } from "@/components/Modal";
+import { Modal } from "@/shared/components/Modal";
 import { inviteMemberByEmail } from "@/shared/api/organizations.api";
 import * as css from "./invite-modal.css";
 

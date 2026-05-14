@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/Skeleton";
+import { Skeleton } from "@/shared/components/Skeleton";
 
 export const VersionHistoryDrawerSkeleton = () => (
   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>

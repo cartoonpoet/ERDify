@@ -4,7 +4,7 @@ import { LoginPage } from "./LoginPage";
 import * as authApi from "@/shared/api/auth.api";
 
 vi.mock("@/shared/api/auth.api");
-vi.mock("@/store/useAuthStore", () => ({
+vi.mock("@/shared/store/useAuthStore", () => ({
   useAuthStore: (selector: (s: { token: null; setToken: ReturnType<typeof vi.fn>; clearToken: ReturnType<typeof vi.fn> }) => unknown) =>
     selector({ token: null, setToken: vi.fn(), clearToken: vi.fn() })
 }));

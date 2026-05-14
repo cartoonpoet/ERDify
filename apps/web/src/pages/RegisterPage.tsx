@@ -1,7 +1,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { sendVerification, verifyCode, getInvite, register } from "@/shared/api/auth.api";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthStore } from "@/shared/store/useAuthStore";
 import { Button, Input } from "@/components";
 import {
   page, card, brand, brandLogo, tagline, form,

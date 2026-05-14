@@ -14,7 +14,7 @@ vi.mock("socket.io-client", () => ({
   io: vi.fn(() => mockSocket)
 }));
 
-vi.mock("@/store/useAuthStore", () => ({
+vi.mock("@/shared/store/useAuthStore", () => ({
   useAuthStore: vi.fn((selector: (s: { token: string | null }) => unknown) =>
     selector({ token: "test-token" })
   )

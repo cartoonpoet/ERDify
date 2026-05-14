@@ -4,7 +4,7 @@ import { useState } from "react";
 import { BrowserRouter, useNavigate } from "react-router-dom";
 import type { AxiosError } from "axios";
 import { setNavigate } from "@/shared/api/httpClient";
-import { UpdateBanner } from "@/components/UpdateBanner";
+import { UpdateBanner } from "@/shared/components/UpdateBanner";
 
 const NavigateSetter = () => {
   const navigate = useNavigate();

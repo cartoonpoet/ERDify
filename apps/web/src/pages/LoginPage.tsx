@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { login } from "@/shared/api/auth.api";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthStore } from "@/shared/store/useAuthStore";
 import { Button, Input } from "@/components";
 import {
   page, card, brand, brandLogo, tagline, form, authLink, authLinkAnchor, sessionBanner,

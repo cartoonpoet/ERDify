@@ -6,7 +6,7 @@ import * as authApi from "@/shared/api/auth.api";
 vi.mock("@/shared/api/auth.api");
 
 const mockSetAuthenticated = vi.fn();
-vi.mock("@/store/useAuthStore", () => ({
+vi.mock("@/shared/store/useAuthStore", () => ({
   useAuthStore: (selector: (s: { setAuthenticated: typeof mockSetAuthenticated }) => unknown) =>
     selector({ setAuthenticated: mockSetAuthenticated }),
 }));

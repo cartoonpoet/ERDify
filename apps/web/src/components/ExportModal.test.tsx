@@ -35,7 +35,7 @@ vi.mock("./ExportModal.css", () => ({
   emptyText: "",
 }));
 
-vi.mock("@/components/Modal", () => ({
+vi.mock("@/shared/components/Modal", () => ({
   Modal: ({
     open,
     children,

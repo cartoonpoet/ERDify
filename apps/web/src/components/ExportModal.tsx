@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal } from "@/components/Modal";
+import { Modal } from "@/shared/components/Modal";
 import { generateDdl, generateOrm } from "@erdify/domain";
 import type { OrmType } from "@erdify/domain";
 import { useEditorStore } from "@/store/useEditorStore";

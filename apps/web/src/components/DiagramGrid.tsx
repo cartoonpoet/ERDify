@@ -18,7 +18,7 @@ import {
   dialectBadge, newCard, newCardIcon,
   ctxBtn, ctxMenu, ctxItem, ctxItemDanger, ctxDivider,
 } from "./DiagramGrid.css";
-import { ShareDiagramModal } from "@/components/ShareDiagramModal";
+import { ShareDiagramModal } from "@/shared/components/ShareDiagramModal";
 import { EditDiagramModal } from "@/components/EditDiagramModal";
 
 type FilterType = "all" | "recent" | "mine";

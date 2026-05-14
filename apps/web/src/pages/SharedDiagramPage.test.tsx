@@ -16,7 +16,7 @@ vi.mock("@/components/EditorCanvas", () => ({
   EditorCanvas: () => React.createElement("div", { "data-testid": "editor-canvas" }),
 }));
 
-vi.mock("@/components/Skeleton", () => ({
+vi.mock("@/shared/components/Skeleton", () => ({
   Skeleton: () => React.createElement("div", { "data-testid": "skeleton" }),
 }));
 
