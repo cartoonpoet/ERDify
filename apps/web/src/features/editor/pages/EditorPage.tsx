@@ -189,32 +189,32 @@ export const EditorPage = () => {
         <SchemaFilterSidebar />
         <div className={css.canvasArea}>
           <EditorCanvas />
-          {selectedRelationshipId && popoverPos && (
+          {selectedRelationshipId && popoverPos ? (
             <RelationshipPopover
               relationshipId={selectedRelationshipId}
               pos={popoverPos}
             />
-          )}
+          ) : null}
         </div>
-        {showHistory && diagramId && (
+        {showHistory && diagramId ? (
           <VersionHistoryDrawer diagramId={diagramId} onClose={() => setShowHistory(false)} />
-        )}
-        {showMcpActivity && diagramId && (
+        ) : null}
+        {showMcpActivity && diagramId ? (
           <McpActivityDrawer
             diagramId={diagramId}
             seenAt={mcpSeenAt}
             onClose={() => setShowMcpActivity(false)}
           />
-        )}
+        ) : null}
       </div>
 
-      {showInvite && data?.organizationId && (
+      {showInvite && data?.organizationId ? (
         <InviteModal
           open={showInvite}
           onClose={() => setShowInvite(false)}
           organizationId={data.organizationId}
         />
-      )}
+      ) : null}
 
       <ExportModal
         open={showExport}
