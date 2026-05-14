@@ -1,5 +1,5 @@
 import { randomUUID } from "@/shared/utils/uuid";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { addEntity } from "@erdify/domain";
@@ -57,6 +57,9 @@ export const EditorPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id]);
 
+  const canEditRef = useRef(canEdit);
+  canEditRef.current = canEdit;
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -66,7 +69,7 @@ export const EditorPage = () => {
         e.preventDefault();
         setSearchOpen(true);
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === "z" && canEdit && !isEditingText) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && canEditRef.current && !isEditingText) {
         e.preventDefault();
         undo();
       }
@@ -74,7 +77,7 @@ export const EditorPage = () => {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setSearchOpen, undo, canEdit]);
+  }, [setSearchOpen, undo]);
 
   useRealtimeCollaboration(diagramId ?? "");
   useDiagramAutosave(diagramId ?? "");
