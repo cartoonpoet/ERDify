@@ -17,8 +17,7 @@ export function getSchemaColor(
   overrides: Record<string, string> = {}
 ): string {
   if (overrides[schemaName]) return overrides[schemaName];
-  const sorted = [...allSchemas].sort();
-  const index = sorted.indexOf(schemaName);
+  const index = allSchemas.indexOf(schemaName);
   if (index === -1) return "#6b7280";
   return SCHEMA_PALETTE[index % SCHEMA_PALETTE.length] ?? "#6b7280";
 }
