@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Button, Skeleton } from "@/components";
 import { getMe } from "@/shared/api/auth.api";
 import { listMyOrganizations } from "@/shared/api/organizations.api";
-import { useMembers } from "@/hooks/useMembers";
-import { useInvites } from "@/hooks/useInvites";
+import { useMembers } from "@/features/dashboard/hooks/useMembers";
+import { useInvites } from "@/features/dashboard/hooks/useInvites";
 import { InviteOrgModal } from "../components/InviteOrgModal";
 import * as css from "./member-management-page.css";
 

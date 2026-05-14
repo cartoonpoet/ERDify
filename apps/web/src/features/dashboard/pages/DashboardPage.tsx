@@ -3,15 +3,15 @@ import { useParams, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/shared/api/auth.api";
 import { QueryErrorBoundary } from "@/shared/components/QueryErrorBoundary";
-import { UnifiedSidebar } from "@/components/UnifiedSidebar";
+import { UnifiedSidebar } from "@/features/dashboard/components/UnifiedSidebar";
 import { CreateOrgModal } from "../components/CreateOrgModal";
 import { CreateProjectModal } from "../components/CreateProjectModal";
 import { CreateDiagramModal } from "../components/CreateDiagramModal";
 import { ImportDiagramModal } from "../components/ImportDiagramModal";
 import { ProfileModal } from "../components/ProfileModal";
-import { useDashboardStore } from "@/store/useDashboardStore";
-import { useDashboardActions } from "@/hooks/useDashboardActions";
-import { useAvatarMenu } from "@/hooks/useAvatarMenu";
+import { useDashboardStore } from "@/features/dashboard/store/useDashboardStore";
+import { useDashboardActions } from "@/features/dashboard/hooks/useDashboardActions";
+import { useAvatarMenu } from "@/features/dashboard/hooks/useAvatarMenu";
 import {
   shell, topbar, brand, brandLogo, topbarSpacer, topbarSearch, avatar, avatarImg,
   avatarWrapper, dropdown, dropdownHeader, dropdownEmail,

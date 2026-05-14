@@ -8,7 +8,7 @@ vi.mock("@/shared/api/organizations.api", () => ({
 }));
 
 const mockOpenModal = vi.fn();
-vi.mock("@/store/useDashboardStore", () => ({
+vi.mock("@/features/dashboard/store/useDashboardStore", () => ({
   useDashboardStore: (selector: (s: { openModal: typeof mockOpenModal }) => unknown) =>
     selector({ openModal: mockOpenModal }),
 }));

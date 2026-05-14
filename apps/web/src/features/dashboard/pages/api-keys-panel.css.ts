@@ -1,5 +1,5 @@
 import { style, composeStyles } from "@vanilla-extract/css";
-import { vars } from "../style/tokens.css";
+import { vars } from "@/style/tokens.css";
 
 export const page = style({
   padding: vars.space["6"],

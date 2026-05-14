@@ -8,10 +8,10 @@ const RegisterPage = lazy(() => import("@/pages/RegisterPage").then(m => ({ defa
 const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPasswordPage").then(m => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage").then(m => ({ default: m.ResetPasswordPage })));
 const EditorPage = lazy(() => import("@/features/editor/pages/EditorPage").then(m => ({ default: m.EditorPage })));
-const DashboardPage = lazy(() => import("@/pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
-const DiagramGrid = lazy(() => import("@/components/DiagramGrid").then(m => ({ default: m.DiagramGrid })));
-const MemberManagementPage = lazy(() => import("@/pages/MemberManagementPage").then(m => ({ default: m.MemberManagementPage })));
-const ApiKeysPanel = lazy(() => import("@/pages/ApiKeysPanel").then(m => ({ default: m.ApiKeysPanel })));
+const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
+const DiagramGrid = lazy(() => import("@/features/dashboard/components/DiagramGrid").then(m => ({ default: m.DiagramGrid })));
+const MemberManagementPage = lazy(() => import("@/features/dashboard/pages/MemberManagementPage").then(m => ({ default: m.MemberManagementPage })));
+const ApiKeysPanel = lazy(() => import("@/features/dashboard/pages/ApiKeysPanel").then(m => ({ default: m.ApiKeysPanel })));
 const RootRedirect = lazy(() => import("@/pages/RootRedirect").then(m => ({ default: m.RootRedirect })));
 const SharedDiagramPage = lazy(() => import("@/pages/SharedDiagramPage").then(m => ({ default: m.SharedDiagramPage })));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));

@@ -6,7 +6,7 @@ import { InviteOrgModal } from "./InviteOrgModal";
 vi.mock("../hooks/useInvites", () => ({
   useInvites: vi.fn(),
 }));
-import { useInvites } from "@/hooks/useInvites";
+import { useInvites } from "@/features/dashboard/hooks/useInvites";
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Modal, Button, Input } from "@/components";
-import { useInvites } from "@/hooks/useInvites";
+import { useInvites } from "@/features/dashboard/hooks/useInvites";
 import { form, footer, selectInput } from "./modal-form.css";
 import * as css from "./invite-org-modal.css";
 

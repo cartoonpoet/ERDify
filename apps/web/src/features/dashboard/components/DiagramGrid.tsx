@@ -19,7 +19,7 @@ import {
   ctxBtn, ctxMenu, ctxItem, ctxItemDanger, ctxDivider,
 } from "./DiagramGrid.css";
 import { ShareDiagramModal } from "@/shared/components/ShareDiagramModal";
-import { EditDiagramModal } from "@/components/EditDiagramModal";
+import { EditDiagramModal } from "@/features/dashboard/components/EditDiagramModal";
 
 type FilterType = "all" | "recent" | "mine";
 

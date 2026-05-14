@@ -11,8 +11,8 @@ vi.mock("../components/InviteOrgModal", () => ({ InviteOrgModal: () => null }));
 
 import { getMe } from "@/shared/api/auth.api";
 import { listMyOrganizations } from "@/shared/api/organizations.api";
-import { useMembers } from "@/hooks/useMembers";
-import { useInvites } from "@/hooks/useInvites";
+import { useMembers } from "@/features/dashboard/hooks/useMembers";
+import { useInvites } from "@/features/dashboard/hooks/useInvites";
 
 const makeQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } });
