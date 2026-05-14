@@ -114,18 +114,23 @@ export const SchemaFilterSidebar = () => {
         /* Collapsed: dot strip */
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0 8px", gap: 2 }}>
           {schemas.map((schema) => (
-            <div
+            <button
               key={schema}
+              type="button"
               title={schema}
+              aria-label={`${schema} 스키마 표시/숨기기`}
               onClick={() => toggleSchema(schema)}
               style={{
                 width: 28, height: 28, borderRadius: 7, cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 opacity: hiddenSchemas.has(schema) ? 0.3 : 1,
+                background: "none",
+                border: "none",
+                padding: 0,
               }}
             >
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: getSchemaColor(schema, schemas, schemaColors) }} />
-            </div>
+            </button>
           ))}
         </div>
       )}
