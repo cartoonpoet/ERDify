@@ -1,0 +1,441 @@
+import { style } from "@vanilla-extract/css";
+import { vars } from "@/style/tokens.css";
+
+export const headerEditRow = style({
+  background: vars.color.primary,
+  padding: "5px 8px",
+  borderRadius: "4px 4px 0 0",
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+});
+
+export const tableNameInput = style({
+  flex: 1,
+  background: "rgba(255,255,255,0.15)",
+  border: "none",
+  borderBottom: "1px solid rgba(255,255,255,0.5)",
+  color: "#ffffff",
+  fontWeight: 700,
+  fontSize: 12,
+  fontFamily: "monospace",
+  outline: "none",
+  padding: "1px 2px",
+});
+
+export const deleteEntityBtn = style({
+  flexShrink: 0,
+  width: 20,
+  height: 20,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "rgba(255,255,255,0.15)",
+  border: "none",
+  borderRadius: "50%",
+  color: "rgba(255,255,255,0.75)",
+  cursor: "pointer",
+  fontSize: 13,
+  lineHeight: 1,
+  padding: 0,
+  selectors: {
+    "&:hover": {
+      background: vars.color.error,
+      color: "#ffffff",
+    },
+    "&:focus-visible": {
+      outline: `2px solid #fff`,
+      outlineOffset: 2,
+    },
+  },
+});
+
+export const colHeaderRow = style({
+  display: "flex",
+  gap: 4,
+  padding: "2px 8px",
+  background: "#f1f5f9",
+  borderBottom: "1px solid #e2e8f0",
+});
+
+export const colHeaderLabel = style({
+  fontSize: 9,
+  color: "#94a3b8",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+});
+
+export const editColumnItem = style({
+  padding: "3px 8px",
+  borderBottom: "1px solid #f1f5f9",
+  display: "flex",
+  gap: 4,
+  alignItems: "center",
+});
+
+
+export const columnNameInput = style({
+  flex: 1,
+  minWidth: 0,
+  fontSize: 11,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: 2,
+  padding: "1px 3px",
+  fontFamily: "monospace",
+  color: vars.color.textPrimary,
+  outline: "none",
+  selectors: {
+    "&:focus": { borderColor: vars.color.primary },
+  },
+});
+
+export const typeInput = style({
+  width: 88,
+  fontSize: 10,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: 2,
+  padding: "1px 4px",
+  color: vars.color.textPrimary,
+  background: vars.color.surfaceTertiary,
+  fontFamily: "monospace",
+  outline: "none",
+  height: 20,
+  flexShrink: 0,
+  selectors: {
+    "&:focus": { borderColor: vars.color.primary, background: "#ffffff" },
+    "&::placeholder": { color: "#94a3b8" },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.primary}`,
+      outlineOffset: 1,
+    },
+  },
+});
+
+export const typeDropdown = style({
+  position: "absolute",
+  top: "calc(100% + 2px)",
+  left: 0,
+  background: vars.color.surface,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.sm,
+  boxShadow: vars.shadow.lg,
+  zIndex: 9999,
+  minWidth: 130,
+  maxHeight: 200,
+  overflowY: "auto",
+  padding: "4px 0",
+});
+
+export const typeOption = style({
+  display: "block",
+  width: "100%",
+  padding: "5px 10px",
+  fontSize: 11,
+  fontFamily: "monospace",
+  textAlign: "left",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  color: vars.color.textPrimary,
+  selectors: {
+    "&:hover": { background: "#eff6ff", color: vars.color.primary },
+  },
+});
+
+export const typeOptionActive = style({
+  color: vars.color.primary,
+  fontWeight: 700,
+  background: "#eff6ff",
+});
+
+export const typeSelectWrapper = style({
+  position: "relative",
+  flexShrink: 0,
+});
+
+
+export const deleteColBtn = style({
+  width: 18,
+  height: 18,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "none",
+  border: `1px solid transparent`,
+  borderRadius: 3,
+  color: vars.color.borderStrong,
+  cursor: "pointer",
+  fontSize: 13,
+  padding: 0,
+  lineHeight: 1,
+  flexShrink: 0,
+  selectors: {
+    "&:hover": {
+      color: vars.color.error,
+      background: `${vars.color.error}14`,
+      borderColor: `${vars.color.error}40`,
+    },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.error}`,
+      outlineOffset: 1,
+    },
+  },
+});
+
+export const addColumnBtn = style({
+  width: "100%",
+  fontSize: 10,
+  padding: "3px 0",
+  background: vars.color.surfaceTertiary,
+  border: `1px dashed ${vars.color.borderStrong}`,
+  borderRadius: 3,
+  color: vars.color.textSecondary,
+  cursor: "pointer",
+  fontFamily: "monospace",
+  selectors: {
+    "&:hover": { background: vars.color.surfaceSecondary, color: vars.color.textPrimary },
+  },
+});
+
+export const addColumnWrapper = style({
+  padding: "4px 8px",
+});
+
+export const collaboratorDot = style({
+  position: "absolute",
+  top: -8,
+  right: 6,
+  width: 12,
+  height: 12,
+  borderRadius: "50%",
+  border: "2px solid #ffffff",
+  zIndex: 1,
+});
+
+export const tableCommentInput = style({
+  flex: 1,
+  background: "transparent",
+  border: "none",
+  borderBottom: "1px solid rgba(255,255,255,0.3)",
+  color: "rgba(255,255,255,0.8)",
+  fontSize: 10,
+  outline: "none",
+  padding: "1px 2px",
+  selectors: {
+    "&::placeholder": { color: "rgba(255,255,255,0.4)" },
+  },
+});
+
+export const checkboxCell = style({
+  width: 26,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+});
+
+export const rowCheckbox = style({
+  width: 12,
+  height: 12,
+  accentColor: vars.color.primary,
+  cursor: "pointer",
+  margin: 0,
+});
+
+export const fkDotCell = style({
+  width: 26,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+});
+
+export const fkDot = style({
+  width: 7,
+  height: 7,
+  borderRadius: "50%",
+  background: "#3b82f6",
+  flexShrink: 0,
+});
+
+export const logicalNameInput = style({
+  flex: 1,
+  minWidth: 0,
+  fontSize: 10,
+  border: "none",
+  borderBottom: `1px solid transparent`,
+  background: "transparent",
+  color: vars.color.textSecondary,
+  outline: "none",
+  padding: "1px 2px",
+  selectors: {
+    "&:focus": { borderBottomColor: vars.color.primary },
+    "&::placeholder": { color: vars.color.borderStrong },
+  },
+});
+
+export const indexSection = style({
+  borderTop: `1px dashed ${vars.color.border}`,
+  padding: "5px 8px 6px",
+});
+
+export const indexSectionHeader = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  marginBottom: 4,
+});
+
+export const indexSectionLabel = style({
+  fontSize: 9,
+  fontWeight: 700,
+  color: vars.color.textSecondary,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  flex: 1,
+});
+
+export const indexAddBtn = style({
+  fontSize: 9,
+  color: vars.color.primary,
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  fontFamily: "monospace",
+  padding: 0,
+  selectors: {
+    "&:hover": { textDecoration: "underline" },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.primary}`,
+      outlineOffset: 2,
+      borderRadius: 2,
+    },
+  },
+});
+
+export const indexRow = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 4,
+  marginBottom: 3,
+  padding: "2px 4px",
+  background: vars.color.surfaceTertiary,
+  borderRadius: 3,
+  border: `1px solid ${vars.color.border}`,
+});
+
+export const indexNameInput = style({
+  flex: 1,
+  minWidth: 0,
+  fontSize: 10,
+  border: "none",
+  background: "transparent",
+  color: vars.color.textPrimary,
+  fontFamily: "monospace",
+  outline: "none",
+  padding: "1px 2px",
+});
+
+export const indexColsBtn = style({
+  fontSize: 9,
+  color: vars.color.textSecondary,
+  background: vars.color.surfaceSecondary,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: 3,
+  padding: "1px 5px",
+  cursor: "pointer",
+  fontFamily: "monospace",
+  whiteSpace: "nowrap",
+  maxWidth: 100,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  selectors: {
+    "&:hover": { borderColor: vars.color.primary },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.primary}`,
+      outlineOffset: 1,
+    },
+  },
+});
+
+export const indexColsDropdown = style({
+  position: "absolute",
+  top: "calc(100% + 2px)",
+  left: 0,
+  background: vars.color.surface,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.sm,
+  boxShadow: vars.shadow.lg,
+  zIndex: 9999,
+  minWidth: 140,
+  padding: "4px 0",
+});
+
+export const indexColsBackdrop = style({
+  position: "fixed",
+  inset: 0,
+  zIndex: 9998,
+});
+
+export const indexColOption = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "4px 10px",
+  fontSize: 11,
+  fontFamily: "monospace",
+  cursor: "pointer",
+  color: vars.color.textPrimary,
+  selectors: {
+    "&:hover": { background: vars.color.surfaceSecondary },
+  },
+});
+
+export const indexUniqueToggle = style({
+  fontSize: 9,
+  fontWeight: 700,
+  padding: "1px 5px",
+  borderRadius: 3,
+  border: `1px solid ${vars.color.border}`,
+  background: "none",
+  cursor: "pointer",
+  fontFamily: "monospace",
+  whiteSpace: "nowrap",
+  flexShrink: 0,
+  selectors: {
+    "&:hover": { borderColor: vars.color.primary, color: vars.color.primary },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.primary}`,
+      outlineOffset: 1,
+    },
+  },
+});
+
+export const indexUniqueActive = style({
+  background: vars.color.primary,
+  color: "#fff",
+  borderColor: vars.color.primary,
+});
+
+export const indexDeleteBtn = style({
+  width: 16,
+  height: 16,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "none",
+  border: "none",
+  color: vars.color.borderStrong,
+  cursor: "pointer",
+  fontSize: 12,
+  padding: 0,
+  flexShrink: 0,
+  selectors: {
+    "&:hover": { color: vars.color.error },
+    "&:focus-visible": {
+      outline: `2px solid ${vars.color.error}`,
+      outlineOffset: 1,
+      borderRadius: 2,
+    },
+  },
+});

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { useVersionPolling } from "@/hooks/useVersionPolling";
+import { useVersionPolling } from "@/features/editor/hooks/useVersionPolling";
 import { banner, message, refreshBtn, dismissBtn } from "./UpdateBanner.css";
 
 export const UpdateBanner = () => {

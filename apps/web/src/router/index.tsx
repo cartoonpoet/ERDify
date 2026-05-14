@@ -7,7 +7,7 @@ const LoginPage = lazy(() => import("@/pages/LoginPage").then(m => ({ default: m
 const RegisterPage = lazy(() => import("@/pages/RegisterPage").then(m => ({ default: m.RegisterPage })));
 const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPasswordPage").then(m => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage").then(m => ({ default: m.ResetPasswordPage })));
-const EditorPage = lazy(() => import("@/pages/EditorPage").then(m => ({ default: m.EditorPage })));
+const EditorPage = lazy(() => import("@/features/editor/pages/EditorPage").then(m => ({ default: m.EditorPage })));
 const DashboardPage = lazy(() => import("@/pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
 const DiagramGrid = lazy(() => import("@/components/DiagramGrid").then(m => ({ default: m.DiagramGrid })));
 const MemberManagementPage = lazy(() => import("@/pages/MemberManagementPage").then(m => ({ default: m.MemberManagementPage })));

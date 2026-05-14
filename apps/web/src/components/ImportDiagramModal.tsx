@@ -1,7 +1,7 @@
 import type { MouseEvent } from "react";
 import { Modal, Button } from "@/components";
-import { DarkCodeEditor } from "@/components/DarkCodeEditor";
-import { useDiagramImport } from "@/hooks/useDiagramImport";
+import { DarkCodeEditor } from "@/features/editor/components/DarkCodeEditor";
+import { useDiagramImport } from "@/features/editor/hooks/useDiagramImport";
 import type { DiagramDialect } from "@erdify/domain";
 import {
   tabRow, tab, tabActive,

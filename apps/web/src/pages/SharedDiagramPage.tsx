@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicDiagram } from "@/shared/api/diagrams.api";
-import { useEditorStore } from "@/store/useEditorStore";
-import { EditorCanvas } from "@/components/EditorCanvas";
+import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import { EditorCanvas } from "@/features/editor/components/EditorCanvas";
 import { Skeleton } from "@/shared/components/Skeleton";
 import * as css from "./shared-diagram-page.css";
 

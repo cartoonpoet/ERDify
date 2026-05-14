@@ -4,15 +4,15 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SharedDiagramPage } from "./SharedDiagramPage";
 import { getPublicDiagram } from "@/shared/api/diagrams.api";
-import { useEditorStore } from "@/store/useEditorStore";
+import { useEditorStore } from "@/features/editor/store/useEditorStore";
 
 vi.mock("@/shared/api/diagrams.api", () => ({
   getPublicDiagram: vi.fn(),
 }));
 
-vi.mock("@/store/useEditorStore");
+vi.mock("@/features/editor/store/useEditorStore");
 
-vi.mock("@/components/EditorCanvas", () => ({
+vi.mock("@/features/editor/components/EditorCanvas", () => ({
   EditorCanvas: () => React.createElement("div", { "data-testid": "editor-canvas" }),
 }));
 
