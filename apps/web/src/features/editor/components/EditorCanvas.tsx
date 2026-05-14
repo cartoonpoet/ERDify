@@ -113,16 +113,14 @@ type ContextMenuState = {
 // ReactFlow 내부 컴포넌트 — useReactFlow 사용 가능
 const ClickableMiniMap = ({
   containerRef,
-  document,
+  allSchemas,
   schemaColors,
 }: {
   containerRef: React.RefObject<HTMLDivElement | null>;
-  document: DiagramDocument | null;
+  allSchemas: string[];
   schemaColors: Record<string, string>;
 }) => {
   const { setViewport, getViewport } = useReactFlow();
-
-  const allSchemas = document ? getSchemasFromDocument(document.entities) : [];
 
   const nodeColor = (node: Node) => {
     const data = node.data as { entity: { color?: string | null; schema?: string | null } };
@@ -391,7 +389,7 @@ export const EditorCanvas = () => {
       >
         <Background />
         <Controls />
-        <ClickableMiniMap containerRef={containerRef} document={document} schemaColors={schemaColors} />
+        <ClickableMiniMap containerRef={containerRef} allSchemas={allSchemas} schemaColors={schemaColors} />
         {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
         {contextMenu && (
           <CanvasContextMenu
