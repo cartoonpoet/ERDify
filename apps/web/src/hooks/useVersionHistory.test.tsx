@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { PropsWithChildren } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createEmptyDiagram } from "@erdify/domain";
-import type { DiagramResponse, DiagramVersionResponse } from "@/api/diagrams.api";
-import * as diagramsApi from "@/api/diagrams.api";
+import type { DiagramResponse, DiagramVersionResponse } from "@/shared/api/diagrams.api";
+import * as diagramsApi from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useVersionHistory } from "./useVersionHistory";
 
-vi.mock("@/api/diagrams.api");
+vi.mock("@/shared/api/diagrams.api");
 
 function createWrapper() {
   const queryClient = new QueryClient({

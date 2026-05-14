@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMcpActivity } from "@/hooks/useMcpActivity";
-import type { McpSessionResponse } from "@/api/mcp-sessions.api";
+import type { McpSessionResponse } from "@/shared/api/mcp-sessions.api";
 import * as css from "./mcp-activity-drawer.css";
 
 interface McpActivityDrawerProps {

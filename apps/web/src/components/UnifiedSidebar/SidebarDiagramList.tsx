@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { DiagramDialect } from "@erdify/domain";
-import type { ProjectResponse } from "@/api/projects.api";
-import type { DiagramResponse } from "@/api/diagrams.api";
+import type { ProjectResponse } from "@/shared/api/projects.api";
+import type { DiagramResponse } from "@/shared/api/diagrams.api";
 import * as css from "./unified-sidebar.css";
 
 const dialectLabel: Record<DiagramDialect, string> = {

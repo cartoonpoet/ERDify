@@ -2,9 +2,9 @@ import React from "react";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMcpActivity } from "./useMcpActivity";
-import { listMcpSessions, revertMcpSession } from "@/api/mcp-sessions.api";
+import { listMcpSessions, revertMcpSession } from "@/shared/api/mcp-sessions.api";
 
-vi.mock("@/api/mcp-sessions.api", () => ({
+vi.mock("@/shared/api/mcp-sessions.api", () => ({
   listMcpSessions: vi.fn(),
   revertMcpSession: vi.fn(),
 }));

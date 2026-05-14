@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import type { ChangeEvent, MouseEvent } from "react";
 import { Modal, Button } from "@/components";
-import { parseDdl } from "@/utils/ddl-parser";
+import { parseDdl } from "@/shared/utils/ddl-parser";
 import { DarkCodeEditor } from "@/components/DarkCodeEditor";
 import { useEditorStore } from "@/store/useEditorStore";
 import type { DiagramDialect } from "@erdify/domain";

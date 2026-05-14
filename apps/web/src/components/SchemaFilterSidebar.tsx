@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useEditorStore } from "@/store/useEditorStore";
-import { getSchemaColor, getSchemasFromDocument } from "@/utils/schema-colors";
+import { getSchemaColor, getSchemasFromDocument } from "@/shared/utils/schema-colors";
 
 export const SchemaFilterSidebar = () => {
   const document = useEditorStore((s) => s.document);

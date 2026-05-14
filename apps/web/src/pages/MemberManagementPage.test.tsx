@@ -3,14 +3,14 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemberManagementPage } from "./MemberManagementPage";
 
-vi.mock("@/api/auth.api", () => ({ getMe: vi.fn() }));
-vi.mock("@/api/organizations.api", () => ({ listMyOrganizations: vi.fn() }));
+vi.mock("@/shared/api/auth.api", () => ({ getMe: vi.fn() }));
+vi.mock("@/shared/api/organizations.api", () => ({ listMyOrganizations: vi.fn() }));
 vi.mock("../hooks/useMembers", () => ({ useMembers: vi.fn() }));
 vi.mock("../hooks/useInvites", () => ({ useInvites: vi.fn() }));
 vi.mock("../components/InviteOrgModal", () => ({ InviteOrgModal: () => null }));
 
-import { getMe } from "@/api/auth.api";
-import { listMyOrganizations } from "@/api/organizations.api";
+import { getMe } from "@/shared/api/auth.api";
+import { listMyOrganizations } from "@/shared/api/organizations.api";
 import { useMembers } from "@/hooks/useMembers";
 import { useInvites } from "@/hooks/useInvites";
 

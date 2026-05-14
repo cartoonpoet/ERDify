@@ -3,7 +3,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RootRedirect } from "./RootRedirect";
 
-vi.mock("@/api/organizations.api", () => ({
+vi.mock("@/shared/api/organizations.api", () => ({
   listMyOrganizations: vi.fn(),
 }));
 
@@ -13,7 +13,7 @@ vi.mock("@/store/useDashboardStore", () => ({
     selector({ openModal: mockOpenModal }),
 }));
 
-import { listMyOrganizations } from "@/api/organizations.api";
+import { listMyOrganizations } from "@/shared/api/organizations.api";
 
 const makeQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } });

@@ -1,9 +1,9 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CreateProjectModal } from "./CreateProjectModal";
-import { createProject } from "@/api/projects.api";
+import { createProject } from "@/shared/api/projects.api";
 
-vi.mock("@/api/projects.api", () => ({ createProject: vi.fn() }));
+vi.mock("@/shared/api/projects.api", () => ({ createProject: vi.fn() }));
 vi.mock("./modal-form.css", () => ({ form: "", footer: "" }));
 
 vi.mock("../../../design-system", () => ({

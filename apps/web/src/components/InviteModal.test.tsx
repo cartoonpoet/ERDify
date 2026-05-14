@@ -1,9 +1,9 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { InviteModal } from "./InviteModal";
-import * as orgApi from "@/api/organizations.api";
+import * as orgApi from "@/shared/api/organizations.api";
 
-vi.mock("@/api/organizations.api", () => ({
+vi.mock("@/shared/api/organizations.api", () => ({
   inviteMemberByEmail: vi.fn(),
 }));
 vi.mock("../../../design-system/Modal", () => ({

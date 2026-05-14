@@ -1,8 +1,8 @@
 import { useParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { listMyOrganizations } from "@/api/organizations.api";
-import { listProjects } from "@/api/projects.api";
-import { listDiagrams } from "@/api/diagrams.api";
+import { listMyOrganizations } from "@/shared/api/organizations.api";
+import { listProjects } from "@/shared/api/projects.api";
+import { listDiagrams } from "@/shared/api/diagrams.api";
 import { SidebarOrgSection } from "./SidebarOrgSection";
 import { SidebarDiagramList } from "./SidebarDiagramList";
 import { SidebarBottomBar } from "./SidebarBottomBar";

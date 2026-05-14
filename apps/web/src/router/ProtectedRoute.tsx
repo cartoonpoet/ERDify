@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getMe } from "@/api/auth.api";
+import { getMe } from "@/shared/api/auth.api";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export const ProtectedRoute = () => {

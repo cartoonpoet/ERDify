@@ -17,7 +17,7 @@ import {
 import type { SeedRow } from "@erdify/domain";
 import { useEditorStore } from "@/store/useEditorStore";
 import type { EditableTableNodeType } from "@/store/useEditorStore";
-import { getSchemaColor, getSchemasFromDocument } from "@/utils/schema-colors";
+import { getSchemaColor, getSchemasFromDocument } from "@/shared/utils/schema-colors";
 import { DEFAULT_HEADER_COLOR, makeColumn, makeIndex } from "./constants";
 import { TypeSelect } from "./TypeSelect";
 import { SchemaStrip } from "./SchemaStrip";

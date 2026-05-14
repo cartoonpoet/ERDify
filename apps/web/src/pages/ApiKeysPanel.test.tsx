@@ -1,12 +1,12 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import * as apiKeysApi from "@/api/api-keys.api";
-import type { ApiKeyItem, ApiKeyCreated } from "@/api/api-keys.api";
-import * as clipboardUtil from "@/utils/clipboard";
+import * as apiKeysApi from "@/shared/api/api-keys.api";
+import type { ApiKeyItem, ApiKeyCreated } from "@/shared/api/api-keys.api";
+import * as clipboardUtil from "@/shared/utils/clipboard";
 import { ApiKeysPanel } from "./ApiKeysPanel";
 
-vi.mock("@/api/api-keys.api");
-vi.mock("@/utils/clipboard", () => ({
+vi.mock("@/shared/api/api-keys.api");
+vi.mock("@/shared/utils/clipboard", () => ({
   copyToClipboard: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("./api-keys-panel.css", () => ({

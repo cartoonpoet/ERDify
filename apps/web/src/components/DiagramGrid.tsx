@@ -5,10 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import { MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
-import { listDiagrams } from "@/api/diagrams.api";
-import { listProjects } from "@/api/projects.api";
-import { getMe } from "@/api/auth.api";
-import type { DiagramResponse } from "@/api/diagrams.api";
+import { listDiagrams } from "@/shared/api/diagrams.api";
+import { listProjects } from "@/shared/api/projects.api";
+import { getMe } from "@/shared/api/auth.api";
+import type { DiagramResponse } from "@/shared/api/diagrams.api";
 import type { DashboardOutletContext } from "../pages/DashboardPage";
 import { Button, Skeleton } from "@/components";
 import {

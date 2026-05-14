@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { LoginPage } from "./LoginPage";
-import * as authApi from "@/api/auth.api";
+import * as authApi from "@/shared/api/auth.api";
 
-vi.mock("@/api/auth.api");
+vi.mock("@/shared/api/auth.api");
 vi.mock("@/store/useAuthStore", () => ({
   useAuthStore: (selector: (s: { token: null; setToken: ReturnType<typeof vi.fn>; clearToken: ReturnType<typeof vi.fn> }) => unknown) =>
     selector({ token: null, setToken: vi.fn(), clearToken: vi.fn() })

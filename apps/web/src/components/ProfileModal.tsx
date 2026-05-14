@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent, type ChangeEvent, type DragEvent } fr
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Modal, Button, Input } from "@/components";
-import { getMe, updateProfile, uploadAvatar, changePassword, deleteAccount } from "@/api/auth.api";
+import { getMe, updateProfile, uploadAvatar, changePassword, deleteAccount } from "@/shared/api/auth.api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { form, footer } from "./modal-form.css";
 import * as css from "./ProfileModal.css";

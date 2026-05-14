@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Modal, Button, Input } from "@/components";
-import { createOrganization } from "@/api/organizations.api";
+import { createOrganization } from "@/shared/api/organizations.api";
 import { form, footer } from "./modal-form.css";
 
 interface CreateOrgModalProps {

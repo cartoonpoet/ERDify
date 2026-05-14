@@ -1,4 +1,4 @@
-import { randomUUID } from "@/utils/uuid";
+import { randomUUID } from "@/shared/utils/uuid";
 import { useRef, useState, useMemo } from "react";
 import type { MouseEvent } from "react";
 import { ReactFlow, Background, Controls, MiniMap, useReactFlow } from "@xyflow/react";
@@ -8,7 +8,7 @@ import { updateEntityPosition, addRelationship, removeRelationship, removeEntity
 import type { DiagramRelationship, DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "@/store/useEditorStore";
 import type { EditableTableNodeType, UnmatchedPkInput } from "@/store/useEditorStore";
-import { getSchemaColor, getSchemasFromDocument } from "@/utils/schema-colors";
+import { getSchemaColor, getSchemasFromDocument } from "@/shared/utils/schema-colors";
 import { EditableTableNode } from "./EditableTableNode";
 import { CardinalityEdge } from "./CardinalityEdge";
 import { SearchPanel } from "./SearchPanel";

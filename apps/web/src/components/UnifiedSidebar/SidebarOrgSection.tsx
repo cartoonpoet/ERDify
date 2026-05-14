@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FocusEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import type { OrgResponse } from "@/api/organizations.api";
+import type { OrgResponse } from "@/shared/api/organizations.api";
 import * as css from "./unified-sidebar.css";
 
 interface SidebarOrgSectionProps {

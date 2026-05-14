@@ -2,9 +2,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { UnifiedSidebar } from ".";
-import type { OrgResponse } from "@/api/organizations.api";
-import type { ProjectResponse } from "@/api/projects.api";
-import type { DiagramResponse } from "@/api/diagrams.api";
+import type { OrgResponse } from "@/shared/api/organizations.api";
+import type { ProjectResponse } from "@/shared/api/projects.api";
+import type { DiagramResponse } from "@/shared/api/diagrams.api";
 
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async (importOriginal) => {
@@ -12,19 +12,19 @@ vi.mock("react-router-dom", async (importOriginal) => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-vi.mock("@/api/organizations.api", () => ({
+vi.mock("@/shared/api/organizations.api", () => ({
   listMyOrganizations: vi.fn(),
 }));
-vi.mock("@/api/projects.api", () => ({
+vi.mock("@/shared/api/projects.api", () => ({
   listProjects: vi.fn(),
 }));
-vi.mock("@/api/diagrams.api", () => ({
+vi.mock("@/shared/api/diagrams.api", () => ({
   listDiagrams: vi.fn(),
 }));
 
-import { listMyOrganizations } from "@/api/organizations.api";
-import { listProjects } from "@/api/projects.api";
-import { listDiagrams } from "@/api/diagrams.api";
+import { listMyOrganizations } from "@/shared/api/organizations.api";
+import { listProjects } from "@/shared/api/projects.api";
+import { listDiagrams } from "@/shared/api/diagrams.api";
 
 const orgs: OrgResponse[] = [
   { id: "org-1", name: "Acme Corp", ownerId: "u1", createdAt: "", updatedAt: "" },

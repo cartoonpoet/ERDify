@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Modal, Button, Input } from "@/components";
-import { createDiagram } from "@/api/diagrams.api";
+import { createDiagram } from "@/shared/api/diagrams.api";
 import { form, footer, selectInput } from "./modal-form.css";
 
 interface CreateDiagramModalProps {

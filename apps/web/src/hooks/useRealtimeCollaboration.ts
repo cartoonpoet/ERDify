@@ -4,7 +4,7 @@ import type { Socket } from "socket.io-client";
 import type { DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "@/store/useEditorStore";
 import type { Collaborator } from "@/store/useEditorStore";
-import { applyDiff } from "../utils/collaboration-diff";
+import { applyDiff } from "@/shared/utils/collaboration-diff";
 import { useCollaborationSocket } from "./useCollaborationSocket";
 import { usePresence } from "./usePresence";
 

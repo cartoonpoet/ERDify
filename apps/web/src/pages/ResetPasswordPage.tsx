@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { resetPassword } from "@/api/auth.api";
+import { resetPassword } from "@/shared/api/auth.api";
 import { Button, Input } from "@/components";
 import {
   page, card, brand, brandLogo, tagline, form, authLink, authLinkAnchor,

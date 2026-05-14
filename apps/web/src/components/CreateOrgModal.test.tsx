@@ -1,9 +1,9 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CreateOrgModal } from "./CreateOrgModal";
-import { createOrganization } from "@/api/organizations.api";
+import { createOrganization } from "@/shared/api/organizations.api";
 
-vi.mock("@/api/organizations.api", () => ({ createOrganization: vi.fn() }));
+vi.mock("@/shared/api/organizations.api", () => ({ createOrganization: vi.fn() }));
 vi.mock("./modal-form.css", () => ({ form: "", footer: "" }));
 
 vi.mock("../../../design-system", () => ({

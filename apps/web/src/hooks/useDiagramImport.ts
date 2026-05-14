@@ -1,9 +1,9 @@
 import { useState, useRef } from "react";
 import type { DragEvent, ChangeEvent } from "react";
-import { randomUUID } from "@/utils/uuid";
-import { createDiagram } from "@/api/diagrams.api";
-import { parseDdl } from "@/utils/ddl-parser";
-import { parseExerd } from "@/utils/exerd-parser";
+import { randomUUID } from "@/shared/utils/uuid";
+import { createDiagram } from "@/shared/api/diagrams.api";
+import { parseDdl } from "@/shared/utils/ddl-parser";
+import { parseExerd } from "@/shared/utils/exerd-parser";
 import type { DiagramDialect } from "@erdify/domain";
 
 export type TabType = DiagramDialect | "exerd";

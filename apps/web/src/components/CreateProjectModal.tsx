@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Modal, Button, Input } from "@/components";
-import { createProject } from "@/api/projects.api";
+import { createProject } from "@/shared/api/projects.api";
 import { form, footer } from "./modal-form.css";
 
 interface CreateProjectModalProps {

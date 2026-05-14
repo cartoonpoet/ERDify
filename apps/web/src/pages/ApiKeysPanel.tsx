@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listApiKeys, createApiKey, revokeApiKey, regenerateApiKey } from "@/api/api-keys.api";
-import type { ApiKeyItem, ApiKeyCreated } from "@/api/api-keys.api";
-import { copyToClipboard } from "@/utils/clipboard";
+import { listApiKeys, createApiKey, revokeApiKey, regenerateApiKey } from "@/shared/api/api-keys.api";
+import type { ApiKeyItem, ApiKeyCreated } from "@/shared/api/api-keys.api";
+import { copyToClipboard } from "@/shared/utils/clipboard";
 import * as css from "./api-keys-panel.css";
 
 type ExpiryPreset = "30d" | "90d" | "1y" | "none" | "custom";

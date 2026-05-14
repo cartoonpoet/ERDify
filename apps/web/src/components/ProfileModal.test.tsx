@@ -2,15 +2,15 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProfileModal } from "./ProfileModal";
-import { getMe, updateProfile, uploadAvatar, changePassword } from "@/api/auth.api";
+import { getMe, updateProfile, uploadAvatar, changePassword } from "@/shared/api/auth.api";
 
-vi.mock("@/api/auth.api", () => ({
+vi.mock("@/shared/api/auth.api", () => ({
   getMe: vi.fn(),
   updateProfile: vi.fn(),
   uploadAvatar: vi.fn(),
   changePassword: vi.fn(),
 }));
-vi.mock("@/api/httpClient", () => ({ API_BASE_URL: "" }));
+vi.mock("@/shared/api/httpClient", () => ({ API_BASE_URL: "" }));
 vi.mock("./modal-form.css", () => ({ form: "", footer: "" }));
 vi.mock("./ProfileModal.css", () => ({
   body: "", tabs: "", tab: "", tabActive: "", avatarSection: "", avatarCircle: "",

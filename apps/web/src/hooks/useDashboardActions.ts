@@ -1,9 +1,9 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteOrganization } from "@/api/organizations.api";
-import { deleteProject } from "@/api/projects.api";
-import { deleteDiagram } from "@/api/diagrams.api";
-import { logout } from "@/api/auth.api";
+import { deleteOrganization } from "@/shared/api/organizations.api";
+import { deleteProject } from "@/shared/api/projects.api";
+import { deleteDiagram } from "@/shared/api/diagrams.api";
+import { logout } from "@/shared/api/auth.api";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export const useDashboardActions = () => {

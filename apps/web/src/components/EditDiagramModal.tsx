@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Modal, Button, Input } from "@/components";
-import { updateDiagram } from "@/api/diagrams.api";
-import type { DiagramResponse } from "@/api/diagrams.api";
+import { updateDiagram } from "@/shared/api/diagrams.api";
+import type { DiagramResponse } from "@/shared/api/diagrams.api";
 import { form, footer, selectInput } from "./modal-form.css";
 
 interface EditDiagramModalProps {

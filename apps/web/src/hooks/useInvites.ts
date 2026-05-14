@@ -3,8 +3,8 @@ import {
   getPendingInvites,
   inviteMemberByEmail,
   cancelInvite,
-} from "@/api/members.api";
-import type { InviteResult, MemberRoleType } from "@/api/members.api";
+} from "@/shared/api/members.api";
+import type { InviteResult, MemberRoleType } from "@/shared/api/members.api";
 
 export const useInvites = (orgId: string) => {
   const queryClient = useQueryClient();

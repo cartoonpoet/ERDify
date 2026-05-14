@@ -1,10 +1,10 @@
-import { randomUUID } from "@/utils/uuid";
+import { randomUUID } from "@/shared/utils/uuid";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { addEntity } from "@erdify/domain";
 import { Share2 } from "lucide-react";
-import { getDiagram } from "@/api/diagrams.api";
+import { getDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/store/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
 import { RelationshipPopover } from "../components/RelationshipPopover";

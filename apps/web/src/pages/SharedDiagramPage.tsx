@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getPublicDiagram } from "@/api/diagrams.api";
+import { getPublicDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/store/useEditorStore";
 import { EditorCanvas } from "@/components/EditorCanvas";
 import { Skeleton } from "@/components/Skeleton";

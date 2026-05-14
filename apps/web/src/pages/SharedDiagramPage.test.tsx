@@ -3,10 +3,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SharedDiagramPage } from "./SharedDiagramPage";
-import { getPublicDiagram } from "@/api/diagrams.api";
+import { getPublicDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/store/useEditorStore";
 
-vi.mock("@/api/diagrams.api", () => ({
+vi.mock("@/shared/api/diagrams.api", () => ({
   getPublicDiagram: vi.fn(),
 }));
 

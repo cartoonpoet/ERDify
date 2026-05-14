@@ -2,9 +2,9 @@ import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Copy, Check } from "lucide-react";
 import { Modal } from "@/components";
-import { shareDiagram, revokeDiagramShare } from "@/api/diagrams.api";
-import type { SharePreset } from "@/api/diagrams.api";
-import { copyToClipboard } from "@/utils/clipboard";
+import { shareDiagram, revokeDiagramShare } from "@/shared/api/diagrams.api";
+import type { SharePreset } from "@/shared/api/diagrams.api";
+import { copyToClipboard } from "@/shared/utils/clipboard";
 import * as css from "./share-diagram-modal.css";
 
 const PRESET_LABELS: Record<SharePreset, string> = {

@@ -2,25 +2,25 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DiagramGrid } from "./DiagramGrid";
-import type { DiagramResponse } from "@/api/diagrams.api";
+import type { DiagramResponse } from "@/shared/api/diagrams.api";
 import type { DashboardOutletContext } from "../pages/DashboardPage";
 
-vi.mock("@/api/diagrams.api", () => ({
+vi.mock("@/shared/api/diagrams.api", () => ({
   listDiagrams: vi.fn(),
 }));
-vi.mock("@/api/projects.api", () => ({
+vi.mock("@/shared/api/projects.api", () => ({
   listProjects: vi.fn(),
 }));
-vi.mock("@/api/auth.api", () => ({
+vi.mock("@/shared/api/auth.api", () => ({
   getMe: vi.fn(),
 }));
 vi.mock("../../editor/components/ShareDiagramModal", () => ({
   ShareDiagramModal: () => null,
 }));
 
-import { listDiagrams } from "@/api/diagrams.api";
-import { listProjects } from "@/api/projects.api";
-import { getMe } from "@/api/auth.api";
+import { listDiagrams } from "@/shared/api/diagrams.api";
+import { listProjects } from "@/shared/api/projects.api";
+import { getMe } from "@/shared/api/auth.api";
 
 const makeContent = (dialect: "postgresql" | "mysql") => ({
   format: "erdify.schema.v1" as const,

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { login } from "@/api/auth.api";
+import { login } from "@/shared/api/auth.api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button, Input } from "@/components";
 import {

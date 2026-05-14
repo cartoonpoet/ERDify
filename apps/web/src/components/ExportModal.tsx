@@ -3,7 +3,7 @@ import { Modal } from "@/components/Modal";
 import { generateDdl, generateOrm } from "@erdify/domain";
 import type { OrmType } from "@erdify/domain";
 import { useEditorStore } from "@/store/useEditorStore";
-import { copyToClipboard } from "@/utils/clipboard";
+import { copyToClipboard } from "@/shared/utils/clipboard";
 import { DarkCodeEditor } from "@/components/DarkCodeEditor";
 import * as css from "./ExportModal.css";
 

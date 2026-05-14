@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ExportModal } from "./ExportModal";
 import { useEditorStore } from "@/store/useEditorStore";
 import { generateDdl, generateOrm } from "@erdify/domain";
-import { copyToClipboard } from "@/utils/clipboard";
+import { copyToClipboard } from "@/shared/utils/clipboard";
 
 vi.mock("@/store/useEditorStore");
 
@@ -12,7 +12,7 @@ vi.mock("@erdify/domain", () => ({
   generateOrm: vi.fn(),
 }));
 
-vi.mock("@/utils/clipboard", () => ({
+vi.mock("@/shared/utils/clipboard", () => ({
   copyToClipboard: vi.fn().mockResolvedValue(undefined),
 }));
 

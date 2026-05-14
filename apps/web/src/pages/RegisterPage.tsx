@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { sendVerification, verifyCode, getInvite, register } from "@/api/auth.api";
+import { sendVerification, verifyCode, getInvite, register } from "@/shared/api/auth.api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button, Input } from "@/components";
 import {

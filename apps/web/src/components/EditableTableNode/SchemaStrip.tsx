@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getSchemaColor } from "@/utils/schema-colors";
+import { getSchemaColor } from "@/shared/utils/schema-colors";
 
 type Props = {
   schema: string | null | undefined;

@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { RegisterPage } from "./RegisterPage";
-import * as authApi from "@/api/auth.api";
+import * as authApi from "@/shared/api/auth.api";
 
-vi.mock("@/api/auth.api");
+vi.mock("@/shared/api/auth.api");
 
 const mockSetAuthenticated = vi.fn();
 vi.mock("@/store/useAuthStore", () => ({

@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { McpActivityDrawer } from "./McpActivityDrawer";
 import { useMcpActivity } from "@/hooks/useMcpActivity";
-import type { McpSessionResponse } from "@/api/mcp-sessions.api";
+import type { McpSessionResponse } from "@/shared/api/mcp-sessions.api";
 
 vi.mock("../hooks/useMcpActivity");
 vi.mock("./mcp-activity-drawer.css", () => ({

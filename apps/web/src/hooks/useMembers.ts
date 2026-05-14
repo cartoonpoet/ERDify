@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getMembers, updateMemberRole, removeMember as removeMemberApi } from "@/api/members.api";
-import type { MemberRoleType } from "@/api/members.api";
+import { getMembers, updateMemberRole, removeMember as removeMemberApi } from "@/shared/api/members.api";
+import type { MemberRoleType } from "@/shared/api/members.api";
 
 export const useMembers = (orgId: string) => {
   const queryClient = useQueryClient();

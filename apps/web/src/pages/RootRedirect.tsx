@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { listMyOrganizations } from "@/api/organizations.api";
+import { listMyOrganizations } from "@/shared/api/organizations.api";
 import { useDashboardStore } from "@/store/useDashboardStore";
 
 export const RootRedirect = () => {

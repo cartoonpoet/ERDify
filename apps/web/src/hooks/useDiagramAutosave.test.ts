@@ -2,10 +2,10 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createEmptyDiagram } from "@erdify/domain";
 import { useEditorStore } from "@/store/useEditorStore";
-import * as diagramsApi from "@/api/diagrams.api";
+import * as diagramsApi from "@/shared/api/diagrams.api";
 import { useDiagramAutosave } from "./useDiagramAutosave";
 
-vi.mock("@/api/diagrams.api");
+vi.mock("@/shared/api/diagrams.api");
 
 const resetStore = () =>
   useEditorStore.setState({ document: null, isDirty: false, selectedEntityId: null });

@@ -1,9 +1,9 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CreateDiagramModal } from "./CreateDiagramModal";
-import { createDiagram } from "@/api/diagrams.api";
+import { createDiagram } from "@/shared/api/diagrams.api";
 
-vi.mock("@/api/diagrams.api", () => ({ createDiagram: vi.fn() }));
+vi.mock("@/shared/api/diagrams.api", () => ({ createDiagram: vi.fn() }));
 vi.mock("./modal-form.css", () => ({ form: "", footer: "", selectInput: "" }));
 
 vi.mock("../../../design-system", () => ({

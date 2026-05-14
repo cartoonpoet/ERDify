@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { listMcpSessions, revertMcpSession } from "@/api/mcp-sessions.api";
-import type { McpSessionResponse } from "@/api/mcp-sessions.api";
+import { listMcpSessions, revertMcpSession } from "@/shared/api/mcp-sessions.api";
+import type { McpSessionResponse } from "@/shared/api/mcp-sessions.api";
 
 export interface UseMcpActivityResult {
   sessions: McpSessionResponse[];

@@ -1,9 +1,9 @@
 import type { CSSProperties, MouseEvent } from "react";
 import { useReactFlow } from "@xyflow/react";
 import { addEntity, updateEntityPosition } from "@erdify/domain";
-import { randomUUID } from "@/utils/uuid";
+import { randomUUID } from "@/shared/utils/uuid";
 import { useEditorStore } from "@/store/useEditorStore";
-import { computeAutoLayout } from "../utils/canvas-layout";
+import { computeAutoLayout } from "@/shared/utils/canvas-layout";
 
 export interface CanvasContextMenuProps {
   menuX: number;

@@ -1,5 +1,5 @@
 import type { DiagramColumn, DiagramIndex } from "@erdify/domain";
-import { randomUUID } from "@/utils/uuid";
+import { randomUUID } from "@/shared/utils/uuid";
 
 export const DEFAULT_HEADER_COLOR = "#0064E0";
 

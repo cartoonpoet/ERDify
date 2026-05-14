@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { updateDiagram } from "@/api/diagrams.api";
+import { updateDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/store/useEditorStore";
 
 export function useDiagramAutosave(diagramId: string, delayMs = 3000): void {

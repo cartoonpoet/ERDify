@@ -3,7 +3,7 @@ import type { PropsWithChildren } from "react";
 import { useState } from "react";
 import { BrowserRouter, useNavigate } from "react-router-dom";
 import type { AxiosError } from "axios";
-import { setNavigate } from "@/api/httpClient";
+import { setNavigate } from "@/shared/api/httpClient";
 import { UpdateBanner } from "@/components/UpdateBanner";
 
 const NavigateSetter = () => {

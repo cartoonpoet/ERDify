@@ -2,10 +2,10 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ShareDiagramModal } from "./ShareDiagramModal";
-import { shareDiagram, revokeDiagramShare } from "@/api/diagrams.api";
-import { copyToClipboard } from "@/utils/clipboard";
+import { shareDiagram, revokeDiagramShare } from "@/shared/api/diagrams.api";
+import { copyToClipboard } from "@/shared/utils/clipboard";
 
-vi.mock("@/api/diagrams.api", () => ({
+vi.mock("@/shared/api/diagrams.api", () => ({
   shareDiagram: vi.fn(),
   revokeDiagramShare: vi.fn(),
 }));

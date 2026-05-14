@@ -3,8 +3,8 @@ import {
   listVersions,
   restoreVersion,
   saveVersion
-} from "@/api/diagrams.api";
-import type { DiagramVersionResponse } from "@/api/diagrams.api";
+} from "@/shared/api/diagrams.api";
+import type { DiagramVersionResponse } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/store/useEditorStore";
 
 export interface UseVersionHistoryResult {
