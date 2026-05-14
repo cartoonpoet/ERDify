@@ -16,14 +16,14 @@ export interface UseVersionHistoryResult {
   isRestoring: boolean;
 }
 
-export function useVersionHistory(diagramId: string): UseVersionHistoryResult {
+export function useVersionHistory(diagramId: string, enabled = true): UseVersionHistoryResult {
   const queryClient = useQueryClient();
   const setDocument = useEditorStore((s) => s.setDocument);
 
   const versionsQuery = useQuery({
     queryKey: ["diagram-versions", diagramId],
     queryFn: () => listVersions(diagramId),
-    enabled: !!diagramId
+    enabled: !!diagramId && enabled,
   });
 
   const saveVersionMutation = useMutation({

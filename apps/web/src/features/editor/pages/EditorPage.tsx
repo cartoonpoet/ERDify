@@ -78,7 +78,7 @@ export const EditorPage = () => {
 
   useRealtimeCollaboration(diagramId ?? "");
   useDiagramAutosave(diagramId ?? "");
-  const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "");
+  const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "", showHistory);
 
   const handleAddTable = () => {
     applyCommand((doc) =>
