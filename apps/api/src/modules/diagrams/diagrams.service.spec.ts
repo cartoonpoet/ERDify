@@ -30,6 +30,7 @@ type MockRepo<_T> = {
   find: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
   save: ReturnType<typeof vi.fn>;
+  query: ReturnType<typeof vi.fn>;
   remove?: ReturnType<typeof vi.fn>;
 };
 
@@ -82,7 +83,7 @@ describe("DiagramsService", () => {
   let memberRepo: MockRepo<OrganizationMember>;
 
   beforeEach(() => {
-    diagramRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
+    diagramRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), query: vi.fn(), remove: vi.fn() };
     versionRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
     projectRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
     orgRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
@@ -146,11 +147,11 @@ describe("DiagramsService", () => {
     });
 
     it("returns diagrams for member", async () => {
-      const diagrams = [makeDiagram()];
+      const rows = [{ id: "diag-1", projectId: "proj-1", name: "ERD", dialect: "postgresql", previewEntities: [] }];
       projectRepo.findOne.mockResolvedValue(makeProject());
       memberRepo.findOne.mockResolvedValue(makeMember());
-      diagramRepo.find.mockResolvedValue(diagrams);
-      expect(await service.findAll("proj-1", "user-1")).toEqual(diagrams);
+      diagramRepo.query.mockResolvedValue(rows);
+      expect(await service.findAll("proj-1", "user-1")).toEqual(rows);
     });
   });
 
