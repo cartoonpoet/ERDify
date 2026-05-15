@@ -31,7 +31,7 @@ describe("AuthService", () => {
 
   beforeEach(() => {
     userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn(), delete: vi.fn() };
-    apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
+    apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn(), delete: vi.fn() };
     inviteRepo = { find: vi.fn(), save: vi.fn() };
     orgRepo = { find: vi.fn().mockResolvedValue([]), remove: vi.fn() };
     memberRepo = { findOne: vi.fn().mockResolvedValue(null), find: vi.fn(), create: vi.fn(), save: vi.fn() };
