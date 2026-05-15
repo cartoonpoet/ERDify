@@ -16,6 +16,7 @@ type MockRepo<T> = {
   save: ReturnType<typeof vi.fn>;
   find: ReturnType<typeof vi.fn>;
   count: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
 };
 
 describe("AuthService", () => {
@@ -29,7 +30,7 @@ describe("AuthService", () => {
   let emailService: { sendVerificationEmail: ReturnType<typeof vi.fn>; sendInviteEmail: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
+    userRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn(), delete: vi.fn() };
     apiKeyRepo = { findOne: vi.fn(), create: vi.fn(), save: vi.fn(), find: vi.fn(), count: vi.fn() };
     inviteRepo = { find: vi.fn(), save: vi.fn() };
     orgRepo = { find: vi.fn().mockResolvedValue([]), remove: vi.fn() };
@@ -195,6 +196,30 @@ describe("AuthService", () => {
       expect(result.apiKey).toMatch(/^erd_[a-f0-9]{64}$/);
       expect(result.name).toBe("Production");
       expect(result.expiresAt).toEqual(expiresAt);
+    });
+  });
+
+  describe("deleteAccount", () => {
+    it("deletes user without owned orgs", async () => {
+      orgRepo.find.mockResolvedValue([]);
+      userRepo.delete.mockResolvedValue({ affected: 1 });
+
+      await service.deleteAccount("user-1");
+
+      expect(orgRepo.remove).not.toHaveBeenCalled();
+      expect(userRepo.delete).toHaveBeenCalledWith("user-1");
+    });
+
+    it("removes owned orgs before deleting user", async () => {
+      const ownedOrgs = [{ id: "org-1", ownerId: "user-1" }, { id: "org-2", ownerId: "user-1" }];
+      orgRepo.find.mockResolvedValue(ownedOrgs);
+      orgRepo.remove.mockResolvedValue(ownedOrgs);
+      userRepo.delete.mockResolvedValue({ affected: 1 });
+
+      await service.deleteAccount("user-1");
+
+      expect(orgRepo.remove).toHaveBeenCalledWith(ownedOrgs);
+      expect(userRepo.delete).toHaveBeenCalledWith("user-1");
     });
   });
 
