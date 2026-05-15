@@ -1,5 +1,6 @@
 import type {
   DiagramResponse,
+  DiagramListItem,
   DiagramVersionResponse,
   ShareLinkResponse,
   PublicDiagramResponse,
@@ -9,6 +10,7 @@ import { httpClient } from "./httpClient";
 
 export type {
   DiagramResponse,
+  DiagramListItem,
   DiagramVersionResponse,
   ShareLinkResponse,
   PublicDiagramResponse,
@@ -21,13 +23,16 @@ export function createDiagram(
 ): Promise<DiagramResponse> {
   return httpClient.post<DiagramResponse>(`/projects/${projectId}/diagrams`, body).then((r) => r.data);
 }
-export function listDiagrams(projectId: string): Promise<DiagramResponse[]> {
-  return httpClient.get<DiagramResponse[]>(`/projects/${projectId}/diagrams`).then((r) => r.data);
+export function listDiagrams(projectId: string): Promise<DiagramListItem[]> {
+  return httpClient.get<DiagramListItem[]>(`/projects/${projectId}/diagrams`).then((r) => r.data);
 }
 export function getDiagram(diagramId: string): Promise<DiagramResponse> {
   return httpClient.get<DiagramResponse>(`/diagrams/${diagramId}`).then((r) => r.data);
 }
-export function updateDiagram(diagramId: string, body: { name?: string; content?: object }): Promise<DiagramResponse> {
+export function updateDiagram(
+  diagramId: string,
+  body: { name?: string; content?: object; dialect?: string }
+): Promise<DiagramResponse> {
   return httpClient.patch<DiagramResponse>(`/diagrams/${diagramId}`, body).then((r) => r.data);
 }
 export function saveVersion(diagramId: string): Promise<DiagramVersionResponse> {

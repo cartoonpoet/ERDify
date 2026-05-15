@@ -8,6 +8,7 @@ export {
 export type { UserProfile } from "./auth/auth.types";
 export type {
   DiagramResponse,
+  DiagramListItem,
   DiagramVersionResponse,
   ShareLinkResponse,
   PublicDiagramResponse,

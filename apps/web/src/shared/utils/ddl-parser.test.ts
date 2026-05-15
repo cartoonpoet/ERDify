@@ -1,4 +1,4 @@
-import { parseDdl } from "./ddl-parser";
+import { parseDdl, applySeedInserts } from "./ddl-parser";
 
 let uuidCounter = 0;
 vi.mock("./uuid", () => ({
@@ -136,5 +136,82 @@ describe("parseDdl", () => {
 
     expect(doc.format).toBe("erdify.schema.v1");
     expect(doc.dialect).toBe("mariadb");
+  });
+
+  it("INSERT INTO로 seedData가 엔티티에 저장된다", () => {
+    const sql = `
+      CREATE TABLE codes (code VARCHAR(10) NOT NULL, name VARCHAR(100));
+      INSERT INTO codes (code, name) VALUES ('A001', '항목1'), ('A002', '항목2');
+    `;
+    const doc = parseDdl(sql, "mysql");
+
+    const entity = doc.entities.find((e) => e.name === "codes")!;
+    expect(entity.seedData).toHaveLength(2);
+    expect(Object.values(entity.seedData![0]!)).toContain("A001");
+    expect(Object.values(entity.seedData![1]!)).toContain("항목2");
+  });
+
+  it("UTF-8 BOM(\\uFEFF)이 파일 앞에 있어도 INSERT INTO를 정상 파싱한다", () => {
+    const schemaFile = `CREATE TABLE codes (code VARCHAR(10) NOT NULL, name VARCHAR(100));`;
+    const seedFile = `\uFEFFINSERT INTO codes (code, name) VALUES ('A001', '항목1'), ('A002', '항목2');`;
+    const combined = schemaFile + "\n\n" + seedFile;
+
+    const doc = parseDdl(combined, "mysql");
+
+    const entity = doc.entities.find((e) => e.name === "codes")!;
+    expect(entity.seedData).toHaveLength(2);
+  });
+
+  it("schema prefix(Common.Code)가 붙은 INSERT INTO를 schema 없는 CREATE TABLE과 매칭한다", () => {
+    const schemaFile = "CREATE TABLE `Code` (`GroupCode` VARCHAR(10) NOT NULL, `Remarks` VARCHAR(100));";
+    const seedFile = `\uFEFFINSERT INTO Common.Code (GroupCode, Remarks) VALUES ('GRP1', '그룹1'), ('GRP2', '그룹2');`;
+    const combined = schemaFile + "\n\n" + seedFile;
+
+    const doc = parseDdl(combined, "mysql");
+
+    const entity = doc.entities.find((e) => e.name === "Code")!;
+    expect(entity.seedData).toHaveLength(2);
+    expect(Object.values(entity.seedData![0]!)).toContain("GRP1");
+  });
+});
+
+describe("applySeedInserts", () => {
+  beforeEach(() => {
+    uuidCounter = 0;
+  });
+
+  it("INSERT-only SQL을 기존 엔티티에 매칭하여 seedData를 추가한다", () => {
+    const schema = `CREATE TABLE codes (code VARCHAR(10) NOT NULL, name VARCHAR(100));`;
+    const baseDoc = parseDdl(schema, "mysql");
+    const existingEntity = baseDoc.entities[0]!;
+
+    const seedSql = `INSERT INTO codes (code, name) VALUES ('A001', '항목1'), ('A002', '항목2');`;
+    const updated = applySeedInserts(seedSql, [existingEntity]);
+
+    expect(updated[0]!.seedData).toHaveLength(2);
+    expect(Object.values(updated[0]!.seedData![0]!)).toContain("A001");
+  });
+
+  it("schema prefix(Common.Code)가 붙은 INSERT INTO를 기존 엔티티에 매칭한다", () => {
+    const schema = `CREATE TABLE \`Code\` (\`GroupCode\` VARCHAR(10) NOT NULL, \`Remarks\` VARCHAR(100));`;
+    const baseDoc = parseDdl(schema, "mysql");
+    const existingEntity = baseDoc.entities[0]!;
+
+    const seedSql = `\uFEFFINSERT INTO Common.Code (GroupCode, Remarks) VALUES ('GRP1', '그룹1'), ('GRP2', '그룹2');`;
+    const updated = applySeedInserts(seedSql, [existingEntity]);
+
+    expect(updated[0]!.seedData).toHaveLength(2);
+    expect(Object.values(updated[0]!.seedData![0]!)).toContain("GRP1");
+  });
+
+  it("매칭되는 엔티티가 없으면 기존 엔티티 배열을 그대로 반환한다", () => {
+    const schema = `CREATE TABLE foo (id INT);`;
+    const baseDoc = parseDdl(schema, "mysql");
+    const entities = baseDoc.entities;
+
+    const seedSql = `INSERT INTO bar (id) VALUES (1);`;
+    const updated = applySeedInserts(seedSql, entities);
+
+    expect(updated).toBe(entities); // same reference — no changes
   });
 });

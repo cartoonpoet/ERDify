@@ -27,7 +27,7 @@ export class DiagramsService {
     return this.crud.create(projectId, userId, dto);
   }
 
-  findAll(projectId: string, userId: string): Promise<Diagram[]> {
+  findAll(projectId: string, userId: string) {
     return this.crud.findAll(projectId, userId);
   }
 

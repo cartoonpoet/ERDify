@@ -55,11 +55,44 @@ export class DiagramsCrudService {
     );
   }
 
-  async findAll(projectId: string, userId: string): Promise<Diagram[]> {
+  async findAll(projectId: string, userId: string) {
     const project = await this.projectRepo.findOne({ where: { id: projectId } });
     if (!project) throw new NotFoundException("Project not found");
     await this.authorizationService.requireMember(project.organizationId, userId);
-    return this.diagramRepo.find({ where: { projectId } });
+    return this.diagramRepo.query(
+      `SELECT
+        id,
+        project_id AS "projectId",
+        name,
+        created_by AS "createdBy",
+        share_token AS "shareToken",
+        share_expires_at AS "shareExpiresAt",
+        created_at AS "createdAt",
+        updated_at AS "updatedAt",
+        content->>'dialect' AS dialect,
+        (
+          SELECT COALESCE(
+            jsonb_agg(
+              jsonb_build_object(
+                'id', e->>'id',
+                'name', e->>'name',
+                'columns', (
+                  SELECT COALESCE(
+                    jsonb_agg(jsonb_build_object('id', c->>'id', 'name', c->>'name')),
+                    '[]'::jsonb
+                  )
+                  FROM (SELECT c FROM jsonb_array_elements(e->'columns') c LIMIT 3) cols
+                )
+              )
+            ),
+            '[]'::jsonb
+          )
+          FROM (SELECT e FROM jsonb_array_elements(content->'entities') e LIMIT 2) entities
+        ) AS "previewEntities"
+      FROM diagrams
+      WHERE project_id = $1`,
+      [projectId]
+    );
   }
 
   async findOne(
@@ -74,7 +107,11 @@ export class DiagramsCrudService {
   async update(diagramId: string, userId: string, dto: UpdateDiagramDto): Promise<Diagram> {
     const { diagram, orgId } = await this.getDiagramWithOrg(diagramId);
     await this.authorizationService.requireEditorOrOwner(orgId, userId);
-    Object.assign(diagram, dto);
+    if (dto.name !== undefined) diagram.name = dto.name;
+    if (dto.content !== undefined) diagram.content = dto.content;
+    if (dto.dialect !== undefined) {
+      diagram.content = { ...(diagram.content as object), dialect: dto.dialect };
+    }
     return this.diagramRepo.save(diagram);
   }
 

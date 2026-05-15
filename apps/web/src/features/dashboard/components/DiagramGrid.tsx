@@ -8,7 +8,7 @@ import { MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
 import { listDiagrams } from "@/shared/api/diagrams.api";
 import { listProjects } from "@/shared/api/projects.api";
 import { getMe } from "@/shared/api/auth.api";
-import type { DiagramResponse } from "@/shared/api/diagrams.api";
+import type { DiagramListItem } from "@/shared/api/diagrams.api";
 import type { DashboardOutletContext } from "../pages/DashboardPage";
 import { Button, Skeleton } from "@/components";
 import {
@@ -23,17 +23,16 @@ import { EditDiagramModal } from "@/features/dashboard/components/EditDiagramMod
 
 type FilterType = "all" | "recent" | "mine";
 
-const DiagramCardPreview = ({ diagram }: { diagram: DiagramResponse }) => {
-  const previewEntities = diagram.content.entities.slice(0, 2);
-  if (previewEntities.length === 0) {
+const DiagramCardPreview = ({ diagram }: { diagram: DiagramListItem }) => {
+  if (diagram.previewEntities.length === 0) {
     return <div className={cardPreview} />;
   }
   return (
     <div className={cardPreview}>
-      {previewEntities.map((entity) => (
+      {diagram.previewEntities.map((entity) => (
         <div key={entity.id} className={miniTable}>
           <div className={miniTableHeader}>{entity.name}</div>
-          {entity.columns.slice(0, 3).map((col) => (
+          {entity.columns.map((col) => (
             <div key={col.id} className={miniField}>{col.name}</div>
           ))}
         </div>
@@ -43,11 +42,11 @@ const DiagramCardPreview = ({ diagram }: { diagram: DiagramResponse }) => {
 };
 
 function applyFilter(
-  diagrams: DiagramResponse[],
+  diagrams: DiagramListItem[],
   filter: FilterType,
   userId: string | null,
   filterQuery?: string,
-): DiagramResponse[] {
+): DiagramListItem[] {
   let result = diagrams;
   if (filter === "recent") {
     result = [...result].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
@@ -83,8 +82,8 @@ export const DiagramGrid = () => {
 
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [shareDiagramItem, setShareDiagramItem] = useState<DiagramResponse | null>(null);
-  const [editDiagramItem, setEditDiagramItem] = useState<DiagramResponse | null>(null);
+  const [shareDiagramItem, setShareDiagramItem] = useState<DiagramListItem | null>(null);
+  const [editDiagramItem, setEditDiagramItem] = useState<DiagramListItem | null>(null);
 
   const filtered = applyFilter(diagrams, activeFilter, currentUserId, searchQuery || undefined);
 
@@ -150,7 +149,7 @@ export const DiagramGrid = () => {
                 <div className={cardBody}>
                   <div className={cardName}>{diagram.name}</div>
                   <div className={cardMeta}>
-                    <span className={dialectBadge}>{diagram.content.dialect}</span>
+                    <span className={dialectBadge}>{diagram.dialect}</span>
                     {formatDistanceToNow(new Date(diagram.updatedAt), { addSuffix: true, locale: ko })}
                   </div>
                 </div>

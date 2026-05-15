@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import type { ChangeEvent, MouseEvent } from "react";
 import { Modal, Button } from "@/components";
-import { parseDdl } from "@/shared/utils/ddl-parser";
+import { parseDdl, applySeedInserts } from "@/shared/utils/ddl-parser";
 import { DarkCodeEditor } from "@/features/editor/components/DarkCodeEditor";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import type { DiagramDialect } from "@erdify/domain";
@@ -70,7 +70,15 @@ export const ImportIntoEditorModal = ({ open, onClose }: ImportIntoEditorModalPr
       const parsed = parseDdl(sqlContent, dialect);
 
       applyCommand((doc) => {
-        // Offset new entities to the right of existing ones
+        // Seed-only import (no CREATE TABLE): apply INSERT INTO to existing entities
+        if (parsed.entities.length === 0) {
+          return {
+            ...doc,
+            entities: applySeedInserts(sqlContent, doc.entities),
+          };
+        }
+
+        // Schema import: offset new entities to the right of existing ones
         const existingPositions = Object.values(doc.layout.entityPositions);
         const offsetX = existingPositions.length > 0
           ? Math.max(...existingPositions.map((p) => p.x)) + 400

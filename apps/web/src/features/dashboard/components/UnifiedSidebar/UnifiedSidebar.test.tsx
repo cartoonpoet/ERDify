@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { UnifiedSidebar } from ".";
 import type { OrgResponse } from "@/shared/api/organizations.api";
 import type { ProjectResponse } from "@/shared/api/projects.api";
-import type { DiagramResponse } from "@/shared/api/diagrams.api";
+import type { DiagramListItem } from "@/shared/api/diagrams.api";
 
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async (importOriginal) => {
@@ -36,24 +36,12 @@ const projects: ProjectResponse[] = [
   { id: "p2", organizationId: "org-1", name: "Auth Service", description: null, createdAt: "", updatedAt: "" },
 ];
 
-const makeContent = (dialect: "postgresql" | "mysql") => ({
-  format: "erdify.schema.v1" as const,
-  id: "doc-1",
-  name: "test",
-  dialect,
-  entities: [],
-  relationships: [],
-  indexes: [] as [],
-  views: [] as [],
-  layout: { entityPositions: {} },
-  metadata: { revision: 0, stableObjectIds: true as const, createdAt: "", updatedAt: "" },
-});
-
-const diagrams: DiagramResponse[] = [
+const diagrams: DiagramListItem[] = [
   {
-    id: "d1", projectId: "p1", organizationId: "org-1", organizationName: "Test Org", projectName: "Test Project", name: "사용자 스키마",
-    content: makeContent("postgresql"), createdBy: "u1",
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), myRole: "editor" as const,
+    id: "d1", projectId: "p1", name: "사용자 스키마",
+    dialect: "postgresql", previewEntities: [],
+    createdBy: "u1",
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     shareToken: null, shareExpiresAt: null,
   },
 ];

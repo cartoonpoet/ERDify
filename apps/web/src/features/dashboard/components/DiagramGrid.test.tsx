@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DiagramGrid } from "./DiagramGrid";
-import type { DiagramResponse } from "@/shared/api/diagrams.api";
+import type { DiagramListItem } from "@/shared/api/diagrams.api";
 import type { DashboardOutletContext } from "../pages/DashboardPage";
 
 vi.mock("@/shared/api/diagrams.api", () => ({
@@ -22,30 +22,19 @@ import { listDiagrams } from "@/shared/api/diagrams.api";
 import { listProjects } from "@/shared/api/projects.api";
 import { getMe } from "@/shared/api/auth.api";
 
-const makeContent = (dialect: "postgresql" | "mysql") => ({
-  format: "erdify.schema.v1" as const,
-  id: "doc-1",
-  name: "test",
-  dialect,
-  entities: [],
-  relationships: [],
-  indexes: [] as [],
-  views: [] as [],
-  layout: { entityPositions: {} },
-  metadata: { revision: 0, stableObjectIds: true as const, createdAt: "", updatedAt: "" },
-});
-
-const diagrams: DiagramResponse[] = [
+const diagrams: DiagramListItem[] = [
   {
-    id: "d1", projectId: "p1", organizationId: "org-1", organizationName: "Test Org", projectName: "Test Project", name: "User Schema",
-    content: makeContent("postgresql"), createdBy: "user-1",
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), myRole: "editor" as const,
+    id: "d1", projectId: "p1", name: "User Schema",
+    dialect: "postgresql", previewEntities: [],
+    createdBy: "user-1",
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     shareToken: null, shareExpiresAt: null,
   },
   {
-    id: "d2", projectId: "p1", organizationId: "org-1", organizationName: "Test Org", projectName: "Test Project", name: "Order Schema",
-    content: makeContent("mysql"), createdBy: "user-2",
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), myRole: "editor" as const,
+    id: "d2", projectId: "p1", name: "Order Schema",
+    dialect: "mysql", previewEntities: [],
+    createdBy: "user-2",
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     shareToken: null, shareExpiresAt: null,
   },
 ];

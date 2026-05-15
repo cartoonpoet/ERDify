@@ -2,20 +2,20 @@ import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Modal, Button, Input } from "@/components";
 import { updateDiagram } from "@/shared/api/diagrams.api";
-import type { DiagramResponse } from "@/shared/api/diagrams.api";
+import type { DiagramListItem } from "@/shared/api/diagrams.api";
 import { form, footer, selectInput } from "./modal-form.css";
 
 interface EditDiagramModalProps {
   open: boolean;
   onClose: () => void;
-  diagram: DiagramResponse;
+  diagram: DiagramListItem;
 }
 
 export const EditDiagramModal = ({ open, onClose, diagram }: EditDiagramModalProps) => {
   const queryClient = useQueryClient();
 
   const [name, setName] = useState(diagram.name);
-  const [dialect, setDialect] = useState(diagram.content.dialect);
+  const [dialect, setDialect] = useState(diagram.dialect);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,11 +27,8 @@ export const EditDiagramModal = ({ open, onClose, diagram }: EditDiagramModalPro
     setLoading(true);
     setError(null);
     try {
-      if (trimmedName !== diagram.name || dialect !== diagram.content.dialect) {
-        await updateDiagram(diagram.id, {
-          name: trimmedName,
-          content: { ...diagram.content, dialect },
-        });
+      if (trimmedName !== diagram.name || dialect !== diagram.dialect) {
+        await updateDiagram(diagram.id, { name: trimmedName, dialect });
         queryClient.invalidateQueries({ queryKey: ["diagrams", diagram.projectId] });
       }
 

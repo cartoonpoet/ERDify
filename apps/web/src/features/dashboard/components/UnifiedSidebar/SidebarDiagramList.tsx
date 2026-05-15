@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { DiagramDialect } from "@erdify/domain";
 import type { ProjectResponse } from "@/shared/api/projects.api";
-import type { DiagramResponse } from "@/shared/api/diagrams.api";
+import type { DiagramListItem } from "@/shared/api/diagrams.api";
 import * as css from "./unified-sidebar.css";
 
 const dialectLabel: Record<DiagramDialect, string> = {
@@ -15,7 +15,7 @@ interface SidebarDiagramListProps {
   orgId: string;
   projectId: string | undefined;
   projects: ProjectResponse[];
-  diagrams: DiagramResponse[];
+  diagrams: DiagramListItem[];
   memberManagementActive: boolean;
   onDeleteProject: (id: string) => void;
   onCreateDiagram: () => void;
@@ -77,7 +77,7 @@ export const SidebarDiagramList = ({
                       <span className={css.erdDot} aria-hidden="true" />
                       <span className={css.erdName}>{diagram.name}</span>
                       <span className={css.erdBadge} aria-hidden="true">
-                        {dialectLabel[diagram.content.dialect]}
+                        {dialectLabel[diagram.dialect]}
                       </span>
                     </button>
                   ))}

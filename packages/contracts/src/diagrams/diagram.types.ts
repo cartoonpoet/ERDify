@@ -1,7 +1,24 @@
-import type { DiagramDocument } from "@erdify/domain";
+import type { DiagramDocument, DiagramDialect } from "@erdify/domain";
 import type { MemberRoleType } from "../members/member.types";
 
 export type SharePreset = "1h" | "1d" | "7d" | "30d";
+
+export interface DiagramListItem {
+  id: string;
+  projectId: string;
+  name: string;
+  dialect: DiagramDialect;
+  previewEntities: Array<{
+    id: string;
+    name: string;
+    columns: Array<{ id: string; name: string }>;
+  }>;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  shareToken: string | null;
+  shareExpiresAt: string | null;
+}
 
 export interface DiagramResponse {
   id: string;

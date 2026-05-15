@@ -27,6 +27,7 @@ function parseSchemaAndTable(raw: string): { schema: string | null; name: string
 }
 
 function removeComments(sql: string): string {
+  sql = sql.replace(/\uFEFF/g, ""); // strip UTF-8 BOM (appears when multiple files are joined)
   sql = sql.replace(/\/\*[\s\S]*?\*\//g, "");
   sql = sql.replace(/--[^\n]*/g, "");
   return sql;
@@ -351,6 +352,70 @@ function parseInsertValuesList(valuesStr: string): string[][] {
   }
 
   return rows;
+}
+
+/**
+ * Applies INSERT INTO seed data from SQL to an existing set of entities (in-place by name match).
+ * Use this when importing seed-only SQL files (no CREATE TABLE) to populate existing diagram entities.
+ * Returns a new array; unaffected entities are returned as-is (reference-equal).
+ */
+export function applySeedInserts(sql: string, existingEntities: DiagramEntity[]): DiagramEntity[] {
+  const cleaned = removeComments(sql);
+  const statements = cleaned.split(/;|^\s*GO\s*$/im).map((s) => s.trim()).filter(Boolean);
+
+  // Build a name → entity lookup (same logic as parseDdl's registerEntity/lookupEntity)
+  const entityMap = new Map<string, DiagramEntity>();
+  for (const entity of existingEntities) {
+    if (entity.schema) {
+      entityMap.set(`${entity.schema}.${entity.name}`, entity);
+      if (!entityMap.has(entity.name)) entityMap.set(entity.name, entity);
+    } else {
+      entityMap.set(entity.name, entity);
+    }
+  }
+
+  const lookupEntity = (schema: string | null, tableName: string): DiagramEntity | undefined =>
+    schema ? (entityMap.get(`${schema}.${tableName}`) ?? entityMap.get(tableName)) : entityMap.get(tableName);
+
+  // Accumulate new seed rows per entity id
+  const seedMap = new Map<string, SeedRow[]>();
+
+  for (const stmt of statements) {
+    if (!/^INSERT\s+INTO\s+/i.test(stmt)) continue;
+    const m = stmt.match(/^INSERT\s+INTO\s+([^\s(]+)\s*\(([^)]+)\)\s+VALUES\s+([\s\S]+)$/i);
+    if (!m) continue;
+
+    const { schema, name: tableName } = parseSchemaAndTable((m[1] ?? "").trim());
+    const entity = lookupEntity(schema, tableName);
+    if (!entity) continue;
+
+    const colNames = splitTopLevelCommas(m[2] ?? "").map((c) => stripIdentifierQuotes(c.trim()));
+    const valueRows = parseInsertValuesList(m[3] ?? "");
+
+    const rows = seedMap.get(entity.id) ?? [];
+    for (const values of valueRows) {
+      const row: SeedRow = {};
+      for (let i = 0; i < colNames.length && i < values.length; i++) {
+        const colName = colNames[i]!;
+        // Case-insensitive column lookup (MySQL identifiers are case-insensitive)
+        const col = entity.columns.find((c) => c.name.toLowerCase() === colName.toLowerCase());
+        if (col) {
+          const val = values[i]!;
+          if (val.toUpperCase() !== "NULL") row[col.id] = val;
+        }
+      }
+      if (Object.keys(row).length > 0) rows.push(row);
+    }
+    seedMap.set(entity.id, rows);
+  }
+
+  if (seedMap.size === 0) return existingEntities;
+
+  return existingEntities.map((e) => {
+    const newRows = seedMap.get(e.id);
+    if (!newRows) return e;
+    return { ...e, seedData: [...(e.seedData ?? []), ...newRows] };
+  });
 }
 
 export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument {
