@@ -30,7 +30,7 @@ type MockRepo<_T> = {
   find: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
   save: ReturnType<typeof vi.fn>;
-  query?: ReturnType<typeof vi.fn>;
+  query: ReturnType<typeof vi.fn>;
   remove?: ReturnType<typeof vi.fn>;
 };
 
@@ -84,10 +84,10 @@ describe("DiagramsService", () => {
 
   beforeEach(() => {
     diagramRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), query: vi.fn(), remove: vi.fn() };
-    versionRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
-    projectRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
-    orgRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
-    memberRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn() };
+    versionRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), query: vi.fn() };
+    projectRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), query: vi.fn() };
+    orgRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), query: vi.fn() };
+    memberRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), query: vi.fn() };
 
     const authService = new AuthorizationService(memberRepo as unknown as Repository<OrganizationMember>);
     const domainLoader = { load: vi.fn().mockResolvedValue(erdifyDomain) } as unknown as DomainLoaderService;
