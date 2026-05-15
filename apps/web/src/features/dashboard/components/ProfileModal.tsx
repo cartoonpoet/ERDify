@@ -199,6 +199,7 @@ const ProfileTab = ({ onClose }: { onClose: () => void }) => {
 const DeleteAccountTab = ({ onClose }: { onClose: () => void }) => {
   const navigate = useNavigate();
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
+  const queryClient = useQueryClient();
   const [confirm, setConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -209,6 +210,7 @@ const DeleteAccountTab = ({ onClose }: { onClose: () => void }) => {
     try {
       await deleteAccount();
       setAuthenticated(false);
+      queryClient.clear();
       onClose();
       navigate("/login");
     } catch {
