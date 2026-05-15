@@ -14,12 +14,14 @@
 |---|---|
 | 🤖 **AI 연동 (MCP)** | AI가 MCP로 ERD를 읽고 자연어 지시에 따라 함께 수정 |
 | ⚡ **실시간 협업** | 팀원과 동시에 편집, 커서 위치·변경사항 실시간 반영 |
-| ⇅ **DDL 가져오기 / 내보내기** | MySQL · PostgreSQL · MariaDB · MSSQL DDL 붙여넣기로 ERD 자동 생성. COMMENT → 논리명 자동 매핑 |
+| ⇅ **DDL 가져오기 / 내보내기** | MySQL · PostgreSQL · MariaDB · MSSQL DDL 붙여넣기로 ERD 자동 생성. COMMENT → 논리명 자동 매핑. UTF-8 BOM 파일 자동 처리 |
+| 🌱 **시드 데이터 가져오기** | INSERT INTO SQL을 붙여넣어 기존 엔티티에 샘플 데이터 추가. 스키마 없이 INSERT만 있는 파일도 지원. 변경사항은 실시간 협업으로 동기화 |
 | ⌨ **ORM 코드 생성** | TypeORM · Prisma · SQLAlchemy 코드를 ERD에서 즉시 내보내기 |
 | ⏱ **버전 관리** | 변경 이력 자동 기록, 언제든 이전 버전으로 복원 |
 | 🔗 **공유 링크** | 읽기 전용 링크로 외부 공유 (만료 시간 설정 가능) |
 | 🎨 **스키마 색상 구분** | 스키마별 테이블 헤더·미니맵 자동 색상 적용, 범례 표시 |
 | 🔍 **테이블 검색** | Ctrl+F로 테이블·컬럼 즉시 검색 및 캔버스 이동 |
+| 🖱 **멀티 선택** | 드래그 영역 선택(rubber band) 및 Shift 클릭으로 여러 테이블 동시 이동 |
 | 🤖 **AI 활동 로그** | 에디터 내 MCP 작업 기록 드로어로 AI가 수행한 변경 확인 |
 
 ---
@@ -186,7 +188,7 @@ export interface DiagramDocument {
   id: string;
   name: string;
   dialect: DiagramDialect;
-  entities: DiagramEntity[];
+  entities: DiagramEntity[];    // 컬럼·시드 데이터 포함
   relationships: DiagramRelationship[];
   layout: DiagramLayout;
   metadata: DiagramMetadata;
