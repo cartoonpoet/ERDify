@@ -1,7 +1,14 @@
 import { createEmptyDiagram } from "../schema/create-empty-diagram.js";
-import { addEntity, removeEntity, renameEntity, updateEntityComment } from "./entity-commands.js";
+import { addEntity, removeEntity, renameEntity, setSeedData, updateEntityComment } from "./entity-commands.js";
 import { addIndex } from "./index-commands.js";
-import type { DiagramRelationship } from "../types/index.js";
+import { addColumn } from "./column-commands.js";
+import type { DiagramColumn, DiagramRelationship } from "../types/index.js";
+
+const col = (overrides: Partial<DiagramColumn>): DiagramColumn => ({
+  id: "c1", name: "id", type: "INT", nullable: false,
+  primaryKey: true, unique: false, defaultValue: null, comment: null, ordinal: 0,
+  ...overrides,
+});
 
 const base = () => createEmptyDiagram({ id: "d1", name: "Test", dialect: "postgresql" });
 
@@ -88,5 +95,41 @@ describe("removeEntity — index cleanup", () => {
     doc = removeEntity(doc, "e1");
     expect(doc.indexes).toHaveLength(1);
     expect(doc.indexes[0].id).toBe("i2");
+  });
+});
+
+describe("setSeedData", () => {
+  it("sets seedData on the correct entity while leaving others unchanged", () => {
+    let doc = addEntity(base(), { id: "e1", name: "users" });
+    doc = addEntity(doc, { id: "e2", name: "orders" });
+    doc = addColumn(doc, "e1", col({ id: "c1" }));
+    const rows = [{ c1: "1" }, { c1: "2" }];
+    doc = setSeedData(doc, "e1", rows);
+    expect(doc.entities[0].seedData).toEqual(rows);
+    expect(doc.entities[1].seedData).toBeUndefined();
+  });
+
+  it("replaces existing seedData with new rows", () => {
+    let doc = addEntity(base(), { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1" }));
+    doc = setSeedData(doc, "e1", [{ c1: "old" }]);
+    doc = setSeedData(doc, "e1", [{ c1: "new1" }, { c1: "new2" }]);
+    expect(doc.entities[0].seedData).toEqual([{ c1: "new1" }, { c1: "new2" }]);
+  });
+
+  it("clears seedData when passed an empty array", () => {
+    let doc = addEntity(base(), { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1" }));
+    doc = setSeedData(doc, "e1", [{ c1: "1" }]);
+    doc = setSeedData(doc, "e1", []);
+    expect(doc.entities[0].seedData).toEqual([]);
+  });
+
+  it("does not mutate the original document", () => {
+    let doc = addEntity(base(), { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1" }));
+    const original = doc;
+    setSeedData(doc, "e1", [{ c1: "1" }]);
+    expect(original.entities[0].seedData).toBeUndefined();
   });
 });
