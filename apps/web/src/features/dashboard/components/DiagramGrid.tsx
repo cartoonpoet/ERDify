@@ -24,15 +24,16 @@ import { EditDiagramModal } from "@/features/dashboard/components/EditDiagramMod
 type FilterType = "all" | "recent" | "mine";
 
 const DiagramCardPreview = ({ diagram }: { diagram: DiagramListItem }) => {
-  if (diagram.previewEntities.length === 0) {
+  const entities = Array.isArray(diagram.previewEntities) ? diagram.previewEntities : [];
+  if (entities.length === 0) {
     return <div className={cardPreview} />;
   }
   return (
     <div className={cardPreview}>
-      {diagram.previewEntities.map((entity) => (
+      {entities.map((entity) => (
         <div key={entity.id} className={miniTable}>
           <div className={miniTableHeader}>{entity.name}</div>
-          {entity.columns.map((col) => (
+          {(entity.columns ?? []).map((col) => (
             <div key={col.id} className={miniField}>{col.name}</div>
           ))}
         </div>

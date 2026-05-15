@@ -59,7 +59,7 @@ export class DiagramsCrudService {
     const project = await this.projectRepo.findOne({ where: { id: projectId } });
     if (!project) throw new NotFoundException("Project not found");
     await this.authorizationService.requireMember(project.organizationId, userId);
-    return this.diagramRepo.query(
+    const rows: Array<Record<string, unknown>> = await this.diagramRepo.query(
       `SELECT
         id,
         project_id AS "projectId",
@@ -93,6 +93,15 @@ export class DiagramsCrudService {
       WHERE project_id = $1`,
       [projectId]
     );
+    // pg driver may return JSONB subquery columns as strings — parse defensively
+    return rows.map((row) => ({
+      ...row,
+      previewEntities: Array.isArray(row.previewEntities)
+        ? row.previewEntities
+        : typeof row.previewEntities === "string"
+          ? JSON.parse(row.previewEntities)
+          : [],
+    }));
   }
 
   async findOne(

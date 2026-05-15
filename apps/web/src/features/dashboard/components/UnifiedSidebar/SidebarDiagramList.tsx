@@ -77,7 +77,7 @@ export const SidebarDiagramList = ({
                       <span className={css.erdDot} aria-hidden="true" />
                       <span className={css.erdName}>{diagram.name}</span>
                       <span className={css.erdBadge} aria-hidden="true">
-                        {dialectLabel[diagram.dialect]}
+                        {diagram.dialect ? dialectLabel[diagram.dialect] : ""}
                       </span>
                     </button>
                   ))}
