@@ -30,7 +30,7 @@ type MockRepo<_T> = {
   find: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
   save: ReturnType<typeof vi.fn>;
-  query: ReturnType<typeof vi.fn>;
+  query?: ReturnType<typeof vi.fn>;
   remove?: ReturnType<typeof vi.fn>;
 };
 
