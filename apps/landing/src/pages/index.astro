@@ -2,8 +2,6 @@
 import Layout from '../layouts/Layout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 
-// 데모 영상 YouTube ID로 교체하세요
-const YOUTUBE_ID = 'YOUR_YOUTUBE_ID';
 const APP_URL = 'http://erdify-app.kro.kr';
 ---
 
@@ -26,7 +24,7 @@ const APP_URL = 'http://erdify-app.kro.kr';
         <a href="#integrations" class="btn-outline btn-lg">연동 가이드 보기</a>
       </div>
       <div class="hero-stats">
-        <div class="stat"><strong>Cursor · Claude · Gemini · Codex</strong><span>지원 AI 도구</span></div>
+        <div class="stat"><strong>무제한</strong><span>다이어그램</span></div>
         <div class="stat-divider"></div>
         <div class="stat"><strong>실시간</strong><span>팀 협업</span></div>
         <div class="stat-divider"></div>
@@ -543,8 +541,8 @@ erdify add rel <diagramId> <srcTableId> <tgtTableId> one-to-many`}</pre>
     <div class="container">
       <div class="section-header">
         <div class="badge">스크린샷</div>
-        <h2>직관적인 에디터</h2>
-        <p>복잡한 ERD도 쉽고 빠르게 편집하세요.</p>
+        <h2>직접 확인해보세요</h2>
+        <p>에디터, 실시간 협업, DDL 가져오기를 바로 체험하세요.</p>
       </div>
 
       <!-- Tab buttons -->
@@ -639,7 +637,7 @@ erdify add rel <diagramId> <srcTableId> <tgtTableId> one-to-many`}</pre>
     <div class="container">
       <h2>AI와 함께 ERD를 관리하세요</h2>
       <p>베타 기간 동안 모든 기능을 무료로 — 지금 바로 시작하세요.</p>
-      <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
+      <div class="cta-actions">
         <a href={`${APP_URL}/register`} class="btn-primary btn-lg btn-white">무료로 시작하기 →</a>
       </div>
     </div>
@@ -653,7 +651,7 @@ erdify add rel <diagramId> <srcTableId> <tgtTableId> one-to-many`}</pre>
           <img src="/logo.svg" alt="ERDify" class="logo-image" style="filter: brightness(0) invert(1);" />
         </a>
         <p class="footer-tagline">AI와 함께하는<br/>실시간 협업 ERD 도구</p>
-        <a href="mailto:cartoonpoet@gmail.com" class="footer-email">cartoonpoet@gmail.com</a>
+        <a href="mailto:cartoonpoet@gmail.com" class="footer-email">이메일 문의</a>
       </div>
       <div class="footer-links">
         <div class="footer-col">
@@ -995,7 +993,7 @@ erdify add rel <diagramId> <srcTableId> <tgtTableId> one-to-many`}</pre>
   }
 
   /* ── Features ── */
-  .features { padding: 100px 0; background: var(--surface); }
+  .features { padding: 100px 0; background: var(--white); }
   .features-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1551,6 +1549,7 @@ erdify add rel <diagramId> <srcTableId> <tgtTableId> one-to-many`}</pre>
   }
   .cta-banner h2 { font-size: 40px; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.02em; }
   .cta-banner p { font-size: 17px; opacity: 0.85; margin-bottom: 36px; }
+  .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
   /* ── Footer ── */
   .footer { background: #0d1520; color: rgba(255,255,255,0.6); padding: 72px 0 0; }
