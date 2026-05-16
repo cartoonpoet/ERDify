@@ -194,12 +194,10 @@ describe("FkSetupModal", () => {
   });
 
   it("소스 엔티티에 컬럼이 없으면 기존 컬럼 라디오가 표시되지 않는다", () => {
+    const [src, tgt] = sampleDocument.entities as [typeof sampleDocument.entities[0], typeof sampleDocument.entities[0]];
     const documentWithNoColumns = {
       ...sampleDocument,
-      entities: [
-        { ...sampleDocument.entities[0], columns: [] },
-        sampleDocument.entities[1],
-      ],
+      entities: [{ ...src, columns: [] }, tgt],
     };
     setupStoreMock(samplePending, documentWithNoColumns);
     render(<FkSetupModal />);

@@ -75,7 +75,7 @@ describe("getSchemasFromDocument", () => {
   });
 
   it("returns an empty array when all entities have no schema", () => {
-    expect(getSchemasFromDocument([{ schema: null }, { schema: undefined }])).toEqual([]);
+    expect(getSchemasFromDocument([{ schema: null }, { schema: null }])).toEqual([]);
   });
 
   it("returns unique schema names from entities", () => {
@@ -106,8 +106,8 @@ describe("getSchemasFromDocument", () => {
     expect(getSchemasFromDocument(entities)).toEqual(["auth"]);
   });
 
-  it("excludes entities with undefined schema", () => {
-    const entities = [{ schema: undefined }, { schema: "billing" }];
+  it("excludes entities with null schema", () => {
+    const entities = [{ schema: null }, { schema: "billing" }];
     expect(getSchemasFromDocument(entities)).toEqual(["billing"]);
   });
 
