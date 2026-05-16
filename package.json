@@ -12,7 +12,10 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "verify:workspace": "powershell -ExecutionPolicy Bypass -File scripts/verify-workspace.ps1",
-    "verify:configs": "powershell -ExecutionPolicy Bypass -File scripts/verify-config-packages.ps1"
+    "verify:configs": "powershell -ExecutionPolicy Bypass -File scripts/verify-config-packages.ps1",
+    "skills:install": "npx skills experimental_install",
+    "skills:update": "npx skills update",
+    "skills:list": "npx skills list"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.1",
