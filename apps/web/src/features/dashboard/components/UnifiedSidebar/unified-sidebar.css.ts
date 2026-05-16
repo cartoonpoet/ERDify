@@ -229,6 +229,8 @@ export const projRow = style({
 
 export const projRowActive = style({
   background: vars.color.selectedBg,
+  color: vars.color.primary,
+  fontWeight: vars.font.weight.semibold,
 });
 
 export const projArrow = style({

@@ -15,6 +15,7 @@ export const topbar = style({
   alignItems: "center",
   padding: `0 ${vars.space["5"]}`,
   gap: vars.space["3"],
+  boxShadow: vars.shadow.sm,
 });
 
 export const brand = style({

@@ -6,6 +6,7 @@ import { Button, Input } from "@/components";
 import {
   page, card, brand, brandLogo, tagline, form,
   authLink, authLinkAnchor, strengthBars, strengthBar, strengthBarFilled,
+  emailRow, codeRow, verifiedBadge, codeError as codeErrorClass, formError,
 } from "./auth-page.css";
 
 const getStrength = (pw: string) => {
@@ -33,7 +34,6 @@ export const RegisterPage = () => {
 
   // 나머지 필드
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +101,7 @@ export const RegisterPage = () => {
     setError(null);
     setLoading(true);
     try {
-      await register({ name, email, password, ...(phone ? { phone } : {}), verifiedToken });
+      await register({ name, email, password, verifiedToken });
       setAuthenticated(true);
       navigate("/");
     } catch {
@@ -122,7 +122,7 @@ export const RegisterPage = () => {
         <form className={form} onSubmit={handleSubmit} aria-label="회원가입">
           {/* 이메일 + 인증 */}
           <div>
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+            <div className={emailRow}>
               <div style={{ flex: 1 }}>
                 <Input
                   label="이메일"
@@ -155,12 +155,12 @@ export const RegisterPage = () => {
             </div>
 
             {verifiedToken ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 13, color: "#16a34a", fontWeight: 600 }}>
+              <div className={verifiedBadge}>
                 <span>✓</span>
                 <span>{isInvite ? "초대로 인증 완료" : "이메일 인증 완료"}</span>
               </div>
             ) : codeSent && (
-              <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-end" }}>
+              <div className={codeRow}>
                 <div style={{ flex: 1 }}>
                   <Input
                     label="인증 코드"
@@ -185,7 +185,7 @@ export const RegisterPage = () => {
               </div>
             )}
             {codeError && !codeSent && (
-              <p style={{ fontSize: 12, color: "#ef4444", marginTop: 4 }}>{codeError}</p>
+              <p className={codeErrorClass}>{codeError}</p>
             )}
           </div>
 
@@ -196,14 +196,6 @@ export const RegisterPage = () => {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-          />
-
-          <Input
-            label="전화번호 (선택)"
-            type="tel"
-            placeholder="010-0000-0000"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
           />
 
           <div>
@@ -238,7 +230,7 @@ export const RegisterPage = () => {
             {...(confirmPassword && password !== confirmPassword ? { error: "비밀번호가 일치하지 않습니다." } : {})}
           />
 
-          {error && <p style={{ fontSize: 13, color: "#ef4444", margin: 0 }}>{error}</p>}
+          {error && <p className={formError}>{error}</p>}
 
           <Button variant="primary" size="lg" type="submit" disabled={loading || !verifiedToken} style={{ width: "100%" }}>
             {loading ? "처리 중..." : "시작하기"}

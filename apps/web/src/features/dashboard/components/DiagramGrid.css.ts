@@ -77,12 +77,13 @@ export const diagramCard = style({
   cursor: "pointer",
   textDecoration: "none",
   display: "block",
-  transition: "box-shadow 200ms ease, transform 200ms ease",
+  transition: "box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease",
   color: "inherit",
   selectors: {
     "&:hover": {
       boxShadow: vars.shadow.md,
-      transform: "translateY(-2px)",
+      transform: "translateY(-3px)",
+      borderColor: vars.color.primary,
     },
   },
 });
@@ -167,12 +168,15 @@ export const ctxDivider = style({
 });
 
 export const cardPreview = style({
-  height: "90px",
-  background: vars.color.surfaceSecondary,
+  height: "110px",
+  background: `radial-gradient(circle, ${vars.color.border} 1px, transparent 1px)`,
+  backgroundSize: "16px 16px",
+  backgroundColor: vars.color.surfaceSecondary,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   gap: vars.space["2"],
+  overflow: "hidden",
 });
 
 export const miniTable = style({
@@ -220,11 +224,12 @@ export const cardMeta = style({
 });
 
 export const dialectBadge = style({
-  background: vars.color.surfaceSecondary,
-  borderRadius: "4px",
-  padding: "1px 5px",
+  background: vars.color.selectedBg,
+  color: vars.color.primary,
+  borderRadius: vars.radius.sm,
+  padding: "1px 6px",
   fontSize: "10px",
-  color: vars.color.textSecondary,
+  fontWeight: "600",
 });
 
 export const newCard = style({
@@ -242,13 +247,13 @@ export const newCard = style({
   cursor: "pointer",
   fontFamily: vars.font.family,
   alignSelf: "start",
-  height: "142px",
+  height: "171px",
   transition: "border-color 200ms ease, color 200ms ease, background 200ms ease",
   selectors: {
     "&:hover": {
       borderColor: vars.color.primary,
       color: vars.color.primary,
-      background: vars.color.surfaceSecondary,
+      background: vars.color.selectedBg,
     },
   },
 });

@@ -3,7 +3,7 @@ import { vars } from "../../../style/tokens.css";
 
 export const page = style({
   minHeight: "100vh",
-  background: vars.color.surfaceSecondary,
+  background: `linear-gradient(135deg, #f0f4ff 0%, ${vars.color.surfaceSecondary} 60%, #f5f0ff 100%)`,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -20,6 +20,7 @@ export const card = style({
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
+  borderTop: `3px solid ${vars.color.primary}`,
 });
 
 export const brand = style({
@@ -35,9 +36,11 @@ export const brandLogo = style({
 });
 
 export const tagline = style({
-  fontSize: "13px",
+  fontSize: "12px",
   color: vars.color.textSecondary,
-  marginBottom: vars.space["7"],
+  marginBottom: vars.space["6"],
+  textAlign: "center",
+  lineHeight: 1.5,
 });
 
 export const form = style({
@@ -89,4 +92,39 @@ export const sessionBanner = style({
   fontSize: "13px",
   textAlign: "center",
   marginBottom: vars.space["2"],
+});
+
+export const emailRow = style({
+  display: "flex",
+  gap: 8,
+  alignItems: "flex-end",
+});
+
+export const codeRow = style({
+  marginTop: 8,
+  display: "flex",
+  gap: 8,
+  alignItems: "flex-end",
+});
+
+export const verifiedBadge = style({
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  marginTop: 6,
+  fontSize: 13,
+  color: vars.color.success,
+  fontWeight: vars.font.weight.semibold,
+});
+
+export const codeError = style({
+  fontSize: 12,
+  color: vars.color.error,
+  marginTop: 4,
+});
+
+export const formError = style({
+  fontSize: 13,
+  color: vars.color.error,
+  margin: 0,
 });

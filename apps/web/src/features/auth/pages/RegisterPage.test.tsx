@@ -32,6 +32,11 @@ vi.mock("./auth-page.css", () => ({
   strengthBars: "",
   strengthBar: "",
   strengthBarFilled: "",
+  emailRow: "",
+  codeRow: "",
+  verifiedBadge: "",
+  codeError: "",
+  formError: "",
 }));
 
 vi.mock("../../../design-system", () => ({
