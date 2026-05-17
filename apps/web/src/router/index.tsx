@@ -26,7 +26,7 @@ export const Router = () => (
       <Route
         path="/share/:shareToken"
         element={
-          <QueryErrorBoundary variant="page">
+          <QueryErrorBoundary variant="page" backLabel="홈으로 이동" backPath="/">
             <SharedDiagramPage />
           </QueryErrorBoundary>
         }
@@ -35,7 +35,7 @@ export const Router = () => (
         <Route
           path="/diagrams/:diagramId"
           element={
-            <QueryErrorBoundary variant="page">
+            <QueryErrorBoundary variant="page" backLabel="대시보드로 이동" backPath="/">
               <EditorPage />
             </QueryErrorBoundary>
           }
