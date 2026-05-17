@@ -2,6 +2,7 @@ import { Component, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryErrorResetBoundary } from "@tanstack/react-query";
 import { getErrorStatus, ERROR_CONTENT } from "@/shared/utils/queryErrorContent";
+import { reportError } from "@/shared/services/errorReporter";
 import * as css from "./query-error-boundary.css";
 
 type FallbackProps = {
@@ -54,6 +55,11 @@ class QueryErrorBoundaryClass extends Component<ClassProps, State> {
 
   static getDerivedStateFromError(error: unknown): State {
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error: unknown): void {
+    const path = (error as { config?: { url?: string } })?.config?.url ?? window.location.pathname;
+    reportError(error, { path, url: window.location.href });
   }
 
   render() {

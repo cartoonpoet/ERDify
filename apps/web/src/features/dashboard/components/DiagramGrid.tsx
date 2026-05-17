@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FocusEvent } from "react";
 import { Link, useParams, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +20,7 @@ import {
   filterRowDisabled, sectionError, sectionErrorIcon, sectionErrorTitle, sectionErrorDesc, sectionErrorBtn, sectionErrorGuide,
 } from "./DiagramGrid.css";
 import { getErrorStatus, ERROR_CONTENT } from "@/shared/utils/queryErrorContent";
+import { reportError } from "@/shared/services/errorReporter";
 import { ShareDiagramModal } from "@/shared/components/ShareDiagramModal";
 import { EditDiagramModal } from "@/features/dashboard/components/EditDiagramModal";
 
@@ -92,6 +93,13 @@ export const DiagramGrid = () => {
   const filtered = applyFilter(diagrams, activeFilter, currentUserId, searchQuery || undefined);
   const errorStatus = isError ? getErrorStatus(error) : null;
   const isPermissionError = errorStatus === 403;
+
+  useEffect(() => {
+    if (isError && error) {
+      const path = (error as { config?: { url?: string } })?.config?.url ?? `/api/diagrams/${projectId}`;
+      reportError(error, { path, url: window.location.href });
+    }
+  }, [isError, error, projectId]);
 
   return (
     <div className={mainArea}>
