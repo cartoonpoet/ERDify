@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getMe } from "@/shared/api/auth.api";
 import * as css from "./unified-sidebar.css";
 
 interface SidebarBottomBarProps {
@@ -6,8 +8,15 @@ interface SidebarBottomBarProps {
   apiKeysActive: boolean;
 }
 
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? "").split(",").map((e: string) => e.trim()).filter(Boolean);
+
 export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps) => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
+
+  const isAdmin = !!me?.email && ADMIN_EMAILS.includes(me.email);
+  const errorReportsActive = pathname === "/admin/error-reports";
 
   return (
     <div className={css.sidebarBottomBar}>
@@ -20,6 +29,17 @@ export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps
         <span className={css.projIcon} aria-hidden="true">🔑</span>
         <span className={css.projName}>API 키</span>
       </button>
+      {isAdmin && (
+        <button
+          className={[css.projRow, errorReportsActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
+          onClick={() => navigate("/admin/error-reports")}
+          aria-pressed={errorReportsActive}
+        >
+          <span className={css.projArrow} aria-hidden="true" />
+          <span className={css.projIcon} aria-hidden="true">🚨</span>
+          <span className={css.projName}>에러 리포트</span>
+        </button>
+      )}
     </div>
   );
 };

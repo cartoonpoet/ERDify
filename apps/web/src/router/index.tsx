@@ -15,6 +15,7 @@ const ApiKeysPanel = lazy(() => import("@/features/dashboard/pages/ApiKeysPanel"
 const RootRedirect = lazy(() => import("@/pages/RootRedirect").then(m => ({ default: m.RootRedirect })));
 const SharedDiagramPage = lazy(() => import("@/pages/SharedDiagramPage").then(m => ({ default: m.SharedDiagramPage })));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
+const ErrorReportsPage = lazy(() => import("@/features/admin/pages/ErrorReportsPage").then(m => ({ default: m.ErrorReportsPage })));
 
 export const Router = () => (
   <Suspense fallback={null}>
@@ -54,6 +55,16 @@ export const Router = () => (
             <Route path="api-keys" element={<ApiKeysPanel />} />
             <Route path=":projectId" element={<DiagramGrid />} />
           </Route>
+        </Route>
+        <Route
+          path="/admin/error-reports"
+          element={
+            <QueryErrorBoundary variant="page" backLabel="대시보드로 이동" backPath="/">
+              <DashboardPage />
+            </QueryErrorBoundary>
+          }
+        >
+          <Route index element={<ErrorReportsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />
