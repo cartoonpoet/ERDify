@@ -1,42 +1,55 @@
 import { Component, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryErrorResetBoundary } from "@tanstack/react-query";
+import { getErrorStatus, ERROR_CONTENT } from "@/shared/utils/queryErrorContent";
 import * as css from "./query-error-boundary.css";
 
-type ErrorStatus = 403 | 404 | "5xx" | "network";
-
-const getErrorStatus = (error: unknown): ErrorStatus => {
-  const status = (error as { response?: { status?: number } })?.response?.status;
-  if (status === 403) return 403;
-  if (status === 404) return 404;
-  if (status !== undefined && status >= 500) return "5xx";
-  return "network";
+type FallbackProps = {
+  error: unknown;
+  variant: "page" | "inline";
+  backLabel: string;
+  backPath: string;
+  onRetry: () => void;
 };
 
-const ERROR_CONTENT: Record<ErrorStatus, { icon: string; title: string; desc: string }> = {
-  403: { icon: "🔒", title: "접근 권한이 없습니다", desc: "접근 권한이 없는 다이어그램입니다." },
-  404: { icon: "🔍", title: "존재하지 않습니다", desc: "존재하지 않거나 삭제된 다이어그램입니다." },
-  "5xx": { icon: "⚠️", title: "서버 오류", desc: "서버에 일시적인 문제가 발생했습니다." },
-  network: { icon: "📡", title: "연결 오류", desc: "네트워크 연결을 확인해 주세요." },
-};
-
-const ErrorFallback = ({ error, variant }: { error: unknown; variant: "page" | "inline" }) => {
+const ErrorFallback = ({ error, variant, backLabel, backPath, onRetry }: FallbackProps) => {
   const navigate = useNavigate();
   const status = getErrorStatus(error);
-  const { icon, title, desc } = ERROR_CONTENT[status];
+  const { icon, title, desc, retryable, guide } = ERROR_CONTENT[status];
+
   return (
     <div className={variant === "page" ? css.pageFallback : css.inlineFallback}>
       <div className={css.icon}>{icon}</div>
       <div className={css.title}>{title}</div>
       <div className={css.desc}>{desc}</div>
-      <button type="button" className={css.backBtn} onClick={() => navigate(-1)}>돌아가기</button>
+      {variant === "page" ? (
+        <button type="button" className={css.actionBtn} onClick={() => navigate(backPath)}>
+          {backLabel}
+        </button>
+      ) : (
+        <>
+          {retryable && (
+            <button type="button" className={css.actionBtn} onClick={onRetry}>
+              다시 시도
+            </button>
+          )}
+          <div className={css.guide}>{guide}</div>
+        </>
+      )}
     </div>
   );
 };
 
-type Props = { children: ReactNode; variant: "page" | "inline" };
+type ClassProps = {
+  children: ReactNode;
+  variant: "page" | "inline";
+  backLabel: string;
+  backPath: string;
+  onReset: () => void;
+};
 type State = { hasError: boolean; error: unknown };
 
-export class QueryErrorBoundary extends Component<Props, State> {
+class QueryErrorBoundaryClass extends Component<ClassProps, State> {
   state: State = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: unknown): State {
@@ -45,8 +58,41 @@ export class QueryErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return <ErrorFallback error={this.state.error} variant={this.props.variant} />;
+      const handleRetry = () => {
+        this.props.onReset();
+        this.setState({ hasError: false, error: null });
+      };
+      return (
+        <ErrorFallback
+          error={this.state.error}
+          variant={this.props.variant}
+          backLabel={this.props.backLabel}
+          backPath={this.props.backPath}
+          onRetry={handleRetry}
+        />
+      );
     }
     return this.props.children;
   }
 }
+
+type PublicProps = {
+  children: ReactNode;
+  variant: "page" | "inline";
+  backLabel?: string;
+  backPath?: string;
+};
+
+export const QueryErrorBoundary = ({ children, variant, backLabel, backPath }: PublicProps) => {
+  const { reset } = useQueryErrorResetBoundary();
+  return (
+    <QueryErrorBoundaryClass
+      variant={variant}
+      backLabel={backLabel ?? "홈으로 이동"}
+      backPath={backPath ?? "/"}
+      onReset={reset}
+    >
+      {children}
+    </QueryErrorBoundaryClass>
+  );
+};

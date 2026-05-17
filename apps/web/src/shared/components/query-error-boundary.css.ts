@@ -10,19 +10,11 @@ const base = style({
   padding: vars.space["6"],
 });
 
-export const pageFallback = style([base, {
-  height: "100vh",
-}]);
+export const pageFallback = style([base, { height: "100vh" }]);
 
-export const inlineFallback = style([base, {
-  width: "100%",
-  height: "100%",
-}]);
+export const inlineFallback = style([base, { width: "100%", height: "100%" }]);
 
-export const icon = style({
-  fontSize: "40px",
-  lineHeight: 1,
-});
+export const icon = style({ fontSize: "40px", lineHeight: 1 });
 
 export const title = style({
   fontSize: "18px",
@@ -38,7 +30,7 @@ export const desc = style({
   maxWidth: "320px",
 });
 
-export const backBtn = style({
+export const actionBtn = style({
   marginTop: vars.space["2"],
   padding: `${vars.space["2"]} ${vars.space["4"]}`,
   borderRadius: vars.radius.md,
@@ -50,4 +42,12 @@ export const backBtn = style({
   selectors: {
     "&:hover": { background: vars.color.surfaceSecondary },
   },
+});
+
+export const guide = style({
+  fontSize: "12px",
+  color: vars.color.textSecondary,
+  textAlign: "center",
+  maxWidth: "280px",
+  marginTop: vars.space["1"],
 });

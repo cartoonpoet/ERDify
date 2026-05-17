@@ -1,64 +1,106 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { QueryErrorBoundary } from "./QueryErrorBoundary";
 
-// Suppress React's error boundary console output in test logs
 const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 afterAll(() => { consoleError.mockRestore(); });
 
 const Throw = ({ error }: { error: unknown }) => { throw error; };
 
-const wrap = (error: unknown, variant: "page" | "inline" = "page") =>
-  render(
+const wrap = (
+  error: unknown,
+  variant: "page" | "inline" = "page",
+  props: { backLabel?: string; backPath?: string } = {},
+) => {
+  const qc = new QueryClient();
+  return render(
     <MemoryRouter>
-      <QueryErrorBoundary variant={variant}>
-        <Throw error={error} />
-      </QueryErrorBoundary>
-    </MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <QueryErrorBoundary variant={variant} {...props}>
+          <Throw error={error} />
+        </QueryErrorBoundary>
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
+};
 
-describe("QueryErrorBoundary", () => {
-  it("shows 접근 권한이 없습니다 for status 403", () => {
+describe("QueryErrorBoundary — error messages", () => {
+  it("shows 접근 권한이 없습니다 for 403", () => {
     wrap({ response: { status: 403 } });
     expect(screen.getByText("접근 권한이 없습니다")).toBeInTheDocument();
-    expect(screen.getByText("접근 권한이 없는 다이어그램입니다.")).toBeInTheDocument();
   });
-
-  it("shows 존재하지 않습니다 for status 404", () => {
+  it("shows ERD 목록을 찾을 수 없습니다 for 404", () => {
     wrap({ response: { status: 404 } });
-    expect(screen.getByText("존재하지 않습니다")).toBeInTheDocument();
-    expect(screen.getByText("존재하지 않거나 삭제된 다이어그램입니다.")).toBeInTheDocument();
+    expect(screen.getByText("ERD 목록을 찾을 수 없습니다")).toBeInTheDocument();
   });
-
-  it("shows 서버 오류 for status 500", () => {
+  it("shows 서버 오류 for 500", () => {
     wrap({ response: { status: 500 } });
     expect(screen.getByText("서버 오류")).toBeInTheDocument();
-    expect(screen.getByText("서버에 일시적인 문제가 발생했습니다.")).toBeInTheDocument();
   });
-
-  it("shows 서버 오류 for status 503", () => {
+  it("shows 서버 오류 for 503", () => {
     wrap({ response: { status: 503 } });
     expect(screen.getByText("서버 오류")).toBeInTheDocument();
   });
-
-  it("shows 연결 오류 for unknown error shape", () => {
+  it("shows 연결 오류 for unknown error", () => {
     wrap(new Error("Network Error"));
     expect(screen.getByText("연결 오류")).toBeInTheDocument();
-    expect(screen.getByText("네트워크 연결을 확인해 주세요.")).toBeInTheDocument();
   });
+});
 
-  it("renders 돌아가기 button", () => {
-    wrap({ response: { status: 403 } });
-    expect(screen.getByRole("button", { name: "돌아가기" })).toBeInTheDocument();
+describe("QueryErrorBoundary — page variant", () => {
+  it("renders default backLabel '홈으로 이동'", () => {
+    wrap({ response: { status: 500 } }, "page");
+    expect(screen.getByRole("button", { name: "홈으로 이동" })).toBeInTheDocument();
   });
+  it("renders custom backLabel", () => {
+    wrap({ response: { status: 500 } }, "page", { backLabel: "대시보드로 이동" });
+    expect(screen.getByRole("button", { name: "대시보드로 이동" })).toBeInTheDocument();
+  });
+  it("does not render guide text in page variant", () => {
+    wrap({ response: { status: 500 } }, "page");
+    expect(screen.queryByText(/문제가 지속/)).not.toBeInTheDocument();
+  });
+});
 
-  it("renders children when no error", () => {
+describe("QueryErrorBoundary — inline variant", () => {
+  it("renders 다시 시도 button for retryable errors (5xx)", () => {
+    wrap({ response: { status: 500 } }, "inline");
+    expect(screen.getByRole("button", { name: "다시 시도" })).toBeInTheDocument();
+  });
+  it("renders 다시 시도 button for network errors", () => {
+    wrap(new Error("Network"), "inline");
+    expect(screen.getByRole("button", { name: "다시 시도" })).toBeInTheDocument();
+  });
+  it("does NOT render retry button for 403", () => {
+    wrap({ response: { status: 403 } }, "inline");
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+  it("does NOT render retry button for 404", () => {
+    wrap({ response: { status: 404 } }, "inline");
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+  it("renders guide text for inline variant", () => {
+    wrap({ response: { status: 500 } }, "inline");
+    expect(screen.getByText("문제가 지속되면 페이지를 새로고침해 주세요")).toBeInTheDocument();
+  });
+  it("renders 403 guide text without retry button", () => {
+    wrap({ response: { status: 403 } }, "inline");
+    expect(screen.getByText(/사이드바에서 다른 프로젝트/)).toBeInTheDocument();
+  });
+});
+
+describe("QueryErrorBoundary — renders children when no error", () => {
+  it("renders children", () => {
+    const qc = new QueryClient();
     render(
       <MemoryRouter>
-        <QueryErrorBoundary variant="page">
-          <div>정상 콘텐츠</div>
-        </QueryErrorBoundary>
-      </MemoryRouter>
+        <QueryClientProvider client={qc}>
+          <QueryErrorBoundary variant="page">
+            <div>정상 콘텐츠</div>
+          </QueryErrorBoundary>
+        </QueryClientProvider>
+      </MemoryRouter>,
     );
     expect(screen.getByText("정상 콘텐츠")).toBeInTheDocument();
   });
