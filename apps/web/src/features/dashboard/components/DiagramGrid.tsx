@@ -17,7 +17,9 @@ import {
   miniTable, miniTableHeader, miniField, cardBody, cardName, cardMeta,
   dialectBadge, newCard, newCardIcon,
   ctxBtn, ctxMenu, ctxItem, ctxItemDanger, ctxDivider,
+  filterRowDisabled, sectionError, sectionErrorIcon, sectionErrorTitle, sectionErrorDesc, sectionErrorBtn, sectionErrorGuide,
 } from "./DiagramGrid.css";
+import { getErrorStatus, ERROR_CONTENT } from "@/shared/utils/queryErrorContent";
 import { ShareDiagramModal } from "@/shared/components/ShareDiagramModal";
 import { EditDiagramModal } from "@/features/dashboard/components/EditDiagramModal";
 
@@ -72,10 +74,11 @@ export const DiagramGrid = () => {
     queryFn: () => listProjects(orgId!),
     enabled: !!orgId,
   });
-  const { data: diagrams = [], isLoading } = useQuery({
+  const { data: diagrams = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ["diagrams", projectId],
     queryFn: () => listDiagrams(projectId!),
     enabled: !!projectId,
+    throwOnError: false,
   });
 
   const projectName = projects.find((p) => p.id === projectId)?.name;
@@ -87,24 +90,26 @@ export const DiagramGrid = () => {
   const [editDiagramItem, setEditDiagramItem] = useState<DiagramListItem | null>(null);
 
   const filtered = applyFilter(diagrams, activeFilter, currentUserId, searchQuery || undefined);
+  const errorStatus = isError ? getErrorStatus(error) : null;
+  const isPermissionError = errorStatus === 403;
 
   return (
     <div className={mainArea}>
       <div className={mainHeader}>
         <div className={mainTitle}>{projectName ?? "프로젝트를 선택하세요"}</div>
         {projectName && (
-          <Button variant="secondary" size="md" onClick={onImportDiagram}>
+          <Button variant="secondary" size="md" onClick={onImportDiagram} disabled={isPermissionError}>
             가져오기
           </Button>
         )}
         {projectName && (
-          <Button variant="primary" size="md" onClick={onCreateDiagram}>
+          <Button variant="primary" size="md" onClick={onCreateDiagram} disabled={isPermissionError}>
             + 새 ERD
           </Button>
         )}
       </div>
       {projectName && (
-        <div className={filterRow}>
+        <div className={[filterRow, isError ? filterRowDisabled : ""].filter(Boolean).join(" ")}>
           <button
             className={[filterChip, activeFilter === "all" ? filterChipVariants.active : filterChipVariants.inactive].join(" ")}
             aria-pressed={activeFilter === "all"}
@@ -128,7 +133,19 @@ export const DiagramGrid = () => {
           </button>
         </div>
       )}
-      {isLoading && !!projectId ? (
+      {isError ? (
+        <div className={sectionError}>
+          <div className={sectionErrorIcon}>{ERROR_CONTENT[errorStatus!].icon}</div>
+          <div className={sectionErrorTitle}>{ERROR_CONTENT[errorStatus!].title}</div>
+          <div className={sectionErrorDesc}>{ERROR_CONTENT[errorStatus!].desc}</div>
+          {ERROR_CONTENT[errorStatus!].retryable && (
+            <button type="button" className={sectionErrorBtn} onClick={() => refetch()}>
+              다시 시도
+            </button>
+          )}
+          <div className={sectionErrorGuide}>{ERROR_CONTENT[errorStatus!].guide}</div>
+        </div>
+      ) : isLoading && !!projectId ? (
         <div className={grid}>
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} height={140} />

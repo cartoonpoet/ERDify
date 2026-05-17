@@ -284,3 +284,56 @@ export const emptyState = style({
   color: vars.color.textSecondary,
   fontSize: "14px",
 });
+
+export const filterRowDisabled = style({
+  opacity: 0.4,
+  pointerEvents: "none",
+});
+
+export const sectionError = style({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: vars.space["3"],
+  padding: `${vars.space["9"]} ${vars.space["6"]}`,
+  flex: 1,
+});
+
+export const sectionErrorIcon = style({ fontSize: "32px", lineHeight: 1 });
+
+export const sectionErrorTitle = style({
+  fontSize: "15px",
+  fontWeight: "700",
+  color: vars.color.textPrimary,
+  textAlign: "center",
+});
+
+export const sectionErrorDesc = style({
+  fontSize: "12px",
+  color: vars.color.textSecondary,
+  textAlign: "center",
+  maxWidth: "280px",
+});
+
+export const sectionErrorBtn = style({
+  marginTop: vars.space["1"],
+  padding: `${vars.space["2"]} ${vars.space["4"]}`,
+  borderRadius: vars.radius.md,
+  border: `1px solid ${vars.color.border}`,
+  background: vars.color.surface,
+  color: vars.color.textPrimary,
+  fontSize: "13px",
+  cursor: "pointer",
+  selectors: {
+    "&:hover": { background: vars.color.surfaceSecondary },
+  },
+});
+
+export const sectionErrorGuide = style({
+  fontSize: "11px",
+  color: vars.color.textSecondary,
+  textAlign: "center",
+  maxWidth: "260px",
+  marginTop: vars.space["1"],
+});

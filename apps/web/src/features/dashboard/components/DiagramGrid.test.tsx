@@ -142,4 +142,42 @@ describe("DiagramGrid", () => {
     wrap({ noProject: true });
     expect(await screen.findByText("프로젝트를 선택하세요")).toBeInTheDocument();
   });
+
+  describe("에러 상태", () => {
+    it("diagrams 쿼리 실패 시 에러 UI를 렌더링한다", async () => {
+      vi.mocked(listDiagrams).mockRejectedValue({ response: { status: 500 } });
+      wrap();
+      expect(await screen.findByText("서버 오류")).toBeInTheDocument();
+    });
+
+    it("5xx 에러 시 '다시 시도' 버튼을 렌더링한다", async () => {
+      vi.mocked(listDiagrams).mockRejectedValue({ response: { status: 500 } });
+      wrap();
+      expect(await screen.findByRole("button", { name: "다시 시도" })).toBeInTheDocument();
+    });
+
+    it("403 에러 시 '다시 시도' 버튼을 렌더링하지 않는다", async () => {
+      vi.mocked(listDiagrams).mockRejectedValue({ response: { status: 403 } });
+      wrap();
+      expect(await screen.findByText("접근 권한이 없습니다")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "다시 시도" })).not.toBeInTheDocument();
+    });
+
+    it("403 에러 시 '가져오기'/'새 ERD' 버튼이 disabled 된다", async () => {
+      vi.mocked(listDiagrams).mockRejectedValue({ response: { status: 403 } });
+      wrap();
+      await screen.findByText("접근 권한이 없습니다");
+      const importBtn = screen.queryByRole("button", { name: "가져오기" });
+      const newBtn = screen.queryByRole("button", { name: /새 ERD/ });
+      if (importBtn) expect(importBtn).toBeDisabled();
+      if (newBtn) expect(newBtn).toBeDisabled();
+    });
+
+    it("에러 상태에서 프로젝트 이름은 계속 표시된다", async () => {
+      vi.mocked(listDiagrams).mockRejectedValue({ response: { status: 500 } });
+      wrap();
+      await screen.findByText("서버 오류");
+      expect(screen.getByText("Test Project")).toBeInTheDocument();
+    });
+  });
 });
