@@ -50,8 +50,7 @@ export class ErrorReportsService {
 
     if (dto.errorType === "5xx" || dto.errorType === "network") {
       const adminEmails = this.config.get<string>("ADMIN_EMAILS", "");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (this.email as any).sendErrorAlertEmail({
+      await this.email.sendErrorAlertEmail({
         to: adminEmails,
         errorType: dto.errorType,
         httpStatus: dto.httpStatus,
@@ -123,8 +122,7 @@ export class ErrorReportsService {
         if (this.lastSpikeAlertAt && Date.now() - this.lastSpikeAlertAt.getTime() < cooldown) continue;
 
         const adminEmails = this.config.get<string>("ADMIN_EMAILS", "");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (this.email as any).sendSpikeAlertEmail({
+        await this.email.sendSpikeAlertEmail({
           to: adminEmails,
           errorType: type,
           count,

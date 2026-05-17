@@ -20,6 +20,22 @@ export interface InviteEmailParams {
   inviteUrl: string;
 }
 
+export interface ErrorAlertEmailParams {
+  to: string;
+  errorType: string;
+  httpStatus: number | null;
+  path: string;
+  userId: string | null;
+  appUrl: string;
+}
+
+export interface SpikeAlertEmailParams {
+  to: string;
+  errorType: string;
+  count: number;
+  appUrl: string;
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -129,6 +145,49 @@ export class EmailService {
         `Failed to send invite email to ${params.to}`,
         (err as Error).stack
       );
+      return false;
+    }
+  }
+
+  async sendErrorAlertEmail(params: ErrorAlertEmailParams): Promise<boolean> {
+    if (!params.to) return false;
+    try {
+      const statusLabel = params.httpStatus ? ` (${params.httpStatus})` : "";
+      await this.transporter.sendMail({
+        from: this.config.get<string>("SMTP_FROM", "noreply@erdify.app"),
+        to: params.to,
+        subject: `[ERDify] ${params.errorType === "network" ? "연결 오류" : "서버 오류"} — ${params.path}`,
+        text: [
+          `에러 타입: ${params.errorType}${statusLabel}`,
+          `경로: ${params.path}`,
+          `사용자: ${params.userId ?? "비로그인"}`,
+          ``,
+          `→ 에러 리포트 확인: ${params.appUrl}/admin/error-reports`,
+        ].join("\n"),
+      });
+      return true;
+    } catch (err) {
+      this.logger.error("Failed to send error alert email", (err as Error).stack);
+      return false;
+    }
+  }
+
+  async sendSpikeAlertEmail(params: SpikeAlertEmailParams): Promise<boolean> {
+    if (!params.to) return false;
+    try {
+      await this.transporter.sendMail({
+        from: this.config.get<string>("SMTP_FROM", "noreply@erdify.app"),
+        to: params.to,
+        subject: `[ERDify] ${params.errorType} 급증 감지 — 10분간 ${params.count}건`,
+        text: [
+          `최근 10분간 ${params.errorType} 오류 ${params.count}건 발생`,
+          ``,
+          `→ 에러 리포트 확인: ${params.appUrl}/admin/error-reports`,
+        ].join("\n"),
+      });
+      return true;
+    } catch (err) {
+      this.logger.error("Failed to send spike alert email", (err as Error).stack);
       return false;
     }
   }

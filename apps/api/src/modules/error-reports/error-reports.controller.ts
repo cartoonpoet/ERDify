@@ -25,11 +25,15 @@ export class ErrorReportsController {
     @Query("from") from?: string,
   ) {
     this.assertAdmin(req.user.email);
-    const filters = {
-      type,
-      resolved: resolved === "true" ? true : resolved === "false" ? false : undefined,
-      from: from ? new Date(from) : undefined,
-    };
+    const filters: { type?: ErrorType; resolved?: boolean; from?: Date } = {};
+    if (type !== undefined) filters.type = type;
+    if (resolved === "true") {
+      filters.resolved = true;
+    } else if (resolved === "false") {
+      filters.resolved = false;
+    }
+    if (from !== undefined) filters.from = new Date(from);
+
     const [groups, stats] = await Promise.all([
       this.service.findGrouped(filters),
       this.service.getStats(),
