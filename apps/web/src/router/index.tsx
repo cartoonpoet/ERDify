@@ -49,22 +49,13 @@ export const Router = () => (
           }
         >
           <Route path="/" element={<RootRedirect />} />
+          <Route path="/admin/error-reports" element={<ErrorReportsPage />} />
           <Route path="/:orgId">
             <Route index element={<DiagramGrid />} />
             <Route path="members" element={<MemberManagementPage />} />
             <Route path="api-keys" element={<ApiKeysPanel />} />
             <Route path=":projectId" element={<DiagramGrid />} />
           </Route>
-        </Route>
-        <Route
-          path="/admin/error-reports"
-          element={
-            <QueryErrorBoundary variant="page" backLabel="대시보드로 이동" backPath="/">
-              <DashboardPage />
-            </QueryErrorBoundary>
-          }
-        >
-          <Route index element={<ErrorReportsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />
