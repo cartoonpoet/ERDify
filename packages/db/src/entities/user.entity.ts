@@ -28,6 +28,9 @@ export class User {
   @Column({ type: "varchar", length: 255, nullable: true })
   phone!: string | null;
 
+  @Column({ name: "is_admin", type: "boolean", default: false })
+  isAdmin!: boolean;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 

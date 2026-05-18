@@ -33,7 +33,7 @@ describe("auth.api", () => {
   });
 
   it("getMe는 GET /auth/me를 호출하고 r.data를 반환한다", async () => {
-    const profile = { id: "u1", email: "a@b.com", name: "Alice", phone: null, avatarUrl: null };
+    const profile = { id: "u1", email: "a@b.com", name: "Alice", phone: null, avatarUrl: null, isAdmin: false };
     vi.mocked(httpClient.get).mockResolvedValue({ data: profile });
     const result = await getMe();
     expect(httpClient.get).toHaveBeenCalledWith("/auth/me");
@@ -41,7 +41,7 @@ describe("auth.api", () => {
   });
 
   it("updateProfile은 PATCH /auth/profile를 호출하고 r.data를 반환한다", async () => {
-    const profile = { id: "u1", email: "a@b.com", name: "Bob", phone: null, avatarUrl: null };
+    const profile = { id: "u1", email: "a@b.com", name: "Bob", phone: null, avatarUrl: null, isAdmin: false };
     vi.mocked(httpClient.patch).mockResolvedValue({ data: profile });
     const result = await updateProfile({ name: "Bob" });
     expect(httpClient.patch).toHaveBeenCalledWith("/auth/profile", { name: "Bob" });

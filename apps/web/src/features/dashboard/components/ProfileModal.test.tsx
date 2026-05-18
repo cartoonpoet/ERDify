@@ -39,7 +39,7 @@ const wrap = (ui: React.ReactElement, qc = createQc()) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getMe).mockResolvedValue({ id: "1", name: "홍길동", email: "test@test.com", phone: null, avatarUrl: null });
+  vi.mocked(getMe).mockResolvedValue({ id: "1", name: "홍길동", email: "test@test.com", phone: null, avatarUrl: null, isAdmin: false });
 });
 
 describe("ProfileModal", () => {
@@ -109,9 +109,9 @@ describe("ProfileModal", () => {
 
   it("ProfileTab: 쿼리 캐시에서 이름을 로드하고 submit 시 updateProfile이 호출된다", async () => {
     const qc = createQc();
-    qc.setQueryData(["me"], { id: "1", name: "홍길동", email: "test@test.com", phone: null, avatarUrl: null });
-    vi.mocked(getMe).mockResolvedValue({ id: "1", name: "홍길동", email: "test@test.com", phone: null, avatarUrl: null });
-    vi.mocked(updateProfile).mockResolvedValue({ id: "1", name: "새이름", email: "test@test.com", phone: null, avatarUrl: null });
+    qc.setQueryData(["me"], { id: "1", name: "홍길동", email: "test@test.com", phone: null, avatarUrl: null, isAdmin: false });
+    vi.mocked(getMe).mockResolvedValue({ id: "1", name: "홍길동", email: "test@test.com", phone: null, avatarUrl: null, isAdmin: false });
+    vi.mocked(updateProfile).mockResolvedValue({ id: "1", name: "새이름", email: "test@test.com", phone: null, avatarUrl: null, isAdmin: false });
 
     wrap(<ProfileModal open={true} onClose={vi.fn()} />, qc);
 

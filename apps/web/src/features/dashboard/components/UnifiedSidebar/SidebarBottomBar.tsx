@@ -8,14 +8,12 @@ interface SidebarBottomBarProps {
   apiKeysActive: boolean;
 }
 
-const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? "").split(",").map((e: string) => e.trim()).filter(Boolean);
-
 export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
 
-  const isAdmin = !!me?.email && ADMIN_EMAILS.includes(me.email);
+  const isAdmin = !!me?.isAdmin;
   const errorReportsActive = pathname === "/admin/error-reports";
 
   return (

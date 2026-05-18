@@ -27,6 +27,7 @@ export interface UserProfile {
   name: string;
   phone: string | null;
   avatarUrl: string | null;
+  isAdmin: boolean;
 }
 
 export interface ApiKeyInfo {
@@ -223,7 +224,7 @@ export class AuthService {
   async getMe(userId: string): Promise<UserProfile> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException("User not found");
-    return { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, phone: user.phone ? decrypt(user.phone) : null };
+    return { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, phone: user.phone ? decrypt(user.phone) : null, isAdmin: user.isAdmin };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto): Promise<UserProfile> {
@@ -231,7 +232,7 @@ export class AuthService {
     if (!user) throw new NotFoundException("User not found");
     if (dto.name !== undefined) user.name = dto.name;
     const saved = await this.userRepo.save(user);
-    return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl, phone: saved.phone ? decrypt(saved.phone) : null };
+    return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl, phone: saved.phone ? decrypt(saved.phone) : null, isAdmin: saved.isAdmin };
   }
 
   async deleteAccount(userId: string): Promise<void> {
@@ -301,6 +302,6 @@ export class AuthService {
 
     user.avatarUrl = `/uploads/avatars/${filename}`;
     const saved = await this.userRepo.save(user);
-    return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl, phone: saved.phone ? decrypt(saved.phone) : null };
+    return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl, phone: saved.phone ? decrypt(saved.phone) : null, isAdmin: saved.isAdmin };
   }
 }

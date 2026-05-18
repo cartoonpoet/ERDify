@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Patch, Post, Query, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { ErrorReportsService, type CreateErrorReportDto, type ResolveDto } from "./error-reports.service";
-import { ConfigService } from "@nestjs/config";
+import { ErrorReportsService, type CreateErrorReportDto } from "./error-reports.service";
+import { ErrorReport, User } from "@erdify/db";
 import type { ErrorType } from "@erdify/db";
 
 @Controller("error-reports")
@@ -9,22 +11,23 @@ import type { ErrorType } from "@erdify/db";
 export class ErrorReportsController {
   constructor(
     private readonly service: ErrorReportsService,
-    private readonly config: ConfigService,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
   ) {}
 
   @Post()
-  async create(@Body() body: CreateErrorReportDto, @Req() req: { user: { id: string } }): Promise<void> {
-    await this.service.create({ ...body, userId: req.user.id });
+  async create(@Body() body: CreateErrorReportDto, @Req() req: { user: { sub: string } }): Promise<void> {
+    await this.service.create({ ...body, userId: req.user.sub });
   }
 
   @Get()
   async findAll(
-    @Req() req: { user: { email: string } },
+    @Req() req: { user: { sub: string } },
     @Query("type") type?: ErrorType,
     @Query("resolved") resolved?: string,
     @Query("from") from?: string,
   ) {
-    this.assertAdmin(req.user.email);
+    await this.assertAdmin(req.user.sub);
     const filters: { type?: ErrorType; resolved?: boolean; from?: Date } = {};
     if (type !== undefined) filters.type = type;
     if (resolved === "true") {
@@ -42,13 +45,16 @@ export class ErrorReportsController {
   }
 
   @Patch("resolve")
-  async resolve(@Body() body: { path: string; errorType: ErrorType; note?: string }, @Req() req: { user: { id: string; email: string } }): Promise<void> {
-    this.assertAdmin(req.user.email);
-    await this.service.resolve({ ...body, resolvedById: req.user.id });
+  async resolve(
+    @Body() body: { path: string; errorType: ErrorType; note?: string },
+    @Req() req: { user: { sub: string } },
+  ): Promise<void> {
+    await this.assertAdmin(req.user.sub);
+    await this.service.resolve({ ...body, resolvedById: req.user.sub });
   }
 
-  private assertAdmin(email: string): void {
-    const adminEmails = this.config.get<string>("ADMIN_EMAILS", "").split(",").map((e) => e.trim());
-    if (!adminEmails.includes(email)) throw new UnauthorizedException();
+  private async assertAdmin(userId: string): Promise<void> {
+    const user = await this.userRepo.findOne({ where: { id: userId }, select: ["isAdmin"] });
+    if (!user?.isAdmin) throw new UnauthorizedException();
   }
 }
