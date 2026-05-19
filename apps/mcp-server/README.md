@@ -1,43 +1,106 @@
-# ERDify MCP Server
+# @erdify/mcp-server
 
-ERDify 다이어그램을 Claude Desktop 등 MCP 클라이언트에서 조작할 수 있게 하는 stdio MCP 서버.
+MCP server for [ERDify](http://erdify-app.kro.kr) — lets AI assistants (Claude, Cursor, etc.) read and modify your ERD diagrams using natural language.
 
-## 1. API 키 발급
+## Prerequisites
 
-ERDify에 로그인한 뒤 아래 요청을 보내세요 (Authorization 헤더에 기존 액세스 토큰 사용):
+1. An [ERDify](http://erdify-app.kro.kr) account
+2. An API key — log in → Settings → API Keys → create a new key
 
-```bash
-curl -X POST http://localhost:3000/auth/api-key \
-  -H "Authorization: Bearer <your-access-token>"
-```
+---
 
-응답: `{ "apiKey": "eyJ..." }`
+## Setup
 
-## 2. Claude Desktop 설정
+### Claude Desktop
 
-`~/Library/Application Support/Claude/claude_desktop_config.json`:
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
   "mcpServers": {
     "erdify": {
       "command": "npx",
-      "args": ["tsx", "/absolute/path/to/apps/mcp-server/src/index.ts"],
+      "args": ["-y", "@erdify/mcp-server"],
       "env": {
-        "ERDIFY_API_URL": "http://localhost:3000",
-        "ERDIFY_API_KEY": "eyJ..."
+        "ERDIFY_API_KEY": "your-api-key-here"
       }
     }
   }
 }
 ```
 
-Claude Desktop을 재시작하면 ERDify 툴이 활성화됩니다.
+Restart Claude Desktop — the ERDify tools will appear automatically.
 
-## 사용 예시
+### Cursor
 
-- "내 프로젝트 목록 보여줘" → `list_projects`
-- "쇼핑몰 ERD의 테이블 목록 알려줘" → `list_diagrams` → `get_diagram`
-- "users 테이블에 email 컬럼 추가해줘" → `add_column`
-- "orders → users 관계 추가해줘" → `add_relationship`
-- "현재 스키마 DDL 뽑아줘" → `get_ddl`
+Add to `.cursor/mcp.json` in your project root (or `~/.cursor/mcp.json` globally):
+
+```json
+{
+  "mcpServers": {
+    "erdify": {
+      "command": "npx",
+      "args": ["-y", "@erdify/mcp-server"],
+      "env": {
+        "ERDIFY_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+### Self-hosted ERDify
+
+Add `ERDIFY_API_URL` to the `env` block:
+
+```json
+"env": {
+  "ERDIFY_API_KEY": "your-api-key-here",
+  "ERDIFY_API_URL": "https://your-server.com/api"
+}
+```
+
+---
+
+## What you can do
+
+Once connected, just talk to your AI assistant naturally:
+
+> "Show me all my organizations"  
+> "List diagrams in the my-project project"  
+> "Add a `products` table to my shop diagram with id, name, and price columns"  
+> "Add a foreign key from orders to users"  
+> "Generate the DDL for my current schema"  
+> "Rename the `user_id` column to `owner_id`"
+
+---
+
+## Available Tools
+
+### Read
+
+| Tool | Description |
+|------|-------------|
+| `list_organizations` | List all accessible organizations |
+| `list_projects` | List projects in an organization |
+| `list_diagrams` | List diagrams in a project |
+| `get_diagram` | Get tables, columns, and relationships |
+| `get_ddl` | Generate DDL SQL for a diagram |
+
+### Write
+
+| Tool | Description |
+|------|-------------|
+| `add_table` | Add a new table (with optional initial columns) |
+| `remove_table` | Remove a table by ID |
+| `add_column` | Add a column to a table |
+| `update_column` | Update column properties (name, type, constraints) |
+| `remove_column` | Remove a column |
+| `add_relationship` | Add a foreign key relationship between tables |
+| `remove_relationship` | Remove a relationship |
+
+---
+
+## License
+
+MIT
