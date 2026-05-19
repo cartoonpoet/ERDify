@@ -291,10 +291,9 @@ jobs:
   publish-cli:
     name: Publish CLI to npm
     runs-on: ubuntu-latest
-    needs: [changes, test-web, test-api]
+    needs: [test-web, test-api]
     if: |
       always() &&
-      needs.changes.outputs.cli == 'true' &&
       needs.test-web.result != 'failure' &&
       needs.test-api.result != 'failure'
     permissions:
@@ -350,10 +349,9 @@ jobs:
   publish-mcp:
     name: Publish MCP Server to npm
     runs-on: ubuntu-latest
-    needs: [changes, test-web, test-api]
+    needs: [test-web, test-api]
     if: |
       always() &&
-      needs.changes.outputs.mcp == 'true' &&
       needs.test-web.result != 'failure' &&
       needs.test-api.result != 'failure'
     permissions:
