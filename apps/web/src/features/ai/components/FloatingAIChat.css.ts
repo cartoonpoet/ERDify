@@ -1,5 +1,4 @@
 import { style, keyframes, globalStyle } from "@vanilla-extract/css";
-import { recipe } from "@vanilla-extract/recipes";
 import { vars } from "@/style/tokens.css";
 
 const AI_GRADIENT = "linear-gradient(135deg, #2563eb 0%, #5b21b6 100%)";
@@ -19,82 +18,72 @@ const dotBounce = keyframes({
   "30%":           { transform: "translateY(-4px)", opacity: 1 },
 });
 
-// ── container (circle → window morph) ─────────────────────────────────────
+// ── container base ─────────────────────────────────────────────────────────
 
-export const floatContainer = recipe({
-  base: {
-    position: "fixed",
-    bottom: "24px",
-    right: "24px",
-    zIndex: 1000,
-    overflow: "hidden",
-    transformOrigin: "bottom right",
-    background: AI_GRADIENT,
-    boxShadow: "0 4px 24px rgba(37,99,235,0.45)",
-    transition: [
-      `width    ${MORPH_DURATION} ${TRANSITION_CURVE}`,
-      `height   ${MORPH_DURATION} ${TRANSITION_CURVE}`,
-      `border-radius ${MORPH_DURATION} ${TRANSITION_CURVE}`,
-      `box-shadow ${MORPH_DURATION} ease`,
-    ].join(", "),
-  },
-  variants: {
-    state: {
-      closed: {
-        width: "56px",
-        height: "56px",
-        borderRadius: "50%",
-        cursor: "pointer",
-        selectors: {
-          "&:hover": {
-            boxShadow: "0 6px 32px rgba(37,99,235,0.6)",
-            transform: "scale(1.07)",
-          },
-          // pulse ring
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            inset: "-4px",
-            borderRadius: "50%",
-            border: "2px solid rgba(99,102,241,0.5)",
-            animation: `${pulse} 2.4s ease-out infinite`,
-            pointerEvents: "none",
-          },
-        },
-      },
-      open: {
-        width: "360px",
-        height: "500px",
-        borderRadius: vars.radius.lg,
-        background: vars.color.surface,
-        boxShadow: vars.shadow.xl,
-        cursor: "default",
-      },
+const floatContainerBase = style({
+  position: "fixed",
+  bottom: "24px",
+  right: "24px",
+  zIndex: 1000,
+  overflow: "hidden",
+  transformOrigin: "bottom right",
+  transition: [
+    `width    ${MORPH_DURATION} ${TRANSITION_CURVE}`,
+    `height   ${MORPH_DURATION} ${TRANSITION_CURVE}`,
+    `border-radius ${MORPH_DURATION} ${TRANSITION_CURVE}`,
+    `box-shadow ${MORPH_DURATION} ease`,
+  ].join(", "),
+});
+
+export const floatContainerClosed = style([floatContainerBase, {
+  width: "56px",
+  height: "56px",
+  borderRadius: "50%",
+  cursor: "pointer",
+  background: AI_GRADIENT,
+  boxShadow: "0 4px 24px rgba(37,99,235,0.45)",
+  selectors: {
+    "&:hover": {
+      boxShadow: "0 6px 32px rgba(37,99,235,0.6)",
+      transform: "scale(1.07)",
+    },
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      inset: "-4px",
+      borderRadius: "50%",
+      border: "2px solid rgba(99,102,241,0.5)",
+      animation: `${pulse} 2.4s ease-out infinite`,
+      pointerEvents: "none",
     },
   },
-});
+}]);
+
+export const floatContainerOpen = style([floatContainerBase, {
+  width: "360px",
+  height: "500px",
+  borderRadius: vars.radius.lg,
+  background: vars.color.surface,
+  boxShadow: vars.shadow.xl,
+  cursor: "default",
+}]);
 
 // ── FAB icon layer ─────────────────────────────────────────────────────────
 
-export const fabContent = recipe({
-  base: {
-    position: "absolute",
-    inset: 0,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "2px",
-    pointerEvents: "none",
-    transition: `opacity 0.18s ease`,
-  },
-  variants: {
-    state: {
-      closed: { opacity: 1 },
-      open:   { opacity: 0 },
-    },
-  },
+const fabContentBase = style({
+  position: "absolute",
+  inset: 0,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "2px",
+  pointerEvents: "none",
+  transition: `opacity 0.18s ease`,
 });
+
+export const fabContentClosed = style([fabContentBase, { opacity: 1 }]);
+export const fabContentOpen   = style([fabContentBase, { opacity: 0 }]);
 
 export const fabIcon = style({
   fontSize: "22px",
@@ -112,24 +101,19 @@ export const fabLabel = style({
 
 // ── chat window layer ──────────────────────────────────────────────────────
 
-export const chatContent = recipe({
-  base: {
-    position: "absolute",
-    inset: 0,
-    display: "flex",
-    flexDirection: "column",
-    background: vars.color.surface,
-    borderRadius: vars.radius.lg,
-    overflow: "hidden",
-    transition: `opacity 0.2s ease 0.22s`,
-  },
-  variants: {
-    state: {
-      closed: { opacity: 0, pointerEvents: "none" },
-      open:   { opacity: 1, pointerEvents: "auto" },
-    },
-  },
+const chatContentBase = style({
+  position: "absolute",
+  inset: 0,
+  display: "flex",
+  flexDirection: "column",
+  background: vars.color.surface,
+  borderRadius: vars.radius.lg,
+  overflow: "hidden",
+  transition: `opacity 0.2s ease 0.22s`,
 });
+
+export const chatContentClosed = style([chatContentBase, { opacity: 0, pointerEvents: "none" }]);
+export const chatContentOpen   = style([chatContentBase, { opacity: 1, pointerEvents: "auto" }]);
 
 // ── header ─────────────────────────────────────────────────────────────────
 
@@ -265,34 +249,29 @@ export const chatTextarea = style({
   color: vars.color.textPrimary,
   transition: "border-color 0.15s",
   selectors: {
-    "&:focus":       { borderColor: vars.color.primary },
+    "&:focus":        { borderColor: vars.color.primary },
     "&::placeholder": { color: vars.color.textDisabled },
   },
 });
 
-export const chatSendBtn = recipe({
-  base: {
-    width: "36px",
-    height: "36px",
-    flexShrink: 0,
-    background: AI_GRADIENT,
-    color: "#fff",
-    border: "none",
-    borderRadius: vars.radius.md,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "15px",
-    transition: "opacity 0.15s, transform 0.15s",
-    selectors: {
-      "&:hover:not(:disabled)": { transform: "scale(1.07)" },
-    },
-  },
-  variants: {
-    disabled: {
-      true:  { opacity: 0.35, cursor: "default" },
-      false: { opacity: 1 },
-    },
+export const chatSendBtnBase = style({
+  width: "36px",
+  height: "36px",
+  flexShrink: 0,
+  background: AI_GRADIENT,
+  color: "#fff",
+  border: "none",
+  borderRadius: vars.radius.md,
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "15px",
+  transition: "opacity 0.15s, transform 0.15s",
+  selectors: {
+    "&:hover:not(:disabled)": { transform: "scale(1.07)" },
   },
 });
+
+export const chatSendBtnDisabled = style({ opacity: 0.35, cursor: "default" });
+export const chatSendBtnEnabled  = style({ opacity: 1 });

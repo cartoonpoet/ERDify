@@ -59,21 +59,21 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     await rejectAiDiff(messageId).catch(() => {});
   };
 
-  const state = isOpen ? "open" : "closed";
+  const sendBtnDisabled = isLoading || !input.trim();
 
   return (
     <div
-      className={s.floatContainer({ state })}
+      className={isOpen ? s.floatContainerOpen : s.floatContainerClosed}
       onClick={!isOpen ? () => openChat() : undefined}
     >
       {/* FAB 아이콘 (closed 시 표시) */}
-      <div className={s.fabContent({ state })}>
+      <div className={isOpen ? s.fabContentOpen : s.fabContentClosed}>
         <div className={s.fabIcon}>✦</div>
         <div className={s.fabLabel}>AI</div>
       </div>
 
       {/* 채팅 창 (open 시 표시) */}
-      <div className={s.chatContent({ state })}>
+      <div className={isOpen ? s.chatContentOpen : s.chatContentClosed}>
         <div className={s.chatHeader}>
           <div className={s.chatHeaderLeft}>
             <div className={s.chatHeaderIcon}>✦</div>
@@ -120,9 +120,9 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
           />
           <button
             type="button"
-            className={s.chatSendBtn({ disabled: isLoading || !input.trim() })}
+            className={`${s.chatSendBtnBase} ${sendBtnDisabled ? s.chatSendBtnDisabled : s.chatSendBtnEnabled}`}
             onClick={handleSendInput}
-            disabled={isLoading || !input.trim()}
+            disabled={sendBtnDisabled}
           >
             ↑
           </button>
