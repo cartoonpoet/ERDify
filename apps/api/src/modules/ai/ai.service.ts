@@ -3,16 +3,20 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { randomUUID } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import type { DiagramDocument, DiagramColumn, DiagramRelationship, RelationshipCardinality } from "@erdify/domain";
 import { Diagram, OrganizationAiSettings, OrganizationMember } from "@erdify/db";
 import type { AiChatResponse, ColumnSuggestion, DiffChange, OrgAiSettings } from "@erdify/contracts";
 import { encrypt, decrypt } from "../../common/utils/field-cipher";
 import { DomainLoaderService } from "../../common/services/domain-loader.service";
 import { AiHistoryService } from "./ai-history.service";
-import { ERD_TOOLS } from "./erd-tools";
+import { ERD_TOOLS, ERD_TOOLS_OPENAI } from "./erd-tools";
 
-const MODEL = "claude-sonnet-4-6";
+const ANTHROPIC_MODEL = "claude-sonnet-4-6";
+const OPENAI_MODEL = "gpt-4o";
 const MAX_TOKENS = 4096;
+
+type Provider = "anthropic" | "openai";
 
 @Injectable()
 export class AiService {
@@ -32,20 +36,25 @@ export class AiService {
   async getOrgAiSettings(orgId: string, userId: string): Promise<OrgAiSettings> {
     await this.requireOrgMember(orgId, userId);
     const settings = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
-    return { organizationId: orgId, hasApiKey: !!settings?.encryptedApiKey };
+    return {
+      organizationId: orgId,
+      hasApiKey: !!settings?.encryptedApiKey,
+      provider: settings?.provider ?? "anthropic",
+    };
   }
 
-  async updateOrgAiSettings(orgId: string, userId: string, apiKey: string): Promise<void> {
+  async updateOrgAiSettings(orgId: string, userId: string, apiKey: string, provider: Provider): Promise<void> {
     await this.requireOrgOwner(orgId, userId);
     const existing = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
     if (existing) {
-      await this.settingsRepo.update(existing.id, { encryptedApiKey: encrypt(apiKey) });
+      await this.settingsRepo.update(existing.id, { encryptedApiKey: encrypt(apiKey), provider });
     } else {
       await this.settingsRepo.save(
         this.settingsRepo.create({
           id: randomUUID(),
           organizationId: orgId,
           encryptedApiKey: encrypt(apiKey),
+          provider,
         })
       );
     }
@@ -55,49 +64,28 @@ export class AiService {
 
   async chat(userId: string, diagramId: string, userMessage: string): Promise<AiChatResponse> {
     const { doc, orgId } = await this.getDiagramAndOrgId(diagramId);
-    const apiKey = await this.getOrgApiKey(orgId, userId);
+    const { apiKey, provider } = await this.getOrgApiKeyAndProvider(orgId, userId);
     const history = await this.historyService.findRecent(userId, diagramId);
 
     await this.historyService.saveUserMessage(userId, diagramId, userMessage);
-
-    const claudeMessages: Anthropic.MessageParam[] = [
-      ...history.map((h) => ({
-        role: h.role as "user" | "assistant",
-        content: h.content,
-      })),
-      { role: "user" as const, content: userMessage },
-    ];
 
     const systemPrompt = `You are an ERD design assistant for ERDify. Help users modify their database schema.
 When making changes, use the provided tools. Always use the exact IDs from the current diagram.
 Current diagram (JSON):
 ${JSON.stringify(doc, null, 2)}`;
 
-    const client = new Anthropic({ apiKey });
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: systemPrompt,
-      tools: ERD_TOOLS,
-      messages: claudeMessages,
-    });
+    const { textContent, toolCalls } = provider === "openai"
+      ? await this.callOpenAI(apiKey, systemPrompt, history, userMessage)
+      : await this.callAnthropic(apiKey, systemPrompt, history, userMessage);
 
     let updatedDoc = doc;
     const diffs: DiffChange[] = [];
-    const toolCallLog: Record<string, unknown>[] = [];
 
-    for (const block of response.content) {
-      if (block.type !== "tool_use") continue;
-      const result = await this.executeTool(block.name, block.input as Record<string, unknown>, updatedDoc);
+    for (const call of toolCalls) {
+      const result = await this.executeTool(call.name, call.input, updatedDoc);
       updatedDoc = result.doc;
       diffs.push(...result.changes);
-      toolCallLog.push({ name: block.name, input: block.input });
     }
-
-    const textContent = response.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b as { type: "text"; text: string }).text)
-      .join("\n");
 
     const hasDiff = diffs.length > 0;
     const savedMessage = await this.historyService.saveAssistantMessage(
@@ -105,7 +93,7 @@ ${JSON.stringify(doc, null, 2)}`;
       diagramId,
       textContent || (hasDiff ? "ERD를 업데이트했습니다. 아래 변경사항을 확인해주세요." : ""),
       hasDiff ? diffs : null,
-      toolCallLog.length > 0 ? toolCallLog : null,
+      toolCalls.length > 0 ? toolCalls : null,
     );
 
     return {
@@ -121,26 +109,35 @@ ${JSON.stringify(doc, null, 2)}`;
   async suggestColumns(userId: string, tableName: string, existingColumns: string[]): Promise<ColumnSuggestion[]> {
     const membership = await this.memberRepo.findOne({ where: { userId } });
     if (!membership) throw new ForbiddenException("조직 멤버십이 없습니다.");
-    const apiKey = await this.getOrgApiKey(membership.organizationId, userId);
+    const { apiKey, provider } = await this.getOrgApiKeyAndProvider(membership.organizationId, userId);
 
-    const client = new Anthropic({ apiKey });
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 512,
-      messages: [{
-        role: "user",
-        content: `Suggest 5 common columns for a database table named "${tableName}".
+    const prompt = `Suggest 5 common columns for a database table named "${tableName}".
 Existing columns: ${existingColumns.length > 0 ? existingColumns.join(", ") : "none"}.
 Return ONLY a JSON array, no explanation:
 [{"name": "...", "type": "...", "nullable": true/false, "pk": true/false}]
-Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, jsonb.`,
-      }],
-    });
+Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, jsonb.`;
 
-    const text = response.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b as { type: "text"; text: string }).text)
-      .join("");
+    let text = "";
+    if (provider === "openai") {
+      const client = new OpenAI({ apiKey });
+      const res = await client.chat.completions.create({
+        model: OPENAI_MODEL,
+        max_tokens: 512,
+        messages: [{ role: "user", content: prompt }],
+      });
+      text = res.choices[0]?.message?.content ?? "";
+    } else {
+      const client = new Anthropic({ apiKey });
+      const res = await client.messages.create({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 512,
+        messages: [{ role: "user", content: prompt }],
+      });
+      text = res.content
+        .filter((b) => b.type === "text")
+        .map((b) => (b as { type: "text"; text: string }).text)
+        .join("");
+    }
 
     try {
       const match = text.match(/\[[\s\S]*\]/);
@@ -149,6 +146,68 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
     } catch {
       return [];
     }
+  }
+
+  // ── Private: provider-specific API calls ──────────────────────────────────
+
+  private async callAnthropic(
+    apiKey: string,
+    system: string,
+    history: { role: string; content: string }[],
+    userMessage: string,
+  ): Promise<{ textContent: string; toolCalls: { name: string; input: Record<string, unknown> }[] }> {
+    const client = new Anthropic({ apiKey });
+    const messages: Anthropic.MessageParam[] = [
+      ...history.map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),
+      { role: "user", content: userMessage },
+    ];
+    const response = await client.messages.create({
+      model: ANTHROPIC_MODEL,
+      max_tokens: MAX_TOKENS,
+      system,
+      tools: ERD_TOOLS,
+      messages,
+    });
+
+    const textContent = response.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as { type: "text"; text: string }).text)
+      .join("\n");
+
+    const toolCalls = response.content
+      .filter((b) => b.type === "tool_use")
+      .map((b) => ({ name: (b as { name: string; input: Record<string, unknown> }).name, input: (b as { name: string; input: Record<string, unknown> }).input }));
+
+    return { textContent, toolCalls };
+  }
+
+  private async callOpenAI(
+    apiKey: string,
+    system: string,
+    history: { role: string; content: string }[],
+    userMessage: string,
+  ): Promise<{ textContent: string; toolCalls: { name: string; input: Record<string, unknown> }[] }> {
+    const client = new OpenAI({ apiKey });
+    const messages: OpenAI.ChatCompletionMessageParam[] = [
+      { role: "system", content: system },
+      ...history.map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),
+      { role: "user", content: userMessage },
+    ];
+    const response = await client.chat.completions.create({
+      model: OPENAI_MODEL,
+      max_tokens: MAX_TOKENS,
+      tools: ERD_TOOLS_OPENAI,
+      messages,
+    });
+
+    const msg = response.choices[0]?.message;
+    const textContent = msg?.content ?? "";
+    const toolCalls = (msg?.tool_calls ?? []).map((tc: { function: { name: string; arguments: string } }) => ({
+      name: tc.function.name,
+      input: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+    }));
+
+    return { textContent, toolCalls };
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
@@ -165,13 +224,13 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
     return { doc: diagram.content, orgId: diagram.org_id };
   }
 
-  private async getOrgApiKey(orgId: string, userId: string): Promise<string> {
+  private async getOrgApiKeyAndProvider(orgId: string, userId: string): Promise<{ apiKey: string; provider: Provider }> {
     await this.requireOrgMember(orgId, userId);
     const settings = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
     if (!settings?.encryptedApiKey) {
       throw new ForbiddenException("조직에 AI API 키가 설정되어 있지 않습니다. 관리자에게 문의하세요.");
     }
-    return decrypt(settings.encryptedApiKey);
+    return { apiKey: decrypt(settings.encryptedApiKey), provider: settings.provider ?? "anthropic" };
   }
 
   private async requireOrgMember(orgId: string, userId: string): Promise<void> {

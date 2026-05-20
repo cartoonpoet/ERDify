@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.97.1",
+    "openai": "^4.98.0",
     "@automerge/automerge": "^3.2.6",
     "@erdify/contracts": "workspace:*",
     "@erdify/db": "workspace:*",

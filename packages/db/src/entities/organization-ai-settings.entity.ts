@@ -11,6 +11,9 @@ export class OrganizationAiSettings {
   @Column({ name: "encrypted_api_key", type: "text", nullable: true })
   encryptedApiKey!: string | null;
 
+  @Column({ type: "varchar", length: 20, default: "anthropic" })
+  provider!: "anthropic" | "openai";
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 

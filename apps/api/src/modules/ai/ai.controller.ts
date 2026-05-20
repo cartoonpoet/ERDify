@@ -60,8 +60,8 @@ export class AiController {
   updateOrgAiSettings(
     @CurrentUser() user: JwtPayload,
     @Param("orgId") orgId: string,
-    @Body("apiKey") apiKey: string,
+    @Body() body: { apiKey: string; provider: "anthropic" | "openai" },
   ): Promise<void> {
-    return this.aiService.updateOrgAiSettings(orgId, user.sub, apiKey);
+    return this.aiService.updateOrgAiSettings(orgId, user.sub, body.apiKey, body.provider);
   }
 }

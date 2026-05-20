@@ -12,6 +12,7 @@ interface AISettingsPanelProps {
 export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
   const [apiKey, setApiKey] = useState("");
   const [showInput, setShowInput] = useState(false);
+  const [provider, setProvider] = useState<"anthropic" | "openai">("anthropic");
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
@@ -20,7 +21,8 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
   });
 
   const mutation = useMutation({
-    mutationFn: (key: string) => updateOrgAiSettings(orgId, key),
+    mutationFn: ({ apiKey, provider }: { apiKey: string; provider: "anthropic" | "openai" }) =>
+      updateOrgAiSettings(orgId, apiKey, provider),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["org-ai-settings", orgId] });
       setApiKey("");
@@ -30,20 +32,26 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
 
   const handleSave = () => {
     if (!apiKey.trim()) return;
-    mutation.mutate(apiKey.trim());
+    mutation.mutate({ apiKey: apiKey.trim(), provider });
   };
 
   const hasApiKey = data?.hasApiKey ?? false;
+  const currentProvider = data?.provider ?? "anthropic";
+
+  const handleShowInput = () => {
+    setProvider(currentProvider);
+    setShowInput(true);
+  };
 
   return (
     <div className={css.section}>
       <div className={css.sectionLabel}>AI 설정</div>
       <div className={css.card}>
         <div className={css.statusRow}>
-          <span className={css.statusLabel}>Anthropic API 키</span>
+          <span className={css.statusLabel}>AI API 키</span>
           {hasApiKey ? (
             <span className={css.statusBadgeSet}>
-              ✓ 설정됨
+              ✓ 설정됨 ({currentProvider === "openai" ? "OpenAI" : "Anthropic"})
             </span>
           ) : (
             <span className={css.statusBadgeUnset}>미설정</span>
@@ -52,7 +60,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
 
         <div className={css.cardBody}>
           <p className={css.descText}>
-            ERDify AI 기능(채팅, 컬럼 추천, ERD 자동 생성)을 사용하려면 Anthropic Claude API 키가 필요합니다.
+            ERDify AI 기능(채팅, 컬럼 추천, ERD 자동 생성)을 사용하려면 AI API 키가 필요합니다.
             키는 AES-256으로 암호화 저장되며, AI 요청에만 사용됩니다.
           </p>
         </div>
@@ -62,7 +70,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => setShowInput(true)}
+              onClick={handleShowInput}
             >
               {hasApiKey ? "API 키 변경" : "API 키 설정"}
             </Button>
@@ -71,13 +79,23 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
 
         {isOwner && showInput && (
           <>
+            <div className={css.actionRow} style={{ paddingBottom: 0, gap: 16 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "13px", cursor: "pointer" }}>
+                <input type="radio" name="provider" value="anthropic" checked={provider === "anthropic"} onChange={() => setProvider("anthropic")} />
+                Anthropic (Claude)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "13px", cursor: "pointer" }}>
+                <input type="radio" name="provider" value="openai" checked={provider === "openai"} onChange={() => setProvider("openai")} />
+                OpenAI (GPT-4o)
+              </label>
+            </div>
             <div className={css.inputRow}>
               <input
                 className={css.input}
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-ant-api03-..."
+                placeholder={provider === "openai" ? "sk-..." : "sk-ant-api03-..."}
                 onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
               />
             </div>
