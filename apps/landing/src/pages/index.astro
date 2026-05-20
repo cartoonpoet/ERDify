@@ -1,7 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
-
 const APP_URL = 'http://erdify-app.kro.kr';
 ---
 
@@ -10,43 +9,114 @@ const APP_URL = 'http://erdify-app.kro.kr';
 
   <!-- HERO -->
   <section class="hero">
-    <div class="container">
-      <div class="badge">✦ MCP · CLI — Cursor · Claude · Gemini · Codex</div>
-      <h1 class="hero-title">
-        AI와 함께<br /><span class="highlight">스키마를 관리</span>하세요
-      </h1>
+    <canvas id="erd-canvas"></canvas>
+    <div class="container hero-inner">
+      <div class="hero-badge">✦ ERDify AI · MCP · CLI · REST API</div>
+      <h1 class="hero-title">ERD를 <span class="hl">AI로</span>,<br />어디서든</h1>
       <p class="hero-sub">
-        사용하는 AI 도구에서 ERDify MCP를 연결하세요.<br />
-        스키마 설계부터 DDL·ORM 생성, 팀 실시간 협업까지.
+        당신의 워크플로에 맞게 —<br />
+        앱에서, Cursor에서, 터미널에서
       </p>
       <div class="hero-actions">
         <a href={`${APP_URL}/register`} class="btn-primary btn-lg">무료로 시작하기 →</a>
-        <a href="#integrations" class="btn-outline btn-lg">연동 가이드 보기</a>
+        <a href="#integrations" class="btn-ghost btn-lg">연동 가이드 보기</a>
+      </div>
+      <div class="hero-channels">
+        <span class="hc-pill">🤖 ERDify AI</span>
+        <span class="hc-pill">🔌 MCP</span>
+        <span class="hc-pill">💻 CLI</span>
+        <span class="hc-pill">🌐 REST API</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ERDify AI -->
+  <section class="ai-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <div class="eyebrow">ERDify AI</div>
+        <h2>앱 안에서 바로 AI와 설계하세요</h2>
+        <p>별도 설정 없이 ERDify 앱에서 AI 채팅, 컬럼 제안, ERD 자동 생성을 바로 사용하세요.</p>
+      </div>
+      <div class="ai-providers">
+        <span class="ai-pill">🤖 Claude (Anthropic)</span>
+        <span class="ai-pill">✨ GPT-4o (OpenAI)</span>
+      </div>
+      <div class="ai-grid">
+        <div class="ai-card">
+          <div class="ai-card-icon">💬</div>
+          <h3>AI 채팅</h3>
+          <p>자연어로 스키마 설계 방향을 논의하고, AI의 제안을 ERD에 바로 반영하세요.</p>
+        </div>
+        <div class="ai-card">
+          <div class="ai-card-icon">✨</div>
+          <h3>컬럼 제안</h3>
+          <p>테이블 컨텍스트를 분석해 누락된 컬럼, 타입, 인덱스를 자동으로 추천합니다.</p>
+        </div>
+        <div class="ai-card">
+          <div class="ai-card-icon">🗺️</div>
+          <h3>ERD 자동 생성</h3>
+          <p>요구사항 설명만으로 테이블 구조와 관계를 갖춘 ERD를 즉시 생성합니다.</p>
+        </div>
+        <div class="ai-card">
+          <div class="ai-card-icon">🔍</div>
+          <h3>스키마 분석</h3>
+          <p>기존 스키마의 문제점, 정규화 기회, 성능 개선 포인트를 AI가 분석합니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHANNELS -->
+  <section class="channels-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="eyebrow">다양한 AI 창구</div>
+        <h2>사용하는 도구에서 바로</h2>
+        <p>ERDify AI부터 MCP, CLI, REST API까지 — 워크플로에 맞게 선택하세요.</p>
+      </div>
+      <div class="ch-grid">
+        <div class="ch-card ch-card--accent">
+          <div class="ch-icon">🤖</div>
+          <h3>ERDify AI</h3>
+          <p>앱 내장 AI로 채팅, 컬럼 제안, ERD 자동 생성을 바로 사용</p>
+        </div>
+        <div class="ch-card">
+          <div class="ch-icon">🔌</div>
+          <h3>MCP</h3>
+          <p>Cursor, Claude Desktop, Gemini CLI에서 ERD를 직접 조작</p>
+        </div>
+        <div class="ch-card">
+          <div class="ch-icon">💻</div>
+          <h3>CLI</h3>
+          <p>터미널에서 <code>erdify</code> 명령어로 스키마 관리 자동화</p>
+        </div>
+        <div class="ch-card">
+          <div class="ch-icon">🌐</div>
+          <h3>REST API</h3>
+          <p>HTTP API로 외부 시스템과 스키마 데이터를 자유롭게 연동</p>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- CORE FEATURES -->
-  <section class="features" id="features">
+  <section class="features-section">
     <div class="container">
       <div class="section-header">
-        <div class="badge">핵심 기능</div>
-        <h2>ERDify가 다른 이유</h2>
+        <div class="eyebrow">핵심 기능</div>
+        <h2>협업과 코드 생성</h2>
+        <p>팀 단위 실시간 협업부터 DDL, ORM 코드 자동 생성까지 한 번에.</p>
       </div>
-      <div class="features-grid">
-        <div class="feature-card feature-card--accent">
-          <div class="feature-icon">🤖</div>
-          <h3>AI 연동 (MCP)</h3>
-          <p>Cursor, Claude, Gemini에서 자연어로 테이블·관계·컬럼을 직접 설계하세요. AI가 MCP로 ERD를 읽고 실시간으로 함께 수정합니다.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">⚡</div>
+      <div class="feat-grid">
+        <div class="feat-card">
+          <div class="feat-icon">⚡</div>
           <h3>실시간 팀 협업</h3>
-          <p>팀원과 동시에 ERD를 편집하세요. 커서 위치와 변경 사항이 실시간으로 반영됩니다.</p>
+          <p>팀원과 동시에 ERD를 편집하세요. 커서 위치와 변경 사항이 실시간으로 반영됩니다. 링크 하나로 외부 리뷰어와도 즉시 공유.</p>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">⇅</div>
-          <h3>DDL · ORM 내보내기</h3>
+        <div class="feat-card">
+          <div class="feat-icon">⇅</div>
+          <h3>DDL · ORM 변환</h3>
           <p>MySQL, PostgreSQL, MariaDB DDL을 붙여넣으면 ERD가 자동 생성됩니다. TypeORM, Prisma, SQLAlchemy 코드도 바로 내보냅니다.</p>
         </div>
       </div>
@@ -57,9 +127,9 @@ const APP_URL = 'http://erdify-app.kro.kr';
   <section class="integrations" id="integrations">
     <div class="container">
       <div class="section-header">
-        <div class="badge">AI 연동</div>
-        <h2>30초 만에 AI와 연결하세요</h2>
-        <p>사용하는 AI 도구의 MCP 설정 파일에 아래 내용을 추가하면 끝입니다.</p>
+        <div class="eyebrow">AI 연동</div>
+        <h2>30초 만에 MCP 연결</h2>
+        <p>사용하는 AI 도구의 설정 파일에 아래 내용을 추가하면 끝입니다.</p>
       </div>
 
       <div class="it-tabs" role="tablist">
@@ -150,27 +220,29 @@ const APP_URL = 'http://erdify-app.kro.kr';
   <section class="pricing" id="pricing">
     <div class="container">
       <div class="section-header">
-        <div class="badge">가격 정책</div>
+        <div class="eyebrow">가격 정책</div>
         <h2>지금은 모든 기능이 무료</h2>
         <p>베타 서비스 기간 동안 제한 없이 사용하세요.</p>
       </div>
-      <div class="pricing-free">
-        <div class="plan-card plan-card--featured">
+      <div class="plan-wrap">
+        <div class="plan-card">
           <div class="plan-badge">베타 무료</div>
-          <div class="plan-header">
-            <span class="plan-name">All-in</span>
-            <div class="plan-price"><span class="price">₩0</span><span class="period">/ 베타 기간 동안</span></div>
-            <p class="plan-desc">회원가입만 하면 모든 기능을 바로 사용할 수 있습니다.</p>
+          <div class="plan-name">All-in</div>
+          <div class="plan-price">
+            <span class="price">₩0</span>
+            <span class="period">/ 베타 기간 동안</span>
           </div>
-          <ul class="plan-features">
-            <li class="plan-feature--highlight">🤖 AI (MCP) 연동 — Cursor · Claude · Gemini</li>
-            <li class="plan-feature--highlight">⚡ 실시간 팀 협업</li>
+          <p class="plan-desc">회원가입만 하면 모든 기능을 바로 사용할 수 있습니다.</p>
+          <ul class="plan-feats">
+            <li class="plan-feat--hl">🤖 ERDify AI (Claude · GPT-4o)</li>
+            <li class="plan-feat--hl">🔌 MCP 연동 — Cursor · Claude · Gemini · Codex</li>
+            <li class="plan-feat--hl">⚡ 실시간 팀 협업</li>
             <li>✓ 무제한 다이어그램</li>
             <li>✓ DDL 가져오기 / 내보내기</li>
             <li>✓ ORM 코드 생성 (TypeORM · Prisma · SQLAlchemy)</li>
-            <li>✓ 공유 링크 · REST API · CLI</li>
+            <li>✓ REST API · CLI</li>
           </ul>
-          <a href={`${APP_URL}/register`} class="plan-cta plan-cta--primary">무료로 시작하기 →</a>
+          <a href={`${APP_URL}/register`} class="plan-cta">무료로 시작하기 →</a>
         </div>
       </div>
     </div>
@@ -179,11 +251,9 @@ const APP_URL = 'http://erdify-app.kro.kr';
   <!-- CTA BANNER -->
   <section class="cta-banner">
     <div class="container">
-      <h2>AI와 함께 ERD를 관리하세요</h2>
+      <h2>ERD를 AI로, 어디서든</h2>
       <p>베타 기간 동안 모든 기능을 무료로 — 지금 바로 시작하세요.</p>
-      <div class="cta-actions">
-        <a href={`${APP_URL}/register`} class="btn-primary btn-lg btn-white">무료로 시작하기 →</a>
-      </div>
+      <a href={`${APP_URL}/register`} class="btn-primary btn-lg btn-white">무료로 시작하기 →</a>
     </div>
   </section>
 
@@ -195,7 +265,7 @@ const APP_URL = 'http://erdify-app.kro.kr';
           <img src="/logo.svg" alt="ERDify" class="logo-image" style="filter: brightness(0) invert(1);" />
         </a>
         <p class="footer-tagline">AI와 함께하는<br/>실시간 협업 ERD 도구</p>
-        <a href="mailto:cartoonpoet@gmail.com" class="footer-email">이메일 문의</a>
+        <a href="mailto:cartoonpoet@gmail.com" class="footer-email">cartoonpoet@gmail.com</a>
       </div>
       <div class="footer-links">
         <div class="footer-col">
@@ -232,137 +302,221 @@ const APP_URL = 'http://erdify-app.kro.kr';
 </Layout>
 
 <style>
-  .container {
-    max-width: 1160px;
-    margin: 0 auto;
-    padding: 0 24px;
+  :root {
+    --primary: #0064e0;
+    --primary-hover: #0052c2;
+    --radius: 12px;
+    --surface: #f8faff;
+    --border: #e5e7eb;
+    --text: #0f172a;
+    --text-sub: #64748b;
   }
 
-  /* ── Buttons ── */
+  .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+
+  /* Buttons */
   .btn-primary {
     background: var(--primary);
     color: #fff;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 9px 18px;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     transition: background 0.15s;
+    display: inline-block;
   }
   .btn-primary:hover { background: var(--primary-hover); }
-  .btn-outline {
-    border: 1.5px solid var(--border);
-    color: var(--text);
-    border-radius: 8px;
+  .btn-ghost {
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.8);
+    border-radius: 10px;
     padding: 9px 18px;
     font-size: 14px;
     font-weight: 600;
-    transition: border-color 0.15s;
-  }
-  .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
-  .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
-  .btn-white { background: var(--surface); color: var(--primary); }
-  .btn-white:hover { background: rgba(0,100,224,0.1); }
-
-  /* ── Badge ── */
-  .badge {
     display: inline-block;
-    background: rgba(0,100,224,0.12);
-    color: var(--primary);
-    font-size: 12px;
-    font-weight: 700;
-    padding: 5px 12px;
-    border-radius: 100px;
-    letter-spacing: 0.02em;
-    margin-bottom: 20px;
   }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.4); }
+  .btn-lg { padding: 14px 28px; font-size: 16px; }
+  .btn-white { background: #fff; color: var(--primary); }
+  .btn-white:hover { background: rgba(255,255,255,0.9); }
 
-  /* ── Hero ── */
+  /* Section header */
+  .section-header { text-align: center; margin-bottom: 52px; }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+  }
+  .section-header h2 {
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 14px;
+    line-height: 1.1;
+  }
+  .section-header p { font-size: 17px; color: var(--text-sub); line-height: 1.7; }
+
+  /* Hero */
   .hero {
-    padding: 120px 0 100px;
+    background: #0a0f1e;
+    padding: 110px 0 96px;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(96,165,250,0.3), transparent);
+  }
+  #erd-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+  .hero-inner { position: relative; z-index: 1; }
+  .hero-badge {
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.6);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 28px;
+    letter-spacing: 0.05em;
   }
   .hero-title {
-    font-size: clamp(48px, 7vw, 80px);
+    font-size: clamp(52px, 8vw, 80px);
     font-weight: 900;
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-    margin-bottom: 24px;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    color: #fff;
+    margin-bottom: 8px;
   }
-  .highlight { color: var(--primary); }
+  .hl {
+    background: linear-gradient(90deg, #60a5fa 0%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
   .hero-sub {
     font-size: 18px;
-    color: var(--text-sub);
-    line-height: 1.7;
-    margin-bottom: 40px;
+    color: rgba(255,255,255,0.45);
+    margin: 16px auto 36px;
+    line-height: 1.65;
+    max-width: 480px;
   }
   .hero-actions {
     display: flex;
-    gap: 14px;
+    gap: 12px;
     justify-content: center;
     flex-wrap: wrap;
+    margin-bottom: 44px;
+  }
+  .hero-channels { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .hc-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 100px;
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
   }
 
-  /* ── Section Header ── */
-  .section-header {
-    text-align: center;
-    margin-bottom: 56px;
+  /* ERDify AI */
+  .ai-section { padding: 100px 0; background: var(--surface); }
+  .ai-providers { display: flex; gap: 8px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap; }
+  .ai-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #EEF4FF;
+    border: 1px solid rgba(0,100,224,0.2);
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d4ed8;
   }
-  .section-header h2 {
-    font-size: clamp(32px, 4vw, 48px);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    margin-bottom: 14px;
-  }
-  .section-header p {
-    font-size: 17px;
-    color: var(--text-sub);
-    line-height: 1.7;
-  }
-
-  /* ── Features ── */
-  .features { padding: 100px 0; background: var(--surface); }
-  .features-grid {
+  .ai-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    max-width: 800px;
+    margin: 0 auto;
   }
-  .feature-card {
-    background: var(--white);
-    border-radius: var(--radius);
-    padding: 36px;
+  .ai-card {
+    background: #fff;
     border: 1px solid var(--border);
-    transition: box-shadow 0.2s, transform 0.2s;
+    border-radius: var(--radius);
+    padding: 28px;
+    transition: box-shadow 0.2s;
   }
-  .feature-card:hover {
-    box-shadow: 0 16px 48px rgba(0,0,0,0.08);
-    transform: translateY(-2px);
+  .ai-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.07); }
+  .ai-card-icon { font-size: 28px; margin-bottom: 14px; }
+  .ai-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .ai-card p { font-size: 14px; color: var(--text-sub); line-height: 1.65; }
+
+  /* Channels */
+  .channels-section { padding: 100px 0; }
+  .ch-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
   }
-  .feature-card--accent {
+  .ch-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 20px;
+    text-align: center;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+  .ch-card:hover { border-color: var(--primary); box-shadow: 0 4px 20px rgba(0,100,224,0.1); }
+  .ch-card--accent {
     background: var(--primary);
     border-color: var(--primary);
     color: #fff;
   }
-  .feature-card--accent .feature-icon { background: rgba(255,255,255,0.2); color: #fff; }
-  .feature-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
-    background: rgba(0,100,224,0.12);
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    margin-bottom: 22px;
+  .ch-card--accent p { color: rgba(255,255,255,0.75); }
+  .ch-card--accent:hover { box-shadow: 0 8px 28px rgba(0,100,224,0.3); }
+  .ch-icon { font-size: 32px; margin-bottom: 14px; }
+  .ch-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .ch-card p { font-size: 13px; color: var(--text-sub); line-height: 1.6; }
+  .ch-card code { background: #f3f4f6; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+
+  /* Features */
+  .features-section { padding: 100px 0; background: var(--surface); }
+  .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .feat-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
   }
-  .feature-card h3 { font-size: 19px; font-weight: 700; margin-bottom: 12px; }
-  .feature-card p { font-size: 14px; line-height: 1.75; opacity: 0.75; }
-  .feature-card--accent p { opacity: 0.88; }
+  .feat-icon { font-size: 30px; margin-bottom: 14px; }
+  .feat-card h3 { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+  .feat-card p { font-size: 14px; color: var(--text-sub); line-height: 1.7; }
 
-  /* ── Integrations ── */
+  /* MCP Integrations */
   .integrations { padding: 100px 0; }
-
   .it-tabs {
     display: flex;
     gap: 6px;
@@ -380,11 +534,10 @@ const APP_URL = 'http://erdify-app.kro.kr';
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
     transition: color 0.15s, border-color 0.15s;
-    font-family: var(--font, sans-serif);
+    font-family: inherit;
   }
   .it-tab:hover { color: var(--text); }
   .it-tab--active { color: var(--primary); border-bottom-color: var(--primary); }
-
   .it-panel {
     background: #0f1923;
     border-radius: 0 0 12px 12px;
@@ -393,7 +546,6 @@ const APP_URL = 'http://erdify-app.kro.kr';
     border-top: none;
   }
   .it-panel--hidden { display: none; }
-
   .it-meta {
     display: flex;
     align-items: center;
@@ -402,11 +554,7 @@ const APP_URL = 'http://erdify-app.kro.kr';
     background: #1a2733;
     border-bottom: 1px solid rgba(255,255,255,0.06);
   }
-  .it-file-badge {
-    font-size: 11.5px;
-    color: rgba(255,255,255,0.45);
-    font-family: monospace;
-  }
+  .it-file-badge { font-size: 11.5px; color: rgba(255,255,255,0.45); font-family: monospace; }
   .it-copy {
     font-size: 11px;
     font-weight: 600;
@@ -421,18 +569,16 @@ const APP_URL = 'http://erdify-app.kro.kr';
   }
   .it-copy:hover { background: rgba(255,255,255,0.08); color: #fff; }
   .it-copy--copied { border-color: #34d399; color: #34d399; }
-
   .it-code {
     margin: 0;
     padding: 24px 28px;
-    font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
     font-size: 13px;
-    line-height: 1.7;
+    line-height: 1.75;
     color: #e2e8f0;
     overflow-x: auto;
     white-space: pre;
   }
-
   .it-note {
     display: flex;
     align-items: center;
@@ -453,40 +599,38 @@ const APP_URL = 'http://erdify-app.kro.kr';
     white-space: nowrap;
   }
 
-  /* ── Pricing ── */
+  /* Pricing */
   .pricing { padding: 100px 0; background: var(--surface); }
-  .pricing-free { max-width: 520px; margin: 0 auto; }
+  .plan-wrap { max-width: 500px; margin: 0 auto; }
   .plan-card {
-    background: var(--white);
-    border-radius: 16px;
-    padding: 36px;
-    border: 1px solid var(--border);
+    background: #fff;
+    border: 1.5px solid var(--primary);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 0 0 4px rgba(0,100,224,0.07);
     position: relative;
-  }
-  .plan-card--featured {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(0,100,224,0.08);
+    text-align: center;
   }
   .plan-badge {
     position: absolute;
-    top: -12px;
+    top: -13px;
     left: 50%;
     transform: translateX(-50%);
     background: var(--primary);
     color: #fff;
     font-size: 11px;
     font-weight: 700;
-    padding: 4px 14px;
+    padding: 4px 18px;
     border-radius: 100px;
   }
-  .plan-header { margin-bottom: 28px; }
-  .plan-name { font-size: 14px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.06em; }
-  .plan-price { display: flex; align-items: baseline; gap: 4px; margin: 10px 0 8px; }
-  .price { font-size: 36px; font-weight: 900; letter-spacing: -0.02em; }
+  .plan-name { font-size: 12px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.08em; }
+  .plan-price { display: flex; align-items: baseline; gap: 6px; justify-content: center; margin: 10px 0 8px; }
+  .price { font-size: 44px; font-weight: 900; letter-spacing: -0.03em; }
   .period { font-size: 14px; color: var(--text-sub); }
-  .plan-desc { font-size: 13px; color: var(--text-sub); }
-  .plan-features {
+  .plan-desc { font-size: 14px; color: var(--text-sub); margin-bottom: 28px; }
+  .plan-feats {
     list-style: none;
+    text-align: left;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -494,32 +638,37 @@ const APP_URL = 'http://erdify-app.kro.kr';
     font-size: 14px;
     line-height: 1.5;
   }
-  .plan-feature--highlight { color: var(--primary); font-weight: 600; }
+  .plan-feat--hl { color: var(--primary); font-weight: 600; }
   .plan-cta {
     display: block;
     text-align: center;
-    padding: 13px;
-    border-radius: 8px;
-    font-weight: 600;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 10px;
+    padding: 15px;
     font-size: 15px;
-    transition: all 0.15s;
+    font-weight: 700;
+    transition: background 0.15s;
   }
-  .plan-cta--primary { background: var(--primary); color: #fff; }
-  .plan-cta--primary:hover { background: var(--primary-hover); }
+  .plan-cta:hover { background: var(--primary-hover); }
 
-  /* ── CTA Banner ── */
+  /* CTA Banner */
   .cta-banner {
     padding: 100px 0;
-    background: linear-gradient(135deg, var(--primary) 0%, #0143B5 100%);
     text-align: center;
+    background: var(--primary);
     color: #fff;
   }
-  .cta-banner h2 { font-size: 40px; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.02em; }
-  .cta-banner p { font-size: 17px; opacity: 0.85; margin-bottom: 36px; }
-  .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .cta-banner h2 {
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 14px;
+  }
+  .cta-banner p { font-size: 17px; opacity: 0.8; margin-bottom: 36px; }
 
-  /* ── Footer ── */
-  .footer { background: #0d1520; color: rgba(255,255,255,0.6); padding: 72px 0 0; }
+  /* Footer */
+  .footer { background: #0a0f1e; color: rgba(255,255,255,0.5); padding: 72px 0 0; }
   .footer-inner {
     display: flex;
     gap: 80px;
@@ -534,41 +683,38 @@ const APP_URL = 'http://erdify-app.kro.kr';
   .footer-email:hover { color: rgba(255,255,255,0.8); }
   .footer-links { display: flex; gap: 56px; flex-wrap: wrap; }
   .footer-col { display: flex; flex-direction: column; gap: 12px; }
-  .footer-col-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 4px; }
-  .footer-col a { font-size: 13.5px; color: rgba(255,255,255,0.55); transition: color 0.15s; }
+  .footer-col-title { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.28); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 4px; }
+  .footer-col a { font-size: 13.5px; color: rgba(255,255,255,0.45); transition: color 0.15s; }
   .footer-col a:hover { color: #fff; }
   .footer-bottom { padding: 20px 0; }
   .footer-bottom-inner { display: flex; justify-content: space-between; align-items: center; }
-  .footer-bottom span { font-size: 12px; opacity: 0.3; }
+  .footer-bottom span { font-size: 12px; opacity: 0.28; }
   .footer-bottom-links { display: flex; gap: 20px; }
-  .footer-bottom-links a { font-size: 12px; color: rgba(255,255,255,0.3); transition: color .15s; }
+  .footer-bottom-links a { font-size: 12px; color: rgba(255,255,255,0.28); transition: color .15s; }
   .footer-bottom-links a:hover { color: rgba(255,255,255,0.6); }
 
-  /* ── Responsive ── */
-  @media (max-width: 900px) {
-    .features-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+  /* Responsive */
+  @media (max-width: 1000px) { .ch-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 800px) {
+    .ai-grid { grid-template-columns: 1fr; max-width: 480px; }
+    .feat-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
     .footer-inner { flex-direction: column; gap: 32px; }
     .footer-links { flex-wrap: wrap; gap: 32px; }
     .hero { padding: 80px 0 64px; }
-    .features, .integrations, .pricing { padding: 72px 0; }
-    .cta-banner { padding: 72px 0; }
   }
   @media (max-width: 600px) {
-    .hero { padding: 64px 0 48px; }
+    .ch-grid { grid-template-columns: 1fr; max-width: 360px; margin: 0 auto; }
+    .hero-title { font-size: 44px; }
     .hero-sub { font-size: 16px; }
     .hero-sub br { display: none; }
     .cta-banner h2 { font-size: 28px; }
-    .cta-banner p { font-size: 15px; }
-    .section-header h2 { font-size: 28px; }
-    .features, .integrations, .pricing { padding: 56px 0; }
-    .plan-card { padding: 28px; }
-    .feature-card { padding: 28px; }
-    .footer { padding: 48px 0 0; }
+    .ai-section, .channels-section, .features-section, .integrations, .pricing { padding: 72px 0; }
+    .plan-card { padding: 32px 24px; }
   }
 </style>
 
 <script>
-  // ── MCP tool tabs ──
+  // MCP tool tabs
   const tabs = document.querySelectorAll<HTMLButtonElement>('.it-tab');
   const panels = document.querySelectorAll<HTMLElement>('.it-panel');
 
@@ -582,7 +728,7 @@ const APP_URL = 'http://erdify-app.kro.kr';
     });
   });
 
-  // ── Clipboard ──
+  // Clipboard
   function copyText(text: string): Promise<void> {
     if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
     const el = document.createElement('textarea');
@@ -605,4 +751,104 @@ const APP_URL = 'http://erdify-app.kro.kr';
       });
     });
   });
+
+  // ERD Canvas Animation
+  const canvas = document.getElementById('erd-canvas') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+
+  function resize() {
+    const hero = canvas.parentElement!;
+    canvas.width = hero.offsetWidth;
+    canvas.height = hero.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const TABLE_NAMES = ['users', 'orders', 'products', 'categories', 'payments', 'addresses', 'reviews', 'sessions', 'inventory', 'coupons', 'shipping', 'logs'];
+  const COLORS = ['#3b82f6', '#6366f1', '#8b5cf6', '#0ea5e9'];
+
+  interface Node {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    w: number;
+    h: number;
+    name: string;
+    color: string;
+    rows: number;
+  }
+
+  const nodes: Node[] = Array.from({ length: 10 }, (_, i) => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    vx: (Math.random() - 0.5) * 0.5,
+    vy: (Math.random() - 0.5) * 0.5,
+    w: 110,
+    h: 80,
+    name: TABLE_NAMES[i],
+    color: COLORS[i % COLORS.length],
+    rows: Math.floor(Math.random() * 3) + 3,
+  }));
+
+  function drawNode(n: Node) {
+    const r = 6;
+    ctx.shadowColor = n.color;
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.roundRect(n.x, n.y, n.w, n.h, r);
+    ctx.fillStyle = 'rgba(15,25,35,0.85)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.roundRect(n.x, n.y, n.w, 22, [r, r, 0, 0]);
+    ctx.fillStyle = n.color + '55';
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(n.name, n.x + 8, n.y + 15);
+    for (let i = 0; i < n.rows; i++) {
+      const ry = n.y + 28 + i * 14;
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(n.x + 8, ry, n.w - 16, 8);
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const cx1 = a.x + a.w / 2, cy1 = a.y + a.h / 2;
+        const cx2 = b.x + b.w / 2, cy2 = b.y + b.h / 2;
+        const dist = Math.hypot(cx2 - cx1, cy2 - cy1);
+        if (dist < 220) {
+          ctx.beginPath();
+          ctx.moveTo(cx1, cy1);
+          ctx.lineTo(cx2, cy2);
+          ctx.strokeStyle = `rgba(255,255,255,${(1 - dist / 220) * 0.25})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+
+    nodes.forEach(drawNode);
+
+    nodes.forEach(n => {
+      n.x += n.vx;
+      n.y += n.vy;
+      if (n.x < -n.w) n.x = canvas.width;
+      if (n.x > canvas.width) n.x = -n.w;
+      if (n.y < -n.h) n.y = canvas.height;
+      if (n.y > canvas.height) n.y = -n.h;
+    });
+
+    requestAnimationFrame(draw);
+  }
+  draw();
 </script>
