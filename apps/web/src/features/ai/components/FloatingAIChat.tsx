@@ -1,3 +1,4 @@
+import { randomUUID } from "@/shared/utils/uuid";
 import { useAIChatStore } from "../store/useAIChatStore";
 import { AIChatFAB } from "./AIChatFAB";
 import { AIChatWindow } from "./AIChatWindow";
@@ -18,7 +19,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
       const response = await sendAiChat(diagramId, message);
       addAssistantMessage(response);
     } catch {
-      addAssistantMessage({ messageId: crypto.randomUUID(), content: "오류가 발생했습니다. 다시 시도해주세요.", diff: null, pendingDocument: null });
+      addAssistantMessage({ messageId: randomUUID(), content: "오류가 발생했습니다. 다시 시도해주세요.", diff: null, pendingDocument: null });
     } finally {
       setLoading(false);
     }

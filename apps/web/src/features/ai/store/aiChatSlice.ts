@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import type { AiChatResponse, DiffChange } from "@erdify/contracts";
 import type { DiagramDocument } from "@erdify/domain";
+import { randomUUID } from "@/shared/utils/uuid";
 
 export interface AiMessage {
   id: string;
@@ -33,7 +34,7 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
     set((state) => ({
       isOpen: true,
       messages: initialMessage
-        ? [...state.messages, { id: crypto.randomUUID(), role: "user", content: initialMessage, diff: null, pendingDocument: null, accepted: null }]
+        ? [...state.messages, { id: randomUUID(), role: "user", content: initialMessage, diff: null, pendingDocument: null, accepted: null }]
         : state.messages,
     })),
 
@@ -43,7 +44,7 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
     set((state) => ({
       messages: [
         ...state.messages,
-        { id: crypto.randomUUID(), role: "user", content, diff: null, pendingDocument: null, accepted: null },
+        { id: randomUUID(), role: "user", content, diff: null, pendingDocument: null, accepted: null },
       ],
     })),
 
