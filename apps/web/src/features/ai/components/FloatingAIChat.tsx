@@ -4,7 +4,7 @@ import { useAIChatStore } from "../store/useAIChatStore";
 import { MessageBubble } from "./MessageBubble";
 import { sendAiChat, acceptAiDiff, rejectAiDiff } from "../api/ai.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
-import "./FloatingAIChat.css";
+import * as s from "./FloatingAIChat.css";
 
 interface FloatingAIChatProps {
   diagramId: string;
@@ -59,34 +59,36 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     await rejectAiDiff(messageId).catch(() => {});
   };
 
-  return (
-    <div className={`ai-float ${isOpen ? "ai-float--open" : "ai-float--closed"}`} onClick={!isOpen ? () => openChat() : undefined}>
+  const state = isOpen ? "open" : "closed";
 
-      {/* FAB icon (보임: closed, 숨김: open) */}
-      <div className="ai-fab-content">
-        <div className="ai-fab-icon">✦</div>
-        <div className="ai-fab-label">AI</div>
+  return (
+    <div
+      className={s.floatContainer({ state })}
+      onClick={!isOpen ? () => openChat() : undefined}
+    >
+      {/* FAB 아이콘 (closed 시 표시) */}
+      <div className={s.fabContent({ state })}>
+        <div className={s.fabIcon}>✦</div>
+        <div className={s.fabLabel}>AI</div>
       </div>
 
-      {/* 채팅 창 (보임: open, 숨김: closed) */}
-      <div className="ai-chat-content">
-        {/* 헤더 */}
-        <div className="ai-chat-header">
-          <div className="ai-chat-header-left">
-            <div className="ai-chat-header-icon">✦</div>
+      {/* 채팅 창 (open 시 표시) */}
+      <div className={s.chatContent({ state })}>
+        <div className={s.chatHeader}>
+          <div className={s.chatHeaderLeft}>
+            <div className={s.chatHeaderIcon}>✦</div>
             <div>
-              <div className="ai-chat-header-title">ERDify AI</div>
-              <div className="ai-chat-header-sub">Claude · GPT-4o</div>
+              <div className={s.chatHeaderTitle}>ERDify AI</div>
+              <div className={s.chatHeaderSub}>Claude · GPT-4o</div>
             </div>
           </div>
-          <button type="button" className="ai-chat-close" onClick={closeChat}>×</button>
+          <button type="button" className={s.chatCloseBtn} onClick={closeChat}>×</button>
         </div>
 
-        {/* 메시지 목록 */}
-        <div className="ai-chat-messages">
+        <div className={s.chatMessages}>
           {messages.length === 0 && (
-            <div className="ai-chat-empty">
-              <div className="ai-chat-empty-icon">✦</div>
+            <div className={s.chatEmpty}>
+              <div className={s.chatEmptyIcon}>✦</div>
               ERD에 대해 무엇이든 물어보세요.<br />
               <span style={{ fontSize: 12 }}>"orders 테이블 추가해줘" 같은 명령도 가능해요.</span>
             </div>
@@ -95,9 +97,11 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
             <MessageBubble key={msg.id} message={msg} onAccept={handleAccept} onReject={handleReject} />
           ))}
           {isLoading && (
-            <div className="ai-chat-thinking">
-              <div className="ai-chat-thinking-dots">
-                <span /><span /><span />
+            <div className={s.chatThinking}>
+              <div className={s.thinkingDots}>
+                <div className={s.thinkingDot} />
+                <div className={s.thinkingDot} />
+                <div className={s.thinkingDot} />
               </div>
               AI가 생각 중...
             </div>
@@ -105,10 +109,9 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
           <div ref={bottomRef} />
         </div>
 
-        {/* 입력창 */}
-        <div className="ai-chat-input-area">
+        <div className={s.chatInputArea}>
           <textarea
-            className="ai-chat-textarea"
+            className={s.chatTextarea}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -117,7 +120,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
           />
           <button
             type="button"
-            className="ai-chat-send"
+            className={s.chatSendBtn({ disabled: isLoading || !input.trim() })}
             onClick={handleSendInput}
             disabled={isLoading || !input.trim()}
           >
