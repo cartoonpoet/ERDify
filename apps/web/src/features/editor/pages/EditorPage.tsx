@@ -18,6 +18,8 @@ import { FkSetupModal } from "../components/FkSetupModal";
 import { RelDeleteConfirmModal } from "../components/RelDeleteConfirmModal";
 import { SchemaFilterSidebar } from "../components/SchemaFilterSidebar";
 import { ImportIntoEditorModal } from "../components/ImportIntoEditorModal";
+import { FloatingAIChat } from "@/features/ai/components/FloatingAIChat";
+import { useAIChatStore } from "@/features/ai/store/useAIChatStore";
 import { useDiagramAutosave } from "@/features/editor/hooks/useDiagramAutosave";
 import { useVersionHistory } from "@/features/editor/hooks/useVersionHistory";
 import { useRealtimeCollaboration } from "@/features/editor/hooks/useRealtimeCollaboration";
@@ -35,6 +37,7 @@ export const EditorPage = () => {
   const [showImport, setShowImport] = useState(false);
 
   const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen, undo, canEdit } = useEditorStore();
+  const isAIChatOpen = useAIChatStore((s) => s.isOpen);
 
   const [mcpSeenAt] = useState<number | null>(() => {
     if (!diagramId) return null;
@@ -188,7 +191,8 @@ export const EditorPage = () => {
       <div className={css.content}>
         <SchemaFilterSidebar />
         <div className={css.canvasArea}>
-          <EditorCanvas />
+          <EditorCanvas hideMinimap={isAIChatOpen} />
+          {diagramId && <FloatingAIChat diagramId={diagramId} />}
           {selectedRelationshipId && popoverPos ? (
             <RelationshipPopover
               relationshipId={selectedRelationshipId}

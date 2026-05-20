@@ -11,6 +11,7 @@ const EditorPage = lazy(() => import("@/features/editor/pages/EditorPage").then(
 const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
 const DiagramGrid = lazy(() => import("@/features/dashboard/components/DiagramGrid").then(m => ({ default: m.DiagramGrid })));
 const MemberManagementPage = lazy(() => import("@/features/dashboard/pages/MemberManagementPage").then(m => ({ default: m.MemberManagementPage })));
+const OrgSettingsPage = lazy(() => import("@/features/dashboard/pages/OrgSettingsPage").then(m => ({ default: m.OrgSettingsPage })));
 const ApiKeysPanel = lazy(() => import("@/features/dashboard/pages/ApiKeysPanel").then(m => ({ default: m.ApiKeysPanel })));
 const RootRedirect = lazy(() => import("@/pages/RootRedirect").then(m => ({ default: m.RootRedirect })));
 const SharedDiagramPage = lazy(() => import("@/pages/SharedDiagramPage").then(m => ({ default: m.SharedDiagramPage })));
@@ -54,6 +55,7 @@ export const Router = () => (
             <Route index element={<DiagramGrid />} />
             <Route path="members" element={<MemberManagementPage />} />
             <Route path="api-keys" element={<ApiKeysPanel />} />
+            <Route path="settings" element={<OrgSettingsPage />} />
             <Route path=":projectId" element={<DiagramGrid />} />
           </Route>
         </Route>

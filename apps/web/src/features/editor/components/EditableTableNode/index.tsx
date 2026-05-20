@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import { IMEInput } from "./IMEInput";
@@ -23,6 +24,8 @@ import { SchemaStrip } from "./SchemaStrip";
 import { IndexColumnSelect } from "./IndexColumnSelect";
 import { SeedLens } from "./SeedLens";
 import * as css from "./editable-table-node.css";
+import { suggestColumns } from "@/features/ai/api/ai.api";
+import type { ColumnSuggestion } from "@erdify/contracts";
 
 export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNodeType>) => {
   const { entity, collaboratorColor } = data;
@@ -31,6 +34,27 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
   const canEdit = useEditorStore((s) => s.canEdit);
   const document = useEditorStore((s) => s.document);
   const schemaColors = useEditorStore((s) => s.schemaColors);
+
+  const [suggestions, setSuggestions] = useState<ColumnSuggestion[]>([]);
+  const [activeSuggestionColId, setActiveSuggestionColId] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleColumnNameInput = (columnId: string, value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    setActiveSuggestionColId(columnId);
+    debounceRef.current = setTimeout(() => {
+      const existingColumnNames = entity.columns.map((c) => c.name);
+      suggestColumns(entity.name, existingColumnNames)
+        .then((results) => {
+          setSuggestions(results.filter((r) => r.name.toLowerCase().startsWith(value.toLowerCase())));
+        })
+        .catch(() => setSuggestions([]));
+    }, 300);
+  };
 
   const fkColumnIds = new Set(
     document?.relationships.flatMap((r) => [...r.sourceColumnIds, ...r.targetColumnIds]) ?? []
@@ -277,12 +301,47 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
             onChange={(v) => applyCommand((doc) => updateColumn(doc, entity.id, col.id, { comment: v || null }))}
           />
           {/* 컬럼명 */}
-          <IMEInput
-            className={`${css.columnNameInput} nodrag nokey`}
-            value={col.name}
-            aria-label="컬럼명"
-            onChange={(v) => applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: v }))}
-          />
+          <div
+            style={{ position: "relative", flex: 1 }}
+            onInput={(e) => {
+              const target = e.target as HTMLInputElement;
+              handleColumnNameInput(col.id, target.value);
+            }}
+            onBlur={() => {
+              setTimeout(() => {
+                setSuggestions([]);
+                setActiveSuggestionColId(null);
+              }, 150);
+            }}
+          >
+            <IMEInput
+              className={`${css.columnNameInput} nodrag nokey`}
+              style={{ width: "100%" }}
+              value={col.name}
+              aria-label="컬럼명"
+              onChange={(v) => applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: v }))}
+            />
+            {activeSuggestionColId === col.id && suggestions.length > 0 && (
+              <ul style={{ position: "absolute", top: "100%", left: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6, zIndex: 200, margin: 0, padding: "4px 0", listStyle: "none", minWidth: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+                {suggestions.map((s) => (
+                  <li
+                    key={s.name}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: s.name, type: s.type, nullable: s.nullable, primaryKey: s.pk }));
+                      setSuggestions([]);
+                      setActiveSuggestionColId(null);
+                    }}
+                    style={{ padding: "6px 12px", cursor: "pointer", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}
+                  >
+                    <strong>{s.name}</strong>
+                    <span style={{ color: "#94a3b8" }}>{s.type}</span>
+                    {s.pk && <span style={{ color: "#2563eb", fontSize: 11 }}>PK</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           {/* 타입 */}
           <TypeSelect
             value={col.type}

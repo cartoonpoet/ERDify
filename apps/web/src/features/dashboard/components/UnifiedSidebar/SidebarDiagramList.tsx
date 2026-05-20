@@ -17,13 +17,14 @@ interface SidebarDiagramListProps {
   projects: ProjectResponse[];
   diagrams: DiagramListItem[];
   memberManagementActive: boolean;
+  orgSettingsActive: boolean;
   onDeleteProject: (id: string) => void;
   onCreateDiagram: () => void;
   onCreateProject: () => void;
 }
 
 export const SidebarDiagramList = ({
-  orgId, projectId, projects, diagrams, memberManagementActive,
+  orgId, projectId, projects, diagrams, memberManagementActive, orgSettingsActive,
   onDeleteProject, onCreateDiagram, onCreateProject,
 }: SidebarDiagramListProps) => {
   const navigate = useNavigate();
@@ -99,6 +100,15 @@ export const SidebarDiagramList = ({
         <span className={css.projArrow} aria-hidden="true" />
         <span className={css.projIcon} aria-hidden="true">👥</span>
         <span className={css.projName}>멤버 관리</span>
+      </button>
+      <button
+        className={[css.projRow, orgSettingsActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
+        onClick={() => navigate(`/${orgId}/settings`)}
+        aria-pressed={orgSettingsActive}
+      >
+        <span className={css.projArrow} aria-hidden="true" />
+        <span className={css.projIcon} aria-hidden="true">⚙️</span>
+        <span className={css.projName}>조직 설정</span>
       </button>
       <div className={css.sidebarFooter}>
         <button className={css.addProjectBtn} onClick={onCreateProject}>

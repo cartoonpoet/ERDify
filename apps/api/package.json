@@ -5,7 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "node --require @swc-node/register src/main.ts",
-    "prebuild": "pnpm --filter @erdify/db build",
+    "prebuild": "pnpm --filter @erdify/db build && pnpm --filter @erdify/contracts build",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
     "pretypecheck": "pnpm --filter @erdify/db build",
@@ -14,7 +14,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.97.1",
     "@automerge/automerge": "^3.2.6",
+    "@erdify/contracts": "workspace:*",
     "@erdify/db": "workspace:*",
     "@erdify/domain": "workspace:*",
     "@nestjs/common": "^11.1.0",

@@ -7,6 +7,7 @@ import "@xyflow/react/dist/style.css";
 import { updateEntityPosition, addRelationship, removeRelationship, removeEntity } from "@erdify/domain";
 import type { DiagramRelationship, DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import { useAIChatStore } from "@/features/ai/store/useAIChatStore";
 import type { EditableTableNodeType, UnmatchedPkInput } from "@/features/editor/store/useEditorStore";
 import { getSchemaColor, getSchemasFromDocument } from "@/shared/utils/schema-colors";
 import { EditableTableNode } from "./EditableTableNode";
@@ -187,7 +188,7 @@ const ClickableMiniMap = ({
   );
 };
 
-export const EditorCanvas = () => {
+export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
@@ -198,6 +199,7 @@ export const EditorCanvas = () => {
   const searchOpen = useEditorStore((s) => s.searchOpen);
   const setSearchOpen = useEditorStore((s) => s.setSearchOpen);
   const canEdit = useEditorStore((s) => s.canEdit);
+  const openChat = useAIChatStore((s) => s.openChat);
   const applyNodeChanges = useEditorStore((s) => s.applyNodeChanges);
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const setSelectedRelationship = useEditorStore((s) => s.setSelectedRelationship);
@@ -353,7 +355,19 @@ export const EditorCanvas = () => {
   }
 
   return (
-    <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
+    <div ref={containerRef} style={{ width: "100%", height: "100%", position: "relative" }}>
+      {nodes.length === 0 && canEdit && (
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10, textAlign: "center", pointerEvents: "none" }}>
+          <p style={{ color: "#94a3b8", fontSize: 14, marginBottom: 16 }}>테이블을 추가해 ERD를 만들어보세요.</p>
+          <button
+            type="button"
+            onClick={() => openChat("어떤 서비스의 DB를 설계할까요? 서비스 이름이나 기능을 설명해주시면 ERD를 만들어드릴게요.")}
+            style={{ pointerEvents: "auto", padding: "10px 20px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500 }}
+          >
+            ✦ AI로 ERD 생성하기
+          </button>
+        </div>
+      )}
       <ReactFlow
         nodes={displayNodes as unknown as EditableTableNodeType[]}
         edges={displayEdges}
@@ -389,7 +403,7 @@ export const EditorCanvas = () => {
       >
         <Background />
         <Controls />
-        <ClickableMiniMap containerRef={containerRef} allSchemas={allSchemas} schemaColors={schemaColors} />
+        {!hideMinimap && <ClickableMiniMap containerRef={containerRef} allSchemas={allSchemas} schemaColors={schemaColors} />}
         {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
         {contextMenu && (
           <CanvasContextMenu

@@ -1,0 +1,19 @@
+import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from "typeorm";
+
+@Entity("organization_ai_settings")
+export class OrganizationAiSettings {
+  @PrimaryColumn("varchar", { length: 36 })
+  id!: string;
+
+  @Column({ name: "organization_id", length: 36, unique: true })
+  organizationId!: string;
+
+  @Column({ name: "encrypted_api_key", type: "text", nullable: true })
+  encryptedApiKey!: string | null;
+
+  @CreateDateColumn({ name: "created_at" })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt!: Date;
+}

@@ -23,3 +23,17 @@ export type {
 } from "./members/member.types";
 export type { ApiKeyItem, ApiKeyCreated } from "./api-keys/api-key.types";
 export type { ProjectResponse } from "./projects/project.types";
+export type {
+  DiffChange,
+  AiChatResponse,
+  ColumnSuggestion,
+  OrgAiSettings,
+} from "./ai/ai.types";
+export {
+  aiChatRequestSchema,
+  aiSuggestColumnsRequestSchema,
+  updateOrgAiSettingsRequestSchema,
+  type AiChatRequest,
+  type AiSuggestColumnsRequest,
+  type UpdateOrgAiSettingsRequest,
+} from "./ai/ai-contract.schema";

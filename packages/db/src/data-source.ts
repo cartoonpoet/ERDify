@@ -1,10 +1,13 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
+import { AiConversation } from "./entities/ai-conversation.entity";
 import { ApiKey } from "./entities/api-key.entity";
 import { Diagram } from "./entities/diagram.entity";
 import { DiagramVersion } from "./entities/diagram-version.entity";
+import { ErrorReport } from "./entities/error-report.entity";
 import { Invite } from "./entities/invite.entity";
 import { McpSession } from "./entities/mcp-session.entity";
+import { OrganizationAiSettings } from "./entities/organization-ai-settings.entity";
 import { OrganizationMember } from "./entities/organization-member.entity";
 import { Organization } from "./entities/organization.entity";
 import { Project } from "./entities/project.entity";
@@ -24,13 +27,17 @@ import { AddNameExpiresAtToApiKeys1746000000011 } from "./migrations/17460000000
 import { CreateInvitesTable1746000000012 } from "./migrations/1746000000012-CreateInvitesTable";
 import { AddPhoneToUsers1746000000013 } from "./migrations/1746000000013-AddPhoneToUsers";
 import { IncreasePhoneColumnLength1746000000014 } from "./migrations/1746000000014-IncreasePhoneColumnLength";
+import { CreateErrorReportsTable1746000000015 } from "./migrations/1746000000015-CreateErrorReportsTable";
+import { AddIsAdminToUsers1746000000016 } from "./migrations/1746000000016-AddIsAdminToUsers";
+import { CreateOrganizationAiSettings1746000000017 } from "./migrations/1746000000017-CreateOrganizationAiSettings";
+import { CreateAiConversations1746000000018 } from "./migrations/1746000000018-CreateAiConversations";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
   url: process.env["DATABASE_URL"] ?? "postgres://erdify:erdify@localhost:5432/erdify",
   synchronize: false,
   migrationsRun: false,
-  entities: [User, Organization, OrganizationMember, Project, Diagram, DiagramVersion, Invite, ApiKey, McpSession],
+  entities: [User, Organization, OrganizationAiSettings, OrganizationMember, Project, Diagram, DiagramVersion, Invite, ApiKey, McpSession, ErrorReport, AiConversation],
   migrations: [
     CreateUsersTable1746000000000,
     CreateOrganizationsTable1746000000001,
@@ -47,5 +54,9 @@ export const AppDataSource = new DataSource({
     CreateInvitesTable1746000000012,
     AddPhoneToUsers1746000000013,
     IncreasePhoneColumnLength1746000000014,
+    CreateErrorReportsTable1746000000015,
+    AddIsAdminToUsers1746000000016,
+    CreateOrganizationAiSettings1746000000017,
+    CreateAiConversations1746000000018,
   ]
 });

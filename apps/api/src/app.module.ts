@@ -13,6 +13,7 @@ import { ProjectModule } from "./modules/project/project.module";
 import { CollaborationModule } from "./modules/collaboration/collaboration.module";
 import { EmailModule } from "./modules/email/email.module";
 import { ErrorReportsModule } from "./modules/error-reports/error-reports.module";
+import { AiModule } from "./modules/ai/ai.module";
 import appConfig from "./common/config/app.config";
 
 @Module({
@@ -30,6 +31,7 @@ import appConfig from "./common/config/app.config";
     CollaborationModule,
     EmailModule,
     ErrorReportsModule,
+    AiModule,
     HealthModule,
   ],
   providers: [

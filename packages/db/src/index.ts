@@ -9,6 +9,8 @@ export { McpSession } from "./entities/mcp-session.entity";
 export { OrganizationMember } from "./entities/organization-member.entity";
 export type { MemberRole } from "./entities/organization-member.entity";
 export { Organization } from "./entities/organization.entity";
+export { OrganizationAiSettings } from "./entities/organization-ai-settings.entity";
 export { Project } from "./entities/project.entity";
 export { User } from "./entities/user.entity";
+export { AiConversation } from "./entities/ai-conversation.entity";
 export { createTypeOrmOptions } from "./typeorm/create-typeorm-options";

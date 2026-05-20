@@ -52,6 +52,7 @@ export const UnifiedSidebar = ({
 
   const memberManagementActive = pathname.endsWith("/members");
   const apiKeysActive = pathname.endsWith("/api-keys");
+  const orgSettingsActive = pathname.endsWith("/settings");
 
   return (
     <aside className={css.sidebar} aria-label="사이드바">
@@ -69,6 +70,7 @@ export const UnifiedSidebar = ({
           projects={projects}
           diagrams={diagrams}
           memberManagementActive={memberManagementActive}
+          orgSettingsActive={orgSettingsActive}
           onDeleteProject={onDeleteProject}
           onCreateDiagram={onCreateDiagram}
           onCreateProject={onCreateProject}
