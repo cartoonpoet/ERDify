@@ -5,6 +5,7 @@ import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import { OrganizationAiSettings, AiConversation, Diagram, OrganizationMember } from "@erdify/db";
 import { AiService } from "./ai.service";
 import { AiHistoryService } from "./ai-history.service";
+import { DomainLoaderService } from "../../common/services/domain-loader.service";
 
 vi.mock("@anthropic-ai/sdk", () => ({
   default: vi.fn().mockImplementation(() => ({
@@ -53,6 +54,7 @@ describe("AiService", () => {
         { provide: getRepositoryToken(Diagram), useValue: diagramRepo },
         { provide: getRepositoryToken(OrganizationMember), useValue: memberRepo },
         { provide: AiHistoryService, useValue: historyService },
+        { provide: DomainLoaderService, useValue: { load: vi.fn() } },
       ],
     }).compile();
 
