@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, memo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import { IMEInput } from "./IMEInput";
@@ -15,9 +15,10 @@ import {
   updateEntityComment,
   updateIndex,
 } from "@erdify/domain";
+import type { DiagramIndex } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import type { EditableTableNodeType } from "@/features/editor/store/useEditorStore";
-import { getSchemaColor, getSchemasFromDocument } from "@/shared/utils/schema-colors";
+import { getSchemaColor } from "@/shared/utils/schema-colors";
 import { DEFAULT_HEADER_COLOR, makeColumn, makeIndex } from "./constants";
 import { TypeSelect } from "./TypeSelect";
 import { SchemaStrip } from "./SchemaStrip";
@@ -27,13 +28,17 @@ import * as css from "./editable-table-node.css";
 import { suggestColumns } from "@/features/ai/api/ai.api";
 import type { ColumnSuggestion } from "@erdify/contracts";
 
-export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNodeType>) => {
+const EMPTY_INDEXES: DiagramIndex[] = [];
+
+const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeType>) => {
   const { entity, collaboratorColor } = data;
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const setSelectedEntity = useEditorStore((s) => s.setSelectedEntity);
   const canEdit = useEditorStore((s) => s.canEdit);
-  const document = useEditorStore((s) => s.document);
   const schemaColors = useEditorStore((s) => s.schemaColors);
+  const fkColumnIds = useEditorStore((s) => s.fkColumnIds);
+  const entityIndexes = useEditorStore((s) => s.indexesByEntityId.get(entity.id) ?? EMPTY_INDEXES);
+  const allSchemas = useEditorStore((s) => s.allSchemas);
 
   const [suggestions, setSuggestions] = useState<ColumnSuggestion[]>([]);
   const [activeSuggestionColId, setActiveSuggestionColId] = useState<string | null>(null);
@@ -56,12 +61,6 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
     }, 300);
   };
 
-  const fkColumnIds = new Set(
-    document?.relationships.flatMap((r) => [...r.sourceColumnIds, ...r.targetColumnIds]) ?? []
-  );
-  const entityIndexes = document?.indexes.filter((i) => i.entityId === entity.id) ?? [];
-
-  const allSchemas = document ? getSchemasFromDocument(document.entities) : [];
   const schemaColor = entity.schema ? getSchemaColor(entity.schema, allSchemas, schemaColors) : null;
 
   const borderColor = collaboratorColor ?? (selected ? "var(--color-primary, #0064E0)" : "#d1d5db");
@@ -454,3 +453,5 @@ export const EditableTableNode = ({ data, selected }: NodeProps<EditableTableNod
     </div>
   );
 };
+
+export const EditableTableNode = memo(EditableTableNodeInner);
