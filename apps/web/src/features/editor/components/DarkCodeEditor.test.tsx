@@ -8,6 +8,7 @@ vi.mock("./DarkCodeEditor.css", () => ({
   editableArea: "editableArea",
   codeArea: "codeArea",
   dragOverlay: "dragOverlay",
+  placeholder: "placeholder",
 }));
 
 describe("DarkCodeEditor", () => {

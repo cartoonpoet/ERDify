@@ -13,7 +13,7 @@ vi.mock("@/shared/components/Modal", () => ({
   Modal: ({ open, children, title }: { open: boolean; children: React.ReactNode; title?: string }) =>
     open ? <div role="dialog">{title && <div>{title}</div>}{children}</div> : null,
 }));
-vi.mock("./invite-modal.css", () => ({ body: "", footer: "", cancelBtn: "" }));
+vi.mock("./invite-modal.css", () => ({ body: "", footer: "", cancelBtn: "", bodyText: "", bodyTextSub: "", dangerBtn: "" }));
 
 const mockApplyCommand = vi.fn();
 const mockSetPendingRelDelete = vi.fn();
