@@ -71,7 +71,7 @@ export const createDiagramSlice: StateCreator<EditorState, [], [], DiagramSlice>
     })),
 
   applyCommand: (fn) => {
-    const { document, nodes, collaborators, edges, history } = get();
+    const { document, nodes, collaborators, edges, history, fkColumnIds, indexesByEntityId, allSchemas } = get();
     if (!document) return;
     const next = fn(document);
 
@@ -85,9 +85,9 @@ export const createDiagramSlice: StateCreator<EditorState, [], [], DiagramSlice>
       edges: relationshipsChanged ? docToEdges(next) : edges,
       isDirty: true,
       history: [...history.slice(-(HISTORY_LIMIT - 1)), document],
-      fkColumnIds: relationshipsChanged ? computeFkColumnIds(next) : get().fkColumnIds,
-      indexesByEntityId: indexesChanged ? computeIndexesByEntityId(next) : get().indexesByEntityId,
-      allSchemas: entitiesChanged ? getSchemasFromDocument(next.entities) : get().allSchemas,
+      fkColumnIds: relationshipsChanged ? computeFkColumnIds(next) : fkColumnIds,
+      indexesByEntityId: indexesChanged ? computeIndexesByEntityId(next) : indexesByEntityId,
+      allSchemas: entitiesChanged ? getSchemasFromDocument(next.entities) : allSchemas,
     });
   },
 
