@@ -27,6 +27,7 @@ export const CardinalityEdge = ({
   style,
   markerEnd,
   data,
+  selected,
 }: EdgeProps & { data: CardinalityEdgeData }) => {
   const [edgePath] = getSmoothStepPath({
     sourceX,
@@ -40,9 +41,10 @@ export const CardinalityEdge = ({
   const { source: sourceLabel, target: targetLabel } = getLabels(data.cardinality);
 
   const edgeStyle: React.CSSProperties = {
-    stroke: "#6366f1",
-    strokeWidth: 1.5,
+    stroke: selected ? "#4f46e5" : "#6366f1",
+    strokeWidth: selected ? 2.5 : 1.5,
     ...(!data.identifying ? { strokeDasharray: "6 3" } : {}),
+    ...(selected ? { filter: "drop-shadow(0 0 5px rgba(99,102,241,0.55))" } : {}),
     ...(style ?? {}),
   };
 
@@ -56,13 +58,13 @@ export const CardinalityEdge = ({
       />
       <EdgeLabelRenderer>
         <div
-          className={`${css.edgeLabel} nodrag nopan`}
+          className={`${selected ? css.edgeLabelSelected : css.edgeLabel} nodrag nopan`}
           style={{ transform: `translate(${sourceX + 8}px, ${sourceY - 16}px)` }}
         >
           {sourceLabel}
         </div>
         <div
-          className={`${css.edgeLabel} nodrag nopan`}
+          className={`${selected ? css.edgeLabelSelected : css.edgeLabel} nodrag nopan`}
           style={{ transform: `translate(${targetX - 20}px, ${targetY - 16}px)` }}
         >
           {targetLabel}
