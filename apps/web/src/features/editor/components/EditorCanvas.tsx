@@ -1,5 +1,6 @@
 import { randomUUID } from "@/shared/utils/uuid";
 import { useRef, useState, useMemo, memo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import type { MouseEvent } from "react";
 import { ReactFlow, Background, Controls, MiniMap, useReactFlow } from "@xyflow/react";
 import type { Node, Edge, EdgeChange, NodeChange, NodeSelectionChange, NodeRemoveChange, Connection } from "@xyflow/react";
@@ -209,6 +210,14 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   const hiddenSchemas = useEditorStore((s) => s.hiddenSchemas);
   const groupViewEnabled = useEditorStore((s) => s.groupViewEnabled);
   const allSchemas = useEditorStore((s) => s.allSchemas);
+  // 엔티티 스키마 맵 — 스키마 값이 실제로 바뀔 때만 새 참조 (컬럼명 변경 시 edges 재렌더링 방지)
+  const entitySchemaByEntityId = useEditorStore(
+    useShallow((s) => {
+      const result: Record<string, string | null> = {};
+      for (const e of s.document?.entities ?? []) result[e.id] = e.schema ?? null;
+      return result;
+    })
+  );
 
   const zoneNodes = useMemo((): Node[] => {
     if (!document || !groupViewEnabled || allSchemas.length === 0) return [];
@@ -250,17 +259,16 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   }, [nodes, zoneNodes, hiddenSchemas]);
 
   const displayEdges = useMemo(() => {
-    if (!document || hiddenSchemas.size === 0) return edges;
-    const entitySchemaMap = new Map(document.entities.map((e) => [e.id, e.schema ?? null]));
+    if (hiddenSchemas.size === 0) return edges;
     return edges.map((edge) => {
-      const srcSchema = entitySchemaMap.get(edge.source) ?? null;
-      const tgtSchema = entitySchemaMap.get(edge.target) ?? null;
+      const srcSchema = entitySchemaByEntityId[edge.source] ?? null;
+      const tgtSchema = entitySchemaByEntityId[edge.target] ?? null;
       const isHidden =
         (srcSchema !== null && hiddenSchemas.has(srcSchema)) ||
         (tgtSchema !== null && hiddenSchemas.has(tgtSchema));
       return isHidden ? { ...edge, style: { ...edge.style, opacity: 0.1 } } : edge;
     });
-  }, [edges, hiddenSchemas, document]);
+  }, [edges, hiddenSchemas, entitySchemaByEntityId]);
 
   if (!document) return null;
 
