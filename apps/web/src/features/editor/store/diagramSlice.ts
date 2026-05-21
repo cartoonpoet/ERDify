@@ -16,6 +16,13 @@ function computeFkColumnIds(doc: DiagramDocument): Set<string> {
   );
 }
 
+function computeAllSchemas(entities: DiagramDocument["entities"], entitiesChanged: boolean, prev: string[]): string[] {
+  if (!entitiesChanged) return prev;
+  const next = getSchemasFromDocument(entities);
+  if (next.length === prev.length && next.every((s, i) => s === prev[i])) return prev;
+  return next;
+}
+
 function computeIndexesByEntityId(doc: DiagramDocument): Map<string, DiagramIndex[]> {
   const map = new Map<string, DiagramIndex[]>();
   for (const idx of doc.indexes) {
@@ -87,7 +94,7 @@ export const createDiagramSlice: StateCreator<EditorState, [], [], DiagramSlice>
       history: [...history.slice(-(HISTORY_LIMIT - 1)), document],
       fkColumnIds: relationshipsChanged ? computeFkColumnIds(next) : fkColumnIds,
       indexesByEntityId: indexesChanged ? computeIndexesByEntityId(next) : indexesByEntityId,
-      allSchemas: entitiesChanged ? getSchemasFromDocument(next.entities) : allSchemas,
+      allSchemas: computeAllSchemas(next.entities, entitiesChanged, allSchemas),
     });
   },
 

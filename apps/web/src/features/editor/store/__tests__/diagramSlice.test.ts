@@ -118,6 +118,24 @@ describe("DiagramSlice - derived state", () => {
     expect(store.getState().indexesByEntityId.size).toBe(0);
   });
 
+  it("applyCommand: 컬럼명만 변경 시 allSchemas identity가 유지된다", () => {
+    const store = makeStore();
+    store.getState().setDocument(makeDoc());
+    const before = store.getState().allSchemas;
+
+    // schema 값은 그대로, 컬럼명만 변경
+    store.getState().applyCommand((doc) => ({
+      ...doc,
+      entities: doc.entities.map((e) =>
+        e.id === "e2"
+          ? { ...e, columns: e.columns.map((c) => c.id === "c3" ? { ...c, name: "author_id" } : c) }
+          : e
+      ),
+    }));
+
+    expect(store.getState().allSchemas).toBe(before);
+  });
+
   it("applyCommand: layout만 변경 시 파생 상태 identity 전부 유지된다", () => {
     const store = makeStore();
     store.getState().setDocument(makeDoc());
