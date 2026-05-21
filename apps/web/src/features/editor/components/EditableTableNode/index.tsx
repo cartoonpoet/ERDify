@@ -74,16 +74,11 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
   if (!canEdit) {
     return (
       <div
+        className={`${css.tableNodeWrapper} ${css.tableNodeWrapperReadOnly}`}
         style={{
-          background: "#ffffff",
           border: `2px solid ${borderColor}`,
           ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
-          borderRadius: 6,
-          minWidth: 380,
-          fontFamily: "monospace",
-          fontSize: 12,
           boxShadow,
-          position: "relative",
         }}
       >
         <Handle type="target" position={Position.Left} />
@@ -92,67 +87,53 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
         )}
         {entity.schema && <SchemaStrip schema={entity.schema} allSchemas={allSchemas} schemaColors={schemaColors} />}
         <div
+          className={css.tableNodeHeader}
           style={{
             background: collaboratorColor ?? entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR,
-            color: "#ffffff",
-            padding: "6px 10px",
-            fontWeight: 700,
             borderRadius: entity.schema ? 0 : "4px 4px 0 0",
-            fontSize: 13,
           }}
         >
           {entity.name}
           {entity.comment && (
-            <div style={{ fontSize: 10, fontStyle: "italic", fontWeight: 400, color: "rgba(255,255,255,0.75)", marginTop: 1 }}>
+            <div className={css.tableNodeHeaderComment}>
               {entity.comment}
             </div>
           )}
         </div>
         {/* 컬럼 헤더 */}
-        <div style={{
-          display: "flex", alignItems: "center",
-          padding: "3px 8px 3px 10px",
-          background: "#F8FAFB", borderBottom: "1px solid #E5E7EB",
-          fontSize: 9, color: "#9ca3af", fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase",
-        }}>
-          <span style={{ width: 24, flexShrink: 0, textAlign: "center" }}>PK</span>
-          <span style={{ width: 20, flexShrink: 0, textAlign: "center" }}>FK</span>
-          <span style={{ width: 28, flexShrink: 0, textAlign: "center" }}>?</span>
-          <span style={{ width: 24, flexShrink: 0, textAlign: "center" }}>UQ</span>
-          <span style={{ flex: 1 }}>논리명</span>
-          <span style={{ flex: 1.2 }}>컬럼명</span>
-          <span style={{ width: 90, flexShrink: 0 }}>타입</span>
+        <div className={css.roColHeaderRow}>
+          <span className={css.roColHeaderCellFixed}>PK</span>
+          <span className={css.roColHeaderCellFk}>FK</span>
+          <span className={css.roColHeaderCellNullable}>?</span>
+          <span className={css.roColHeaderCellFixed}>UQ</span>
+          <span className={css.roColHeaderCellFluid}>논리명</span>
+          <span className={css.roColHeaderCellWide}>컬럼명</span>
+          <span className={css.roColHeaderCellType}>타입</span>
         </div>
-        <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        <ul className={css.roColList}>
           {entity.columns.map((col) => (
-            <li key={col.id} style={{ display: "flex", alignItems: "center", padding: "4px 8px 4px 10px", borderBottom: "1px solid #F1F4F7" }}>
-              <div style={{ width: 24, flexShrink: 0, textAlign: "center" }}>
-                {col.primaryKey && <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: 8 }}>PK</span>}
+            <li key={col.id} className={css.roColRow}>
+              <div className={css.roBadgeCell}>
+                {col.primaryKey && <span className={css.roPkBadge}>PK</span>}
               </div>
-              <div style={{ width: 20, flexShrink: 0, display: "flex", justifyContent: "center" }}>
+              <div className={css.roFkCell}>
                 {fkColumnIds.has(col.id) && (
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3b82f6", display: "inline-block", flexShrink: 0 }} aria-label="FK" title="Foreign Key" />
+                  <span className={css.fkDot} aria-label="FK" title="Foreign Key" />
                 )}
               </div>
-              <div style={{ width: 28, flexShrink: 0, textAlign: "center" }}>
-                {col.nullable && <span style={{ color: "#9ca3af", fontSize: 10 }}>?</span>}
+              <div className={css.roNullableCell}>
+                {col.nullable && <span className={css.roNullableText}>?</span>}
               </div>
-              <div style={{ width: 24, flexShrink: 0, textAlign: "center" }}>
-                {col.unique && !col.primaryKey && <span style={{ color: "#6366f1", fontSize: 8, fontWeight: 700 }}>UQ</span>}
+              <div className={css.roBadgeCell}>
+                {col.unique && !col.primaryKey && <span className={css.roUqBadge}>UQ</span>}
               </div>
-              <div style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 9, color: "#8b5cf6" }}>
-                {col.comment ?? ""}
-              </div>
-              <div style={{ flex: 1.2, minWidth: 0, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {col.name}
-              </div>
-              <div style={{ width: 90, flexShrink: 0, color: "#6b7280", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {col.type}
-              </div>
+              <div className={css.roLogicalNameCell}>{col.comment ?? ""}</div>
+              <div className={css.roColumnNameCell}>{col.name}</div>
+              <div className={css.roTypeCell}>{col.type}</div>
             </li>
           ))}
           {entity.columns.length === 0 && (
-            <li style={{ padding: "4px 10px", color: "#9ca3af", fontStyle: "italic" }}>컬럼 없음</li>
+            <li className={css.roEmptyColumns}>컬럼 없음</li>
           )}
         </ul>
         {entityIndexes.length > 0 && (
@@ -163,17 +144,12 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
                 .map((id) => entity.columns.find((c) => c.id === id)?.name ?? id)
                 .join(", ");
               return (
-                <div key={idx.id} style={{ display: "flex", gap: 5, alignItems: "center", padding: "2px 0", fontSize: 10 }}>
-                  <span style={{
-                    fontSize: 8, fontWeight: 700, flexShrink: 0,
-                    color: idx.unique ? "#6366f1" : "#6b7280",
-                    background: idx.unique ? "#eef2ff" : "#f3f4f6",
-                    borderRadius: 3, padding: "1px 4px",
-                  }}>
+                <div key={idx.id} className={css.roIndexRow}>
+                  <span className={css.roIndexBadgeVariants[idx.unique ? "unique" : "normal"]}>
                     {idx.unique ? "UQ" : "IDX"}
                   </span>
-                  <span style={{ color: "#374151" }}>{idx.name}</span>
-                  {colNames && <span style={{ color: "#9ca3af", fontSize: 9 }}>({colNames})</span>}
+                  <span className={css.roIndexName}>{idx.name}</span>
+                  {colNames && <span className={css.roIndexColNames}>({colNames})</span>}
                 </div>
               );
             })}
@@ -187,16 +163,11 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
   // ─── 편집 모드 ───
   return (
     <div
+      className={`${css.tableNodeWrapper} ${css.tableNodeWrapperEdit}`}
       style={{
-        background: "#ffffff",
         border: `2px solid ${borderColor}`,
         ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
-        borderRadius: 6,
-        minWidth: 420,
-        fontFamily: "monospace",
-        fontSize: 12,
         boxShadow,
-        position: "relative",
       }}
     >
       <Handle type="target" position={Position.Left} />
@@ -208,7 +179,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
       />
 
       {/* 헤더 */}
-      <div className={css.headerEditRow} style={{ background: entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR, borderRadius: 0 }}>
+      <div className={css.headerEditRow} style={{ background: entity.color ?? schemaColor ?? DEFAULT_HEADER_COLOR }}>
         <IMEInput
           className={`${css.tableCommentInput} nodrag nokey`}
           value={entity.comment ?? ""}
@@ -238,14 +209,14 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
 
       {/* 컬럼 헤더 레이블 행 */}
       <div className={css.colHeaderRow}>
-        <span style={{ width: 26 }} className={css.colHeaderLabel}>PK</span>
-        <span style={{ width: 26 }} className={css.colHeaderLabel}>FK</span>
-        <span style={{ width: 26 }} className={css.colHeaderLabel}>NULL</span>
-        <span style={{ width: 26 }} className={css.colHeaderLabel}>UQ</span>
-        <span style={{ flex: 1 }} className={css.colHeaderLabel}>논리명</span>
-        <span style={{ flex: 1 }} className={css.colHeaderLabel}>컬럼명</span>
-        <span style={{ width: 88 }} className={css.colHeaderLabel}>타입</span>
-        <span style={{ width: 18 }} />
+        <span className={css.colHeaderCellFixed}>PK</span>
+        <span className={css.colHeaderCellFixed}>FK</span>
+        <span className={css.colHeaderCellFixed}>NULL</span>
+        <span className={css.colHeaderCellFixed}>UQ</span>
+        <span className={css.colHeaderCellFluid}>논리명</span>
+        <span className={css.colHeaderCellFluid}>컬럼명</span>
+        <span className={css.colHeaderCellType}>타입</span>
+        <span className={css.colHeaderSpacer} />
       </div>
 
       {/* 컬럼 행 */}
@@ -301,7 +272,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
           />
           {/* 컬럼명 */}
           <div
-            style={{ position: "relative", flex: 1 }}
+            className={css.colNameWrapper}
             onInput={(e) => {
               const target = e.target as HTMLInputElement;
               handleColumnNameInput(col.id, target.value);
@@ -315,27 +286,26 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
           >
             <IMEInput
               className={`${css.columnNameInput} nodrag nokey`}
-              style={{ width: "100%" }}
               value={col.name}
               aria-label="컬럼명"
               onChange={(v) => applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: v }))}
             />
             {activeSuggestionColId === col.id && suggestions.length > 0 && (
-              <ul style={{ position: "absolute", top: "100%", left: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6, zIndex: 200, margin: 0, padding: "4px 0", listStyle: "none", minWidth: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+              <ul className={css.suggestionsList}>
                 {suggestions.map((s) => (
                   <li
                     key={s.name}
+                    className={css.suggestionItem}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: s.name, type: s.type, nullable: s.nullable, primaryKey: s.pk }));
                       setSuggestions([]);
                       setActiveSuggestionColId(null);
                     }}
-                    style={{ padding: "6px 12px", cursor: "pointer", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}
                   >
                     <strong>{s.name}</strong>
-                    <span style={{ color: "#94a3b8" }}>{s.type}</span>
-                    {s.pk && <span style={{ color: "#2563eb", fontSize: 11 }}>PK</span>}
+                    <span className={css.suggestionItemType}>{s.type}</span>
+                    {s.pk && <span className={css.suggestionItemPk}>PK</span>}
                   </li>
                 ))}
               </ul>
@@ -428,7 +398,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
         ))}
 
         {entityIndexes.length === 0 && (
-          <div style={{ fontSize: 9, color: "#c4c9d4", fontStyle: "italic", paddingLeft: 2 }}>
+          <div className={css.emptyIndexText}>
             인덱스 없음
           </div>
         )}
