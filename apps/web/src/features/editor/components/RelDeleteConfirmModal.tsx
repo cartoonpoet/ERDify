@@ -32,10 +32,10 @@ export const RelDeleteConfirmModal = () => {
     <Modal open={pendingRelDelete !== null} onClose={onClose} title="관계 삭제">
       {pendingRelDelete && (
         <div className={css.body}>
-          <p style={{ margin: 0, fontSize: "13px", color: "#1C2B33" }}>
+          <p className={css.bodyText}>
             FK 컬럼도 함께 삭제하시겠습니까?
           </p>
-          <p style={{ margin: 0, fontSize: "12px", color: "#5D6C7B" }}>
+          <p className={css.bodyTextSub}>
             컬럼: {pendingRelDelete.fkColNames.join(", ")}
           </p>
           <div className={css.footer}>
@@ -46,15 +46,7 @@ export const RelDeleteConfirmModal = () => {
               관계만 삭제
             </button>
             <button
-              style={{
-                padding: "6px 16px",
-                background: "#E41E3F",
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "13px",
-              }}
+              className={css.dangerBtn}
               onClick={onDeleteAll}
             >
               관계 + FK 컬럼 삭제

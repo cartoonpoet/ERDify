@@ -708,3 +708,21 @@ export const emptyIndexText = style({
   fontStyle: "italic",
   paddingLeft: 2,
 });
+
+export const indexColWrapper = style({
+  position: "relative",
+});
+
+export const indexColCheckbox = style({
+  width: 12,
+  height: 12,
+  accentColor: "#6366f1",
+  margin: 0,
+  cursor: "pointer",
+});
+
+export const indexColEmpty = style({
+  padding: "6px 10px",
+  fontSize: vars.font.size.xs,
+  color: "#9ca3af",
+});

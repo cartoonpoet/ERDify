@@ -29,7 +29,6 @@ export const PresenceIndicator = () => {
               style={{
                 background: c.color,
                 outline: c.selectedEntityId ? `2px solid ${c.color}` : "none",
-                outlineOffset: "2px",
               }}
             >
               {getInitial(c.email)}

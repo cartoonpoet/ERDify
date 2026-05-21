@@ -5,6 +5,7 @@ import { parseDdl, applySeedInserts } from "@/shared/utils/ddl-parser";
 import { DarkCodeEditor } from "@/features/editor/components/DarkCodeEditor";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import type { DiagramDialect } from "@erdify/domain";
+import * as css from "./import-into-editor-modal.css";
 
 const DIALECT_TABS: { label: string; value: DiagramDialect }[] = [
   { label: "MySQL", value: "mysql" },
@@ -120,27 +121,16 @@ export const ImportIntoEditorModal = ({ open, onClose }: ImportIntoEditorModalPr
 
   const canSubmit = !loading && (sqlFiles.length > 0 || !!ddlText.trim());
 
-  const btnBase: React.CSSProperties = {
-    padding: "4px 10px", border: "1px solid #DEE3E9", borderRadius: 6,
-    background: "none", cursor: "pointer", fontSize: 12, fontFamily: "monospace",
-  };
-
   return (
     <Modal open={open} onClose={handleClose} title="현재 ERD에 DDL 가져오기" maxWidth="660px">
       {/* Dialect tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+      <div className={css.dialectTabsRow}>
         {DIALECT_TABS.map((t) => (
           <button
             key={t.value}
             type="button"
             onClick={() => setDialect(t.value)}
-            style={{
-              ...btnBase,
-              background: dialect === t.value ? "#0064E0" : "none",
-              color: dialect === t.value ? "#fff" : "#374151",
-              border: `1px solid ${dialect === t.value ? "#0064E0" : "#DEE3E9"}`,
-              fontWeight: dialect === t.value ? 600 : 400,
-            }}
+            className={css.dialectTabVariants[dialect === t.value ? "active" : "inactive"]}
           >
             {t.label}
           </button>
@@ -148,16 +138,16 @@ export const ImportIntoEditorModal = ({ open, onClose }: ImportIntoEditorModalPr
       </div>
 
       {/* File picker */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+      <div className={css.filePickerSection}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#1C2B33", marginBottom: 2 }}>SQL 파일 선택</div>
-          <div style={{ fontSize: 11, color: "#5D6C7B" }}>
+          <div className={css.pickerTitle}>SQL 파일 선택</div>
+          <div className={css.pickerSubtitle}>
             스키마별로 분리된 파일을 여러 개 선택하면 하나의 ERD로 합칩니다.
           </div>
         </div>
         <button
           type="button"
-          style={{ ...btnBase, background: "#F1F4F7", whiteSpace: "nowrap" }}
+          className={css.pickFileBtn}
           onClick={(e: MouseEvent) => { e.stopPropagation(); sqlFileInputRef.current?.click(); }}
         >
           📂 .sql 파일 선택
@@ -165,21 +155,14 @@ export const ImportIntoEditorModal = ({ open, onClose }: ImportIntoEditorModalPr
       </div>
 
       {sqlFiles.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
+        <div className={css.sqlFilesList}>
           {sqlFiles.map((f) => (
-            <div
-              key={f.name}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "5px 10px", background: "#F8FAFB", borderRadius: 6,
-                border: "1px solid #DEE3E9", fontSize: 12,
-              }}
-            >
-              <span style={{ color: "#1C2B33" }}>{f.name}</span>
+            <div key={f.name} className={css.sqlFileItem}>
+              <span className={css.sqlFileName}>{f.name}</span>
               <button
                 type="button"
                 onClick={() => removeSqlFile(f.name)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", fontSize: 14 }}
+                className={css.sqlFileRemoveBtn}
                 aria-label={`${f.name} 제거`}
               >
                 ×
@@ -194,14 +177,14 @@ export const ImportIntoEditorModal = ({ open, onClose }: ImportIntoEditorModalPr
         type="file"
         accept=".sql"
         multiple
-        style={{ display: "none" }}
+        className={css.hiddenFileInput}
         onChange={handleSqlFileChange}
       />
 
       {/* SQL text input (shown when no files) */}
       {sqlFiles.length === 0 && (
         <>
-          <div style={{ fontSize: 11, color: "#5D6C7B", marginBottom: 4 }}>또는 SQL 직접 입력:</div>
+          <div className={css.directInputLabel}>또는 SQL 직접 입력:</div>
           <DarkCodeEditor
             value={ddlText}
             onChange={setDdlText}
@@ -215,23 +198,20 @@ export const ImportIntoEditorModal = ({ open, onClose }: ImportIntoEditorModalPr
         </>
       )}
 
-      <div style={{
-        display: "flex", alignItems: "flex-start", gap: 6, marginTop: 10,
-        padding: "8px 10px", background: "#F0F6FF", borderRadius: 6, fontSize: 11, color: "#1C2B33",
-      }}>
-        <span style={{ color: "#0064E0", flexShrink: 0 }}>✦</span>
+      <div className={css.infoBox}>
+        <span className={css.infoIcon}>✦</span>
         <span>가져온 테이블은 현재 ERD에 추가됩니다. 스키마 한정자(예: Legal.Contract)는 자동으로 스키마로 인식됩니다.</span>
       </div>
 
       {error && (
-        <div style={{ color: "#ef4444", fontSize: 12, marginTop: 8 }}>{error}</div>
+        <div className={css.errorText}>{error}</div>
       )}
 
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+      <div className={css.actionsRow}>
         <button
           type="button"
           onClick={handleClose}
-          style={{ ...btnBase, padding: "6px 14px" }}
+          className={css.cancelBtn}
         >
           취소
         </button>

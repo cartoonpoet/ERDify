@@ -1,6 +1,7 @@
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath } from "@xyflow/react";
 import type { EdgeProps } from "@xyflow/react";
 import type { RelationshipCardinality } from "@erdify/domain";
+import * as css from "./cardinality-edge.css";
 
 type CardinalityEdgeData = {
   cardinality: RelationshipCardinality;
@@ -45,19 +46,6 @@ export const CardinalityEdge = ({
     ...(style ?? {}),
   };
 
-  const labelStyle: React.CSSProperties = {
-    position: "absolute",
-    fontSize: 10,
-    fontWeight: 700,
-    fontFamily: "monospace",
-    color: "#6366f1",
-    background: "#ffffff",
-    padding: "1px 3px",
-    borderRadius: 3,
-    pointerEvents: "none",
-    lineHeight: 1,
-  };
-
   return (
     <>
       <BaseEdge
@@ -68,20 +56,14 @@ export const CardinalityEdge = ({
       />
       <EdgeLabelRenderer>
         <div
-          className="nodrag nopan"
-          style={{
-            ...labelStyle,
-            transform: `translate(${sourceX + 8}px, ${sourceY - 16}px)`,
-          }}
+          className={`${css.edgeLabel} nodrag nopan`}
+          style={{ transform: `translate(${sourceX + 8}px, ${sourceY - 16}px)` }}
         >
           {sourceLabel}
         </div>
         <div
-          className="nodrag nopan"
-          style={{
-            ...labelStyle,
-            transform: `translate(${targetX - 20}px, ${targetY - 16}px)`,
-          }}
+          className={`${css.edgeLabel} nodrag nopan`}
+          style={{ transform: `translate(${targetX - 20}px, ${targetY - 16}px)` }}
         >
           {targetLabel}
         </div>

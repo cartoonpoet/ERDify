@@ -29,6 +29,7 @@ export const avatar = style({
   cursor: "default",
   flexShrink: 0,
   userSelect: "none",
+  outlineOffset: "2px",
 });
 
 export const tooltip = style({

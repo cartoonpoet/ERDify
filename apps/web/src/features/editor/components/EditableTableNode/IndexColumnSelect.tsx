@@ -26,7 +26,7 @@ export const IndexColumnSelect = ({
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className={css.indexColWrapper}>
       <button
         type="button"
         className={`${css.indexColsBtn} nodrag`}
@@ -50,13 +50,13 @@ export const IndexColumnSelect = ({
                   type="checkbox"
                   checked={selectedIds.includes(col.id)}
                   onChange={() => toggle(col.id)}
-                  style={{ width: 12, height: 12, accentColor: "#6366f1" }}
+                  className={css.indexColCheckbox}
                 />
                 {col.name}
               </label>
             ))}
             {entityColumns.length === 0 && (
-              <div style={{ padding: "6px 10px", fontSize: 10, color: "#9ca3af" }}>컬럼 없음</div>
+              <div className={css.indexColEmpty}>컬럼 없음</div>
             )}
           </div>
         </>

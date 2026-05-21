@@ -71,3 +71,7 @@ export const dragOverlay = style({
   fontSize: "13px",
   pointerEvents: "none",
 });
+
+export const placeholder = style({
+  opacity: 0.3,
+});

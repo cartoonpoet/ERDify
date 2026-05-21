@@ -127,3 +127,29 @@ export const submitBtn = style({
     "&:disabled": { background: vars.color.textDisabled, cursor: "not-allowed" },
   },
 });
+
+export const bodyText = style({
+  margin: 0,
+  fontSize: vars.font.size.md,
+  color: vars.color.textPrimary,
+});
+
+export const bodyTextSub = style({
+  margin: 0,
+  fontSize: "12px",
+  color: vars.color.textSecondary,
+});
+
+export const dangerBtn = style({
+  padding: "6px 16px",
+  background: vars.color.error,
+  color: vars.color.surface,
+  border: "none",
+  borderRadius: vars.radius.sm,
+  cursor: "pointer",
+  fontSize: vars.font.size.md,
+  fontFamily: vars.font.family,
+  selectors: {
+    "&:hover": { opacity: 0.9 },
+  },
+});

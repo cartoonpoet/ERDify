@@ -68,7 +68,7 @@ export const DarkCodeEditor = ({
         />
       ) : (
         <pre className={css.codeArea}>
-          {value || <span style={{ opacity: 0.3 }}>{placeholder}</span>}
+          {value || <span className={css.placeholder}>{placeholder}</span>}
         </pre>
       )}
 
