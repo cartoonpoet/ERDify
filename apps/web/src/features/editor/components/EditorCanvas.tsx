@@ -171,6 +171,7 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   const openChat = useAIChatStore((s) => s.openChat);
   const applyNodeChanges = useEditorStore((s) => s.applyNodeChanges);
   const applyCommand = useEditorStore((s) => s.applyCommand);
+  const selectedRelationshipId = useEditorStore((s) => s.selectedRelationshipId);
   const setSelectedRelationship = useEditorStore((s) => s.setSelectedRelationship);
   const setPopoverPos = useEditorStore((s) => s.setPopoverPos);
   const setSelectedEntity = useEditorStore((s) => s.setSelectedEntity);
@@ -227,16 +228,21 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   }, [nodes, zoneNodes, hiddenSchemas]);
 
   const displayEdges = useMemo(() => {
-    if (hiddenSchemas.size === 0) return edges;
     return edges.map((edge) => {
+      const selected = edge.id === selectedRelationshipId;
       const srcSchema = entitySchemaByEntityId[edge.source] ?? null;
       const tgtSchema = entitySchemaByEntityId[edge.target] ?? null;
       const isHidden =
-        (srcSchema !== null && hiddenSchemas.has(srcSchema)) ||
-        (tgtSchema !== null && hiddenSchemas.has(tgtSchema));
-      return isHidden ? { ...edge, style: { ...edge.style, opacity: 0.1 } } : edge;
+        hiddenSchemas.size > 0 &&
+        ((srcSchema !== null && hiddenSchemas.has(srcSchema)) ||
+          (tgtSchema !== null && hiddenSchemas.has(tgtSchema)));
+      return {
+        ...edge,
+        selected,
+        ...(isHidden ? { style: { ...edge.style, opacity: 0.1 } } : {}),
+      };
     });
-  }, [edges, hiddenSchemas, entitySchemaByEntityId]);
+  }, [edges, hiddenSchemas, entitySchemaByEntityId, selectedRelationshipId]);
 
   if (!document) return null;
 
