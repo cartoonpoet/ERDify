@@ -1,21 +1,29 @@
-import { useRef } from "react";
+import { useRef, memo } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
-import { getSchemaColor, getSchemasFromDocument } from "@/shared/utils/schema-colors";
+import { getSchemaColor } from "@/shared/utils/schema-colors";
 
-export const SchemaFilterSidebar = () => {
-  const document = useEditorStore((s) => s.document);
+const SchemaFilterSidebarInner = () => {
+  const allSchemas = useEditorStore((s) => s.allSchemas);
   const hiddenSchemas = useEditorStore((s) => s.hiddenSchemas);
   const expanded = useEditorStore((s) => s.schemaFilterExpanded);
   const toggleSchema = useEditorStore((s) => s.toggleSchemaVisibility);
   const setExpanded = useEditorStore((s) => s.setSchemaFilterExpanded);
   const schemaColors = useEditorStore((s) => s.schemaColors);
   const setSchemaColor = useEditorStore((s) => s.setSchemaColor);
+  const totalCount = useEditorStore((s) => s.document?.entities.length ?? 0);
+  const unschemaCount = useEditorStore((s) => s.document?.entities.filter((e) => !e.schema).length ?? 0);
+  const schemaEntityCounts = useEditorStore(
+    useShallow((s) => {
+      const result: Record<string, number> = {};
+      for (const e of s.document?.entities ?? []) {
+        if (e.schema) result[e.schema] = (result[e.schema] ?? 0) + 1;
+      }
+      return result;
+    })
+  );
 
-  if (!document) return null;
-
-  const schemas = getSchemasFromDocument(document.entities);
-  const totalCount = document.entities.length;
-  const unschemaCount = document.entities.filter((e) => !e.schema).length;
+  const schemas = allSchemas;
   const allVisible = schemas.every((s) => !hiddenSchemas.has(s));
 
   const toggleAll = () => {
@@ -91,7 +99,7 @@ export const SchemaFilterSidebar = () => {
               key={schema}
               color={getSchemaColor(schema, schemas, schemaColors)}
               label={schema}
-              count={document.entities.filter((e) => e.schema === schema).length}
+              count={schemaEntityCounts[schema] ?? 0}
               checked={!hiddenSchemas.has(schema)}
               onClick={() => toggleSchema(schema)}
               onColorChange={(color) => setSchemaColor(schema, color)}
@@ -137,6 +145,8 @@ export const SchemaFilterSidebar = () => {
     </div>
   );
 };
+
+export const SchemaFilterSidebar = memo(SchemaFilterSidebarInner);
 
 const ColorableFilterRow = ({
   color, label, count, checked, onClick, onColorChange,

@@ -1,5 +1,5 @@
 import { randomUUID } from "@/shared/utils/uuid";
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, memo } from "react";
 import type { MouseEvent } from "react";
 import { ReactFlow, Background, Controls, MiniMap, useReactFlow } from "@xyflow/react";
 import type { Node, Edge, EdgeChange, NodeChange, NodeSelectionChange, NodeRemoveChange, Connection } from "@xyflow/react";
@@ -112,7 +112,7 @@ type ContextMenuState = {
 };
 
 // ReactFlow 내부 컴포넌트 — useReactFlow 사용 가능
-const ClickableMiniMap = ({
+const ClickableMiniMap = memo(({
   containerRef,
   allSchemas,
   schemaColors,
@@ -186,7 +186,7 @@ const ClickableMiniMap = ({
       />
     </div>
   );
-};
+});
 
 export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   const containerRef = useRef<HTMLDivElement>(null);
