@@ -9,7 +9,7 @@ import type { DiagramRelationship, DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { useAIChatStore } from "@/features/ai/store/useAIChatStore";
 import type { EditableTableNodeType, UnmatchedPkInput } from "@/features/editor/store/useEditorStore";
-import { getSchemaColor, getSchemasFromDocument } from "@/shared/utils/schema-colors";
+import { getSchemaColor } from "@/shared/utils/schema-colors";
 import { EditableTableNode } from "./EditableTableNode";
 import { CardinalityEdge } from "./CardinalityEdge";
 import { SearchPanel } from "./SearchPanel";
@@ -208,11 +208,7 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   const setPendingConnection = useEditorStore((s) => s.setPendingConnection);
   const hiddenSchemas = useEditorStore((s) => s.hiddenSchemas);
   const groupViewEnabled = useEditorStore((s) => s.groupViewEnabled);
-
-  const allSchemas = useMemo(
-    () => (document ? getSchemasFromDocument(document.entities) : []),
-    [document]
-  );
+  const allSchemas = useEditorStore((s) => s.allSchemas);
 
   const zoneNodes = useMemo((): Node[] => {
     if (!document || !groupViewEnabled || allSchemas.length === 0) return [];
