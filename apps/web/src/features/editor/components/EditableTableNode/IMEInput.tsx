@@ -28,7 +28,12 @@ export const IMEInput = ({ value, onChange, ...props }: IMEInputProps) => {
     const onCompositionEnd = () => {
       composingRef.current = false;
       skipNextInput = true;
-      onChangeRef.current(el.value);
+      // Defer state update so the browser can fire compositionstart for the
+      // next Korean syllable before React reconciles the DOM.  Synchronous
+      // applyCommand here causes a re-render that may cancel the in-progress
+      // IME session on macOS Chrome/Safari.
+      const val = el.value;
+      setTimeout(() => onChangeRef.current(val), 0);
     };
     const onInput = () => {
       if (composingRef.current) return;
