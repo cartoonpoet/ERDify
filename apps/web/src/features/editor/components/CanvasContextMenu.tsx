@@ -1,9 +1,9 @@
-import type { CSSProperties, MouseEvent } from "react";
 import { useReactFlow } from "@xyflow/react";
 import { addEntity, updateEntityPosition } from "@erdify/domain";
 import { randomUUID } from "@/shared/utils/uuid";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { computeAutoLayout } from "@/shared/utils/canvas-layout";
+import * as css from "./canvas-context-menu.css";
 
 export interface CanvasContextMenuProps {
   menuX: number;
@@ -50,60 +50,27 @@ export const CanvasContextMenu = ({ menuX, menuY, clientX, clientY, onClose }: C
 
   if (!document) return null;
 
-  const menuItemStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    width: "100%",
-    padding: "9px 14px",
-    background: "none",
-    border: "none",
-    textAlign: "left",
-    cursor: "pointer",
-    color: "#374151",
-    fontSize: 12,
-    fontFamily: "monospace",
-  };
-
-  const onEnter = (e: MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.background = "#f1f5f9"; };
-  const onLeave = (e: MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.background = "none"; };
-
   return (
     <div
-      className="nodrag nopan"
-      style={{
-        position: "absolute",
-        left: menuX,
-        top: menuY,
-        background: "#ffffff",
-        border: "1px solid #e2e8f0",
-        borderRadius: 8,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06)",
-        zIndex: 1000,
-        minWidth: 160,
-        fontSize: 12,
-        fontFamily: "monospace",
-        overflow: "hidden",
-      }}
+      className={`nodrag nopan ${css.menu}`}
+      style={{ left: menuX, top: menuY }}
     >
-      <button type="button" onClick={handleAddTable} style={menuItemStyle} onMouseEnter={onEnter} onMouseLeave={onLeave}>
-        <span style={{ fontSize: 14 }}>+</span>
+      <button type="button" onClick={handleAddTable} className={css.menuItem}>
+        <span className={css.iconLg}>+</span>
         테이블 추가
       </button>
-      <div style={{ height: 1, background: "#f1f5f9", margin: "0 8px" }} />
-      <button type="button" onClick={handleAutoLayout} style={menuItemStyle} onMouseEnter={onEnter} onMouseLeave={onLeave}>
-        <span style={{ fontSize: 13 }}>⊞</span>
+      <div className={css.separator} />
+      <button type="button" onClick={handleAutoLayout} className={css.menuItem}>
+        <span className={css.iconSm}>⊞</span>
         테이블 자동 정렬
       </button>
-      <div style={{ height: 1, background: "#f1f5f9", margin: "0 8px" }} />
+      <div className={css.separator} />
       <button
         type="button"
         onClick={() => { setGroupViewEnabled(!groupViewEnabled); onClose(); }}
-        style={menuItemStyle}
-        onMouseEnter={onEnter}
-        onMouseLeave={onLeave}
+        className={css.menuItem}
       >
-        <span style={{ fontSize: 13 }}>{groupViewEnabled ? "◻" : "▦"}</span>
+        <span className={css.iconSm}>{groupViewEnabled ? "◻" : "▦"}</span>
         {groupViewEnabled ? "그룹 숨기기" : "그룹 보기"}
       </button>
     </div>

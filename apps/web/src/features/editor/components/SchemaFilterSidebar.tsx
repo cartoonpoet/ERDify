@@ -2,6 +2,7 @@ import { useRef, memo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { getSchemaColor } from "@/shared/utils/schema-colors";
+import * as css from "./schema-filter-sidebar.css";
 
 const SchemaFilterSidebarInner = () => {
   const allSchemas = useEditorStore((s) => s.allSchemas);
@@ -34,51 +35,21 @@ const SchemaFilterSidebarInner = () => {
   };
 
   return (
-    <div
-      style={{
-        width: expanded ? 196 : 40,
-        minWidth: expanded ? 196 : 40,
-        background: "#fff",
-        borderRight: "1px solid #DEE3E9",
-        display: "flex",
-        flexDirection: "column",
-        transition: "width .18s ease, min-width .18s ease",
-        overflow: "hidden",
-        position: "relative",
-        flexShrink: 0,
-      }}
-    >
+    <div className={css.containerVariants[expanded ? "expanded" : "collapsed"]}>
       {/* Toggle button */}
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         title={expanded ? "필터 패널 접기" : "필터 패널 펼치기"}
         aria-label={expanded ? "필터 패널 접기" : "필터 패널 펼치기"}
-        style={{
-          position: "absolute",
-          top: 8,
-          right: 6,
-          width: 24,
-          height: 24,
-          borderRadius: 6,
-          background: "#F1F4F7",
-          border: "1px solid #DEE3E9",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 10,
-          color: "#5D6C7B",
-          zIndex: 10,
-          flexShrink: 0,
-        }}
+        className={css.toggleButton}
       >
         {expanded ? "◀" : "▶"}
       </button>
 
       {expanded ? (
-        <div style={{ padding: "40px 10px 10px", display: "flex", flexDirection: "column", gap: 3, flex: 1, overflow: "hidden" }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#5D6C7B", textTransform: "uppercase", letterSpacing: "0.07em", padding: "0 4px", marginBottom: 2 }}>
+        <div className={css.expandedContent}>
+          <div className={css.sectionTitle}>
             스키마 필터
           </div>
 
@@ -91,7 +62,7 @@ const SchemaFilterSidebarInner = () => {
             onClick={toggleAll}
           />
 
-          <div style={{ height: 1, background: "#DEE3E9", margin: "3px 0" }} />
+          <div className={css.divider} />
 
           {/* Per-schema */}
           {schemas.map((schema) => (
@@ -120,7 +91,7 @@ const SchemaFilterSidebarInner = () => {
         </div>
       ) : (
         /* Collapsed: dot strip */
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0 8px", gap: 2 }}>
+        <div className={css.collapsedStrip}>
           {schemas.map((schema) => (
             <button
               key={schema}
@@ -128,16 +99,13 @@ const SchemaFilterSidebarInner = () => {
               title={schema}
               aria-label={`${schema} 스키마 표시/숨기기`}
               onClick={() => toggleSchema(schema)}
-              style={{
-                width: 28, height: 28, borderRadius: 7, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                opacity: hiddenSchemas.has(schema) ? 0.3 : 1,
-                background: "none",
-                border: "none",
-                padding: 0,
-              }}
+              className={css.collapsedSchemaButton}
+              style={{ opacity: hiddenSchemas.has(schema) ? 0.3 : 1 }}
             >
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: getSchemaColor(schema, schemas, schemaColors) }} />
+              <div
+                className={css.collapsedDot}
+                style={{ background: getSchemaColor(schema, schemas, schemaColors) }}
+              />
             </button>
           ))}
         </div>
@@ -161,36 +129,25 @@ const ColorableFilterRow = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div
-      style={{
-        display: "flex", alignItems: "center", gap: 7,
-        padding: "5px 4px", borderRadius: 6,
-      }}
-    >
+    <div className={css.filterRowContainer}>
       {/* 가시성 토글 체크박스 */}
       <div
-        onClick={onClick}
+        className={css.filterCheckbox}
         style={{
-          width: 13, height: 13, borderRadius: 3,
-          border: `1.5px solid ${checked ? color : "#CBD2D9"}`,
-          background: checked ? color : "transparent",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          flexShrink: 0, cursor: "pointer",
-        }}
+          "--schema-color": checked ? color : "#CBD2D9",
+          "--schema-bg": checked ? color : "transparent",
+        } as React.CSSProperties}
+        onClick={onClick}
       >
-        {checked && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+        {checked && <span className={css.checkMark}>✓</span>}
       </div>
 
       {/* 색상 변경 버튼 */}
       <div
         title="색상 변경"
         onClick={() => inputRef.current?.click()}
-        style={{
-          width: 7, height: 7, borderRadius: "50%",
-          background: color, flexShrink: 0, cursor: "pointer",
-          outline: "2px solid transparent",
-          transition: "outline-color .12s",
-        }}
+        className={css.colorPickerDot}
+        style={{ background: color }}
         onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.outlineColor = color; }}
         onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.outlineColor = "transparent"; }}
       />
@@ -199,17 +156,17 @@ const ColorableFilterRow = ({
         type="color"
         value={color}
         onChange={(e) => onColorChange(e.target.value)}
-        style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }}
+        className={css.hiddenColorInput}
         aria-label={`${label} 스키마 색상`}
       />
 
       <span
         onClick={onClick}
-        style={{ fontSize: 12, color: "#1C2B33", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}
+        className={css.filterLabel}
       >
         {label}
       </span>
-      <span style={{ fontSize: 10, color: "#5D6C7B" }}>{count}</span>
+      <span className={css.filterCount}>{count}</span>
     </div>
   );
 };
@@ -226,26 +183,24 @@ const FilterRow = ({
 }) => (
   <div
     onClick={onClick}
-    style={{
-      display: "flex", alignItems: "center", gap: 7,
-      padding: "5px 4px", borderRadius: 6, cursor: dimmed ? "default" : "pointer",
-      opacity: dimmed ? 0.45 : 1,
-    }}
+    className={css.filterRowVariants[dimmed ? "dimmed" : "normal"]}
   >
     <div
+      className={css.filterRowCheckbox}
       style={{
-        width: 13, height: 13, borderRadius: 3,
-        border: `1.5px solid ${checked ? color : "#CBD2D9"}`,
-        background: checked ? color : "transparent",
-        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-      }}
+        "--schema-color": checked ? color : "#CBD2D9",
+        "--schema-bg": checked ? color : "transparent",
+      } as React.CSSProperties}
     >
-      {checked && <span style={{ color: "#fff", fontSize: 9, fontWeight: 700, lineHeight: 1 }}>✓</span>}
+      {checked && <span className={css.checkMark}>✓</span>}
     </div>
-    <div style={{ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 }} />
-    <span style={{ fontSize: 12, color: "#1C2B33", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+    <div
+      className={css.filterRowDot}
+      style={{ background: color }}
+    />
+    <span className={css.filterRowLabel}>
       {label}
     </span>
-    <span style={{ fontSize: 10, color: "#5D6C7B" }}>{count}</span>
+    <span className={css.filterRowCount}>{count}</span>
   </div>
 );

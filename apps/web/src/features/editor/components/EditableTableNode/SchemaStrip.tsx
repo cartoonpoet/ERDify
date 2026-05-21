@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getSchemaColor } from "@/shared/utils/schema-colors";
+import * as css from "./schema-strip.css";
 
 type Props = {
   schema: string | null | undefined;
@@ -24,33 +25,29 @@ export const SchemaStrip = ({ schema, allSchemas, schemaColors = {}, onChange }:
   const handleClose = () => { setOpen(false); setInputVal(""); };
   const commitInput = () => { const t = inputVal.trim(); if (t) handleSelect(t); };
 
-  const stripProps = interactive
+  const interactiveProps = interactive
     ? {
         className: "nodrag" as const,
         onClick: () => setOpen((o) => !o),
         onMouseEnter: () => setHovered(true),
         onMouseLeave: () => setHovered(false),
-        style: { cursor: "pointer" as const, userSelect: "none" as const },
       }
     : {};
 
   if (!schema) {
     return (
-      <div style={{ position: "relative" }}>
+      <div className={css.wrapper}>
         <div
-          {...stripProps}
+          {...interactiveProps}
+          className={`${css.noSchemaStrip}${interactive ? " nodrag" : ""}`}
           style={{
-            display: "flex", alignItems: "center", gap: 5,
-            padding: "3px 10px 3px 12px",
-            fontSize: 9, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
-            borderBottom: hovered ? "1px solid rgba(0,0,0,.12)" : "1px dashed rgba(0,0,0,.08)",
-            background: hovered ? "rgba(0,0,0,.03)" : "transparent",
-            color: hovered ? "#9ca3af" : "#c4cad4",
-            transition: "background .12s, color .12s, border-color .12s",
-            ...stripProps.style,
-          }}
+            "--strip-color": hovered ? "#9ca3af" : "#c4cad4",
+            "--strip-bg": hovered ? "rgba(0,0,0,.03)" : "transparent",
+            "--strip-border": hovered ? "1px solid rgba(0,0,0,.12)" : "1px dashed rgba(0,0,0,.08)",
+            "--dot-bg": hovered ? "#cbd5e1" : "#d1d9e0",
+          } as React.CSSProperties}
         >
-          <div style={{ width: 5, height: 5, borderRadius: "50%", background: hovered ? "#cbd5e1" : "#d1d9e0", flexShrink: 0, transition: "background .12s" }} />
+          <div className={css.noSchemaDot} />
           + 스키마 지정
         </div>
         {open && (
@@ -67,37 +64,27 @@ export const SchemaStrip = ({ schema, allSchemas, schemaColors = {}, onChange }:
             showRemove={false}
           />
         )}
-
       </div>
     );
   }
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className={css.wrapper}>
       <div
-        {...stripProps}
+        {...interactiveProps}
+        className={`${css.schemaStrip}${interactive ? " nodrag" : ""}`}
         style={{
-          display: "flex", alignItems: "center", gap: 5,
-          padding: "3px 10px 3px 12px",
-          fontSize: 9, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
-          borderBottom: `1px solid ${color}${hovered ? "40" : "20"}`,
-          background: `${color}${hovered ? "18" : "0e"}`,
-          color: color!,
-          transition: "background .12s, border-color .12s",
-          ...stripProps.style,
-        }}
+          "--strip-border": `1px solid ${color}${hovered ? "40" : "20"}`,
+          "--strip-bg": `${color}${hovered ? "18" : "0e"}`,
+          "--strip-color": color!,
+        } as React.CSSProperties}
       >
-        <div style={{ width: 5, height: 5, borderRadius: "50%", background: color!, flexShrink: 0 }} />
+        <div className={css.noSchemaDot} style={{ background: color! }} />
         {schema}
         {interactive && (
           <>
-            <span style={{ fontSize: 8, opacity: hovered ? 1 : 0, transition: "opacity .12s", marginLeft: 2 }}>▾</span>
-            <span style={{
-              marginLeft: "auto", fontSize: 8,
-              opacity: hovered ? 0.55 : 0, transition: "opacity .12s",
-              fontFamily: "sans-serif", letterSpacing: "normal",
-              textTransform: "none", fontWeight: 500,
-            }}>
+            <span className={css.arrowSpan} style={{ opacity: hovered ? 1 : 0 }}>▾</span>
+            <span className={css.hintSpan} style={{ opacity: hovered ? 0.55 : 0 }}>
               스키마 변경
             </span>
           </>
@@ -148,19 +135,12 @@ const SchemaDropdown = ({
   showRemove: boolean;
 }) => (
   <>
-    <div className="nodrag nopan" onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 999 }} />
-    <div
-      className="nodrag nopan"
-      style={{
-        position: "absolute", top: "calc(100% + 3px)", left: 0, zIndex: 1000,
-        background: "#fff", border: "1px solid #DEE3E9", borderRadius: 8,
-        boxShadow: "0 4px 16px rgba(0,0,0,.12)", minWidth: 168, overflow: "hidden",
-      }}
-    >
-      <div style={{ padding: "6px 8px", borderBottom: "1px solid #F1F4F7" }}>
+    <div className={`nodrag nopan ${css.backdrop}`} onClick={onClose} />
+    <div className={`nodrag nopan ${css.dropdownContainer}`}>
+      <div className={css.inputWrapper}>
         <input
           autoFocus
-          className="nodrag"
+          className={`nodrag ${css.dropdownInput}`}
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           onKeyDown={(e) => {
@@ -168,60 +148,38 @@ const SchemaDropdown = ({
             if (e.key === "Escape") onClose();
           }}
           placeholder="스키마 입력 또는 선택..."
-          style={{
-            width: "100%", padding: "4px 8px", fontSize: 11,
-            border: "1px solid #DEE3E9", borderRadius: 5,
-            outline: "none", boxSizing: "border-box",
-          }}
         />
       </div>
       {filtered.map((s) => (
         <button
           key={s}
           type="button"
-          className="nodrag"
+          className={`nodrag ${s === schema ? css.optionButtonSelected : css.optionButtonDefault}`}
           onMouseDown={(e) => { e.preventDefault(); onSelect(s); }}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            width: "100%", padding: "6px 10px",
-            background: s === schema ? "#EEF4FF" : "none",
-            border: "none", textAlign: "left", cursor: "pointer",
-            fontSize: 11, color: s === schema ? "#0064E0" : "#374151",
-            fontWeight: s === schema ? 500 : 400,
-          }}
         >
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: getSchemaColor(s, allSchemas, schemaColors), flexShrink: 0 }} />
+          <div
+            className={css.optionDot}
+            style={{ background: getSchemaColor(s, allSchemas, schemaColors) }}
+          />
           {s}
         </button>
       ))}
       {inputVal.trim() && !allSchemas.includes(inputVal.trim()) && (
         <button
           type="button"
-          className="nodrag"
+          className={`nodrag ${css.createButton}`}
           onMouseDown={(e) => { e.preventDefault(); onCommit(); }}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            width: "100%", padding: "6px 10px",
-            background: "none", border: "none", textAlign: "left",
-            cursor: "pointer", fontSize: 11, color: "#0064E0",
-          }}
         >
           + "{inputVal.trim()}" 스키마 생성
         </button>
       )}
       {showRemove && onRemove && (
         <>
-          <div style={{ height: 1, background: "#F1F4F7" }} />
+          <div className={css.divider} />
           <button
             type="button"
-            className="nodrag"
+            className={`nodrag ${css.removeButton}`}
             onMouseDown={(e) => { e.preventDefault(); onRemove(); }}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              width: "100%", padding: "6px 10px",
-              background: "none", border: "none", textAlign: "left",
-              cursor: "pointer", fontSize: 11, color: "#9CA3AF",
-            }}
           >
             없음 (해제)
           </button>

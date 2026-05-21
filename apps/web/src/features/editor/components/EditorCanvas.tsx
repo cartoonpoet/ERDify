@@ -15,29 +15,14 @@ import { EditableTableNode } from "./EditableTableNode";
 import { CardinalityEdge } from "./CardinalityEdge";
 import { SearchPanel } from "./SearchPanel";
 import { CanvasContextMenu } from "./CanvasContextMenu";
+import * as css from "./editor-canvas.css";
 
 const SchemaZoneNode = ({ data }: { data: { label: string; color: string } }) => (
   <div
-    style={{
-      width: "100%",
-      height: "100%",
-      background: `${data.color}12`,
-      border: `1.5px dashed ${data.color}50`,
-      borderRadius: 14,
-      pointerEvents: "none",
-    }}
+    className={css.schemaZone}
+    style={{ background: `${data.color}12`, border: `1.5px dashed ${data.color}50` }}
   >
-    <div
-      style={{
-        padding: "8px 12px",
-        fontSize: 10,
-        fontWeight: 700,
-        textTransform: "uppercase",
-        letterSpacing: "0.08em",
-        color: data.color,
-        opacity: 0.6,
-      }}
-    >
+    <div className={css.schemaZoneLabel} style={{ color: data.color }}>
       {data.label}
     </div>
   </div>
@@ -132,34 +117,17 @@ const ClickableMiniMap = memo(({
   };
 
   return (
-    <div style={{ position: "absolute", bottom: 56, right: 8, display: "flex", flexDirection: "column", gap: 0, zIndex: 5 }}>
+    <div className={css.minimapWrapper}>
       {/* 스키마 범례 */}
       {allSchemas.length > 0 && (
-        <div
-          style={{
-            background: "rgba(255,255,255,0.92)",
-            border: "1px solid #e2e8f0",
-            borderRadius: "6px 6px 0 0",
-            padding: "5px 8px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "4px 8px",
-            maxWidth: 200,
-            backdropFilter: "blur(4px)",
-          }}
-        >
+        <div className={css.schemaLegend}>
           {allSchemas.map((schema) => (
-            <div key={schema} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div key={schema} className={css.schemaLegendItem}>
               <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: getSchemaColor(schema, allSchemas, schemaColors),
-                  flexShrink: 0,
-                }}
+                className={css.schemaLegendDot}
+                style={{ background: getSchemaColor(schema, allSchemas, schemaColors) }}
               />
-              <span style={{ fontSize: 9, color: "#374151", fontFamily: "monospace", whiteSpace: "nowrap" }}>
+              <span className={css.schemaLegendLabel}>
                 {schema}
               </span>
             </div>
@@ -359,14 +327,14 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   }
 
   return (
-    <div ref={containerRef} style={{ width: "100%", height: "100%", position: "relative" }}>
+    <div ref={containerRef} className={css.root}>
       {nodes.length === 0 && canEdit && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 10, textAlign: "center", pointerEvents: "none" }}>
-          <p style={{ color: "#94a3b8", fontSize: 14, marginBottom: 16 }}>테이블을 추가해 ERD를 만들어보세요.</p>
+        <div className={css.emptyOverlay}>
+          <p className={css.emptyText}>테이블을 추가해 ERD를 만들어보세요.</p>
           <button
             type="button"
             onClick={() => openChat("어떤 서비스의 DB를 설계할까요? 서비스 이름이나 기능을 설명해주시면 ERD를 만들어드릴게요.")}
-            style={{ pointerEvents: "auto", padding: "10px 20px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14, fontWeight: 500 }}
+            className={css.aiButton}
           >
             ✦ AI로 ERD 생성하기
           </button>
@@ -397,8 +365,7 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
         }}
         deleteKeyCode={["Delete"]}
         multiSelectionKeyCode={["Control", "Meta", "Shift"]}
-        selectionOnDrag
-        panOnDrag={false}
+        panOnDrag
         nodesFocusable={false}
         zoomOnScroll={false}
         panOnScroll
