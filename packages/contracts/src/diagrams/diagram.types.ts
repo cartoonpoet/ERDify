@@ -42,6 +42,7 @@ export interface DiagramVersionResponse {
   content: DiagramDocument;
   revision: number;
   createdBy: string;
+  createdByName: string;
   createdAt: string;
 }
 
