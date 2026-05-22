@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { listVersions, restoreVersion } from "@/shared/api/diagrams.api";
+import { getDiagram, listVersions, restoreVersion } from "@/shared/api/diagrams.api";
 import type { DiagramVersionResponse } from "@/shared/api/diagrams.api";
 import { listMcpSessions, revertMcpSession } from "@/shared/api/mcp-sessions.api";
 import type { McpSessionResponse } from "@/shared/api/mcp-sessions.api";
@@ -64,7 +64,9 @@ export const useActivityFeed = (diagramId: string): UseActivityFeedResult => {
 
   const revertMutation = useMutation({
     mutationFn: (sessionId: string) => revertMcpSession(diagramId, sessionId),
-    onSuccess: () => {
+    onSuccess: async () => {
+      const diagram = await getDiagram(diagramId);
+      setDocument(diagram.content);
       queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
       queryClient.invalidateQueries({ queryKey: ["mcp-sessions", diagramId] });
     },
