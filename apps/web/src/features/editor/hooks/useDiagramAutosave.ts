@@ -20,7 +20,7 @@ export function useDiagramAutosave(diagramId: string, delayMs = 3000): void {
     }, delayMs);
 
     return () => clearTimeout(timer);
-  }, [isDirty, document, diagramId, delayMs, clearDirty]);
+  }, [document, diagramId, delayMs, clearDirty]); // isDirty 제거
 
   // 뒤로가기 등으로 언마운트 시 pending 변경사항 즉시 저장
   useEffect(() => {

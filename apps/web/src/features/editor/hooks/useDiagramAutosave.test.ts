@@ -62,4 +62,38 @@ describe("useDiagramAutosave", () => {
     expect(diagramsApi.updateDiagram).toHaveBeenCalledTimes(1);
     expect(diagramsApi.updateDiagram).toHaveBeenCalledWith("diag-1", { content: doc2 });
   });
+
+  it("pending timer for newer document survives after clearDirty is called (race condition regression)", async () => {
+    const doc1 = createEmptyDiagram({ id: "d", name: "v1", dialect: "postgresql" });
+    const doc2 = createEmptyDiagram({ id: "d", name: "v2", dialect: "postgresql" });
+
+    // Make the first save take a long time (simulating slow API)
+    let resolveFirstSave!: () => void;
+    vi.mocked(diagramsApi.updateDiagram)
+      .mockImplementationOnce(
+        () => new Promise<never>((resolve) => { resolveFirstSave = resolve as () => void; })
+      )
+      .mockResolvedValue({} as never);
+
+    renderHook(() => useDiagramAutosave("diag-1", 500));
+
+    // First change → timer T1 starts
+    act(() => { useEditorStore.setState({ document: doc1, isDirty: true }); });
+    act(() => { vi.advanceTimersByTime(500); }); // T1 fires → API call begins (slow)
+    await act(async () => {});
+
+    // Second change → timer T2 starts for doc2
+    act(() => { useEditorStore.setState({ document: doc2, isDirty: true }); });
+
+    // First API call completes → clearDirty() is called
+    await act(async () => { resolveFirstSave(); });
+    await act(async () => {});
+
+    // T2 should still fire and save doc2
+    act(() => { vi.advanceTimersByTime(500); });
+    await act(async () => {});
+
+    expect(diagramsApi.updateDiagram).toHaveBeenCalledTimes(2);
+    expect(diagramsApi.updateDiagram).toHaveBeenLastCalledWith("diag-1", { content: doc2 });
+  });
 });
