@@ -48,6 +48,7 @@ describe("VersionHistoryDrawer", () => {
             content: {} as never,
             revision: 1,
             createdBy: "user-1",
+            createdByName: "Alice",
             createdAt: "2026-04-30T12:00:00Z"
           }
         ]
