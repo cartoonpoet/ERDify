@@ -1,9 +1,19 @@
 import { randomUUID } from "crypto";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Diagram, DiagramVersion, Project } from "@erdify/db";
+import { Diagram, DiagramVersion, Project, User } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { AuthorizationService } from "../../../common/services/authorization.service";
+
+export interface DiagramVersionWithName {
+  id: string;
+  diagramId: string;
+  content: object;
+  revision: number;
+  createdBy: string;
+  createdByName: string;
+  createdAt: Date;
+}
 
 @Injectable()
 export class DiagramsVersionService {
@@ -14,6 +24,8 @@ export class DiagramsVersionService {
     private readonly versionRepo: Repository<DiagramVersion>,
     @InjectRepository(Project)
     private readonly projectRepo: Repository<Project>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     private readonly authorizationService: AuthorizationService
   ) {}
 
@@ -35,10 +47,31 @@ export class DiagramsVersionService {
     );
   }
 
-  async findVersions(diagramId: string, userId: string): Promise<DiagramVersion[]> {
+  async findVersions(diagramId: string, userId: string): Promise<DiagramVersionWithName[]> {
     const { orgId } = await this.getDiagramWithOrg(diagramId);
     await this.authorizationService.requireMember(orgId, userId);
-    return this.versionRepo.find({ where: { diagramId }, order: { revision: "DESC" } });
+
+    const versions = await this.versionRepo.find({
+      where: { diagramId },
+      order: { revision: "DESC" },
+    });
+
+    // Collect unique human userIds (exclude "mcp")
+    const humanIds = [...new Set(versions.map((v) => v.createdBy).filter((id) => id !== "mcp"))];
+    const users = humanIds.length > 0
+      ? await this.userRepo.find({ where: humanIds.map((id) => ({ id })) })
+      : [];
+    const nameMap = new Map(users.map((u) => [u.id, u.name]));
+
+    return versions.map((v) => ({
+      id: v.id,
+      diagramId: v.diagramId,
+      content: v.content,
+      revision: v.revision,
+      createdBy: v.createdBy,
+      createdByName: v.createdBy === "mcp" ? "AI" : (nameMap.get(v.createdBy) ?? "Unknown"),
+      createdAt: v.createdAt,
+    }));
   }
 
   async restoreVersion(diagramId: string, versionId: string, userId: string): Promise<Diagram> {

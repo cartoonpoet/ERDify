@@ -12,6 +12,7 @@ import type { UpdateRelationshipDto } from "./dto/update-relationship.dto";
 import { DiagramsCrudService } from "./services/diagrams-crud.service";
 import { DiagramsSchemaService } from "./services/diagrams-schema.service";
 import { DiagramsVersionService } from "./services/diagrams-version.service";
+import type { DiagramVersionWithName } from "./services/diagrams-version.service";
 import { DiagramsShareService } from "./services/diagrams-share.service";
 
 @Injectable()
@@ -59,7 +60,7 @@ export class DiagramsService {
     return this.version.saveVersion(diagramId, userId);
   }
 
-  findVersions(diagramId: string, userId: string): Promise<DiagramVersion[]> {
+  findVersions(diagramId: string, userId: string): Promise<DiagramVersionWithName[]> {
     return this.version.findVersions(diagramId, userId);
   }
 

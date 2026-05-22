@@ -1,5 +1,5 @@
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
-import type { Diagram, DiagramVersion, Organization, OrganizationMember, Project } from "@erdify/db";
+import type { Diagram, DiagramVersion, Organization, OrganizationMember, Project, User } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { DiagramsService } from "./diagrams.service";
 import { DiagramsCrudService } from "./services/diagrams-crud.service";
@@ -81,6 +81,7 @@ describe("DiagramsService", () => {
   let projectRepo: MockRepo<Project>;
   let orgRepo: MockRepo<Organization>;
   let memberRepo: MockRepo<OrganizationMember>;
+  let userRepo: MockRepo<User>;
 
   beforeEach(() => {
     diagramRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), query: vi.fn(), remove: vi.fn() };
@@ -88,6 +89,7 @@ describe("DiagramsService", () => {
     projectRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), query: vi.fn() };
     orgRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), query: vi.fn() };
     memberRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), query: vi.fn() };
+    userRepo = { findOne: vi.fn(), find: vi.fn().mockResolvedValue([]), create: vi.fn(), save: vi.fn(), query: vi.fn() };
 
     const authService = new AuthorizationService(memberRepo as unknown as Repository<OrganizationMember>);
     const domainLoader = { load: vi.fn().mockResolvedValue(erdifyDomain) } as unknown as DomainLoaderService;
@@ -108,6 +110,7 @@ describe("DiagramsService", () => {
       diagramRepo as unknown as Repository<Diagram>,
       versionRepo as unknown as Repository<DiagramVersion>,
       projectRepo as unknown as Repository<Project>,
+      userRepo as unknown as Repository<User>,
       authService
     );
     const share = new DiagramsShareService(
