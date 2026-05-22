@@ -83,6 +83,7 @@ export const registerReadTools = (server: McpServer): void => {
     async ({ diagramId }) => {
       const diagram = await client.getDiagram(diagramId);
       const text = formatDiagram(diagram.name, diagram.content);
+      await client.recordToolCall(diagramId, "get_diagram", `"${diagram.name}" 다이어그램 조회`).catch(() => {});
       return { content: [{ type: "text", text }] };
     }
   );
@@ -95,6 +96,7 @@ export const registerReadTools = (server: McpServer): void => {
       const diagram = await client.getDiagram(diagramId);
       const ddl = generateDdl(diagram.content);
       const text = ddl.trim() || "-- No tables defined";
+      await client.recordToolCall(diagramId, "get_ddl", `"${diagram.name}" DDL 생성`).catch(() => {});
       return { content: [{ type: "text", text }] };
     }
   );

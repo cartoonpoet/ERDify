@@ -8,8 +8,7 @@ import { getDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
 import { RelationshipPopover } from "../components/RelationshipPopover";
-import { VersionHistoryDrawer } from "../components/VersionHistoryDrawer";
-import { McpActivityDrawer } from "../components/McpActivityDrawer";
+import { ActivityDrawer } from "../components/ActivityDrawer";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceIndicator } from "../components/PresenceIndicator";
 import { ExportModal } from "../components/ExportModal";
@@ -29,21 +28,14 @@ import * as css from "./editor-page.css";
 export const EditorPage = () => {
   const { diagramId } = useParams<{ diagramId: string }>();
   const navigate = useNavigate();
-  const [showHistory, setShowHistory] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showShare, setShowShare] = useState(false);
-  const [showMcpActivity, setShowMcpActivity] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
   const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen, undo, canEdit } = useEditorStore();
   const isAIChatOpen = useAIChatStore((s) => s.isOpen);
-
-  const [mcpSeenAt] = useState<number | null>(() => {
-    if (!diagramId) return null;
-    const v = localStorage.getItem(`mcp_seen_${diagramId}`);
-    return v ? parseInt(v, 10) : null;
-  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["diagram", diagramId],
@@ -84,7 +76,7 @@ export const EditorPage = () => {
 
   useRealtimeCollaboration(diagramId ?? "");
   useDiagramAutosave(diagramId ?? "");
-  const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "", showHistory);
+  const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "");
 
   const handleAddTable = () => {
     applyCommand((doc) =>
@@ -168,23 +160,11 @@ export const EditorPage = () => {
           버전 저장
         </button>
         <button
-          onClick={() => {
-            setShowMcpActivity((v) => !v);
-            if (diagramId) {
-              localStorage.setItem(`mcp_seen_${diagramId}`, Date.now().toString());
-            }
-          }}
-          className={css.topbarBtn({ variant: showMcpActivity ? "historyActive" : "historyInactive" })}
-          title="AI 활동"
-          aria-label="AI 활동"
+          onClick={() => setShowActivity((v) => !v)}
+          className={css.topbarBtn({ variant: showActivity ? "historyActive" : "historyInactive" })}
+          title="활동 기록"
         >
-          🤖
-        </button>
-        <button
-          onClick={() => setShowHistory((v) => !v)}
-          className={css.topbarBtn({ variant: showHistory ? "historyActive" : "historyInactive" })}
-        >
-          기록
+          활동 기록
         </button>
       </div>
 
@@ -200,15 +180,8 @@ export const EditorPage = () => {
             />
           ) : null}
         </div>
-        {showHistory && diagramId ? (
-          <VersionHistoryDrawer diagramId={diagramId} onClose={() => setShowHistory(false)} />
-        ) : null}
-        {showMcpActivity && diagramId ? (
-          <McpActivityDrawer
-            diagramId={diagramId}
-            seenAt={mcpSeenAt}
-            onClose={() => setShowMcpActivity(false)}
-          />
+        {showActivity && diagramId ? (
+          <ActivityDrawer diagramId={diagramId} onClose={() => setShowActivity(false)} />
         ) : null}
       </div>
 
