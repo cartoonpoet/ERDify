@@ -17,7 +17,7 @@ export class AiConversation {
   @Column({ type: "text" })
   content!: string;
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: "jsonb", nullable: true, name: "tool_calls" })
   toolCalls!: Record<string, unknown> | null;
 
   @Column({ type: "jsonb", nullable: true })
