@@ -154,6 +154,15 @@ export const dropzoneHint = style({
   marginTop: vars.space["1"],
 });
 
+export const fileChosenList = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+  marginBottom: 8,
+  maxHeight: "40vh",
+  overflowY: "auto",
+});
+
 export const fileChosen = style({
   display: "flex",
   alignItems: "center",

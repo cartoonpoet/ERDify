@@ -9,7 +9,7 @@ import {
   sectionHeader, sectionTitle, sectionDesc, sqlBrowseRow, sqlBrowseBtn,
   hintBox, hintIcon,
   dropzone, dropzoneActive, dropzoneIcon, dropzoneHint,
-  fileChosen, fileChosenName, fileClearBtn,
+  fileChosenList, fileChosen, fileChosenName, fileClearBtn,
   errorText, footer, cancelBtn,
 } from "./ImportDiagramModal.css";
 
@@ -110,7 +110,7 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
 
           {/* 선택된 파일 목록 */}
           {sqlFiles.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
+            <div className={fileChosenList}>
               {sqlFiles.map((f) => (
                 <div key={f.name} className={fileChosen}>
                   <span className={fileChosenName}>{f.name}</span>

@@ -69,6 +69,8 @@ export const sqlFilesList = style({
   flexDirection: "column",
   gap: 4,
   marginBottom: 8,
+  maxHeight: "40vh",
+  overflowY: "auto",
 });
 
 export const sqlFileItem = style({
