@@ -72,7 +72,7 @@ export class AiService {
     const systemPrompt = `You are an ERD design assistant for ERDify. Help users modify their database schema.
 When making changes, use the provided tools. Always use the exact IDs from the current diagram.
 Current diagram (JSON):
-${JSON.stringify(doc, null, 2)}`;
+${JSON.stringify(buildDiagramContext(doc))}`;
 
     const { textContent, toolCalls } = provider === "openai"
       ? await this.callOpenAI(apiKey, systemPrompt, history, userMessage)
@@ -371,4 +371,32 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
 
     return { doc: updatedDoc, changes };
   }
+}
+
+function buildDiagramContext(doc: DiagramDocument) {
+  return {
+    id: doc.id,
+    name: doc.name,
+    dialect: doc.dialect,
+    entities: doc.entities.map((e) => ({
+      id: e.id,
+      name: e.name,
+      schema: e.schema ?? undefined,
+      columns: e.columns.map((c) => ({
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        nullable: c.nullable,
+        primaryKey: c.primaryKey,
+        unique: c.unique,
+        ...(c.defaultValue !== null ? { defaultValue: c.defaultValue } : {}),
+      })),
+    })),
+    relationships: doc.relationships.map((r) => ({
+      id: r.id,
+      sourceEntityId: r.sourceEntityId,
+      targetEntityId: r.targetEntityId,
+      cardinality: r.cardinality,
+    })),
+  };
 }

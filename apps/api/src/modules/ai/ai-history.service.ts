@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { AiConversation } from "@erdify/db";
 import type { DiffChange } from "@erdify/contracts";
 
-const HISTORY_LIMIT = 20;
+const HISTORY_LIMIT = 6;
 const TTL_DAYS = 90;
 
 @Injectable()
