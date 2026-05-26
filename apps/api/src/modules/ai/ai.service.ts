@@ -13,7 +13,7 @@ import { AiHistoryService } from "./ai-history.service";
 import { ERD_TOOLS, ERD_TOOLS_OPENAI } from "./erd-tools";
 
 const ANTHROPIC_MODEL = "claude-sonnet-4-6";
-const OPENAI_MODEL = "gpt-4o";
+const OPENAI_MODEL = "gpt-4o-mini";
 const MAX_TOKENS = 4096;
 
 type Provider = "anthropic" | "openai";
