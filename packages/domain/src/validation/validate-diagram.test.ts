@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createEmptyDiagram, validateDiagram } from "../index.js";
+import type { DiagramDocument } from "../index.js";
 
 describe("canonical ERD document", () => {
   it("creates a valid empty PostgreSQL diagram", () => {
@@ -31,7 +32,8 @@ describe("canonical ERD document", () => {
       targetColumnIds: ["col_target"],
       cardinality: "many-to-one",
       onDelete: "restrict",
-      onUpdate: "cascade"
+      onUpdate: "cascade",
+      identifying: false,
     });
 
     expect(validateDiagram(diagram)).toEqual({
@@ -41,5 +43,156 @@ describe("canonical ERD document", () => {
         "Relationship rel_missing references missing target entity ent_target."
       ]
     });
+  });
+});
+
+describe("validateDiagram — additional cases", () => {
+  it("diagram with no entities and no relationships passes", () => {
+    const diagram = createEmptyDiagram({ id: "d1", name: "Empty", dialect: "postgresql" });
+    expect(validateDiagram(diagram)).toEqual({ valid: true, errors: [] });
+  });
+
+  it("valid diagram with entities and a valid relationship passes", () => {
+    const diagram = createEmptyDiagram({ id: "d1", name: "Simple ERD", dialect: "postgresql" });
+    diagram.entities.push(
+      { id: "ent_users", name: "users", logicalName: null, comment: null, color: null, columns: [] },
+      { id: "ent_orders", name: "orders", logicalName: null, comment: null, color: null, columns: [] }
+    );
+    diagram.relationships.push({
+      id: "rel_1",
+      name: "fk_user_id",
+      sourceEntityId: "ent_orders",
+      sourceColumnIds: ["col_user_id"],
+      targetEntityId: "ent_users",
+      targetColumnIds: ["col_id"],
+      cardinality: "many-to-one",
+      onDelete: "restrict",
+      onUpdate: "no-action",
+      identifying: false,
+    });
+
+    expect(validateDiagram(diagram)).toEqual({ valid: true, errors: [] });
+  });
+
+  it("rejects diagram with wrong format string", () => {
+    const diagram = createEmptyDiagram({ id: "d1", name: "Bad Format", dialect: "mysql" });
+    // Force an invalid format to test the format check
+    (diagram as unknown as { format: string }).format = "erdify.schema.v0";
+
+    const result = validateDiagram(diagram as DiagramDocument);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("Diagram format must be erdify.schema.v1.");
+  });
+
+  it("relationship referencing only missing source entity produces one error", () => {
+    const diagram = createEmptyDiagram({ id: "d1", name: "ERD", dialect: "postgresql" });
+    diagram.entities.push({ id: "ent_real", name: "real_table", logicalName: null, comment: null, color: null, columns: [] });
+
+    diagram.relationships.push({
+      id: "rel_partial",
+      name: "fk_partial",
+      sourceEntityId: "ent_ghost",
+      sourceColumnIds: [],
+      targetEntityId: "ent_real",
+      targetColumnIds: [],
+      cardinality: "one-to-many",
+      onDelete: "cascade",
+      onUpdate: "cascade",
+      identifying: false,
+    });
+
+    const result = validateDiagram(diagram);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toContain("ent_ghost");
+  });
+
+  it("relationship referencing only missing target entity produces one error", () => {
+    const diagram = createEmptyDiagram({ id: "d1", name: "ERD", dialect: "postgresql" });
+    diagram.entities.push({ id: "ent_real", name: "real_table", logicalName: null, comment: null, color: null, columns: [] });
+
+    diagram.relationships.push({
+      id: "rel_partial",
+      name: "fk_partial",
+      sourceEntityId: "ent_real",
+      sourceColumnIds: [],
+      targetEntityId: "ent_ghost",
+      targetColumnIds: [],
+      cardinality: "one-to-many",
+      onDelete: "cascade",
+      onUpdate: "cascade",
+      identifying: false,
+    });
+
+    const result = validateDiagram(diagram);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toContain("ent_ghost");
+  });
+
+  it("self-referencing relationship (same source and target entity) passes — both IDs exist", () => {
+    const diagram = createEmptyDiagram({ id: "d1", name: "Self Ref", dialect: "postgresql" });
+    diagram.entities.push({ id: "ent_categories", name: "categories", logicalName: null, comment: null, color: null, columns: [] });
+
+    diagram.relationships.push({
+      id: "rel_self",
+      name: "fk_parent_id",
+      sourceEntityId: "ent_categories",
+      sourceColumnIds: ["col_parent_id"],
+      targetEntityId: "ent_categories",
+      targetColumnIds: ["col_id"],
+      cardinality: "many-to-one",
+      onDelete: "set-null",
+      onUpdate: "cascade",
+      identifying: false,
+    });
+
+    expect(validateDiagram(diagram)).toEqual({ valid: true, errors: [] });
+  });
+
+  it("multiple invalid relationships accumulate all errors", () => {
+    const diagram = createEmptyDiagram({ id: "d1", name: "Many Errors", dialect: "mssql" });
+
+    diagram.relationships.push(
+      {
+        id: "rel_a",
+        name: "fk_a",
+        sourceEntityId: "ghost_a",
+        sourceColumnIds: [],
+        targetEntityId: "ghost_b",
+        targetColumnIds: [],
+        cardinality: "one-to-one",
+        onDelete: "no-action",
+        onUpdate: "no-action",
+        identifying: false,
+      },
+      {
+        id: "rel_b",
+        name: "fk_b",
+        sourceEntityId: "ghost_c",
+        sourceColumnIds: [],
+        targetEntityId: "ghost_d",
+        targetColumnIds: [],
+        cardinality: "one-to-many",
+        onDelete: "no-action",
+        onUpdate: "no-action",
+        identifying: false,
+      }
+    );
+
+    const result = validateDiagram(diagram);
+    expect(result.valid).toBe(false);
+    // 4 errors: 2 relationships × 2 missing entities each
+    expect(result.errors).toHaveLength(4);
+  });
+
+  it("diagram with entities but no relationships passes", () => {
+    const diagram = createEmptyDiagram({ id: "d1", name: "Only Tables", dialect: "mariadb" });
+    diagram.entities.push(
+      { id: "ent_a", name: "table_a", logicalName: null, comment: null, color: null, columns: [] },
+      { id: "ent_b", name: "table_b", logicalName: null, comment: null, color: null, columns: [] }
+    );
+
+    expect(validateDiagram(diagram)).toEqual({ valid: true, errors: [] });
   });
 });
