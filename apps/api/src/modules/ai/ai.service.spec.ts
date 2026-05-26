@@ -85,19 +85,19 @@ describe("AiService", () => {
   describe("updateOrgAiSettings", () => {
     it("owner가 아니면 ForbiddenException을 던진다", async () => {
       memberRepo.findOne.mockResolvedValue({ userId: "user-1", organizationId: "org-1", role: "editor" });
-      await expect(service.updateOrgAiSettings("org-1", "user-1", "sk-ant-xxx", "anthropic")).rejects.toThrow(ForbiddenException);
+      await expect(service.updateOrgAiSettings("org-1", "user-1", "sk-ant-xxx", "anthropic", "")).rejects.toThrow(ForbiddenException);
     });
 
     it("멤버가 없으면 ForbiddenException을 던진다", async () => {
       memberRepo.findOne.mockResolvedValue(null);
-      await expect(service.updateOrgAiSettings("org-1", "user-1", "sk-ant-xxx", "anthropic")).rejects.toThrow(ForbiddenException);
+      await expect(service.updateOrgAiSettings("org-1", "user-1", "sk-ant-xxx", "anthropic", "")).rejects.toThrow(ForbiddenException);
     });
 
     it("owner이면 API 키를 암호화해서 저장한다 (신규)", async () => {
       memberRepo.findOne.mockResolvedValue({ userId: "user-1", organizationId: "org-1", role: "owner" });
       settingsRepo.findOne.mockResolvedValue(null);
       settingsRepo.save.mockResolvedValue({});
-      await expect(service.updateOrgAiSettings("org-1", "user-1", "sk-ant-xxx", "anthropic")).resolves.toBeUndefined();
+      await expect(service.updateOrgAiSettings("org-1", "user-1", "sk-ant-xxx", "anthropic", "")).resolves.toBeUndefined();
       expect(settingsRepo.save).toHaveBeenCalled();
       const savedArg = (settingsRepo.save.mock.calls[0] as [{ encryptedApiKey: string }])[0];
       expect(savedArg.encryptedApiKey).not.toBe("sk-ant-xxx");
@@ -108,7 +108,7 @@ describe("AiService", () => {
       memberRepo.findOne.mockResolvedValue({ userId: "user-1", organizationId: "org-1", role: "owner" });
       settingsRepo.findOne.mockResolvedValue({ id: "setting-1", encryptedApiKey: "old" });
       settingsRepo.update.mockResolvedValue({});
-      await expect(service.updateOrgAiSettings("org-1", "user-1", "sk-ant-new", "anthropic")).resolves.toBeUndefined();
+      await expect(service.updateOrgAiSettings("org-1", "user-1", "sk-ant-new", "anthropic", "")).resolves.toBeUndefined();
       expect(settingsRepo.update).toHaveBeenCalled();
       expect(settingsRepo.save).not.toHaveBeenCalled();
     });
