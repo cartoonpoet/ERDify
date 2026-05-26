@@ -76,7 +76,9 @@ export const diagramCard = style({
   overflow: "hidden",
   cursor: "pointer",
   textDecoration: "none",
-  display: "block",
+  display: "flex",
+  flexDirection: "column",
+  aspectRatio: "4/3",
   transition: "box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease",
   color: "inherit",
   selectors: {
@@ -168,7 +170,7 @@ export const ctxDivider = style({
 });
 
 export const cardPreview = style({
-  height: "110px",
+  flex: 1,
   background: `radial-gradient(circle, ${vars.color.border} 1px, transparent 1px)`,
   backgroundSize: "16px 16px",
   backgroundColor: vars.color.surfaceSecondary,
@@ -247,7 +249,7 @@ export const newCard = style({
   cursor: "pointer",
   fontFamily: vars.font.family,
   alignSelf: "start",
-  height: "171px",
+  aspectRatio: "4/3",
   transition: "border-color 200ms ease, color 200ms ease, background 200ms ease",
   selectors: {
     "&:hover": {
