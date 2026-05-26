@@ -104,6 +104,44 @@ export const actionRow = style({
   padding: `${vars.space["3"]} ${vars.space["5"]}`,
 });
 
+export const providerRow = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space["4"],
+  padding: `${vars.space["3"]} ${vars.space["5"]} 0`,
+});
+
+export const providerLabel = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space["2"],
+  fontSize: vars.font.size.sm,
+  cursor: "pointer",
+});
+
+export const modelRow = style({
+  padding: `${vars.space["2"]} ${vars.space["5"]} 0`,
+});
+
+export const modelSelect = style({
+  width: "100%",
+  padding: `${vars.space["2"]} ${vars.space["3"]}`,
+  borderRadius: vars.radius.sm,
+  border: `1px solid ${vars.color.border}`,
+  fontSize: vars.font.size.sm,
+  color: vars.color.textPrimary,
+  background: vars.color.surface,
+  fontFamily: vars.font.family,
+  cursor: "pointer",
+  outline: "none",
+  selectors: {
+    "&:focus": {
+      borderColor: vars.color.primary,
+      boxShadow: `0 0 0 3px ${vars.color.focusRing}`,
+    },
+  },
+});
+
 export const readonlyNote = style({
   padding: `${vars.space["3"]} ${vars.space["5"]}`,
   fontSize: vars.font.size.sm,

@@ -9,10 +9,24 @@ interface AISettingsPanelProps {
   isOwner: boolean;
 }
 
+const OPENAI_MODELS = [
+  { value: "gpt-4o", label: "GPT-4o (권장)" },
+  { value: "gpt-4o-mini", label: "GPT-4o mini (저비용)" },
+  { value: "gpt-4.1", label: "GPT-4.1" },
+  { value: "gpt-4.1-mini", label: "GPT-4.1 mini" },
+];
+
+const ANTHROPIC_MODELS = [
+  { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6 (권장)" },
+  { value: "claude-opus-4-6", label: "Claude Opus 4.6 (고성능)" },
+  { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 (저비용)" },
+];
+
 export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
   const [apiKey, setApiKey] = useState("");
   const [showInput, setShowInput] = useState(false);
   const [provider, setProvider] = useState<"anthropic" | "openai">("anthropic");
+  const [model, setModel] = useState("");
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
@@ -21,8 +35,8 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
   });
 
   const mutation = useMutation({
-    mutationFn: ({ apiKey, provider }: { apiKey: string; provider: "anthropic" | "openai" }) =>
-      updateOrgAiSettings(orgId, apiKey, provider),
+    mutationFn: ({ apiKey, provider, model }: { apiKey: string; provider: "anthropic" | "openai"; model: string }) =>
+      updateOrgAiSettings(orgId, apiKey, provider, model),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["org-ai-settings", orgId] });
       setApiKey("");
@@ -30,18 +44,36 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
     },
   });
 
-  const handleSave = () => {
-    if (!apiKey.trim()) return;
-    mutation.mutate({ apiKey: apiKey.trim(), provider });
-  };
-
   const hasApiKey = data?.hasApiKey ?? false;
   const currentProvider = data?.provider ?? "anthropic";
+  const currentModel = data?.model ?? "";
 
   const handleShowInput = () => {
     setProvider(currentProvider);
+    setModel(currentModel);
     setShowInput(true);
   };
+
+  const handleProviderChange = (next: "anthropic" | "openai") => {
+    setProvider(next);
+    setModel("");
+  };
+
+  const handleCancel = () => {
+    setShowInput(false);
+    setApiKey("");
+  };
+
+  const handleSave = () => {
+    if (!apiKey.trim()) return;
+    mutation.mutate({ apiKey: apiKey.trim(), provider, model });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSave();
+  };
+
+  const modelOptions = provider === "openai" ? OPENAI_MODELS : ANTHROPIC_MODELS;
 
   return (
     <div className={css.section}>
@@ -51,7 +83,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
           <span className={css.statusLabel}>AI API 키</span>
           {hasApiKey ? (
             <span className={css.statusBadgeSet}>
-              ✓ 설정됨 ({currentProvider === "openai" ? "OpenAI" : "Anthropic"})
+              ✓ 설정됨 ({currentProvider === "openai" ? "OpenAI" : "Anthropic"}{currentModel ? ` / ${currentModel}` : ""})
             </span>
           ) : (
             <span className={css.statusBadgeUnset}>미설정</span>
@@ -67,11 +99,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
 
         {isOwner && !showInput && (
           <div className={css.actionRow}>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleShowInput}
-            >
+            <Button variant="secondary" size="sm" onClick={handleShowInput}>
               {hasApiKey ? "API 키 변경" : "API 키 설정"}
             </Button>
           </div>
@@ -79,15 +107,23 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
 
         {isOwner && showInput && (
           <>
-            <div className={css.actionRow} style={{ paddingBottom: 0, gap: 16 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "13px", cursor: "pointer" }}>
-                <input type="radio" name="provider" value="anthropic" checked={provider === "anthropic"} onChange={() => setProvider("anthropic")} />
+            <div className={css.providerRow}>
+              <label className={css.providerLabel}>
+                <input type="radio" name="provider" value="anthropic" checked={provider === "anthropic"} onChange={() => handleProviderChange("anthropic")} />
                 Anthropic (Claude)
               </label>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "13px", cursor: "pointer" }}>
-                <input type="radio" name="provider" value="openai" checked={provider === "openai"} onChange={() => setProvider("openai")} />
-                OpenAI (GPT-4o)
+              <label className={css.providerLabel}>
+                <input type="radio" name="provider" value="openai" checked={provider === "openai"} onChange={() => handleProviderChange("openai")} />
+                OpenAI (GPT)
               </label>
+            </div>
+            <div className={css.modelRow}>
+              <select className={css.modelSelect} value={model} onChange={(e) => setModel(e.target.value)}>
+                <option value="">기본 모델 사용</option>
+                {modelOptions.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
             </div>
             <div className={css.inputRow}>
               <input
@@ -96,23 +132,14 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder={provider === "openai" ? "sk-..." : "sk-ant-api03-..."}
-                onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
+                onKeyDown={handleKeyDown}
               />
             </div>
             <div className={css.actionRow}>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSave}
-                disabled={mutation.isPending || !apiKey.trim()}
-              >
+              <Button variant="primary" size="sm" onClick={handleSave} disabled={mutation.isPending || !apiKey.trim()}>
                 {mutation.isPending ? "저장 중..." : "저장"}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => { setShowInput(false); setApiKey(""); }}
-              >
+              <Button variant="ghost" size="sm" onClick={handleCancel}>
                 취소
               </Button>
             </div>

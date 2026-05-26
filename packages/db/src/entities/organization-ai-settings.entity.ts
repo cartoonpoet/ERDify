@@ -14,6 +14,9 @@ export class OrganizationAiSettings {
   @Column({ type: "varchar", length: 20, default: "anthropic" })
   provider!: "anthropic" | "openai";
 
+  @Column({ type: "varchar", length: 60, default: "" })
+  model!: string;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 

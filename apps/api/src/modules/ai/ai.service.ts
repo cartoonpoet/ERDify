@@ -12,8 +12,8 @@ import { DomainLoaderService } from "../../common/services/domain-loader.service
 import { AiHistoryService } from "./ai-history.service";
 import { ERD_TOOLS, ERD_TOOLS_OPENAI } from "./erd-tools";
 
-const ANTHROPIC_MODEL = "claude-sonnet-4-6";
-const OPENAI_MODEL = "gpt-4o-mini";
+const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6";
+const DEFAULT_OPENAI_MODEL = "gpt-4o";
 const MAX_TOKENS = 4096;
 
 type Provider = "anthropic" | "openai";
@@ -40,14 +40,15 @@ export class AiService {
       organizationId: orgId,
       hasApiKey: !!settings?.encryptedApiKey,
       provider: settings?.provider ?? "anthropic",
+      model: settings?.model ?? "",
     };
   }
 
-  async updateOrgAiSettings(orgId: string, userId: string, apiKey: string, provider: Provider): Promise<void> {
+  async updateOrgAiSettings(orgId: string, userId: string, apiKey: string, provider: Provider, model: string): Promise<void> {
     await this.requireOrgOwner(orgId, userId);
     const existing = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
     if (existing) {
-      await this.settingsRepo.update(existing.id, { encryptedApiKey: encrypt(apiKey), provider });
+      await this.settingsRepo.update(existing.id, { encryptedApiKey: encrypt(apiKey), provider, model });
     } else {
       await this.settingsRepo.save(
         this.settingsRepo.create({
@@ -55,6 +56,7 @@ export class AiService {
           organizationId: orgId,
           encryptedApiKey: encrypt(apiKey),
           provider,
+          model,
         })
       );
     }
@@ -64,19 +66,41 @@ export class AiService {
 
   async chat(userId: string, diagramId: string, userMessage: string): Promise<AiChatResponse> {
     const { doc, orgId } = await this.getDiagramAndOrgId(diagramId);
-    const { apiKey, provider } = await this.getOrgApiKeyAndProvider(orgId, userId);
+    const { apiKey, provider, model } = await this.getOrgApiKeyAndProvider(orgId, userId);
     const history = await this.historyService.findRecent(userId, diagramId);
 
     await this.historyService.saveUserMessage(userId, diagramId, userMessage);
 
-    const systemPrompt = `You are an ERD design assistant for ERDify. Help users modify their database schema.
-When making changes, use the provided tools. Always use the exact IDs from the current diagram.
-Current diagram (JSON):
+    const systemPrompt = `You are a senior database architect assistant inside ERDify, an ERD design tool.
+You help users design and modify relational database schemas through natural conversation.
+Respond in the same language the user writes in (Korean if they write Korean).
+
+## Core responsibilities
+- Interpret user intent and translate it into precise schema changes using the provided tools.
+- Think step-by-step: identify what tables, columns, and relationships are needed before calling tools.
+- Call multiple tools in a single response when a request requires creating several tables or columns at once.
+
+## Database design best practices you MUST follow
+1. **Every new table** must have: \`id\` (uuid, primaryKey, not null), \`created_at\` (timestamptz, not null), \`updated_at\` (timestamptz, not null) — add these automatically unless the user explicitly says not to.
+2. **Naming**: snake_case for all table and column names. Plural nouns for tables (users, orders, products).
+3. **Foreign keys**: name them \`<referenced_table_singular>_id\` (e.g. \`user_id\`, \`order_id\`). Set nullable: false unless the relationship is optional.
+4. **Cardinality**: choose the correct direction — one-to-many means the "many" side holds the FK column.
+5. **Data types**: uuid for PKs and FKs, varchar for short strings, text for long strings, integer/bigint for counts, boolean for flags, timestamptz for timestamps, numeric/decimal for money, jsonb for flexible structured data.
+6. **Indexes**: suggest unique constraints on natural keys (email, slug, etc.).
+7. When the user asks for a "system" or "module" (e.g. "쇼핑몰", "회원 시스템"), proactively design all necessary tables and relationships — don't wait for them to specify each table.
+
+## Rules
+- Always use the exact entity/column IDs from the current diagram when modifying existing items.
+- Never hallucinate IDs. If you cannot find a referenced table or column in the diagram, say so clearly.
+- If the user's request is ambiguous, make a reasonable assumption and explain what you assumed.
+- After making changes, briefly summarize what was done in the user's language.
+
+## Current diagram (JSON)
 ${JSON.stringify(buildDiagramContext(doc, userMessage))}`;
 
     const { textContent, toolCalls } = provider === "openai"
-      ? await this.callOpenAI(apiKey, systemPrompt, history, userMessage)
-      : await this.callAnthropic(apiKey, systemPrompt, history, userMessage);
+      ? await this.callOpenAI(apiKey, model, systemPrompt, history, userMessage)
+      : await this.callAnthropic(apiKey, model, systemPrompt, history, userMessage);
 
     let updatedDoc = doc;
     const diffs: DiffChange[] = [];
@@ -109,7 +133,7 @@ ${JSON.stringify(buildDiagramContext(doc, userMessage))}`;
   async suggestColumns(userId: string, tableName: string, existingColumns: string[]): Promise<ColumnSuggestion[]> {
     const membership = await this.memberRepo.findOne({ where: { userId } });
     if (!membership) throw new ForbiddenException("조직 멤버십이 없습니다.");
-    const { apiKey, provider } = await this.getOrgApiKeyAndProvider(membership.organizationId, userId);
+    const { apiKey, provider, model } = await this.getOrgApiKeyAndProvider(membership.organizationId, userId);
 
     const prompt = `Suggest 5 common columns for a database table named "${tableName}".
 Existing columns: ${existingColumns.length > 0 ? existingColumns.join(", ") : "none"}.
@@ -121,7 +145,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
     if (provider === "openai") {
       const client = new OpenAI({ apiKey });
       const res = await client.chat.completions.create({
-        model: OPENAI_MODEL,
+        model,
         max_tokens: 512,
         messages: [{ role: "user", content: prompt }],
       });
@@ -129,7 +153,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
     } else {
       const client = new Anthropic({ apiKey });
       const res = await client.messages.create({
-        model: ANTHROPIC_MODEL,
+        model,
         max_tokens: 512,
         messages: [{ role: "user", content: prompt }],
       });
@@ -152,6 +176,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
 
   private async callAnthropic(
     apiKey: string,
+    model: string,
     system: string,
     history: { role: string; content: string }[],
     userMessage: string,
@@ -162,7 +187,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
       { role: "user", content: userMessage },
     ];
     const response = await client.messages.create({
-      model: ANTHROPIC_MODEL,
+      model,
       max_tokens: MAX_TOKENS,
       system,
       tools: ERD_TOOLS,
@@ -183,6 +208,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
 
   private async callOpenAI(
     apiKey: string,
+    model: string,
     system: string,
     history: { role: string; content: string }[],
     userMessage: string,
@@ -194,7 +220,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
       { role: "user", content: userMessage },
     ];
     const response = await client.chat.completions.create({
-      model: OPENAI_MODEL,
+      model,
       max_tokens: MAX_TOKENS,
       tools: ERD_TOOLS_OPENAI,
       messages,
@@ -224,13 +250,15 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
     return { doc: diagram.content, orgId: diagram.org_id };
   }
 
-  private async getOrgApiKeyAndProvider(orgId: string, userId: string): Promise<{ apiKey: string; provider: Provider }> {
+  private async getOrgApiKeyAndProvider(orgId: string, userId: string): Promise<{ apiKey: string; provider: Provider; model: string }> {
     await this.requireOrgMember(orgId, userId);
     const settings = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
     if (!settings?.encryptedApiKey) {
       throw new ForbiddenException("조직에 AI API 키가 설정되어 있지 않습니다. 관리자에게 문의하세요.");
     }
-    return { apiKey: decrypt(settings.encryptedApiKey), provider: settings.provider ?? "anthropic" };
+    const provider: Provider = settings.provider ?? "anthropic";
+    const model = settings.model || (provider === "openai" ? DEFAULT_OPENAI_MODEL : DEFAULT_ANTHROPIC_MODEL);
+    return { apiKey: decrypt(settings.encryptedApiKey), provider, model };
   }
 
   private async requireOrgMember(orgId: string, userId: string): Promise<void> {

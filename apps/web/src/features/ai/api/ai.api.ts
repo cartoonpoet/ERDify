@@ -21,5 +21,5 @@ export const suggestColumns = (
 export const getOrgAiSettings = (orgId: string): Promise<OrgAiSettings> =>
   httpClient.get<OrgAiSettings>(`/organizations/${orgId}/ai-settings`).then((r) => r.data);
 
-export const updateOrgAiSettings = (orgId: string, apiKey: string, provider: "anthropic" | "openai"): Promise<void> =>
-  httpClient.put(`/organizations/${orgId}/ai-settings`, { apiKey, provider }).then(() => undefined);
+export const updateOrgAiSettings = (orgId: string, apiKey: string, provider: "anthropic" | "openai", model: string): Promise<void> =>
+  httpClient.put(`/organizations/${orgId}/ai-settings`, { apiKey, provider, model }).then(() => undefined);

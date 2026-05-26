@@ -13,6 +13,7 @@ export const aiSuggestColumnsRequestSchema = z.object({
 export const updateOrgAiSettingsRequestSchema = z.object({
   apiKey: z.string().min(1).max(200),
   provider: z.enum(["anthropic", "openai"]),
+  model: z.string().max(60).default(""),
 });
 
 export type AiChatRequest = z.infer<typeof aiChatRequestSchema>;
