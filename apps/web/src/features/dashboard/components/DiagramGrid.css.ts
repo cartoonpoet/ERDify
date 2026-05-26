@@ -61,7 +61,7 @@ export const grid = style({
   gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
   gap: vars.space["3"],
   overflowY: "auto",
-  flex: 1,
+  // flex: 1,
 });
 
 export const diagramCardWrapper = style({
