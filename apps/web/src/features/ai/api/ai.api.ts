@@ -2,7 +2,7 @@ import { httpClient } from "@/shared/api/httpClient";
 import type { AiChatResponse, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
 
 export const sendAiChat = (diagramId: string, message: string): Promise<AiChatResponse> =>
-  httpClient.post<AiChatResponse>("/ai/chat", { diagramId, message }).then((r) => r.data);
+  httpClient.post<AiChatResponse>("/ai/chat", { diagramId, message }, { timeout: 120_000 }).then((r) => r.data);
 
 export const acceptAiDiff = (messageId: string): Promise<void> =>
   httpClient.post(`/ai/chat/${messageId}/accept`).then(() => undefined);
