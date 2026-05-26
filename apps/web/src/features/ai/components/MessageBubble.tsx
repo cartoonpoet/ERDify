@@ -1,40 +1,27 @@
 import type { AiMessage } from "../store/aiChatSlice";
 import { DiffCard } from "./DiffCard";
+import * as css from "./MessageBubble.css";
 
 interface MessageBubbleProps {
   message: AiMessage;
-  onAccept: (messageId: string) => void;
-  onReject: (messageId: string) => void;
+  onOpenReview: (messageId: string) => void;
 }
 
-export const MessageBubble = ({ message, onAccept, onReject }: MessageBubbleProps) => {
+export const MessageBubble = ({ message, onOpenReview }: MessageBubbleProps) => {
   const isUser = message.role === "user";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-end" : "flex-start", marginBottom: 12 }}>
-      <div
-        style={{
-          maxWidth: "80%",
-          padding: "8px 12px",
-          borderRadius: isUser ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
-          background: isUser ? "#2563eb" : "#f1f5f9",
-          color: isUser ? "#fff" : "#1e293b",
-          fontSize: 14,
-          lineHeight: 1.5,
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-        }}
-      >
+    <div className={isUser ? css.wrapperUser : css.wrapperAssistant}>
+      <div className={isUser ? css.bubbleUser : css.bubbleAssistant}>
         {message.content}
       </div>
       {message.diff && (
-        <div style={{ width: "80%", marginTop: 4 }}>
+        <div className={css.diffArea}>
           <DiffCard
             messageId={message.id}
             diff={message.diff}
             accepted={message.accepted}
-            onAccept={onAccept}
-            onReject={onReject}
+            onOpenReview={onOpenReview}
           />
         </div>
       )}

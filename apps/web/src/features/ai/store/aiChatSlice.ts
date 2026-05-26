@@ -16,6 +16,7 @@ export interface AiChatSlice {
   isOpen: boolean;
   messages: AiMessage[];
   isLoading: boolean;
+  reviewingMessageId: string | null;
   openChat: (initialMessage?: string) => void;
   closeChat: () => void;
   addUserMessage: (content: string) => void;
@@ -23,12 +24,15 @@ export interface AiChatSlice {
   acceptDiff: (messageId: string) => void;
   rejectDiff: (messageId: string) => void;
   setLoading: (loading: boolean) => void;
+  openReview: (messageId: string) => void;
+  closeReview: () => void;
 }
 
 export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
   isOpen: false,
   messages: [],
   isLoading: false,
+  reviewingMessageId: null,
 
   openChat: (initialMessage) =>
     set((state) => ({
@@ -78,4 +82,6 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
     })),
 
   setLoading: (loading) => set({ isLoading: loading }),
+  openReview: (messageId) => set({ reviewingMessageId: messageId }),
+  closeReview: () => set({ reviewingMessageId: null }),
 });

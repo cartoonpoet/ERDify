@@ -7,11 +7,10 @@ interface AIChatWindowProps {
   isLoading: boolean;
   onClose: () => void;
   onSend: (message: string) => void;
-  onAccept: (messageId: string) => void;
-  onReject: (messageId: string) => void;
+  onOpenReview: (messageId: string) => void;
 }
 
-export const AIChatWindow = ({ messages, isLoading, onClose, onSend, onAccept, onReject }: AIChatWindowProps) => {
+export const AIChatWindow = ({ messages, isLoading, onClose, onSend, onOpenReview }: AIChatWindowProps) => {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +62,7 @@ export const AIChatWindow = ({ messages, isLoading, onClose, onSend, onAccept, o
           </div>
         )}
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} onAccept={onAccept} onReject={onReject} />
+          <MessageBubble key={msg.id} message={msg} onOpenReview={onOpenReview} />
         ))}
         {isLoading && (
           <div style={{ color: "#94a3b8", fontSize: 13, padding: "4px 0" }}>AI가 생각 중...</div>
