@@ -72,7 +72,7 @@ export class AiService {
     const systemPrompt = `You are an ERD design assistant for ERDify. Help users modify their database schema.
 When making changes, use the provided tools. Always use the exact IDs from the current diagram.
 Current diagram (JSON):
-${JSON.stringify(buildDiagramContext(doc))}`;
+${JSON.stringify(buildDiagramContext(doc, userMessage))}`;
 
     const { textContent, toolCalls } = provider === "openai"
       ? await this.callOpenAI(apiKey, systemPrompt, history, userMessage)
@@ -373,25 +373,50 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
   }
 }
 
-function buildDiagramContext(doc: DiagramDocument) {
-  return {
+function buildDiagramContext(doc: DiagramDocument, userMessage: string) {
+  // 사용자 메시지에서 언급된 테이블 ID 수집
+  const msgLower = userMessage.toLowerCase();
+  const mentionedIds = new Set(
+    doc.entities.filter((e) => msgLower.includes(e.name.toLowerCase())).map((e) => e.id)
+  );
+
+  // 언급된 테이블과 관계로 연결된 테이블도 포함
+  doc.relationships.forEach((r) => {
+    if (mentionedIds.has(r.sourceEntityId)) mentionedIds.add(r.targetEntityId);
+    if (mentionedIds.has(r.targetEntityId)) mentionedIds.add(r.sourceEntityId);
+  });
+
+  const detailEntity = (e: DiagramDocument["entities"][number]) => ({
+    id: e.id,
+    name: e.name,
+    ...(e.schema ? { schema: e.schema } : {}),
+    columns: e.columns.map((c) => ({
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      nullable: c.nullable,
+      primaryKey: c.primaryKey,
+      unique: c.unique,
+      ...(c.defaultValue !== null ? { defaultValue: c.defaultValue } : {}),
+    })),
+  });
+
+  const summaryEntity = (e: DiagramDocument["entities"][number]) => ({
+    id: e.id,
+    name: e.name,
+    ...(e.schema ? { schema: e.schema } : {}),
+    columnCount: e.columns.length,
+  });
+
+  // 언급된 테이블이 없으면 전체를 상세 전송하되 60k자 초과 시 요약으로 폴백
+  const useFullDetail = mentionedIds.size === 0;
+  const fullContext = {
     id: doc.id,
     name: doc.name,
     dialect: doc.dialect,
-    entities: doc.entities.map((e) => ({
-      id: e.id,
-      name: e.name,
-      schema: e.schema ?? undefined,
-      columns: e.columns.map((c) => ({
-        id: c.id,
-        name: c.name,
-        type: c.type,
-        nullable: c.nullable,
-        primaryKey: c.primaryKey,
-        unique: c.unique,
-        ...(c.defaultValue !== null ? { defaultValue: c.defaultValue } : {}),
-      })),
-    })),
+    entities: doc.entities.map((e) =>
+      (!useFullDetail && mentionedIds.has(e.id)) || useFullDetail ? detailEntity(e) : summaryEntity(e)
+    ),
     relationships: doc.relationships.map((r) => ({
       id: r.id,
       sourceEntityId: r.sourceEntityId,
@@ -399,4 +424,17 @@ function buildDiagramContext(doc: DiagramDocument) {
       cardinality: r.cardinality,
     })),
   };
+
+  // 60k자(~15k토큰) 초과 시 전체를 요약으로 전송
+  if (JSON.stringify(fullContext).length > 60_000) {
+    return {
+      ...fullContext,
+      _note: "Large diagram: only mentioned tables shown in full detail, others summarized.",
+      entities: doc.entities.map((e) =>
+        mentionedIds.has(e.id) ? detailEntity(e) : summaryEntity(e)
+      ),
+    };
+  }
+
+  return fullContext;
 }
