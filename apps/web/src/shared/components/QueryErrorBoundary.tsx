@@ -24,7 +24,7 @@ const ErrorFallback = ({ error, variant, backLabel, backPath, onRetry }: Fallbac
       <div className={css.title}>{title}</div>
       <div className={css.desc}>{desc}</div>
       {variant === "page" ? (
-        <button type="button" className={css.actionBtn} onClick={() => navigate(backPath)}>
+        <button type="button" className={css.actionBtn} onClick={() => { onRetry(); navigate(backPath); }}>
           {backLabel}
         </button>
       ) : (

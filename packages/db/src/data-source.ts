@@ -32,6 +32,7 @@ import { AddIsAdminToUsers1746000000016 } from "./migrations/1746000000016-AddIs
 import { CreateOrganizationAiSettings1746000000017 } from "./migrations/1746000000017-CreateOrganizationAiSettings";
 import { CreateAiConversations1746000000018 } from "./migrations/1746000000018-CreateAiConversations";
 import { AddProviderToOrgAiSettings1746000000019 } from "./migrations/1746000000019-AddProviderToOrgAiSettings";
+import { AddModelToOrgAiSettings1746000000020 } from "./migrations/1746000000020-AddModelToOrgAiSettings";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -60,5 +61,6 @@ export const AppDataSource = new DataSource({
     CreateOrganizationAiSettings1746000000017,
     CreateAiConversations1746000000018,
     AddProviderToOrgAiSettings1746000000019,
+    AddModelToOrgAiSettings1746000000020,
   ]
 });
