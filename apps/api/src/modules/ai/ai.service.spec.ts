@@ -71,7 +71,7 @@ describe("AiService", () => {
       memberRepo.findOne.mockResolvedValue({ userId: "user-1", organizationId: "org-1", role: "editor" });
       settingsRepo.findOne.mockResolvedValue(null);
       const result = await service.getOrgAiSettings("org-1", "user-1");
-      expect(result).toEqual({ organizationId: "org-1", hasApiKey: false, provider: "anthropic" });
+      expect(result).toEqual({ organizationId: "org-1", hasApiKey: false, provider: "anthropic", model: "" });
     });
 
     it("API 키가 있으면 hasApiKey=true를 반환한다", async () => {
