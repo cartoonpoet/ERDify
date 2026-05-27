@@ -14,7 +14,7 @@ export class UsageLog {
   @Column({ name: "event_type", length: 50 })
   eventType!: string;
 
-  @Column({ name: "resource_type", length: 30, nullable: true })
+  @Column({ type: "varchar", name: "resource_type", length: 30, nullable: true })
   resourceType!: string | null;
 
   @Column({ name: "resource_id", length: 36, nullable: true })
