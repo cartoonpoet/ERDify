@@ -56,3 +56,11 @@ export interface PublicDiagramResponse {
   name: string;
   content: DiagramDocument;
 }
+
+export interface ActiveUser {
+  userId: string;
+  email: string;
+  color: string;
+}
+
+export type ActiveUsersResponse = Record<string, ActiveUser[]>;
