@@ -96,6 +96,21 @@ export class CollaborationService {
     return Array.from(room.presence.values());
   }
 
+  getRoomPresences(diagramIds: string[]): Record<string, Array<{ userId: string; email: string; color: string }>> {
+    const result: Record<string, Array<{ userId: string; email: string; color: string }>> = {};
+    for (const id of diagramIds) {
+      const room = this.rooms.get(id);
+      result[id] = room
+        ? Array.from(room.presence.values()).map((p) => ({
+            userId: p.userId,
+            email: p.email,
+            color: p.color,
+          }))
+        : [];
+    }
+    return result;
+  }
+
   schedulePersist(diagramId: string): void {
     const room = this.rooms.get(diagramId);
     if (!room) return;

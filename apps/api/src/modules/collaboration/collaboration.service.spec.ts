@@ -149,6 +149,39 @@ describe("CollaborationService", () => {
     });
   });
 
+  describe("getRoomPresences", () => {
+    it("returns empty arrays for diagramIds with no active room", () => {
+      const result = service.getRoomPresences(["no-room-1", "no-room-2"]);
+      expect(result).toEqual({ "no-room-1": [], "no-room-2": [] });
+    });
+
+    it("returns presence list for active rooms", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      await service.joinRoom("d1");
+      service.addPresence("d1", "user-1", "socket-1", "kim@example.com");
+
+      const result = service.getRoomPresences(["d1"]);
+
+      expect(result["d1"]).toHaveLength(1);
+      expect(result["d1"][0]).toMatchObject({
+        userId: "user-1",
+        email: "kim@example.com",
+      });
+      expect(result["d1"][0].color).toBeDefined();
+    });
+
+    it("mixes empty and populated rooms correctly", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      await service.joinRoom("d1");
+      service.addPresence("d1", "user-1", "socket-1", "kim@example.com");
+
+      const result = service.getRoomPresences(["d1", "no-room"]);
+
+      expect(result["d1"]).toHaveLength(1);
+      expect(result["no-room"]).toEqual([]);
+    });
+  });
+
   describe("schedulePersist", () => {
     beforeEach(() => {
       vi.useFakeTimers();
