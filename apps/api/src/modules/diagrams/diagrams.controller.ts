@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
+import type { ActiveUsersResponse } from "@erdify/contracts";
 import { CreateDiagramDto } from "./dto/create-diagram.dto";
 import { UpdateDiagramDto } from "./dto/update-diagram.dto";
 import { DiagramsService } from "./diagrams.service";
@@ -30,6 +31,16 @@ export class DiagramsController {
   @Get("projects/:projectId/diagrams")
   findAll(@CurrentUser() user: JwtPayload, @Param("projectId") projectId: string) {
     return this.diagramsService.findAll(projectId, user.sub);
+  }
+
+  @Get("diagrams/active-users")
+  getActiveUsers(
+    @CurrentUser() user: JwtPayload,
+    @Query("diagramIds") diagramIds: string
+  ): Promise<ActiveUsersResponse> {
+    const ids = diagramIds ? diagramIds.split(",").filter(Boolean).slice(0, 50) : [];
+    if (ids.length === 0) return Promise.resolve({});
+    return this.diagramsService.getActiveUsers(ids, user.sub);
   }
 
   @Get("diagrams/:id")
