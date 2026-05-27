@@ -14,6 +14,7 @@
     }
   },
   "scripts": {
+    "prebuild": "pnpm --filter @erdify/contracts build",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit",
