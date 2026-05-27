@@ -15,6 +15,7 @@ export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps
 
   const isAdmin = !!me?.isAdmin;
   const errorReportsActive = pathname === "/admin/error-reports";
+  const announcementsActive = pathname === "/admin/announcements";
 
   return (
     <div className={css.sidebarBottomBar}>
@@ -36,6 +37,17 @@ export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps
           <span className={css.projArrow} aria-hidden="true" />
           <span className={css.projIcon} aria-hidden="true">🚨</span>
           <span className={css.projName}>에러 리포트</span>
+        </button>
+      )}
+      {isAdmin && (
+        <button
+          className={[css.projRow, announcementsActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
+          onClick={() => navigate("/admin/announcements")}
+          aria-pressed={announcementsActive}
+        >
+          <span className={css.projArrow} aria-hidden="true" />
+          <span className={css.projIcon} aria-hidden="true">📢</span>
+          <span className={css.projName}>공지 관리</span>
         </button>
       )}
     </div>

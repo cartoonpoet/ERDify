@@ -17,6 +17,7 @@ const RootRedirect = lazy(() => import("@/pages/RootRedirect").then(m => ({ defa
 const SharedDiagramPage = lazy(() => import("@/pages/SharedDiagramPage").then(m => ({ default: m.SharedDiagramPage })));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
 const ErrorReportsPage = lazy(() => import("@/features/admin/pages/ErrorReportsPage").then(m => ({ default: m.ErrorReportsPage })));
+const AnnouncementsAdminPage = lazy(() => import("@/features/admin/pages/AnnouncementsAdminPage").then(m => ({ default: m.AnnouncementsAdminPage })));
 
 export const Router = () => (
   <Suspense fallback={null}>
@@ -51,6 +52,7 @@ export const Router = () => (
         >
           <Route path="/" element={<RootRedirect />} />
           <Route path="/admin/error-reports" element={<ErrorReportsPage />} />
+          <Route path="/admin/announcements" element={<AnnouncementsAdminPage />} />
           <Route path="/:orgId">
             <Route index element={<DiagramGrid />} />
             <Route path="members" element={<MemberManagementPage />} />

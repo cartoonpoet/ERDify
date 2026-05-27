@@ -14,4 +14,5 @@ export { Project } from "./entities/project.entity";
 export { User } from "./entities/user.entity";
 export { AiConversation } from "./entities/ai-conversation.entity";
 export { UsageLog } from "./entities/usage-log.entity";
+export { Announcement } from "./entities/announcement.entity";
 export { createTypeOrmOptions } from "./typeorm/create-typeorm-options";

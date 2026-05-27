@@ -12,6 +12,8 @@ import { ProfileModal } from "../components/ProfileModal";
 import { useDashboardStore } from "@/features/dashboard/store/useDashboardStore";
 import { useDashboardActions } from "@/features/dashboard/hooks/useDashboardActions";
 import { useAvatarMenu } from "@/features/dashboard/hooks/useAvatarMenu";
+import { AnnouncementModal } from "@/features/announcement/components/AnnouncementModal";
+import { useAnnouncements } from "@/features/announcement/hooks/useAnnouncements";
 import {
   shell, topbar, brand, brandLogo, topbarSpacer, topbarSearch, avatar, avatarImg,
   avatarWrapper, dropdown, dropdownHeader, dropdownEmail,
@@ -36,6 +38,7 @@ export const DashboardPage = () => {
   const { activeModal, openModal, closeModal, searchQuery, searchProjectId, setSearch } = useDashboardStore();
   const { deleteOrg, deleteProject, deleteDiagram, handleLogout, onOrgCreated, onProjectCreated, onDiagramCreated, onDiagramImported } = useDashboardActions();
   const { menuOpen, toggleMenu, closeMenu, handleBlur } = useAvatarMenu();
+  const { unread, markSeen, markAllSeen } = useAnnouncements();
 
   // Prefetch automerge WASM in the background so the editor opens instantly
   useEffect(() => { void import("@automerge/automerge"); }, []);
@@ -151,6 +154,12 @@ export const DashboardPage = () => {
           onImported={onDiagramImported}
         />
       )}
+
+      <AnnouncementModal
+        unread={unread}
+        onMarkSeen={markSeen}
+        onMarkAllSeen={markAllSeen}
+      />
     </div>
   );
 };

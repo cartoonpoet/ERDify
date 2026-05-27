@@ -15,6 +15,7 @@ import { EmailModule } from "./modules/email/email.module";
 import { ErrorReportsModule } from "./modules/error-reports/error-reports.module";
 import { AiModule } from "./modules/ai/ai.module";
 import { UsageModule } from "./modules/usage/usage.module";
+import { AnnouncementsModule } from "./modules/announcements/announcements.module";
 import appConfig from "./common/config/app.config";
 
 @Module({
@@ -34,6 +35,7 @@ import appConfig from "./common/config/app.config";
     ErrorReportsModule,
     AiModule,
     UsageModule,
+    AnnouncementsModule,
     HealthModule,
   ],
   providers: [
