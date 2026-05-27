@@ -108,21 +108,29 @@ export const ERD_TOOLS: Tool[] = [
   },
   {
     name: "addRelation",
-    description: "Add a foreign key relationship between two tables.",
+    description: "Add a foreign key relationship between two tables. Automatically creates the FK column on the source table.",
     input_schema: {
       type: "object",
       properties: {
         sourceTableId: {
           type: "string",
-          description: "Table that holds the foreign key",
+          description: "Table that holds the foreign key (the 'many' side)",
         },
-        targetTableId: { type: "string", description: "Table being referenced" },
+        targetTableId: { type: "string", description: "Table being referenced (the 'one' side)" },
         cardinality: {
           type: "string",
           enum: ["one-to-one", "one-to-many", "many-to-one"],
         },
+        fkColumnName: {
+          type: "string",
+          description: "Name of the FK column to create on the source table (e.g. 'user_id'). ALWAYS provide this.",
+        },
+        fkNullable: {
+          type: "boolean",
+          description: "Whether the FK column is nullable. Defaults to false (required relationship).",
+        },
       },
-      required: ["sourceTableId", "targetTableId", "cardinality"],
+      required: ["sourceTableId", "targetTableId", "cardinality", "fkColumnName"],
     },
   },
   {
@@ -134,6 +142,24 @@ export const ERD_TOOLS: Tool[] = [
         relationId: { type: "string", description: "ID of the relationship to remove" },
       },
       required: ["relationId"],
+    },
+  },
+  {
+    name: "addIndex",
+    description: "Add an index on one or more columns of a table. Use for FK columns and frequently queried columns.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tableId: { type: "string", description: "ID of the table" },
+        columnIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "IDs of the columns to include in the index",
+        },
+        name: { type: "string", description: "Index name (e.g. 'idx_orders_user_id')" },
+        unique: { type: "boolean", description: "Whether this is a unique index. Defaults to false." },
+      },
+      required: ["tableId", "columnIds", "name"],
     },
   },
 ];

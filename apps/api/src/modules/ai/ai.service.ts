@@ -4,7 +4,7 @@ import { Repository } from "typeorm";
 import { randomUUID } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
-import type { DiagramDocument, DiagramColumn, DiagramRelationship, RelationshipCardinality } from "@erdify/domain";
+import type { DiagramDocument, DiagramColumn, DiagramIndex, DiagramRelationship, RelationshipCardinality } from "@erdify/domain";
 import { Diagram, OrganizationAiSettings, OrganizationMember } from "@erdify/db";
 import type { AiChatResponse, ColumnSuggestion, DiffChange, OrgAiSettings } from "@erdify/contracts";
 import { encrypt, decrypt } from "../../common/utils/field-cipher";
@@ -87,11 +87,18 @@ Respond in the same language the user writes in (Korean if they write Korean).
 ## Database design best practices you MUST follow
 1. **Every new table** must have: \`id\` (uuid, primaryKey, not null), \`created_at\` (timestamptz, not null), \`updated_at\` (timestamptz, not null) — add these automatically unless the user explicitly says not to.
 2. **Naming**: snake_case for all table and column names. Plural nouns for tables (users, orders, products).
-3. **Foreign keys**: name them \`<referenced_table_singular>_id\` (e.g. \`user_id\`, \`order_id\`). Set nullable: false unless the relationship is optional.
-4. **Cardinality**: choose the correct direction — one-to-many means the "many" side holds the FK column.
+3. **Foreign keys**: Always use \`addRelation\` with \`fkColumnName\` set to \`<referenced_table_singular>_id\` (e.g. \`user_id\`, \`order_id\`). The FK column (uuid type) is created automatically. Set \`fkNullable: false\` unless the relationship is optional.
+4. **Cardinality**: choose the correct direction — one-to-many means the "many" side holds the FK column (sourceTableId = many side).
 5. **Data types**: uuid for PKs and FKs, varchar for short strings, text for long strings, integer/bigint for counts, boolean for flags, timestamptz for timestamps, numeric/decimal for money, jsonb for flexible structured data.
-6. **Indexes**: suggest unique constraints on natural keys (email, slug, etc.).
+6. **Indexes**: After every \`addRelation\`, call \`addIndex\` on the FK column (e.g. name: \`idx_orders_user_id\`). Also add unique indexes for natural keys (email, slug, etc.).
 7. When the user asks for a "system" or "module" (e.g. "쇼핑몰", "회원 시스템"), proactively design all necessary tables and relationships — don't wait for them to specify each table.
+
+## Multi-table design workflow (MUST follow this order)
+When designing multiple tables:
+1. Call \`addTable\` for ALL tables first (with their own columns, excluding FK columns).
+2. For each relationship, call \`addRelation\` with \`fkColumnName\` — this automatically adds the FK column.
+3. Call \`addIndex\` for every FK column created in step 2.
+4. Call \`addIndex\` for any natural key columns (email, slug, code, etc.) with \`unique: true\`.
 
 ## Rules
 - Always use the exact entity/column IDs from the current diagram when modifying existing items.
@@ -393,16 +400,37 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
         const src = doc.entities.find((e) => e.id === input["sourceTableId"]);
         const tgt = doc.entities.find((e) => e.id === input["targetTableId"]);
         if (!src || !tgt) break;
+
+        // Auto-create FK column on the source table
+        const fkColumnName = input["fkColumnName"] as string | undefined;
+        let fkColId: string | undefined;
+        if (fkColumnName) {
+          const alreadyExists = src.columns.find((c) => c.name === fkColumnName);
+          if (!alreadyExists) {
+            fkColId = randomUUID();
+            const fkColumn: DiagramColumn = {
+              id: fkColId, name: fkColumnName, type: "uuid",
+              nullable: (input["fkNullable"] as boolean | undefined) ?? false,
+              primaryKey: false, unique: false, defaultValue: null, comment: null,
+              ordinal: src.columns.length,
+            };
+            updatedDoc = domain.addColumn(updatedDoc, src.id, fkColumn);
+            changes.push({ type: "addColumn", tableId: src.id, tableName: src.name, columnId: fkColId, columnName: fkColumnName, columnType: "uuid" });
+          } else {
+            fkColId = alreadyExists.id;
+          }
+        }
+
         const rel: DiagramRelationship = {
           id: relId, name: "",
           sourceEntityId: input["sourceTableId"] as string,
-          sourceColumnIds: [],
+          sourceColumnIds: fkColId ? [fkColId] : [],
           targetEntityId: input["targetTableId"] as string,
           targetColumnIds: [],
           cardinality: input["cardinality"] as RelationshipCardinality,
           onDelete: "no-action", onUpdate: "no-action", identifying: false,
         };
-        updatedDoc = domain.addRelationship(doc, rel);
+        updatedDoc = domain.addRelationship(updatedDoc, rel);
         changes.push({ type: "addRelation", relationId: relId, fromTable: src.name, toTable: tgt.name, cardinality: input["cardinality"] as string });
         break;
       }
@@ -414,6 +442,21 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
         const tgt = doc.entities.find((e) => e.id === rel.targetEntityId);
         updatedDoc = domain.removeRelationship(doc, relId);
         changes.push({ type: "removeRelation", relationId: relId, fromTable: src?.name ?? rel.sourceEntityId, toTable: tgt?.name ?? rel.targetEntityId });
+        break;
+      }
+      case "addIndex": {
+        const tableId = input["tableId"] as string;
+        const entity = updatedDoc.entities.find((e) => e.id === tableId);
+        if (!entity) break;
+        const indexId = randomUUID();
+        const index: DiagramIndex = {
+          id: indexId,
+          entityId: tableId,
+          name: input["name"] as string,
+          columnIds: input["columnIds"] as string[],
+          unique: (input["unique"] as boolean | undefined) ?? false,
+        };
+        updatedDoc = domain.addIndex(updatedDoc, index);
         break;
       }
     }
