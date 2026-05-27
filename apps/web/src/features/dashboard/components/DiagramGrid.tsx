@@ -18,7 +18,10 @@ import {
   dialectBadge, newCard, newCardIcon,
   ctxBtn, ctxMenu, ctxItem, ctxItemDanger, ctxDivider,
   filterRowDisabled, sectionError, sectionErrorIcon, sectionErrorTitle, sectionErrorDesc, sectionErrorBtn, sectionErrorGuide,
+  activeUsersRow, avatarStack, avatar, avatarOverflow, activeUsersBadge, activeDot, activeUsersCount,
 } from "./DiagramGrid.css";
+import { useActiveDiagramUsers } from "../hooks/useActiveDiagramUsers";
+import type { ActiveUser } from "@erdify/contracts";
 import { getErrorStatus, ERROR_CONTENT } from "@/shared/utils/queryErrorContent";
 import { reportError } from "@/shared/services/errorReporter";
 import { ShareDiagramModal } from "@/shared/components/ShareDiagramModal";
@@ -41,6 +44,28 @@ const DiagramCardPreview = ({ diagram }: { diagram: DiagramListItem }) => {
           ))}
         </div>
       ))}
+    </div>
+  );
+};
+
+const ActiveUsersIndicator = ({ users }: { users: ActiveUser[] }) => {
+  if (users.length === 0) return null;
+  const displayed = users.slice(0, 3);
+  const overflow = users.length - displayed.length;
+  return (
+    <div className={activeUsersRow}>
+      <div className={avatarStack}>
+        {displayed.map((u) => (
+          <div key={u.userId} className={avatar} style={{ background: u.color }}>
+            {u.email.charAt(0).toUpperCase()}
+          </div>
+        ))}
+        {overflow > 0 && <div className={avatarOverflow}>+{overflow}</div>}
+      </div>
+      <div className={activeUsersBadge}>
+        <div className={activeDot} />
+        <span className={activeUsersCount}>{users.length}명</span>
+      </div>
     </div>
   );
 };
@@ -84,6 +109,9 @@ export const DiagramGrid = () => {
 
   const projectName = projects.find((p) => p.id === projectId)?.name;
   const currentUserId = me?.id ?? null;
+
+  const diagramIds = diagrams.map((d) => d.id);
+  const activeUsers = useActiveDiagramUsers(diagramIds);
 
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
@@ -178,6 +206,7 @@ export const DiagramGrid = () => {
                     <span className={dialectBadge}>{diagram.dialect}</span>
                     {formatDistanceToNow(new Date(diagram.updatedAt), { addSuffix: true, locale: ko })}
                   </div>
+                  <ActiveUsersIndicator users={activeUsers[diagram.id] ?? []} />
                 </div>
               </Link>
               <button
