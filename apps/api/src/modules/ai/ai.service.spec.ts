@@ -6,6 +6,7 @@ import { OrganizationAiSettings, AiConversation, Diagram, OrganizationMember } f
 import { AiService } from "./ai.service";
 import { AiHistoryService } from "./ai-history.service";
 import { DomainLoaderService } from "../../common/services/domain-loader.service";
+import { UsageService } from "../usage/usage.service";
 import { encrypt } from "../../common/utils/field-cipher";
 import type { DiagramDocument } from "@erdify/domain";
 
@@ -75,6 +76,7 @@ describe("AiService", () => {
         { provide: getRepositoryToken(OrganizationMember), useValue: memberRepo },
         { provide: AiHistoryService, useValue: historyService },
         { provide: DomainLoaderService, useValue: domainLoader },
+        { provide: UsageService, useValue: { log: vi.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
