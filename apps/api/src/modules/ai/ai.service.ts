@@ -239,9 +239,10 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
       ...history.map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),
       { role: "user", content: userMessage },
     ];
+    const isNewModel = /^gpt-5/.test(model);
     const response = await client.chat.completions.create({
       model,
-      max_tokens: MAX_TOKENS,
+      ...(isNewModel ? { max_completion_tokens: MAX_TOKENS } : { max_tokens: MAX_TOKENS }),
       tools: ERD_TOOLS_OPENAI,
       messages,
     });
