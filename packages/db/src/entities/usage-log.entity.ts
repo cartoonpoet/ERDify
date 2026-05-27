@@ -17,7 +17,7 @@ export class UsageLog {
   @Column({ type: "varchar", name: "resource_type", length: 30, nullable: true })
   resourceType!: string | null;
 
-  @Column({ name: "resource_id", length: 36, nullable: true })
+  @Column({ type: "varchar", name: "resource_id", length: 36, nullable: true })
   resourceId!: string | null;
 
   @Column({ type: "jsonb", nullable: true })
