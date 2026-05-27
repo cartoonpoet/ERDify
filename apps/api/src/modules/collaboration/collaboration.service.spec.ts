@@ -161,13 +161,14 @@ describe("CollaborationService", () => {
       service.addPresence("d1", "user-1", "socket-1", "kim@example.com");
 
       const result = service.getRoomPresences(["d1"]);
+      const users = result["d1"]!;
 
-      expect(result["d1"]).toHaveLength(1);
-      expect(result["d1"][0]).toMatchObject({
+      expect(users).toHaveLength(1);
+      expect(users[0]).toMatchObject({
         userId: "user-1",
         email: "kim@example.com",
       });
-      expect(result["d1"][0].color).toBeDefined();
+      expect(users[0]!.color).toBeDefined();
     });
 
     it("mixes empty and populated rooms correctly", async () => {
