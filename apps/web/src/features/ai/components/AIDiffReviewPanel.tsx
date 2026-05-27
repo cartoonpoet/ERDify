@@ -7,7 +7,16 @@ interface ColumnReview {
   name: string;
   type: string;
   isPk: boolean;
+  comment?: string;
   changeType: "added" | "removed" | "modified" | "unchanged";
+}
+
+interface IndexReview {
+  indexId: string;
+  tableName: string;
+  indexName: string;
+  columnNames: string[];
+  unique: boolean;
 }
 
 interface TableReview {
@@ -29,7 +38,7 @@ const buildReview = (
   diff: DiffChange[],
   currentDoc: DiagramDocument | null,
   pendingDoc: DiagramDocument,
-): { tables: TableReview[]; relations: RelationReview[] } => {
+): { tables: TableReview[]; relations: RelationReview[]; indexes: IndexReview[] } => {
   const tableMap = new Map<string, TableReview>();
 
   const getTableReview = (tableId: string, tableName: string, changeType: TableReview["changeType"]): TableReview => {
@@ -45,7 +54,8 @@ const buildReview = (
         const entity = pendingDoc.entities.find((e) => e.id === change.tableId);
         const review = getTableReview(change.tableId, change.tableName, "added");
         review.columns = (entity?.columns ?? []).map((c) => ({
-          id: c.id, name: c.name, type: c.type, isPk: c.primaryKey, changeType: "added",
+          id: c.id, name: c.name, type: c.type, isPk: c.primaryKey, changeType: "added" as const,
+          ...(c.comment ? { comment: c.comment } : {}),
         }));
         break;
       }
@@ -60,7 +70,7 @@ const buildReview = (
       case "addColumn": {
         const review = getTableReview(change.tableId, change.tableName, "modified");
         if (!review.columns.some((c) => c.id === change.columnId)) {
-          review.columns.push({ id: change.columnId, name: change.columnName, type: change.columnType, isPk: false, changeType: "added" });
+          review.columns.push({ id: change.columnId, name: change.columnName, type: change.columnType, isPk: false, changeType: "added", ...(change.comment ? { comment: change.comment } : {}) });
         }
         break;
       }
@@ -90,7 +100,7 @@ const buildReview = (
     if (!entity) continue;
     for (const col of entity.columns) {
       if (!review.columns.some((c) => c.id === col.id)) {
-        review.columns.push({ id: col.id, name: col.name, type: col.type, isPk: col.primaryKey, changeType: "unchanged" });
+        review.columns.push({ id: col.id, name: col.name, type: col.type, isPk: col.primaryKey, changeType: "unchanged", ...(col.comment ? { comment: col.comment } : {}) });
       }
     }
     // 정렬: PK 먼저, 변경된 것 위로
@@ -111,7 +121,11 @@ const buildReview = (
         : { relationId: c.relationId, fromTable: c.fromTable, toTable: c.toTable, cardinality: "", changeType: "removed" as const }
     );
 
-  return { tables: Array.from(tableMap.values()), relations };
+  const indexes: IndexReview[] = diff
+    .filter((c): c is Extract<DiffChange, { type: "addIndex" }> => c.type === "addIndex")
+    .map((c) => ({ indexId: c.indexId, tableName: c.tableName, indexName: c.indexName, columnNames: c.columnNames, unique: c.unique }));
+
+  return { tables: Array.from(tableMap.values()), relations, indexes };
 };
 
 const CHANGE_LABEL: Record<TableReview["changeType"], string> = {
@@ -155,7 +169,7 @@ interface AIDiffReviewPanelProps {
 }
 
 export const AIDiffReviewPanel = ({ diff, pendingDocument, currentDocument, onAccept, onReject }: AIDiffReviewPanelProps) => {
-  const { tables, relations } = buildReview(diff, currentDocument, pendingDocument);
+  const { tables, relations, indexes } = buildReview(diff, currentDocument, pendingDocument);
 
   return (
     <div className={css.overlay} onClick={(e) => { if (e.target === e.currentTarget) onReject(); }}>
@@ -184,10 +198,26 @@ export const AIDiffReviewPanel = ({ diff, pendingDocument, currentDocument, onAc
                           <span className={css.columnChangeMarker}>{COLUMN_MARKER[col.changeType]}</span>
                           {col.isPk && <span className={css.pkBadge}>PK</span>}
                           <span className={css.columnName}>{col.name}</span>
+                          {col.comment && <span className={css.columnComment}>{col.comment}</span>}
                           {col.type && <span className={css.columnType}>{col.type}</span>}
                         </div>
                       ))}
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {indexes.length > 0 && (
+            <div>
+              <div className={css.sectionTitle}>인덱스</div>
+              <div className={css.relationsSection}>
+                {indexes.map((idx) => (
+                  <div key={idx.indexId} className={`${css.relationRow} ${css.relationRowAdded}`}>
+                    <span>+</span>
+                    <span>{idx.indexName}</span>
+                    <span style={{ opacity: 0.7, fontSize: "11px" }}>({idx.tableName}: {idx.columnNames.join(", ")}{idx.unique ? ", UNIQUE" : ""})</span>
                   </div>
                 ))}
               </div>

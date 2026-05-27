@@ -216,6 +216,13 @@ export const columnType = style({
   fontSize: vars.font.size.xs,
 });
 
+export const columnComment = style({
+  color: "inherit",
+  opacity: 0.55,
+  fontSize: vars.font.size.xs,
+  fontStyle: "italic",
+});
+
 export const pkBadge = style({
   fontSize: "9px",
   background: "rgba(0,0,0,0.12)",

@@ -90,6 +90,7 @@ Respond in the same language the user writes in (Korean if they write Korean).
 3. **Foreign keys**: Always use \`addRelation\` with \`fkColumnName\` set to \`<referenced_table_singular>_id\` (e.g. \`user_id\`, \`order_id\`). The FK column (uuid type) is created automatically. Set \`fkNullable: false\` unless the relationship is optional.
 4. **Cardinality**: choose the correct direction — one-to-many means the "many" side holds the FK column (sourceTableId = many side).
 5. **Data types**: uuid for PKs and FKs, varchar for short strings, text for long strings, integer/bigint for counts, boolean for flags, timestamptz for timestamps, numeric/decimal for money, jsonb for flexible structured data.
+5a. **Logical names (comment)**: ALWAYS set the \`comment\` field on every column with a short Korean description of its purpose (e.g. \`id\` → "고유 식별자", \`user_id\` → "사용자 ID", \`title\` → "여행 제목", \`created_at\` → "생성일시").
 6. **Indexes**: After every \`addRelation\`, call \`addIndex\` on the FK column (e.g. name: \`idx_orders_user_id\`). Also add unique indexes for natural keys (email, slug, etc.).
 7. When the user asks for a "system" or "module" (e.g. "쇼핑몰", "회원 시스템"), proactively design all necessary tables and relationships — don't wait for them to specify each table.
 
@@ -315,7 +316,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
         updatedDoc = domain.addEntity(doc, { id: entityId, name });
         changes.push({ type: "addTable", tableId: entityId, tableName: name });
 
-        const columns = input["columns"] as Array<{ name: string; type: string; nullable?: boolean; primaryKey?: boolean; unique?: boolean }> | undefined;
+        const columns = input["columns"] as Array<{ name: string; type: string; nullable?: boolean; primaryKey?: boolean; unique?: boolean; comment?: string }> | undefined;
         if (columns) {
           for (let i = 0; i < columns.length; i++) {
             const col = columns[i]!;
@@ -323,10 +324,10 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
             const column: DiagramColumn = {
               id: colId, name: col.name, type: col.type,
               nullable: col.nullable ?? true, primaryKey: col.primaryKey ?? false,
-              unique: col.unique ?? false, defaultValue: null, comment: null, ordinal: i,
+              unique: col.unique ?? false, defaultValue: null, comment: col.comment ?? null, ordinal: i,
             };
             updatedDoc = domain.addColumn(updatedDoc, entityId, column);
-            changes.push({ type: "addColumn", tableId: entityId, tableName: name, columnId: colId, columnName: col.name, columnType: col.type });
+            changes.push({ type: "addColumn", tableId: entityId, tableName: name, columnId: colId, columnName: col.name, columnType: col.type, ...(col.comment ? { comment: col.comment } : {}) });
           }
         }
         break;
@@ -361,11 +362,11 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
           primaryKey: (input["primaryKey"] as boolean | undefined) ?? false,
           unique: (input["unique"] as boolean | undefined) ?? false,
           defaultValue: (input["defaultValue"] as string | undefined) ?? null,
-          comment: null,
+          comment: (input["comment"] as string | undefined) ?? null,
           ordinal: entity.columns.length,
         };
         updatedDoc = domain.addColumn(doc, tableId, column);
-        changes.push({ type: "addColumn", tableId, tableName: entity.name, columnId: colId, columnName: column.name, columnType: column.type });
+        changes.push({ type: "addColumn", tableId, tableName: entity.name, columnId: colId, columnName: column.name, columnType: column.type, ...(column.comment ? { comment: column.comment } : {}) });
         break;
       }
       case "removeColumn": {
@@ -449,14 +450,18 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
         const entity = updatedDoc.entities.find((e) => e.id === tableId);
         if (!entity) break;
         const indexId = randomUUID();
+        const columnIds = input["columnIds"] as string[];
+        const unique = (input["unique"] as boolean | undefined) ?? false;
         const index: DiagramIndex = {
           id: indexId,
           entityId: tableId,
           name: input["name"] as string,
-          columnIds: input["columnIds"] as string[],
-          unique: (input["unique"] as boolean | undefined) ?? false,
+          columnIds,
+          unique,
         };
         updatedDoc = domain.addIndex(updatedDoc, index);
+        const columnNames = columnIds.map((cid) => entity.columns.find((c) => c.id === cid)?.name ?? cid);
+        changes.push({ type: "addIndex", indexId, tableName: entity.name, indexName: input["name"] as string, columnNames, unique });
         break;
       }
     }
