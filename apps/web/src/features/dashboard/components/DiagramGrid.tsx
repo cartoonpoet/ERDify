@@ -56,7 +56,7 @@ const ActiveUsersIndicator = ({ users }: { users: ActiveUser[] }) => {
     <div className={activeUsersRow}>
       <div className={avatarStack}>
         {displayed.map((u) => (
-          <div key={u.userId} className={avatar} style={{ background: u.color }}>
+          <div key={u.userId} className={avatar} style={{ background: u.color }} title={u.email}>
             {u.email.charAt(0).toUpperCase()}
           </div>
         ))}

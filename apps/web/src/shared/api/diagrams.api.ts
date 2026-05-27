@@ -58,9 +58,9 @@ export function getPublicDiagram(shareToken: string): Promise<PublicDiagramRespo
   return httpClient.get<PublicDiagramResponse>(`/diagrams/public/${shareToken}`).then((r) => r.data);
 }
 
-export const getActiveDiagramUsers = (diagramIds: string[]): Promise<ActiveUsersResponse> => {
+export function getActiveDiagramUsers(diagramIds: string[]): Promise<ActiveUsersResponse> {
   if (diagramIds.length === 0) return Promise.resolve({});
   return httpClient
     .get<ActiveUsersResponse>(`/diagrams/active-users?diagramIds=${diagramIds.join(",")}`)
     .then((r) => r.data);
-};
+}

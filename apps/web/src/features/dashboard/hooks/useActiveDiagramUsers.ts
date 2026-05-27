@@ -5,8 +5,9 @@ import type { ActiveUser } from "@erdify/contracts";
 export const useActiveDiagramUsers = (
   diagramIds: string[]
 ): Record<string, ActiveUser[]> => {
+  const key = diagramIds.join(",");
   const { data } = useQuery({
-    queryKey: ["active-diagram-users", diagramIds],
+    queryKey: ["active-diagram-users", key],
     queryFn: () => getActiveDiagramUsers(diagramIds),
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
