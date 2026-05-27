@@ -13,6 +13,8 @@ export type {
   ShareLinkResponse,
   PublicDiagramResponse,
   SharePreset,
+  ActiveUser,
+  ActiveUsersResponse,
 } from "./diagrams/diagram.types";
 export type { OrgResponse } from "./organizations/organization.types";
 export type {

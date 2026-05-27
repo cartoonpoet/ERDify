@@ -10,6 +10,7 @@ import { AuthorizationService } from "../../common/services/authorization.servic
 import type { DomainLoaderService } from "../../common/services/domain-loader.service";
 import type { DiagramDocument } from "@erdify/domain";
 import * as erdifyDomain from "@erdify/domain";
+import type { CollaborationService } from "../collaboration/collaboration.service";
 
 const makeDoc = (overrides: Partial<DiagramDocument> = {}): DiagramDocument => ({
   format: "erdify.schema.v1",
@@ -74,6 +75,10 @@ const makeRelationship = (id = "rel-1") => ({
   identifying: false,
 });
 
+const mockCollaborationService = {
+  getRoomPresences: vi.fn(),
+};
+
 describe("DiagramsService", () => {
   let service: DiagramsService;
   let diagramRepo: MockRepo<Diagram>;
@@ -119,7 +124,7 @@ describe("DiagramsService", () => {
       authService
     );
 
-    service = new DiagramsService(crud, schema, version, share);
+    service = new DiagramsService(crud, schema, version, share, mockCollaborationService as unknown as CollaborationService);
   });
 
   describe("create", () => {
@@ -661,6 +666,57 @@ describe("DiagramsService", () => {
       await expect(service.removeRelationship("diag-1", "bad-id", "user-1")).rejects.toThrow(
         NotFoundException
       );
+    });
+  });
+
+  describe("getActiveUsers", () => {
+    const diagramIds = ["diag-1", "diag-2"];
+
+    beforeEach(() => {
+      mockCollaborationService.getRoomPresences.mockReturnValue({
+        "diag-1": [{ userId: "user-1", email: "kim@example.com", color: "#ef4444" }],
+        "diag-2": [],
+      });
+    });
+
+    it("calls getRoomPresences only with accessible diagram IDs", async () => {
+      // diag-1은 접근 가능, diag-2는 접근 불가 (findOne → null)
+      diagramRepo.findOne.mockImplementation(({ where: { id } }: { where: { id: string } }) => {
+        if (id === "diag-1") return Promise.resolve(makeDiagram({ id: "diag-1" }));
+        return Promise.resolve(null);
+      });
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+
+      await service.getActiveUsers(diagramIds, "user-1");
+
+      expect(mockCollaborationService.getRoomPresences).toHaveBeenCalledWith(["diag-1"]);
+    });
+
+    it("returns presence data for accessible diagrams", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ id: "diag-1" }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      mockCollaborationService.getRoomPresences.mockReturnValue({
+        "diag-1": [{ userId: "user-1", email: "kim@example.com", color: "#ef4444" }],
+      });
+
+      const result = await service.getActiveUsers(["diag-1"], "user-1");
+
+      expect(result["diag-1"]).toHaveLength(1);
+      expect(result["diag-1"]![0]).toMatchObject({ userId: "user-1", email: "kim@example.com", color: "#ef4444" });
+    });
+
+    it("returns empty object when no diagrams are accessible", async () => {
+      diagramRepo.findOne.mockResolvedValue(null);
+      mockCollaborationService.getRoomPresences.mockReturnValue({});
+
+      const result = await service.getActiveUsers(diagramIds, "user-1");
+
+      expect(result).toEqual({});
+      expect(mockCollaborationService.getRoomPresences).toHaveBeenCalledWith([]);
     });
   });
 });

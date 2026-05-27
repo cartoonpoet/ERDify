@@ -1,8 +1,9 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Diagram, DiagramVersion, McpSession, Organization, Project, User } from "@erdify/db";
 import { AuthModule } from "../auth/auth.module";
 import { CommonModule } from "../../common/common.module";
+import { CollaborationModule } from "../collaboration/collaboration.module";
 import { PublicDiagramsController } from "./public-diagrams.controller";
 import { DiagramsController } from "./diagrams.controller";
 import { DiagramsService } from "./diagrams.service";
@@ -18,6 +19,7 @@ import { McpSessionsService } from "./mcp-sessions.service";
     TypeOrmModule.forFeature([Diagram, DiagramVersion, McpSession, Organization, Project, User]),
     AuthModule,
     CommonModule,
+    forwardRef(() => CollaborationModule),
   ],
   controllers: [PublicDiagramsController, DiagramsController, McpSessionsController],
   providers: [

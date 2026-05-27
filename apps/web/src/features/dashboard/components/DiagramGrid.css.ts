@@ -337,3 +337,68 @@ export const sectionErrorGuide = style({
   maxWidth: "260px",
   marginTop: vars.space["1"],
 });
+
+export const activeUsersRow = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginTop: vars.space["2"],
+});
+
+export const avatarStack = style({
+  display: "flex",
+  alignItems: "center",
+});
+
+export const avatar = style({
+  width: "22px",
+  height: "22px",
+  borderRadius: "50%",
+  border: `2px solid ${vars.color.surface}`,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: vars.color.surface,
+  fontSize: "9px",
+  fontWeight: "700",
+  flexShrink: 0,
+  selectors: {
+    "& + &": { marginLeft: "-7px" },
+  },
+});
+
+export const avatarOverflow = style({
+  width: "22px",
+  height: "22px",
+  borderRadius: "50%",
+  border: `2px solid ${vars.color.border}`,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: vars.color.surfaceSecondary,
+  color: vars.color.textSecondary,
+  fontSize: "8px",
+  fontWeight: "700",
+  flexShrink: 0,
+  marginLeft: "-7px",
+});
+
+export const activeUsersBadge = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "3px",
+});
+
+export const activeDot = style({
+  width: "6px",
+  height: "6px",
+  borderRadius: "50%",
+  background: vars.color.success,
+  flexShrink: 0,
+});
+
+export const activeUsersCount = style({
+  fontSize: "10px",
+  color: vars.color.success,
+  fontWeight: "600",
+});

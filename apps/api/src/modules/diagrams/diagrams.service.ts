@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable, forwardRef } from "@nestjs/common";
 import type { Diagram, DiagramVersion } from "@erdify/db";
 import type { CreateDiagramDto } from "./dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
@@ -9,11 +9,13 @@ import type { AddColumnDto } from "./dto/add-column.dto";
 import type { UpdateColumnDto } from "./dto/update-column.dto";
 import type { AddRelationshipDto } from "./dto/add-relationship.dto";
 import type { UpdateRelationshipDto } from "./dto/update-relationship.dto";
+import type { ActiveUsersResponse } from "@erdify/contracts";
 import { DiagramsCrudService } from "./services/diagrams-crud.service";
 import { DiagramsSchemaService } from "./services/diagrams-schema.service";
 import { DiagramsVersionService } from "./services/diagrams-version.service";
 import type { DiagramVersionWithName } from "./services/diagrams-version.service";
 import { DiagramsShareService } from "./services/diagrams-share.service";
+import { CollaborationService } from "../collaboration/collaboration.service";
 
 @Injectable()
 export class DiagramsService {
@@ -21,7 +23,9 @@ export class DiagramsService {
     private readonly crud: DiagramsCrudService,
     private readonly schema: DiagramsSchemaService,
     private readonly version: DiagramsVersionService,
-    private readonly share: DiagramsShareService
+    private readonly share: DiagramsShareService,
+    @Inject(forwardRef(() => CollaborationService))
+    private readonly collaborationService: CollaborationService
   ) {}
 
   create(projectId: string, userId: string, dto: CreateDiagramDto): Promise<Diagram> {
@@ -114,5 +118,16 @@ export class DiagramsService {
 
   removeRelationship(diagramId: string, relId: string, userId: string): Promise<void> {
     return this.schema.removeRelationship(diagramId, relId, userId);
+  }
+
+  async getActiveUsers(diagramIds: string[], userId: string): Promise<ActiveUsersResponse> {
+    const accessChecks = await Promise.all(
+      diagramIds.map(async (id) => ({
+        id,
+        allowed: await this.canAccessDiagram(id, userId),
+      }))
+    );
+    const allowedIds = accessChecks.filter((c) => c.allowed).map((c) => c.id);
+    return this.collaborationService.getRoomPresences(allowedIds);
   }
 }

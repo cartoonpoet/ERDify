@@ -5,6 +5,7 @@ import type {
   ShareLinkResponse,
   PublicDiagramResponse,
   SharePreset,
+  ActiveUsersResponse,
 } from "@erdify/contracts";
 import { httpClient } from "./httpClient";
 
@@ -55,4 +56,11 @@ export function revokeDiagramShare(diagramId: string): Promise<void> {
 }
 export function getPublicDiagram(shareToken: string): Promise<PublicDiagramResponse> {
   return httpClient.get<PublicDiagramResponse>(`/diagrams/public/${shareToken}`).then((r) => r.data);
+}
+
+export function getActiveDiagramUsers(diagramIds: string[]): Promise<ActiveUsersResponse> {
+  if (diagramIds.length === 0) return Promise.resolve({});
+  return httpClient
+    .get<ActiveUsersResponse>(`/diagrams/active-users?diagramIds=${diagramIds.join(",")}`)
+    .then((r) => r.data);
 }
