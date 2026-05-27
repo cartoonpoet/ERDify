@@ -39,3 +39,12 @@ export {
   type AiSuggestColumnsRequest,
   type UpdateOrgAiSettingsRequest,
 } from "./ai/ai-contract.schema";
+export type {
+  AnnouncementType,
+  AnnouncementResponse,
+  CreateAnnouncementDto,
+  UpdateAnnouncementDto,
+  AiGenerateAnnouncementDto,
+  AiRefineAnnouncementDto,
+  AiAnnouncementResult,
+} from "./announcements/announcement.types";
