@@ -1,3 +1,4 @@
+export { Announcement } from "./announcement.entity";
 export { ApiKey } from "./api-key.entity";
 export { Diagram } from "./diagram.entity";
 export { DiagramVersion } from "./diagram-version.entity";

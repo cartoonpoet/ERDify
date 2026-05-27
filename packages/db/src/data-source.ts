@@ -35,13 +35,15 @@ import { AddProviderToOrgAiSettings1746000000019 } from "./migrations/1746000000
 import { AddModelToOrgAiSettings1746000000020 } from "./migrations/1746000000020-AddModelToOrgAiSettings";
 import { UsageLog } from "./entities/usage-log.entity";
 import { CreateUsageLogsTable1746000000021 } from "./migrations/1746000000021-CreateUsageLogsTable";
+import { Announcement } from "./entities/announcement.entity";
+import { CreateAnnouncementsTable1746000000022 } from "./migrations/1746000000022-CreateAnnouncementsTable";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
   url: process.env["DATABASE_URL"] ?? "postgres://erdify:erdify@localhost:5432/erdify",
   synchronize: false,
   migrationsRun: false,
-  entities: [User, Organization, OrganizationAiSettings, OrganizationMember, Project, Diagram, DiagramVersion, Invite, ApiKey, McpSession, ErrorReport, AiConversation, UsageLog],
+  entities: [User, Organization, OrganizationAiSettings, OrganizationMember, Project, Diagram, DiagramVersion, Invite, ApiKey, McpSession, ErrorReport, AiConversation, UsageLog, Announcement],
   migrations: [
     CreateUsersTable1746000000000,
     CreateOrganizationsTable1746000000001,
@@ -65,5 +67,6 @@ export const AppDataSource = new DataSource({
     AddProviderToOrgAiSettings1746000000019,
     AddModelToOrgAiSettings1746000000020,
     CreateUsageLogsTable1746000000021,
+    CreateAnnouncementsTable1746000000022,
   ]
 });

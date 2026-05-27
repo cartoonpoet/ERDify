@@ -367,6 +367,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@erdify/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2

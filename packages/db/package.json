@@ -22,6 +22,7 @@
     "migration:revert": "pnpm build && typeorm migration:revert -d dist/data-source.js"
   },
   "dependencies": {
+    "@erdify/contracts": "workspace:*",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.22"
   },
