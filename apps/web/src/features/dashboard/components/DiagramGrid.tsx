@@ -70,6 +70,8 @@ const ActiveUsersIndicator = ({ users }: { users: ActiveUser[] }) => {
   );
 };
 
+
+
 function applyFilter(
   diagrams: DiagramListItem[],
   filter: FilterType,
@@ -204,9 +206,9 @@ export const DiagramGrid = () => {
                   <div className={cardName}>{diagram.name}</div>
                   <div className={cardMeta}>
                     <span className={dialectBadge}>{diagram.dialect}</span>
-                    {formatDistanceToNow(new Date(diagram.updatedAt), { addSuffix: true, locale: ko })}
+                    {(activeUsers[diagram.id]?.length ?? 0) === 0 && formatDistanceToNow(new Date(diagram.updatedAt), { addSuffix: true, locale: ko })}
+                    <ActiveUsersIndicator users={activeUsers[diagram.id] ?? []} />
                   </div>
-                  <ActiveUsersIndicator users={activeUsers[diagram.id] ?? []} />
                 </div>
               </Link>
               <button

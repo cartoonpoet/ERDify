@@ -341,8 +341,8 @@ export const sectionErrorGuide = style({
 export const activeUsersRow = style({
   display: "flex",
   alignItems: "center",
-  justifyContent: "space-between",
-  marginTop: vars.space["2"],
+  gap: vars.space["1"],
+  marginLeft: "auto",
 });
 
 export const avatarStack = style({
