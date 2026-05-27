@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { randomUUID } from "node:crypto";
@@ -11,6 +11,7 @@ import { encrypt, decrypt } from "../../common/utils/field-cipher";
 import { DomainLoaderService } from "../../common/services/domain-loader.service";
 import { AiHistoryService } from "./ai-history.service";
 import { ERD_TOOLS, ERD_TOOLS_OPENAI } from "./erd-tools";
+import { UsageService } from "../usage/usage.service";
 
 const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6";
 const DEFAULT_OPENAI_MODEL = "gpt-4o";
@@ -20,6 +21,8 @@ type Provider = "anthropic" | "openai";
 
 @Injectable()
 export class AiService {
+  private readonly logger = new Logger(AiService.name);
+
   constructor(
     @InjectRepository(OrganizationAiSettings)
     private readonly settingsRepo: Repository<OrganizationAiSettings>,
@@ -29,6 +32,7 @@ export class AiService {
     private readonly memberRepo: Repository<OrganizationMember>,
     private readonly historyService: AiHistoryService,
     private readonly domainLoader: DomainLoaderService,
+    private readonly usageService: UsageService,
   ) {}
 
   // ── Org settings ──────────────────────────────────────────────────────────
@@ -120,6 +124,14 @@ ${JSON.stringify(buildDiagramContext(doc, userMessage))}`;
       toolCalls.length > 0 ? toolCalls : null,
     );
 
+    this.usageService
+      .log(orgId, userId, "ai_chat", "diagram", diagramId, {
+        provider,
+        model,
+        tool_call_count: toolCalls.length,
+      })
+      .catch((e) => this.logger.error(e));
+
     return {
       messageId: savedMessage.id,
       content: savedMessage.content,
@@ -162,6 +174,14 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
         .map((b) => (b as { type: "text"; text: string }).text)
         .join("");
     }
+
+    this.usageService
+      .log(membership.organizationId, userId, "ai_suggest_columns", null, null, {
+        provider,
+        model,
+        table_name: tableName,
+      })
+      .catch((e) => this.logger.error(e));
 
     try {
       const match = text.match(/\[[\s\S]*\]/);

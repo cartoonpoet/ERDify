@@ -28,9 +28,11 @@ describe("ProjectService", () => {
     projectRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
     memberRepo = { findOne: vi.fn(), find: vi.fn(), create: vi.fn(), save: vi.fn(), remove: vi.fn() };
     authorizationService = new AuthorizationService(memberRepo as unknown as Repository<OrganizationMember>);
+    const mockUsageService = { log: vi.fn().mockResolvedValue(undefined) };
     service = new ProjectService(
       projectRepo as unknown as Repository<Project>,
-      authorizationService
+      authorizationService,
+      mockUsageService as any,
     );
   });
 
