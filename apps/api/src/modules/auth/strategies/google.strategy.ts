@@ -11,14 +11,22 @@ export interface GoogleValidateResult {
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, "google") {
+  private readonly configured: boolean;
+
   constructor(configService: ConfigService) {
-    const clientID = configService.get<string>("GOOGLE_CLIENT_ID");
-    const clientSecret = configService.get<string>("GOOGLE_CLIENT_SECRET");
-    const callbackURL = configService.get<string>("GOOGLE_CALLBACK_URL");
-    if (!clientID) throw new Error("GOOGLE_CLIENT_ID environment variable is required");
-    if (!clientSecret) throw new Error("GOOGLE_CLIENT_SECRET environment variable is required");
-    if (!callbackURL) throw new Error("GOOGLE_CALLBACK_URL environment variable is required");
+    const clientID = configService.get<string>("GOOGLE_CLIENT_ID") ?? "not-configured";
+    const clientSecret = configService.get<string>("GOOGLE_CLIENT_SECRET") ?? "not-configured";
+    const callbackURL = configService.get<string>("GOOGLE_CALLBACK_URL") ?? "http://localhost/not-configured";
     super({ clientID, clientSecret, callbackURL, scope: ["email", "profile"] });
+    this.configured = clientID !== "not-configured";
+  }
+
+  override authenticate(req: any, options?: any): void {
+    if (!this.configured) {
+      this.fail({ message: "구글 로그인이 아직 준비되지 않았습니다." });
+      return;
+    }
+    super.authenticate(req, options);
   }
 
   validate(
