@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Query, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Patch, Post, Query, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -51,6 +51,10 @@ export class ErrorReportsController {
     @Query("path") path: string,
   ) {
     await this.assertAdmin(req.user.sub);
+    const VALID_ERROR_TYPES: ErrorType[] = ["5xx", "network", "403", "404"];
+    if (!VALID_ERROR_TYPES.includes(errorType)) {
+      throw new BadRequestException(`Invalid errorType: ${errorType}`);
+    }
     const records = await this.service.getOccurrences(errorType, path);
     return records.map((r) => ({
       id: r.id,
