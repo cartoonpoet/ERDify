@@ -13,6 +13,8 @@ export { OrganizationAiSettings } from "./entities/organization-ai-settings.enti
 export { Project } from "./entities/project.entity";
 export { User } from "./entities/user.entity";
 export { AiConversation } from "./entities/ai-conversation.entity";
+export { OauthAccount } from "./entities/oauth-account.entity";
+export type { OAuthProvider } from "./entities/oauth-account.entity";
 export { UsageLog } from "./entities/usage-log.entity";
 export { Announcement } from "./entities/announcement.entity";
 export { createTypeOrmOptions } from "./typeorm/create-typeorm-options";

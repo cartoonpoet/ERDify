@@ -2,11 +2,12 @@ import { createHash, randomBytes, randomUUID } from "crypto";
 import { extname, join } from "path";
 import { writeFile, unlink } from "fs/promises";
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ApiKey, Invite, Organization, OrganizationMember, User } from "@erdify/db";
+import { ApiKey, Invite, OauthAccount, Organization, OrganizationMember, User } from "@erdify/db";
 import * as bcrypt from "bcryptjs";
-import { IsNull, MoreThan, In, type Repository } from "typeorm";
+import { DataSource, IsNull, MoreThan, In, type Repository } from "typeorm";
 import { encrypt, decrypt } from "../../common/utils/field-cipher";
 import { EmailService } from "../email/email.service";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
@@ -15,6 +16,7 @@ import type { LoginDto } from "./dto/login.dto";
 import type { RegisterDto } from "./dto/register.dto";
 import type { UpdateProfileDto } from "./dto/update-profile.dto";
 import type { JwtPayload } from "./strategies/jwt.strategy";
+import type { SocialOnboardTokenPayload } from "@erdify/contracts";
 
 interface VerificationEntry {
   code: string;
@@ -62,8 +64,12 @@ export class AuthService {
     private readonly orgRepo: Repository<Organization>,
     @InjectRepository(OrganizationMember)
     private readonly memberRepo: Repository<OrganizationMember>,
+    @InjectRepository(OauthAccount)
+    private readonly oauthAccountRepo: Repository<OauthAccount>,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async sendVerificationCode(email: string): Promise<void> {
@@ -303,5 +309,99 @@ export class AuthService {
     user.avatarUrl = `/uploads/avatars/${filename}`;
     const saved = await this.userRepo.save(user);
     return { id: saved.id, email: saved.email, name: saved.name, avatarUrl: saved.avatarUrl, phone: saved.phone ? decrypt(saved.phone) : null, isAdmin: saved.isAdmin };
+  }
+
+  // ── Social OAuth ─────────────────────────────────────────────────────────────
+
+  issueAccessToken(userId: string, email: string): string {
+    return this.jwtService.sign({ sub: userId, email });
+  }
+
+  issueSocialOnboardToken(sub: string, email: string | undefined, provider: string, providerId: string): string {
+    const secret = this.configService.get<string>("SOCIAL_ONBOARD_JWT_SECRET");
+    if (!secret) throw new Error("SOCIAL_ONBOARD_JWT_SECRET environment variable is required");
+    return this.jwtService.sign(
+      { sub, email, provider, providerId, purpose: "social-onboard" },
+      { secret, expiresIn: "15m" },
+    );
+  }
+
+  async findOrCreateOAuthUser(
+    provider: "kakao" | "naver" | "google",
+    providerId: string,
+    providerEmail: string | undefined,
+    name?: string,
+  ): Promise<{ user: User; isNew: boolean }> {
+    return this.dataSource.transaction(async (manager) => {
+      // 1단계: oauth_accounts에서 (provider, providerId) 조회
+      const existingOAuth = await manager.findOne(OauthAccount, {
+        where: { provider, providerId },
+        relations: ["user"],
+      });
+      if (existingOAuth) {
+        return { user: existingOAuth.user, isNew: false };
+      }
+
+      // 2단계: providerEmail로 기존 user 조회 (Account Linking)
+      if (providerEmail) {
+        const existingUser = await manager.findOne(User, { where: { email: providerEmail } });
+        if (existingUser) {
+          const oauthAccount = manager.create(OauthAccount, {
+            id: randomUUID(),
+            userId: existingUser.id,
+            provider,
+            providerId,
+            providerEmail: providerEmail ?? null,
+          });
+          await manager.save(OauthAccount, oauthAccount);
+          return { user: existingUser, isNew: false };
+        }
+      }
+
+      // 3단계: 신규 user 생성
+      const sentinelHash = await bcrypt.hash(randomBytes(32).toString("hex"), 10);
+      const newUser = manager.create(User, {
+        id: randomUUID(),
+        email: providerEmail ?? `${provider}_${providerId}@social.erdify.local`,
+        passwordHash: sentinelHash,
+        name: name ?? "소셜 사용자",
+      });
+      const savedUser = await manager.save(User, newUser);
+
+      const oauthAccount = manager.create(OauthAccount, {
+        id: randomUUID(),
+        userId: savedUser.id,
+        provider,
+        providerId,
+        providerEmail: providerEmail ?? null,
+      });
+      await manager.save(OauthAccount, oauthAccount);
+
+      return { user: savedUser, isNew: true };
+    });
+  }
+
+  async onboardSocialUser(onboardToken: string, name: string): Promise<{ accessToken: string }> {
+    const secret = this.configService.get<string>("SOCIAL_ONBOARD_JWT_SECRET");
+    if (!secret) throw new Error("SOCIAL_ONBOARD_JWT_SECRET environment variable is required");
+
+    let payload: SocialOnboardTokenPayload;
+    try {
+      payload = this.jwtService.verify<SocialOnboardTokenPayload>(onboardToken, { secret });
+    } catch {
+      throw new UnauthorizedException("유효하지 않거나 만료된 온보딩 토큰입니다.");
+    }
+
+    if (payload.purpose !== "social-onboard") {
+      throw new UnauthorizedException("유효하지 않은 토큰입니다.");
+    }
+
+    const user = await this.userRepo.findOne({ where: { id: payload.sub } });
+    if (!user) throw new NotFoundException("사용자를 찾을 수 없습니다.");
+
+    user.name = name;
+    const saved = await this.userRepo.save(user);
+
+    return { accessToken: this.jwtService.sign({ sub: saved.id, email: saved.email }) };
   }
 }

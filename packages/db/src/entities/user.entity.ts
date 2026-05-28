@@ -7,6 +7,7 @@ import {
   UpdateDateColumn
 } from "typeorm";
 import type { OrganizationMember } from "./organization-member.entity";
+import type { OauthAccount } from "./oauth-account.entity";
 
 @Entity("users")
 export class User {
@@ -39,4 +40,7 @@ export class User {
 
   @OneToMany("OrganizationMember", "user")
   memberships!: OrganizationMember[];
+
+  @OneToMany("OauthAccount", "user")
+  oauthAccounts?: OauthAccount[];
 }

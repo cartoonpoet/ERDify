@@ -128,3 +128,93 @@ export const formError = style({
   color: vars.color.error,
   margin: 0,
 });
+
+export const socialDivider = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space["3"],
+  width: "100%",
+  color: vars.color.textSecondary,
+  fontSize: vars.font.size.md,
+  marginTop: vars.space["3"],
+  selectors: {
+    "&::before": {
+      content: '""',
+      flex: 1,
+      height: "1px",
+      background: vars.color.border,
+    },
+    "&::after": {
+      content: '""',
+      flex: 1,
+      height: "1px",
+      background: vars.color.border,
+    },
+  },
+});
+
+export const socialButtonContainer = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: vars.space["2"],
+  width: "100%",
+  marginTop: vars.space["2"],
+});
+
+export const socialButton = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: vars.space["2"],
+  width: "100%",
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.md,
+  padding: `${vars.space["2"]} ${vars.space["4"]}`,
+  cursor: "pointer",
+  fontSize: vars.font.size.md,
+  fontWeight: vars.font.weight.medium,
+  fontFamily: vars.font.family,
+  transition: "opacity 150ms ease",
+  selectors: {
+    "&:hover:not(:disabled)": {
+      opacity: 0.88,
+    },
+    "&:disabled": {
+      cursor: "not-allowed",
+      opacity: 0.5,
+    },
+  },
+});
+
+export const kakaoButton = style({
+  background: "#FEE500",
+  color: "#191919",
+  borderColor: "#FEE500",
+});
+
+export const naverButton = style({
+  background: "#03C75A",
+  color: "#FFFFFF",
+  borderColor: "#03C75A",
+});
+
+export const googleButton = style({
+  background: "#FFFFFF",
+  color: "#3C4043",
+  borderColor: "#DADCE0",
+});
+
+export const onboardTitle = style({
+  fontSize: vars.font.size["2xl"],
+  fontWeight: vars.font.weight.bold,
+  color: vars.color.textPrimary,
+  textAlign: "center",
+  marginBottom: vars.space["2"],
+});
+
+export const onboardSubtitle = style({
+  fontSize: vars.font.size.md,
+  color: vars.color.textSecondary,
+  textAlign: "center",
+  marginBottom: vars.space["5"],
+});

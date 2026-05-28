@@ -16,6 +16,8 @@ const ApiKeysPanel = lazy(() => import("@/features/dashboard/pages/ApiKeysPanel"
 const RootRedirect = lazy(() => import("@/pages/RootRedirect").then(m => ({ default: m.RootRedirect })));
 const SharedDiagramPage = lazy(() => import("@/pages/SharedDiagramPage").then(m => ({ default: m.SharedDiagramPage })));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
+const OAuthCallbackPage = lazy(() => import("@/pages/OAuthCallbackPage").then(m => ({ default: m.OAuthCallbackPage })));
+const SocialOnboardingPage = lazy(() => import("@/features/auth/pages/SocialOnboardingPage").then(m => ({ default: m.SocialOnboardingPage })));
 const ErrorReportsPage = lazy(() => import("@/features/admin/pages/ErrorReportsPage").then(m => ({ default: m.ErrorReportsPage })));
 const AnnouncementsAdminPage = lazy(() => import("@/features/admin/pages/AnnouncementsAdminPage").then(m => ({ default: m.AnnouncementsAdminPage })));
 
@@ -26,6 +28,8 @@ export const Router = () => (
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+      <Route path="/social/onboarding" element={<SocialOnboardingPage />} />
       <Route
         path="/share/:shareToken"
         element={

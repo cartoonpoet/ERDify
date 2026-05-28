@@ -5,7 +5,13 @@ export {
   type DiagramDialectContract,
 } from "./diagrams/diagram-contract.schema";
 
-export type { UserProfile } from "./auth/auth.types";
+export type {
+  UserProfile,
+  SocialOnboardPayload,
+  SocialOnboardTokenPayload,
+  OAuthProvider,
+  OAuthStatus,
+} from "./auth/auth.types";
 export type {
   DiagramResponse,
   DiagramListItem,

@@ -1,5 +1,7 @@
-import type { Response } from "express";
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import type { Request, Response } from "express";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+import { ConfigService } from "@nestjs/config";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Throttle } from "@nestjs/throttler";
 import { IsEmail, IsString, Length, MinLength } from "class-validator";
@@ -13,6 +15,7 @@ import { CreateApiKeyDto } from "./dto/create-api-key.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { SocialOnboardDto } from "./dto/social-onboard.dto";
 
 class SendVerificationDto {
   @IsEmail()
@@ -54,7 +57,10 @@ const ALLOWED_AVATAR_MIMES = new Set(["image/jpeg", "image/png", "image/gif", "i
 
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Throttle({ default: { ttl: 60_000, limit: 3 } })
   @Post("send-verification")
@@ -202,5 +208,89 @@ export class AuthController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<UserProfile> {
     return this.authService.uploadAvatar(user.sub, file);
+  }
+
+  // ── Social OAuth ─────────────────────────────────────────────────────────────
+
+  private get webUrl(): string {
+    return this.configService.get<string>("WEB_URL") ?? "http://localhost:5173";
+  }
+
+  private async handleSocialCallback(
+    provider: "kakao" | "naver" | "google",
+    req: Request,
+    res: Response,
+  ): Promise<void> {
+    const webUrl = this.webUrl;
+    try {
+      const { providerId, providerEmail, name } = req.user as {
+        providerId: string;
+        providerEmail: string | undefined;
+        name: string;
+      };
+      const { user, isNew } = await this.authService.findOrCreateOAuthUser(
+        provider,
+        providerId,
+        providerEmail,
+        name,
+      );
+      if (isNew) {
+        const token = this.authService.issueSocialOnboardToken(user.id, user.email, provider, providerId);
+        res.redirect(`${webUrl}/oauth/callback?status=onboard&token=${encodeURIComponent(token)}`);
+      } else {
+        const accessToken = this.authService.issueAccessToken(user.id, user.email);
+        res.cookie("access_token", accessToken, COOKIE_OPTIONS);
+        res.redirect(`${webUrl}/oauth/callback?status=success`);
+      }
+    } catch {
+      res.redirect(`${webUrl}/oauth/callback?status=error&message=${encodeURIComponent("인증 오류")}`);
+    }
+  }
+
+  @Get("kakao")
+  @UseGuards(AuthGuard("kakao"))
+  kakaoLogin(): void {
+    // 카카오 인증 리다이렉트 — passport가 처리
+  }
+
+  @Get("kakao/callback")
+  @UseGuards(AuthGuard("kakao"))
+  async kakaoCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.handleSocialCallback("kakao", req, res);
+  }
+
+  @Get("naver")
+  @UseGuards(AuthGuard("naver"))
+  naverLogin(): void {
+    // 네이버 인증 리다이렉트 — passport가 처리
+  }
+
+  @Get("naver/callback")
+  @UseGuards(AuthGuard("naver"))
+  async naverCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.handleSocialCallback("naver", req, res);
+  }
+
+  @Get("google")
+  @UseGuards(AuthGuard("google"))
+  googleLogin(): void {
+    // 구글 인증 리다이렉트 — passport가 처리
+  }
+
+  @Get("google/callback")
+  @UseGuards(AuthGuard("google"))
+  async googleCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.handleSocialCallback("google", req, res);
+  }
+
+  @Post("social/onboard")
+  @HttpCode(HttpStatus.OK)
+  async socialOnboard(
+    @Body() dto: SocialOnboardDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ ok: true }> {
+    const { accessToken } = await this.authService.onboardSocialUser(dto.onboardToken, dto.name);
+    res.cookie("access_token", accessToken, COOKIE_OPTIONS);
+    return { ok: true };
   }
 }

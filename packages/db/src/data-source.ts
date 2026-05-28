@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { AiConversation } from "./entities/ai-conversation.entity";
 import { ApiKey } from "./entities/api-key.entity";
+import { OauthAccount } from "./entities/oauth-account.entity";
 import { Diagram } from "./entities/diagram.entity";
 import { DiagramVersion } from "./entities/diagram-version.entity";
 import { ErrorReport } from "./entities/error-report.entity";
@@ -38,13 +39,14 @@ import { CreateUsageLogsTable1746000000021 } from "./migrations/1746000000021-Cr
 import { Announcement } from "./entities/announcement.entity";
 import { CreateAnnouncementsTable1746000000022 } from "./migrations/1746000000022-CreateAnnouncementsTable";
 import { AddContextToErrorReports1746000000023 } from "./migrations/1746000000023-AddContextToErrorReports";
+import { CreateOauthAccountsTable1746000000024 } from "./migrations/1746000000024-CreateOauthAccountsTable";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
   url: process.env["DATABASE_URL"] ?? "postgres://erdify:erdify@localhost:5432/erdify",
   synchronize: false,
   migrationsRun: false,
-  entities: [User, Organization, OrganizationAiSettings, OrganizationMember, Project, Diagram, DiagramVersion, Invite, ApiKey, McpSession, ErrorReport, AiConversation, UsageLog, Announcement],
+  entities: [User, Organization, OrganizationAiSettings, OrganizationMember, Project, Diagram, DiagramVersion, Invite, ApiKey, McpSession, ErrorReport, AiConversation, UsageLog, Announcement, OauthAccount],
   migrations: [
     CreateUsersTable1746000000000,
     CreateOrganizationsTable1746000000001,
@@ -70,5 +72,6 @@ export const AppDataSource = new DataSource({
     CreateUsageLogsTable1746000000021,
     CreateAnnouncementsTable1746000000022,
     AddContextToErrorReports1746000000023,
+    CreateOauthAccountsTable1746000000024,
   ]
 });

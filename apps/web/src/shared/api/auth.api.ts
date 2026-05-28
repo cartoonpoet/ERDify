@@ -1,4 +1,4 @@
-import type { UserProfile } from "@erdify/contracts";
+import type { UserProfile, SocialOnboardPayload } from "@erdify/contracts";
 import { httpClient } from "./httpClient";
 
 export type { UserProfile };
@@ -45,4 +45,7 @@ export function forgotPassword(email: string): Promise<void> {
 }
 export function resetPassword(token: string, newPassword: string): Promise<void> {
   return httpClient.post("/auth/reset-password", { token, newPassword }).then(() => undefined);
+}
+export function completeOnboarding(body: SocialOnboardPayload): Promise<void> {
+  return httpClient.post("/auth/social/onboard", body).then(() => undefined);
 }
