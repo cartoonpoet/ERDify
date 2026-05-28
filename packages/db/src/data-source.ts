@@ -37,6 +37,7 @@ import { UsageLog } from "./entities/usage-log.entity";
 import { CreateUsageLogsTable1746000000021 } from "./migrations/1746000000021-CreateUsageLogsTable";
 import { Announcement } from "./entities/announcement.entity";
 import { CreateAnnouncementsTable1746000000022 } from "./migrations/1746000000022-CreateAnnouncementsTable";
+import { AddContextToErrorReports1746000000023 } from "./migrations/1746000000023-AddContextToErrorReports";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -68,5 +69,6 @@ export const AppDataSource = new DataSource({
     AddModelToOrgAiSettings1746000000020,
     CreateUsageLogsTable1746000000021,
     CreateAnnouncementsTable1746000000022,
+    AddContextToErrorReports1746000000023,
   ]
 });

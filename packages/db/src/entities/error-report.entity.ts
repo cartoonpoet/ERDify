@@ -25,6 +25,21 @@ export class ErrorReport {
   @Column({ name: "user_agent", type: "varchar", length: 500 })
   userAgent!: string;
 
+  @Column({ name: "page_name", type: "varchar", length: 200, nullable: true })
+  pageName!: string | null;
+
+  @Column({ name: "request_method", type: "varchar", length: 10, nullable: true })
+  requestMethod!: string | null;
+
+  @Column({ name: "request_body", type: "text", nullable: true })
+  requestBody!: string | null;
+
+  @Column({ name: "request_params", type: "text", nullable: true })
+  requestParams!: string | null;
+
+  @Column({ name: "response_body", type: "text", nullable: true })
+  responseBody!: string | null;
+
   @Column({ name: "resolved_at", type: "timestamptz", nullable: true })
   resolvedAt!: Date | null;
 
