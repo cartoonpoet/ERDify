@@ -6,9 +6,11 @@ import { Button, Input } from "@/components";
 import {
   page, card, brand, brandLogo, tagline, form, authLink, authLinkAnchor, sessionBanner,
   socialDivider, socialButtonContainer, socialButton, kakaoButton, naverButton, googleButton,
+  socialComingSoonBadge,
 } from "./auth-page.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000/api";
+const SOCIAL_LOGIN_ENABLED = import.meta.env.VITE_SOCIAL_LOGIN_ENABLED === "true";
 
 export const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -158,8 +160,8 @@ export const LoginPage = () => {
           <button
             type="button"
             className={`${socialButton} ${kakaoButton}`}
-            disabled={socialLoading !== null || loading}
-            onClick={() => handleSocialLogin("kakao")}
+            disabled={!SOCIAL_LOGIN_ENABLED || socialLoading !== null || loading}
+            onClick={() => SOCIAL_LOGIN_ENABLED && handleSocialLogin("kakao")}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
               <path
@@ -168,25 +170,27 @@ export const LoginPage = () => {
               />
             </svg>
             {socialLoading === "kakao" ? "처리 중..." : "카카오로 계속하기"}
+            {!SOCIAL_LOGIN_ENABLED && <span className={socialComingSoonBadge}>준비중</span>}
           </button>
 
           <button
             type="button"
             className={`${socialButton} ${naverButton}`}
-            disabled={socialLoading !== null || loading}
-            onClick={() => handleSocialLogin("naver")}
+            disabled={!SOCIAL_LOGIN_ENABLED || socialLoading !== null || loading}
+            onClick={() => SOCIAL_LOGIN_ENABLED && handleSocialLogin("naver")}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
               <text x="3" y="14" fontFamily="Arial, sans-serif" fontSize="13" fontWeight="bold" fill="#FFFFFF">N</text>
             </svg>
             {socialLoading === "naver" ? "처리 중..." : "네이버로 계속하기"}
+            {!SOCIAL_LOGIN_ENABLED && <span className={socialComingSoonBadge}>준비중</span>}
           </button>
 
           <button
             type="button"
             className={`${socialButton} ${googleButton}`}
-            disabled={socialLoading !== null || loading}
-            onClick={() => handleSocialLogin("google")}
+            disabled={!SOCIAL_LOGIN_ENABLED || socialLoading !== null || loading}
+            onClick={() => SOCIAL_LOGIN_ENABLED && handleSocialLogin("google")}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
               <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4" />
@@ -195,6 +199,7 @@ export const LoginPage = () => {
               <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z" fill="#EA4335" />
             </svg>
             {socialLoading === "google" ? "처리 중..." : "구글로 계속하기"}
+            {!SOCIAL_LOGIN_ENABLED && <span className={socialComingSoonBadge}>준비중</span>}
           </button>
         </div>
 

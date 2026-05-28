@@ -204,6 +204,17 @@ export const googleButton = style({
   borderColor: "#DADCE0",
 });
 
+export const socialComingSoonBadge = style({
+  fontSize: "11px",
+  fontWeight: vars.font.weight.medium,
+  color: vars.color.textSecondary,
+  background: vars.color.surfaceSecondary,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.pill,
+  padding: `1px ${vars.space["2"]}`,
+  marginLeft: "auto",
+});
+
 export const onboardTitle = style({
   fontSize: vars.font.size["2xl"],
   fontWeight: vars.font.weight.bold,
