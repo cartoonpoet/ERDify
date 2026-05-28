@@ -44,3 +44,26 @@ export const resolveErrorReport = async (params: {
 }): Promise<void> => {
   await httpClient.patch("/error-reports/resolve", params);
 };
+
+export interface OccurrenceItem {
+  id: string;
+  createdAt: string;
+  userId: string | null;
+  pageName: string | null;
+  url: string;
+  requestMethod: string | null;
+  requestBody: string | null;
+  requestParams: string | null;
+  responseBody: string | null;
+  userAgent: string;
+  httpStatus: number | null;
+}
+
+export const getErrorReportOccurrences = async (params: {
+  errorType: ApiErrorType;
+  path: string;
+}): Promise<OccurrenceItem[]> => {
+  const query = new URLSearchParams({ errorType: params.errorType, path: params.path });
+  const { data } = await httpClient.get<OccurrenceItem[]>(`/error-reports/occurrences?${query}`);
+  return data;
+};

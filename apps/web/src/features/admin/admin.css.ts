@@ -281,3 +281,85 @@ export const resolveHint = style({
   textAlign: "center",
   marginTop: vars.space["2"],
 });
+
+export const occurrenceList = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: vars.space["3"],
+  marginBottom: vars.space["4"],
+});
+
+export const occurrenceCard = style({
+  background: vars.color.surfaceSecondary,
+  borderRadius: vars.radius.md,
+  padding: vars.space["3"],
+  fontSize: "12px",
+  border: `1px solid ${vars.color.border}`,
+});
+
+export const occurrenceHeader = style({
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: vars.space["2"],
+  color: vars.color.textSecondary,
+  fontSize: "11px",
+});
+
+export const occurrenceUserId = style({
+  color: vars.color.textPrimary,
+  fontWeight: "600",
+});
+
+export const occurrencePageRow = style({
+  marginBottom: vars.space["2"],
+  color: vars.color.textSecondary,
+  wordBreak: "break-all",
+  lineHeight: "1.5",
+});
+
+export const occurrenceApiRow = style({
+  fontWeight: "600",
+  color: vars.color.textPrimary,
+  marginBottom: vars.space["1"],
+});
+
+export const occurrenceSectionLabel = style({
+  color: vars.color.textSecondary,
+  marginTop: vars.space["2"],
+  marginBottom: "2px",
+});
+
+export const occurrencePre = style({
+  background: vars.color.surface,
+  borderRadius: vars.radius.sm,
+  padding: vars.space["2"],
+  fontSize: "11px",
+  color: vars.color.textPrimary,
+  overflowX: "auto",
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-all",
+  margin: 0,
+  fontFamily: "monospace",
+  border: `1px solid ${vars.color.border}`,
+});
+
+export const copyBtn = style({
+  padding: `3px ${vars.space["3"]}`,
+  borderRadius: vars.radius.sm,
+  border: `1px solid ${vars.color.border}`,
+  background: vars.color.surfaceSecondary,
+  color: vars.color.textSecondary,
+  fontSize: "11px",
+  cursor: "pointer",
+  selectors: {
+    "&:hover": { background: vars.color.surface },
+  },
+});
+
+export const occurrenceLoadingText = style({
+  fontSize: "12px",
+  color: vars.color.textSecondary,
+  padding: vars.space["3"],
+  textAlign: "center",
+});
