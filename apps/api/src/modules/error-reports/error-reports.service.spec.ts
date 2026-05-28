@@ -101,4 +101,37 @@ describe("ErrorReportsService", () => {
       expect.objectContaining({ resolvedBy: "admin-1" }),
     );
   });
+
+  it("saves new context fields to DB when provided", async () => {
+    await service.create({
+      errorType: "5xx", httpStatus: 500,
+      path: "/api/test", url: "http://app/test",
+      userId: "u1", userAgent: "Chrome",
+      pageName: "다이어그램 편집",
+      requestMethod: "POST",
+      requestBody: '{"title":"My Diagram"}',
+      requestParams: null,
+      responseBody: '{"message":"Internal server error"}',
+    });
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pageName: "다이어그램 편집",
+        requestMethod: "POST",
+        requestBody: '{"title":"My Diagram"}',
+        responseBody: '{"message":"Internal server error"}',
+      }),
+    );
+  });
+
+  it("getOccurrences returns records for given errorType and path", async () => {
+    const mockRecords = [
+      { id: "1", errorType: "5xx", path: "/api/test", createdAt: new Date(), userId: "u1", pageName: "대시보드", url: "http://app", requestMethod: "GET", requestBody: null, requestParams: null, responseBody: null, userAgent: "Chrome", httpStatus: 500, resolvedAt: null, resolvedBy: null, resolvedNote: null },
+    ];
+    repo.find.mockResolvedValue(mockRecords);
+    const result = await service.getOccurrences("5xx", "/api/test");
+    expect(repo.find).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { errorType: "5xx", path: "/api/test" }, order: { createdAt: "DESC" } }),
+    );
+    expect(result).toEqual(mockRecords);
+  });
 });

@@ -44,6 +44,29 @@ export class ErrorReportsController {
     return { groups, stats };
   }
 
+  @Get("occurrences")
+  async getOccurrences(
+    @Req() req: { user: { sub: string } },
+    @Query("errorType") errorType: ErrorType,
+    @Query("path") path: string,
+  ) {
+    await this.assertAdmin(req.user.sub);
+    const records = await this.service.getOccurrences(errorType, path);
+    return records.map((r) => ({
+      id: r.id,
+      createdAt: r.createdAt,
+      userId: r.userId,
+      pageName: r.pageName,
+      url: r.url,
+      requestMethod: r.requestMethod,
+      requestBody: r.requestBody,
+      requestParams: r.requestParams,
+      responseBody: r.responseBody,
+      userAgent: r.userAgent,
+      httpStatus: r.httpStatus,
+    }));
+  }
+
   @Patch("resolve")
   async resolve(
     @Body() body: { path: string; errorType: ErrorType; note?: string },

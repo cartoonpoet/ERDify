@@ -14,6 +14,11 @@ export interface CreateErrorReportDto {
   url: string;
   userId: string | null;
   userAgent: string;
+  pageName?: string | null;
+  requestMethod?: string | null;
+  requestBody?: string | null;
+  requestParams?: string | null;
+  responseBody?: string | null;
 }
 
 export interface ResolveDto {
@@ -93,6 +98,13 @@ export class ErrorReportsService {
       { path: dto.path, errorType: dto.errorType, resolvedAt: IsNull() },
       { resolvedAt: new Date(), resolvedBy: dto.resolvedById, resolvedNote: dto.note ?? null },
     );
+  }
+
+  async getOccurrences(errorType: ErrorType, path: string): Promise<ErrorReport[]> {
+    return this.repo.find({
+      where: { errorType, path },
+      order: { createdAt: "DESC" },
+    });
   }
 
   async getStats(): Promise<Record<ErrorType, number>> {
