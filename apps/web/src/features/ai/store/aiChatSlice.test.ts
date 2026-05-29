@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useAIChatStore } from "./useAIChatStore";
+import { DEFAULT_SESSION_ID } from "./aiChatSlice";
 
 vi.mock("@/shared/utils/uuid", () => ({
   randomUUID: vi.fn(),
@@ -7,9 +8,12 @@ vi.mock("@/shared/utils/uuid", () => ({
 
 import { randomUUID } from "@/shared/utils/uuid";
 
+const getDefaultMessages = () =>
+  useAIChatStore.getState().sessionMessages[DEFAULT_SESSION_ID] ?? [];
+
 const initialState = {
   isOpen: false,
-  messages: [],
+  sessionMessages: {},
   isLoading: false,
   reviewingMessageId: null,
 };
@@ -20,23 +24,24 @@ beforeEach(() => {
 });
 
 describe("useAIChatStore — openChat", () => {
-  it("초기 메시지 없이 호출 시 isOpen=true, messages=[] 유지", () => {
+  it("초기 메시지 없이 호출 시 isOpen=true, default 세션 메시지 없음", () => {
     useAIChatStore.getState().openChat();
 
     const state = useAIChatStore.getState();
     expect(state.isOpen).toBe(true);
-    expect(state.messages).toHaveLength(0);
+    expect(getDefaultMessages()).toHaveLength(0);
   });
 
-  it("초기 메시지와 함께 호출 시 isOpen=true, messages에 user 메시지 추가", () => {
+  it("초기 메시지와 함께 호출 시 isOpen=true, default 세션에 user 메시지 추가", () => {
     vi.mocked(randomUUID).mockReturnValueOnce("fixed-uuid-1");
 
     useAIChatStore.getState().openChat("안녕하세요");
 
     const state = useAIChatStore.getState();
     expect(state.isOpen).toBe(true);
-    expect(state.messages).toHaveLength(1);
-    expect(state.messages[0]).toEqual({
+    const messages = getDefaultMessages();
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toEqual({
       id: "fixed-uuid-1",
       role: "user",
       content: "안녕하세요",
@@ -58,12 +63,12 @@ describe("useAIChatStore — closeChat", () => {
 });
 
 describe("useAIChatStore — addUserMessage", () => {
-  it("user role 메시지가 messages에 추가된다", () => {
+  it("user role 메시지가 default 세션에 추가된다", () => {
     vi.mocked(randomUUID).mockReturnValueOnce("fixed-uuid-2");
 
     useAIChatStore.getState().addUserMessage("테이블 추가해줘");
 
-    const { messages } = useAIChatStore.getState();
+    const messages = getDefaultMessages();
     expect(messages).toHaveLength(1);
     expect(messages[0]).toEqual({
       id: "fixed-uuid-2",
@@ -77,7 +82,7 @@ describe("useAIChatStore — addUserMessage", () => {
 });
 
 describe("useAIChatStore — addAssistantMessage", () => {
-  it("assistant role 메시지가 diff와 pendingDocument 포함하여 추가된다", () => {
+  it("assistant role 메시지가 diff와 pendingDocument 포함하여 default 세션에 추가된다", () => {
     const mockResponse = {
       messageId: "server-msg-id",
       content: "테이블을 추가했습니다",
@@ -87,7 +92,7 @@ describe("useAIChatStore — addAssistantMessage", () => {
 
     useAIChatStore.getState().addAssistantMessage(mockResponse);
 
-    const { messages } = useAIChatStore.getState();
+    const messages = getDefaultMessages();
     expect(messages).toHaveLength(1);
     expect(messages[0]).toEqual({
       id: "server-msg-id",
@@ -109,7 +114,7 @@ describe("useAIChatStore — addAssistantMessage", () => {
 
     useAIChatStore.getState().addAssistantMessage(mockResponse);
 
-    const { messages } = useAIChatStore.getState();
+    const messages = getDefaultMessages();
     expect(messages[0]!.diff).toBeNull();
     expect(messages[0]!.pendingDocument).toBeNull();
   });
@@ -131,21 +136,21 @@ describe("useAIChatStore — acceptDiff / rejectDiff", () => {
   it("acceptDiff(messageId) 호출 시 해당 메시지의 accepted=true", () => {
     useAIChatStore.getState().acceptDiff("assistant-msg-1");
 
-    const msg = useAIChatStore.getState().messages.find((m) => m.id === "assistant-msg-1");
+    const msg = getDefaultMessages().find((m) => m.id === "assistant-msg-1");
     expect(msg?.accepted).toBe(true);
   });
 
   it("rejectDiff(messageId) 호출 시 해당 메시지의 accepted=false", () => {
     useAIChatStore.getState().rejectDiff("assistant-msg-1");
 
-    const msg = useAIChatStore.getState().messages.find((m) => m.id === "assistant-msg-1");
+    const msg = getDefaultMessages().find((m) => m.id === "assistant-msg-1");
     expect(msg?.accepted).toBe(false);
   });
 
   it("다른 메시지의 accepted 상태는 변경되지 않는다", () => {
     useAIChatStore.getState().acceptDiff("assistant-msg-1");
 
-    const userMsg = useAIChatStore.getState().messages.find((m) => m.id === "msg-accept-test");
+    const userMsg = getDefaultMessages().find((m) => m.id === "msg-accept-test");
     expect(userMsg?.accepted).toBeNull();
   });
 });

@@ -14,6 +14,7 @@ export const MessageBubble = ({ message, onOpenReview }: MessageBubbleProps) => 
     <div className={isUser ? css.wrapperUser : css.wrapperAssistant}>
       <div className={isUser ? css.bubbleUser : css.bubbleAssistant}>
         {message.content}
+        {message.isStreaming && <span className={css.streamingCursor}>▊</span>}
       </div>
       {message.diff && (
         <div className={css.diffArea}>

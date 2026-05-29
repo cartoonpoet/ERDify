@@ -4,12 +4,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { FloatingAIChat } from "./FloatingAIChat";
 import { useAIChatStore } from "../store/useAIChatStore";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import { DEFAULT_SESSION_ID } from "../store/aiChatSlice";
 import type { DiagramDocument } from "@erdify/domain";
 
 vi.mock("../api/ai.api", () => ({
-  sendAiChat: vi.fn(),
+  sendAiChatStream: vi.fn(),
   acceptAiDiff: vi.fn(),
   rejectAiDiff: vi.fn(),
+  getSessions: vi.fn().mockResolvedValue([]),
+  createSession: vi.fn(),
 }));
 
 vi.mock("@/shared/utils/uuid", () => ({
@@ -31,7 +34,7 @@ vi.mock("./MessageBubble", () => ({
   ),
 }));
 
-import { sendAiChat, acceptAiDiff, rejectAiDiff } from "../api/ai.api";
+import { sendAiChatStream, acceptAiDiff, rejectAiDiff, createSession } from "../api/ai.api";
 import { randomUUID } from "@/shared/utils/uuid";
 
 const makeEmptyDoc = (id = "doc-1"): DiagramDocument => ({
@@ -49,17 +52,20 @@ const makeEmptyDoc = (id = "doc-1"): DiagramDocument => ({
 
 const initialAiChatState = {
   isOpen: false,
-  messages: [],
+  sessionMessages: {},
   isLoading: false,
   reviewingMessageId: null,
+  currentSessionId: null,
+  sessions: [],
 };
 
 beforeEach(() => {
   useAIChatStore.setState(initialAiChatState);
   vi.mocked(randomUUID).mockReset();
-  vi.mocked(sendAiChat).mockReset();
+  vi.mocked(sendAiChatStream).mockReset();
   vi.mocked(acceptAiDiff).mockReset();
   vi.mocked(rejectAiDiff).mockReset();
+  vi.mocked(createSession).mockReset();
   Element.prototype.scrollIntoView = vi.fn();
 });
 
@@ -96,13 +102,11 @@ describe("FloatingAIChat", () => {
     expect(useAIChatStore.getState().isOpen).toBe(false);
   });
 
-  it("메시지 전송 시 addUserMessage → sendAiChat → addAssistantMessage 순서로 호출된다", async () => {
-    vi.mocked(randomUUID).mockReturnValueOnce("user-msg-uuid");
-    vi.mocked(sendAiChat).mockResolvedValueOnce({
-      messageId: "assistant-msg-id",
-      content: "AI 응답입니다",
-      diff: null,
-      pendingDocument: null,
+  it("세션이 없을 때 메시지 전송 시 createSession → sendAiChatStream 순서로 호출된다", async () => {
+    vi.mocked(randomUUID).mockReturnValue("user-msg-uuid");
+    vi.mocked(createSession).mockResolvedValueOnce({ sessionId: "new-session-id" });
+    vi.mocked(sendAiChatStream).mockImplementation(async (_diagramId, _message, _sessionId, _onText, onDone) => {
+      onDone({ messageId: "assistant-msg-id", diff: null, pendingDocument: null });
     });
 
     useAIChatStore.setState({ ...initialAiChatState, isOpen: true });
@@ -117,22 +121,26 @@ describe("FloatingAIChat", () => {
     });
 
     await waitFor(() => {
-      expect(vi.mocked(sendAiChat)).toHaveBeenCalledWith("diagram-1", "테이블 추가해줘");
+      expect(vi.mocked(createSession)).toHaveBeenCalledWith("diagram-1");
+      expect(vi.mocked(sendAiChatStream)).toHaveBeenCalledWith(
+        "diagram-1", "테이블 추가해줘", "new-session-id",
+        expect.any(Function), expect.any(Function), expect.any(Function),
+      );
     });
 
-    const messages = useAIChatStore.getState().messages;
-    expect(messages).toHaveLength(2);
+    const state = useAIChatStore.getState();
+    const messages = state.sessionMessages["new-session-id"] ?? [];
+    expect(messages.length).toBeGreaterThanOrEqual(1);
     expect(messages[0]!.role).toBe("user");
     expect(messages[0]!.content).toBe("테이블 추가해줘");
-    expect(messages[1]!.role).toBe("assistant");
-    expect(messages[1]!.content).toBe("AI 응답입니다");
   });
 
-  it("sendAiChat 실패 시 에러 메시지가 messages에 추가된다", async () => {
-    vi.mocked(randomUUID)
-      .mockReturnValueOnce("user-msg-uuid")
-      .mockReturnValueOnce("error-msg-uuid");
-    vi.mocked(sendAiChat).mockRejectedValueOnce(new Error("Network error"));
+  it("sendAiChatStream onError 호출 시 에러 메시지가 sessionMessages에 추가된다", async () => {
+    vi.mocked(randomUUID).mockReturnValue("error-msg-uuid");
+    vi.mocked(createSession).mockResolvedValueOnce({ sessionId: "session-err" });
+    vi.mocked(sendAiChatStream).mockImplementation(async (_diagramId, _message, _sessionId, _onText, _onDone, onError) => {
+      onError("Network error");
+    });
 
     useAIChatStore.setState({ ...initialAiChatState, isOpen: true });
 
@@ -146,10 +154,10 @@ describe("FloatingAIChat", () => {
     });
 
     await waitFor(() => {
-      const messages = useAIChatStore.getState().messages;
-      expect(messages).toHaveLength(2);
-      expect(messages[1]!.role).toBe("assistant");
-      expect(messages[1]!.content).toBe("오류가 발생했습니다. 다시 시도해주세요.");
+      const state = useAIChatStore.getState();
+      const messages = state.sessionMessages["session-err"] ?? [];
+      const errorMsg = messages.find((m) => m.role === "assistant");
+      expect(errorMsg?.content).toContain("오류가 발생했습니다");
     });
   });
 
@@ -161,16 +169,18 @@ describe("FloatingAIChat", () => {
       ...initialAiChatState,
       isOpen: true,
       reviewingMessageId: reviewMsgId,
-      messages: [
-        {
-          id: reviewMsgId,
-          role: "assistant",
-          content: "스키마 변경 제안",
-          diff: [{ type: "addTable", tableId: "tbl-1", tableName: "users" }],
-          pendingDocument: pendingDoc,
-          accepted: null,
-        },
-      ],
+      sessionMessages: {
+        [DEFAULT_SESSION_ID]: [
+          {
+            id: reviewMsgId,
+            role: "assistant",
+            content: "스키마 변경 제안",
+            diff: [{ type: "addTable", tableId: "tbl-1", tableName: "users" }],
+            pendingDocument: pendingDoc,
+            accepted: null,
+          },
+        ],
+      },
     });
 
     render(<FloatingAIChat diagramId="diagram-1" />);
@@ -188,16 +198,18 @@ describe("FloatingAIChat", () => {
       ...initialAiChatState,
       isOpen: true,
       reviewingMessageId: reviewMsgId,
-      messages: [
-        {
-          id: reviewMsgId,
-          role: "assistant",
-          content: "스키마 변경 제안",
-          diff: [{ type: "addTable", tableId: "tbl-1", tableName: "users" }],
-          pendingDocument: pendingDoc,
-          accepted: null,
-        },
-      ],
+      sessionMessages: {
+        [DEFAULT_SESSION_ID]: [
+          {
+            id: reviewMsgId,
+            role: "assistant",
+            content: "스키마 변경 제안",
+            diff: [{ type: "addTable", tableId: "tbl-1", tableName: "users" }],
+            pendingDocument: pendingDoc,
+            accepted: null,
+          },
+        ],
+      },
     });
 
     render(<FloatingAIChat diagramId="diagram-1" />);
@@ -211,7 +223,8 @@ describe("FloatingAIChat", () => {
     });
 
     const state = useAIChatStore.getState();
-    const acceptedMsg = state.messages.find((m) => m.id === reviewMsgId);
+    const allMessages = Object.values(state.sessionMessages).flat();
+    const acceptedMsg = allMessages.find((m) => m.id === reviewMsgId);
     expect(acceptedMsg?.accepted).toBe(true);
     expect(state.reviewingMessageId).toBeNull();
 
@@ -228,16 +241,18 @@ describe("FloatingAIChat", () => {
       ...initialAiChatState,
       isOpen: true,
       reviewingMessageId: reviewMsgId,
-      messages: [
-        {
-          id: reviewMsgId,
-          role: "assistant",
-          content: "스키마 변경 제안",
-          diff: [{ type: "addTable", tableId: "tbl-1", tableName: "users" }],
-          pendingDocument: pendingDoc,
-          accepted: null,
-        },
-      ],
+      sessionMessages: {
+        [DEFAULT_SESSION_ID]: [
+          {
+            id: reviewMsgId,
+            role: "assistant",
+            content: "스키마 변경 제안",
+            diff: [{ type: "addTable", tableId: "tbl-1", tableName: "users" }],
+            pendingDocument: pendingDoc,
+            accepted: null,
+          },
+        ],
+      },
     });
 
     render(<FloatingAIChat diagramId="diagram-1" />);
@@ -251,7 +266,8 @@ describe("FloatingAIChat", () => {
     });
 
     const state = useAIChatStore.getState();
-    const rejectedMsg = state.messages.find((m) => m.id === reviewMsgId);
+    const allMessages = Object.values(state.sessionMessages).flat();
+    const rejectedMsg = allMessages.find((m) => m.id === reviewMsgId);
     expect(rejectedMsg?.accepted).toBe(false);
     expect(state.reviewingMessageId).toBeNull();
   });

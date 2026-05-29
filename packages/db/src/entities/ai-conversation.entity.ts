@@ -11,6 +11,9 @@ export class AiConversation {
   @Column({ type: "varchar", name: "diagram_id", length: 36, nullable: true })
   diagramId!: string | null;
 
+  @Column({ type: "varchar", name: "session_id", length: 36, nullable: true })
+  sessionId!: string | null;
+
   @Column({ type: "varchar", length: 10 })
   role!: "user" | "assistant";
 

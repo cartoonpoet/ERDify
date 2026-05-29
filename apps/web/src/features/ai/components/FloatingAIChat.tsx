@@ -1,9 +1,11 @@
 import { randomUUID } from "@/shared/utils/uuid";
-import { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { useAIChatStore } from "../store/useAIChatStore";
+import { DEFAULT_SESSION_ID } from "../store/aiChatSlice";
 import { MessageBubble } from "./MessageBubble";
 import { AIDiffReviewPanel } from "./AIDiffReviewPanel";
-import { sendAiChat, acceptAiDiff, rejectAiDiff } from "../api/ai.api";
+import { acceptAiDiff, rejectAiDiff, sendAiChatStream, getSessions, createSession } from "../api/ai.api";
+import { AIChatSessionSelector } from "./AIChatSessionSelector";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import * as s from "./FloatingAIChat.css";
 
@@ -13,29 +15,86 @@ interface FloatingAIChatProps {
 
 export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
   const {
-    isOpen, messages, isLoading,
+    isOpen, isLoading,
     reviewingMessageId, openReview, closeReview,
     openChat, closeChat,
-    addUserMessage, addAssistantMessage,
-    acceptDiff, rejectDiff, setLoading,
+    addUserMessage,
+    acceptDiff, rejectDiff,
+    currentSessionId, sessions, sessionMessages,
+    setCurrentSession, setSessions, addSession,
+    setCurrentDiagramId,
+    startStreamingMessage, appendStreamingDelta, finalizeStreamingMessage,
   } = useAIChatStore();
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const prevDiagramIdRef = useRef<string | null>(null);
+
+  // diagramId 변경 감지 — 요구사항 명시로 허용된 useEffect
+  useEffect(() => {
+    if (prevDiagramIdRef.current === diagramId) return;
+    prevDiagramIdRef.current = diagramId;
+
+    setCurrentDiagramId(diagramId);
+    getSessions(diagramId)
+      .then((fetchedSessions) => setSessions(fetchedSessions))
+      .catch(() => {});
+  }, [diagramId, setCurrentDiagramId, setSessions]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [sessionMessages]);
+
+  const currentMessages = sessionMessages[currentSessionId ?? DEFAULT_SESSION_ID] ?? [];
+
+  const buildStreamingCallbacks = (sessionId: string, tempId: string) => ({
+    onText: (delta: string) => appendStreamingDelta(sessionId, tempId, delta),
+    onDone: (result: { messageId: string; diff: unknown[] | null; pendingDocument: unknown | null }) =>
+      finalizeStreamingMessage(sessionId, tempId, result),
+    onError: (errorMsg: string) =>
+      finalizeStreamingMessage(sessionId, tempId, {
+        messageId: randomUUID(),
+        content: `오류가 발생했습니다: ${errorMsg}`,
+        diff: null,
+        pendingDocument: null,
+      }),
+  });
 
   const handleSend = async (message: string) => {
-    addUserMessage(message);
-    setLoading(true);
+    let sessionId = currentSessionId;
+
+    if (!sessionId) {
+      try {
+        const { sessionId: newSessionId } = await createSession(diagramId);
+        const newSession = {
+          id: newSessionId,
+          name: "새 대화",
+          createdAt: new Date().toISOString(),
+        };
+        addSession(newSession);
+        setCurrentSession(newSessionId);
+        sessionId = newSessionId;
+      } catch {
+        // 세션 생성 실패 시 default 세션으로 폴백
+        sessionId = DEFAULT_SESSION_ID;
+      }
+    }
+
+    addUserMessage(message, sessionId);
+
+    const tempId = crypto.randomUUID();
+    startStreamingMessage(sessionId, tempId);
+
+    const { onText, onDone, onError } = buildStreamingCallbacks(sessionId, tempId);
+
     try {
-      const response = await sendAiChat(diagramId, message);
-      addAssistantMessage(response);
+      await sendAiChatStream(diagramId, message, sessionId, onText, onDone, onError);
     } catch {
-      addAssistantMessage({ messageId: randomUUID(), content: "오류가 발생했습니다. 다시 시도해주세요.", diff: null, pendingDocument: null });
-    } finally {
-      setLoading(false);
+      finalizeStreamingMessage(sessionId, tempId, {
+        messageId: randomUUID(),
+        content: "오류가 발생했습니다. 다시 시도해주세요.",
+        diff: null,
+        pendingDocument: null,
+      });
     }
   };
 
@@ -54,7 +113,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
   };
 
   const handleAccept = async (messageId: string) => {
-    const msg = messages.find((m) => m.id === messageId);
+    const msg = currentMessages.find((m) => m.id === messageId);
     if (!msg?.pendingDocument) return;
     acceptDiff(messageId);
     closeReview();
@@ -68,10 +127,29 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     await rejectAiDiff(messageId).catch(() => {});
   };
 
+  const handleSelectSession = (sessionId: string) => {
+    setCurrentSession(sessionId);
+  };
+
+  const handleNewSession = async () => {
+    try {
+      const { sessionId } = await createSession(diagramId);
+      const newSession = {
+        id: sessionId,
+        name: "새 대화",
+        createdAt: new Date().toISOString(),
+      };
+      addSession(newSession);
+      setCurrentSession(sessionId);
+    } catch {
+      // 세션 생성 실패 시 무시
+    }
+  };
+
   const sendBtnDisabled = isLoading || !input.trim();
 
   const reviewingMessage = reviewingMessageId
-    ? messages.find((m) => m.id === reviewingMessageId)
+    ? currentMessages.find((m) => m.id === reviewingMessageId)
     : null;
 
   const currentDocument = useEditorStore.getState().document;
@@ -109,15 +187,22 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
             <button type="button" className={s.chatCloseBtn} onClick={closeChat}>×</button>
           </div>
 
+          <AIChatSessionSelector
+            sessions={sessions}
+            currentSessionId={currentSessionId}
+            onSelectSession={handleSelectSession}
+            onNewSession={handleNewSession}
+          />
+
           <div className={s.chatMessages}>
-            {messages.length === 0 && (
+            {currentMessages.length === 0 && (
               <div className={s.chatEmpty}>
                 <div className={s.chatEmptyIcon}>✦</div>
                 ERD에 대해 무엇이든 물어보세요.<br />
                 <span style={{ fontSize: 12 }}>"orders 테이블 추가해줘" 같은 명령도 가능해요.</span>
               </div>
             )}
-            {messages.map((msg) => (
+            {currentMessages.map((msg) => (
               <MessageBubble key={msg.id} message={msg} onOpenReview={openReview} />
             ))}
             {isLoading && (

@@ -19,6 +19,11 @@ const MAX_TOKENS = 4096;
 
 type Provider = "anthropic" | "openai";
 
+export type StreamEvent =
+  | { event: "text"; delta: string }
+  | { event: "done"; messageId: string; diff: DiffChange[] | null; pendingDocument: DiagramDocument | null }
+  | { event: "error"; message: string };
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -106,6 +111,9 @@ When designing multiple tables:
 - Never hallucinate IDs. If you cannot find a referenced table or column in the diagram, say so clearly.
 - If the user's request is ambiguous, make a reasonable assumption and explain what you assumed.
 - After making changes, briefly summarize what was done in the user's language.
+- ERD 컨텍스트에 존재하는 테이블의 컬럼은 반드시 위 다이어그램 JSON 데이터를 기준으로만 답변하라. 존재하지 않는 컬럼을 임의로 창작하거나 추가하지 마라.
+- 사용자가 ERD에 존재하지 않는 테이블을 언급하면 '해당 테이블은 현재 ERD에 존재하지 않습니다'라고 명시적으로 응답하고 임의로 생성하지 마라.
+- 아래 대화 히스토리는 참고용이며, ERD 구조 정보는 반드시 위 현재 다이어그램 JSON만을 정답으로 사용하라. 이전 대화에서 언급된 컬럼·테이블 정보가 현재 JSON과 다르면 현재 JSON을 우선한다.
 
 ## Current diagram (JSON)
 ${JSON.stringify(buildDiagramContext(doc, userMessage))}`;
@@ -146,6 +154,178 @@ ${JSON.stringify(buildDiagramContext(doc, userMessage))}`;
       diff: hasDiff ? diffs : null,
       pendingDocument: hasDiff ? updatedDoc : null,
     };
+  }
+
+  // ── Chat (streaming) ──────────────────────────────────────────────────────
+
+  async *chatStream(
+    userId: string,
+    diagramId: string,
+    userMessage: string,
+    sessionId: string | null,
+  ): AsyncGenerator<StreamEvent> {
+    try {
+      const { doc, orgId } = await this.getDiagramAndOrgId(diagramId);
+      const { apiKey, provider, model } = await this.getOrgApiKeyAndProvider(orgId, userId);
+      const history = await this.historyService.findRecent(userId, diagramId, sessionId ?? undefined);
+
+      await this.historyService.saveUserMessage(userId, diagramId, userMessage, sessionId);
+
+      const systemPrompt = `You are a senior database architect assistant inside ERDify, an ERD design tool.
+You help users design and modify relational database schemas through natural conversation.
+Respond in the same language the user writes in (Korean if they write Korean).
+
+## Core responsibilities
+- Interpret user intent and translate it into precise schema changes using the provided tools.
+- Think step-by-step: identify what tables, columns, and relationships are needed before calling tools.
+- Call multiple tools in a single response when a request requires creating several tables or columns at once.
+
+## Database design best practices you MUST follow
+1. **Every new table** must have: \`id\` (uuid, primaryKey, not null), \`created_at\` (timestamptz, not null), \`updated_at\` (timestamptz, not null) — add these automatically unless the user explicitly says not to.
+2. **Naming**: snake_case for all table and column names. Plural nouns for tables (users, orders, products).
+3. **Foreign keys**: Always use \`addRelation\` with \`fkColumnName\` set to \`<referenced_table_singular>_id\` (e.g. \`user_id\`, \`order_id\`). The FK column (uuid type) is created automatically. Set \`fkNullable: false\` unless the relationship is optional.
+4. **Cardinality**: choose the correct direction — one-to-many means the "many" side holds the FK column (sourceTableId = many side).
+5. **Data types**: uuid for PKs and FKs, varchar for short strings, text for long strings, integer/bigint for counts, boolean for flags, timestamptz for timestamps, numeric/decimal for money, jsonb for flexible structured data.
+5a. **Logical names (comment)**: ALWAYS set the \`comment\` field on every column with a short Korean description of its purpose (e.g. \`id\` → "고유 식별자", \`user_id\` → "사용자 ID", \`title\` → "여행 제목", \`created_at\` → "생성일시").
+6. **Indexes**: After every \`addRelation\`, call \`addIndex\` on the FK column (e.g. name: \`idx_orders_user_id\`). Also add unique indexes for natural keys (email, slug, etc.).
+7. When the user asks for a "system" or "module" (e.g. "쇼핑몰", "회원 시스템"), proactively design all necessary tables and relationships — don't wait for them to specify each table.
+
+## Multi-table design workflow (MUST follow this order)
+When designing multiple tables:
+1. Call \`addTable\` for ALL tables first (with their own columns, excluding FK columns).
+2. For each relationship, call \`addRelation\` with \`fkColumnName\` — this automatically adds the FK column.
+3. Call \`addIndex\` for every FK column created in step 2.
+4. Call \`addIndex\` for any natural key columns (email, slug, code, etc.) with \`unique: true\`.
+
+## Rules
+- Always use the exact entity/column IDs from the current diagram when modifying existing items.
+- Never hallucinate IDs. If you cannot find a referenced table or column in the diagram, say so clearly.
+- If the user's request is ambiguous, make a reasonable assumption and explain what you assumed.
+- After making changes, briefly summarize what was done in the user's language.
+- ERD 컨텍스트에 존재하는 테이블의 컬럼은 반드시 위 다이어그램 JSON 데이터를 기준으로만 답변하라. 존재하지 않는 컬럼을 임의로 창작하거나 추가하지 마라.
+- 사용자가 ERD에 존재하지 않는 테이블을 언급하면 '해당 테이블은 현재 ERD에 존재하지 않습니다'라고 명시적으로 응답하고 임의로 생성하지 마라.
+- 아래 대화 히스토리는 참고용이며, ERD 구조 정보는 반드시 위 현재 다이어그램 JSON만을 정답으로 사용하라. 이전 대화에서 언급된 컬럼·테이블 정보가 현재 JSON과 다르면 현재 JSON을 우선한다.
+
+## Current diagram (JSON)
+${JSON.stringify(buildDiagramContext(doc, userMessage))}`;
+
+      let textContent = "";
+      let toolCalls: { name: string; input: Record<string, unknown> }[] = [];
+
+      if (provider === "anthropic") {
+        const client = new Anthropic({ apiKey });
+        const messages: Anthropic.MessageParam[] = [
+          ...history.map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),
+          { role: "user", content: userMessage },
+        ];
+        const stream = client.messages.stream({
+          model,
+          max_tokens: MAX_TOKENS,
+          system: systemPrompt,
+          tools: ERD_TOOLS,
+          messages,
+        });
+
+        for await (const event of stream) {
+          if (
+            event.type === "content_block_delta" &&
+            event.delta.type === "text_delta"
+          ) {
+            const delta = event.delta.text;
+            textContent += delta;
+            yield { event: "text", delta };
+          }
+        }
+
+        const finalMessage = await stream.finalMessage();
+        toolCalls = finalMessage.content
+          .filter((b) => b.type === "tool_use")
+          .map((b) => ({
+            name: (b as { name: string; input: Record<string, unknown> }).name,
+            input: (b as { name: string; input: Record<string, unknown> }).input,
+          }));
+      } else {
+        const client = new OpenAI({ apiKey });
+        const messages: OpenAI.ChatCompletionMessageParam[] = [
+          { role: "system", content: systemPrompt },
+          ...history.map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),
+          { role: "user", content: userMessage },
+        ];
+        const isNewModel = /^gpt-5/.test(model);
+        const stream = await client.chat.completions.create({
+          model,
+          ...(isNewModel ? { max_completion_tokens: MAX_TOKENS } : { max_tokens: MAX_TOKENS }),
+          tools: ERD_TOOLS_OPENAI,
+          messages,
+          stream: true,
+        });
+
+        const toolCallAccumulator: Record<number, { name: string; argumentsRaw: string }> = {};
+
+        for await (const chunk of stream) {
+          const delta = chunk.choices[0]?.delta;
+          if (!delta) continue;
+
+          if (delta.content) {
+            textContent += delta.content;
+            yield { event: "text", delta: delta.content };
+          }
+
+          if (delta.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const idx = tc.index;
+              if (!toolCallAccumulator[idx]) {
+                toolCallAccumulator[idx] = { name: tc.function?.name ?? "", argumentsRaw: "" };
+              }
+              if (tc.function?.name) toolCallAccumulator[idx]!.name = tc.function.name;
+              if (tc.function?.arguments) toolCallAccumulator[idx]!.argumentsRaw += tc.function.arguments;
+            }
+          }
+        }
+
+        toolCalls = Object.values(toolCallAccumulator).map((tc) => ({
+          name: tc.name,
+          input: JSON.parse(tc.argumentsRaw) as Record<string, unknown>,
+        }));
+      }
+
+      let updatedDoc = doc;
+      const diffs: DiffChange[] = [];
+
+      for (const call of toolCalls) {
+        const result = await this.executeTool(call.name, call.input, updatedDoc);
+        updatedDoc = result.doc;
+        diffs.push(...result.changes);
+      }
+
+      const hasDiff = diffs.length > 0;
+      const savedMessage = await this.historyService.saveAssistantMessage(
+        userId,
+        diagramId,
+        textContent || (hasDiff ? "ERD를 업데이트했습니다. 아래 변경사항을 확인해주세요." : ""),
+        hasDiff ? diffs : null,
+        toolCalls.length > 0 ? toolCalls : null,
+        sessionId,
+      );
+
+      this.usageService
+        .log(orgId, userId, "ai_chat_stream", "diagram", diagramId, {
+          provider,
+          model,
+          tool_call_count: toolCalls.length,
+        })
+        .catch((e) => this.logger.error(e));
+
+      yield {
+        event: "done",
+        messageId: savedMessage.id,
+        diff: hasDiff ? diffs : null,
+        pendingDocument: hasDiff ? updatedDoc : null,
+      };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      yield { event: "error", message };
+    }
   }
 
   // ── Column suggestions ────────────────────────────────────────────────────

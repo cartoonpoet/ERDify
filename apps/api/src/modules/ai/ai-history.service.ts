@@ -5,6 +5,7 @@ import { LessThan, Repository } from "typeorm";
 import { randomUUID } from "node:crypto";
 import { AiConversation } from "@erdify/db";
 import type { DiffChange } from "@erdify/contracts";
+import type { AiSessionResponse } from "./dto/chat-stream.dto";
 
 const HISTORY_LIMIT = 6;
 const TTL_DAYS = 90;
@@ -18,11 +19,12 @@ export class AiHistoryService {
     private readonly repo: Repository<AiConversation>,
   ) {}
 
-  async saveUserMessage(userId: string, diagramId: string | null, content: string): Promise<AiConversation> {
+  async saveUserMessage(userId: string, diagramId: string | null, content: string, sessionId: string | null = null): Promise<AiConversation> {
     const entity = this.repo.create({
       id: randomUUID(),
       userId,
       diagramId,
+      sessionId,
       role: "user",
       content,
       toolCalls: null,
@@ -38,11 +40,13 @@ export class AiHistoryService {
     content: string,
     diff: DiffChange[] | null,
     toolCalls: Record<string, unknown>[] | null,
+    sessionId: string | null = null,
   ): Promise<AiConversation> {
     const entity = this.repo.create({
       id: randomUUID(),
       userId,
       diagramId,
+      sessionId,
       role: "assistant",
       content,
       toolCalls: toolCalls as Record<string, unknown> | null,
@@ -52,13 +56,59 @@ export class AiHistoryService {
     return this.repo.save(entity);
   }
 
-  async findRecent(userId: string, diagramId: string | null): Promise<AiConversation[]> {
+  async findRecent(userId: string, diagramId: string | null, sessionId?: string | null): Promise<AiConversation[]> {
+    if (sessionId) {
+      const rows = await this.repo.find({
+        where: { userId, sessionId },
+        order: { createdAt: "DESC" },
+        take: HISTORY_LIMIT,
+      });
+      return rows.reverse();
+    }
+
     const rows = await this.repo.find({
       where: { userId, ...(diagramId !== null ? { diagramId } : {}) },
       order: { createdAt: "DESC" },
       take: HISTORY_LIMIT,
     });
     return rows.reverse();
+  }
+
+  async findSessions(userId: string, diagramId: string): Promise<AiSessionResponse[]> {
+    const rows = await this.repo
+      .createQueryBuilder("c")
+      .select("c.session_id", "sessionId")
+      .addSelect("MIN(c.created_at)", "createdAt")
+      .addSelect(
+        `(SELECT content FROM ai_conversations sub
+           WHERE sub.session_id = c.session_id
+             AND sub.user_id = :userId
+             AND sub.role = 'user'
+           ORDER BY sub.created_at ASC
+           LIMIT 1)`,
+        "firstName",
+      )
+      .where("c.user_id = :userId", { userId })
+      .andWhere("c.diagram_id = :diagramId", { diagramId })
+      .andWhere("c.session_id IS NOT NULL")
+      .groupBy("c.session_id")
+      .orderBy("MIN(c.created_at)", "DESC")
+      .setParameter("userId", userId)
+      .getRawMany<{ sessionId: string; createdAt: Date; firstName: string | null }>();
+
+    return rows.map((row) => ({
+      id: row.sessionId,
+      diagramId,
+      name: row.firstName ? row.firstName.slice(0, 30) : "새 세션",
+      createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+    }));
+  }
+
+  async createSession(userId: string, diagramId: string): Promise<string> {
+    // 실제 DB 저장은 첫 메시지 저장 시 자동으로 이뤄진다
+    void userId;
+    void diagramId;
+    return randomUUID();
   }
 
   async markAccepted(messageId: string, userId: string, accepted: boolean): Promise<void> {
