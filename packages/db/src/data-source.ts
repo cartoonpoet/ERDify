@@ -40,6 +40,7 @@ import { Announcement } from "./entities/announcement.entity";
 import { CreateAnnouncementsTable1746000000022 } from "./migrations/1746000000022-CreateAnnouncementsTable";
 import { AddContextToErrorReports1746000000023 } from "./migrations/1746000000023-AddContextToErrorReports";
 import { CreateOauthAccountsTable1746000000024 } from "./migrations/1746000000024-CreateOauthAccountsTable";
+import { AddSessionIdToAiConversations1746000000025 } from "./migrations/1746000000025-AddSessionIdToAiConversations";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -73,5 +74,6 @@ export const AppDataSource = new DataSource({
     CreateAnnouncementsTable1746000000022,
     AddContextToErrorReports1746000000023,
     CreateOauthAccountsTable1746000000024,
+    AddSessionIdToAiConversations1746000000025,
   ]
 });
