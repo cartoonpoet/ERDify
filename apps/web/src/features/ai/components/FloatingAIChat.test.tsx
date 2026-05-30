@@ -125,7 +125,7 @@ describe("FloatingAIChat", () => {
       expect(vi.mocked(createSession)).toHaveBeenCalledWith("diagram-1");
       expect(vi.mocked(sendAiChatStream)).toHaveBeenCalledWith(
         "diagram-1", "테이블 추가해줘", "new-session-id", "",
-        expect.any(Function), expect.any(Function), expect.any(Function),
+        expect.any(Function), expect.any(Function), expect.any(Function), expect.any(Function),
       );
     });
 

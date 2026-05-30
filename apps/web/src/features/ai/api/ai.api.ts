@@ -45,6 +45,7 @@ export const sendAiChatStream = async (
   onText: (delta: string) => void,
   onDone: (result: { messageId: string; content?: string; diff: unknown[] | null; pendingDocument: unknown | null }) => void,
   onError: (message: string) => void,
+  onStatus?: (label: string) => void,
 ): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/ai/chat/stream`, {
     method: "POST",
@@ -98,6 +99,8 @@ export const sendAiChatStream = async (
 
       if (eventType === "text") {
         onText(parsed.delta as string);
+      } else if (eventType === "status") {
+        onStatus?.(parsed.label as string);
       } else if (eventType === "done") {
         onDone(parsed as { messageId: string; content?: string; diff: unknown[] | null; pendingDocument: unknown | null });
       } else if (eventType === "error") {
