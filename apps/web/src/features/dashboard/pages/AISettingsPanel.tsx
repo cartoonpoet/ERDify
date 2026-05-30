@@ -11,7 +11,7 @@ const parseModelLabel = (label: string) => {
   return m ? { name: m[1], badge: m[2] } : { name: label, badge: null };
 };
 
-const CheckIcon = () => (
+const CheckMark = () => (
   <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
     <path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
@@ -140,33 +140,39 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
                   </span>
                   <span className={css.statusLabel}>{PROVIDER_LABELS[provider]}</span>
                 </div>
-                <div className={css.modelGrid}>
+                <div className={css.checkboxList}>
                   {modelsForProvider(provider).map((m) => {
                     const { name, badge } = parseModelLabel(m.label);
                     const isSelected = enabledModels.includes(m.value);
-                    const cardClass = [
-                      css.modelCard,
-                      isSelected ? css.modelCardSelected : "",
-                      !isOwner ? css.modelCardDisabled : "",
+                    const itemClass = [
+                      css.checkboxItem,
+                      isSelected ? css.checkboxItemSelected : "",
+                      !isOwner ? css.checkboxItemDisabled : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
+                    const boxClass = [
+                      css.customCheckbox,
+                      isSelected ? css.customCheckboxChecked : "",
                     ]
                       .filter(Boolean)
                       .join(" ");
                     return (
                       <div
                         key={m.value}
-                        className={cardClass}
+                        className={itemClass}
                         role="button"
                         tabIndex={isOwner ? 0 : -1}
                         onClick={() => isOwner && toggleModel(m.value)}
                         onKeyDown={(e) => e.key === "Enter" && isOwner && toggleModel(m.value)}
                       >
-                        {isSelected && (
-                          <div className={css.modelCardCheck}>
-                            <CheckIcon />
-                          </div>
-                        )}
-                        <div className={css.modelCardName}>{name}</div>
-                        {badge && <div className={css.modelCardSub}>{badge}</div>}
+                        <div className={boxClass}>
+                          {isSelected && <CheckMark />}
+                        </div>
+                        <span className={css.checkboxLabel}>
+                          {name}
+                          {badge && <span className={css.checkboxBadge}>{badge}</span>}
+                        </span>
                       </div>
                     );
                   })}

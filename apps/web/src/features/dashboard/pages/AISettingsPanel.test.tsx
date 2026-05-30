@@ -27,14 +27,15 @@ vi.mock("./ai-settings-panel.css", () => ({
   errorText: "",
   providerHeader: "",
   providerIcon: { anthropic: "", openai: "", gemini: "" },
-  modelGrid: "",
-  modelCard: "",
-  modelCardSelected: "modelCardSelected",
-  modelCardDisabled: "",
-  modelCardName: "",
-  modelCardSub: "",
-  modelCardCheck: "",
   providerSectionDivider: "",
+  checkboxList: "",
+  checkboxItem: "",
+  checkboxItemSelected: "checkboxItemSelected",
+  checkboxItemDisabled: "",
+  customCheckbox: "",
+  customCheckboxChecked: "",
+  checkboxLabel: "",
+  checkboxBadge: "",
 }));
 
 const createQc = () =>
@@ -87,7 +88,7 @@ it("enabledModels가 비어있으면 아무 카드도 선택되지 않는다", a
   await waitFor(() => {
     expect(screen.getByText("Claude Sonnet 4.6")).toBeInTheDocument();
   });
-  const cards = document.querySelectorAll(".modelCardSelected");
+  const cards = document.querySelectorAll(".checkboxItemSelected");
   expect(cards.length).toBe(0);
 });
 

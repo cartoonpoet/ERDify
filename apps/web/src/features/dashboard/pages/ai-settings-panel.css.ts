@@ -180,72 +180,81 @@ export const providerIcon = styleVariants({
   gemini: [providerIconBase, { background: "#4285F4" }],
 });
 
-export const modelGrid = style({
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: vars.space["2"],
+export const providerSectionDivider = style({
+  border: "none",
+  borderTop: `1px solid ${vars.color.surfaceSecondary}`,
+  margin: `${vars.space["3"]} 0`,
 });
 
-export const modelCard = style({
-  position: "relative",
-  border: `1.5px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  padding: `${vars.space["3"]} ${vars.space["3"]}`,
+export const checkboxList = style({
+  display: "flex",
+  flexDirection: "column",
+  gap: 2,
+  marginBottom: vars.space["2"],
+});
+
+export const checkboxItem = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space["2"],
+  padding: `7px ${vars.space["2"]}`,
+  borderRadius: vars.radius.sm,
   cursor: "pointer",
   userSelect: "none",
-  background: vars.color.surface,
-  transition: "border-color 0.12s, background 0.12s",
+  transition: "background 0.1s",
   selectors: {
     "&:hover": {
-      borderColor: vars.color.primary,
+      background: vars.color.surfaceTertiary,
+    },
+  },
+});
+
+export const checkboxItemSelected = style({
+  background: vars.color.selectedBg,
+  selectors: {
+    "&:hover": {
       background: vars.color.selectedBg,
     },
   },
 });
 
-export const modelCardSelected = style({
-  borderColor: vars.color.primary,
-  background: vars.color.selectedBg,
-});
-
-export const modelCardDisabled = style({
+export const checkboxItemDisabled = style({
   pointerEvents: "none",
   opacity: 0.5,
 });
 
-export const modelCardName = style({
-  fontSize: vars.font.size.sm,
-  fontWeight: vars.font.weight.semibold,
-  color: vars.color.textPrimary,
-  paddingRight: vars.space["4"],
-  marginBottom: 2,
-  selectors: {
-    [`${modelCardSelected} &`]: {
-      color: vars.color.primary,
-    },
-  },
-});
-
-export const modelCardSub = style({
-  fontSize: vars.font.size.xs,
-  color: vars.color.textSecondary,
-});
-
-export const modelCardCheck = style({
-  position: "absolute",
-  top: vars.space["2"],
-  right: vars.space["2"],
+export const customCheckbox = style({
   width: 16,
   height: 16,
-  borderRadius: vars.radius.pill,
-  background: vars.color.primary,
+  borderRadius: 4,
+  border: `1.5px solid ${vars.color.borderStrong}`,
+  background: vars.color.surface,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+  flexShrink: 0,
+  transition: "all 0.1s",
 });
 
-export const providerSectionDivider = style({
-  border: "none",
-  borderTop: `1px solid ${vars.color.surfaceSecondary}`,
-  margin: `${vars.space["3"]} 0`,
+export const customCheckboxChecked = style({
+  background: vars.color.primary,
+  borderColor: vars.color.primary,
+});
+
+export const checkboxLabel = style({
+  fontSize: vars.font.size.sm,
+  color: vars.color.textPrimary,
+  flex: 1,
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space["2"],
+});
+
+export const checkboxBadge = style({
+  fontSize: vars.font.size.xs,
+  fontWeight: vars.font.weight.medium,
+  color: vars.color.primary,
+  background: vars.color.selectedBg,
+  borderRadius: vars.radius.pill,
+  padding: `1px 7px`,
 });
