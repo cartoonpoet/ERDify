@@ -1,0 +1,213 @@
+import { Injectable } from "@nestjs/common";
+import { randomUUID } from "node:crypto";
+import type { DiagramDocument, DiagramColumn, DiagramIndex, DiagramRelationship, RelationshipCardinality } from "@erdify/domain";
+import type { DiffChange } from "@erdify/contracts";
+import { DomainLoaderService } from "../../../common/services/domain-loader.service";
+
+export interface ToolResult {
+  doc: DiagramDocument;
+  changes: DiffChange[];
+  resultText: string;
+}
+
+@Injectable()
+export class ToolExecutor {
+  constructor(private readonly domainLoader: DomainLoaderService) {}
+
+  async execute(toolName: string, input: Record<string, unknown>, doc: DiagramDocument): Promise<ToolResult> {
+    if (toolName === "listTables") {
+      const tables = doc.entities.map((e) => ({ id: e.id, name: e.name, columnCount: e.columns.length }));
+      return { doc, changes: [], resultText: JSON.stringify(tables) };
+    }
+    if (toolName === "getTableDetails") {
+      const tableId = input["tableId"] as string;
+      const entity = doc.entities.find((x) => x.id === tableId);
+      if (!entity) return { doc, changes: [], resultText: `Table ${tableId} not found.` };
+      const relationships = doc.relationships.filter((r) => r.sourceEntityId === tableId || r.targetEntityId === tableId);
+      const indexes = doc.indexes.filter((i) => i.entityId === tableId);
+      return { doc, changes: [], resultText: JSON.stringify({ id: entity.id, name: entity.name, columns: entity.columns, indexes, relationships }) };
+    }
+    return this.executeMutation(toolName, input, doc);
+  }
+
+  private async executeMutation(toolName: string, input: Record<string, unknown>, doc: DiagramDocument): Promise<ToolResult> {
+    const domain = await this.domainLoader.load();
+    const changes: DiffChange[] = [];
+    let updatedDoc = doc;
+
+    switch (toolName) {
+      case "addTable": {
+        const entityId = randomUUID();
+        const name = input["name"] as string;
+        updatedDoc = domain.addEntity(doc, { id: entityId, name });
+        changes.push({ type: "addTable", tableId: entityId, tableName: name });
+
+        const columns = input["columns"] as Array<{ name: string; type: string; nullable?: boolean; primaryKey?: boolean; unique?: boolean; comment?: string }> | undefined;
+        if (columns) {
+          for (let i = 0; i < columns.length; i++) {
+            const col = columns[i]!;
+            const colId = randomUUID();
+            const column: DiagramColumn = {
+              id: colId, name: col.name, type: col.type,
+              nullable: col.nullable ?? true, primaryKey: col.primaryKey ?? false,
+              unique: col.unique ?? false, defaultValue: null, comment: col.comment ?? null, ordinal: i,
+            };
+            updatedDoc = domain.addColumn(updatedDoc, entityId, column);
+            changes.push({ type: "addColumn", tableId: entityId, tableName: name, columnId: colId, columnName: col.name, columnType: col.type, ...(col.comment ? { comment: col.comment } : {}) });
+          }
+        }
+        break;
+      }
+      case "removeTable": {
+        const tableId = input["tableId"] as string;
+        const entity = doc.entities.find((e) => e.id === tableId);
+        if (!entity) break;
+        updatedDoc = domain.removeEntity(doc, tableId);
+        changes.push({ type: "removeTable", tableId, tableName: entity.name });
+        break;
+      }
+      case "updateTable": {
+        const tableId = input["tableId"] as string;
+        const entity = doc.entities.find((e) => e.id === tableId);
+        if (!entity) break;
+        const newName = input["name"] as string;
+        updatedDoc = domain.renameEntity(doc, tableId, newName);
+        changes.push({ type: "updateTable", tableId, oldName: entity.name, newName });
+        break;
+      }
+      case "addColumn": {
+        const tableId = input["tableId"] as string;
+        const entity = doc.entities.find((e) => e.id === tableId);
+        if (!entity) break;
+        const colId = randomUUID();
+        const column: DiagramColumn = {
+          id: colId,
+          name: input["name"] as string,
+          type: input["type"] as string,
+          nullable: (input["nullable"] as boolean | undefined) ?? true,
+          primaryKey: (input["primaryKey"] as boolean | undefined) ?? false,
+          unique: (input["unique"] as boolean | undefined) ?? false,
+          defaultValue: (input["defaultValue"] as string | undefined) ?? null,
+          comment: (input["comment"] as string | undefined) ?? null,
+          ordinal: entity.columns.length,
+        };
+        updatedDoc = domain.addColumn(doc, tableId, column);
+        changes.push({ type: "addColumn", tableId, tableName: entity.name, columnId: colId, columnName: column.name, columnType: column.type, ...(column.comment ? { comment: column.comment } : {}) });
+        break;
+      }
+      case "removeColumn": {
+        const tableId = input["tableId"] as string;
+        const colId = input["columnId"] as string;
+        const entity = doc.entities.find((e) => e.id === tableId);
+        const col = entity?.columns.find((c) => c.id === colId);
+        if (!entity || !col) break;
+        updatedDoc = domain.removeColumn(doc, tableId, colId);
+        changes.push({ type: "removeColumn", tableId, tableName: entity.name, columnId: colId, columnName: col.name });
+        break;
+      }
+      case "updateColumn": {
+        const tableId = input["tableId"] as string;
+        const colId = input["columnId"] as string;
+        const entity = doc.entities.find((e) => e.id === tableId);
+        const col = entity?.columns.find((c) => c.id === colId);
+        if (!entity || !col) break;
+        const patch: Partial<Omit<DiagramColumn, "id">> = {};
+        if (input["name"] !== undefined) patch.name = input["name"] as string;
+        if (input["type"] !== undefined) patch.type = input["type"] as string;
+        if (input["nullable"] !== undefined) patch.nullable = input["nullable"] as boolean;
+        if (input["primaryKey"] !== undefined) patch.primaryKey = input["primaryKey"] as boolean;
+        if (input["unique"] !== undefined) patch.unique = input["unique"] as boolean;
+        if (input["defaultValue"] !== undefined) patch.defaultValue = input["defaultValue"] as string | null;
+        updatedDoc = domain.updateColumn(doc, tableId, colId, patch);
+        changes.push({ type: "updateColumn", tableId, tableName: entity.name, columnId: colId, columnName: col.name, changes: Object.keys(patch) });
+        break;
+      }
+      case "addRelation": {
+        const relId = randomUUID();
+        const src = doc.entities.find((e) => e.id === input["sourceTableId"]);
+        const tgt = doc.entities.find((e) => e.id === input["targetTableId"]);
+        if (!src || !tgt) break;
+
+        const fkColumnName = input["fkColumnName"] as string | undefined;
+        let fkColId: string | undefined;
+        if (fkColumnName) {
+          const alreadyExists = src.columns.find((c) => c.name === fkColumnName);
+          if (!alreadyExists) {
+            fkColId = randomUUID();
+            const fkColumn: DiagramColumn = {
+              id: fkColId, name: fkColumnName, type: "uuid",
+              nullable: (input["fkNullable"] as boolean | undefined) ?? false,
+              primaryKey: false, unique: false, defaultValue: null, comment: null,
+              ordinal: src.columns.length,
+            };
+            updatedDoc = domain.addColumn(updatedDoc, src.id, fkColumn);
+            changes.push({ type: "addColumn", tableId: src.id, tableName: src.name, columnId: fkColId, columnName: fkColumnName, columnType: "uuid" });
+          } else {
+            fkColId = alreadyExists.id;
+          }
+        }
+
+        const rel: DiagramRelationship = {
+          id: relId, name: "",
+          sourceEntityId: input["sourceTableId"] as string,
+          sourceColumnIds: fkColId ? [fkColId] : [],
+          targetEntityId: input["targetTableId"] as string,
+          targetColumnIds: [],
+          cardinality: input["cardinality"] as RelationshipCardinality,
+          onDelete: "no-action", onUpdate: "no-action", identifying: false,
+        };
+        updatedDoc = domain.addRelationship(updatedDoc, rel);
+        changes.push({ type: "addRelation", relationId: relId, fromTable: src.name, toTable: tgt.name, cardinality: input["cardinality"] as string });
+        break;
+      }
+      case "removeRelation": {
+        const relId = input["relationId"] as string;
+        const rel = doc.relationships.find((r) => r.id === relId);
+        if (!rel) break;
+        const src = doc.entities.find((e) => e.id === rel.sourceEntityId);
+        const tgt = doc.entities.find((e) => e.id === rel.targetEntityId);
+        updatedDoc = domain.removeRelationship(doc, relId);
+        changes.push({ type: "removeRelation", relationId: relId, fromTable: src?.name ?? rel.sourceEntityId, toTable: tgt?.name ?? rel.targetEntityId });
+        break;
+      }
+      case "addIndex": {
+        const tableId = input["tableId"] as string;
+        const entity = updatedDoc.entities.find((e) => e.id === tableId);
+        if (!entity) break;
+        const indexId = randomUUID();
+        const columnIds = input["columnIds"] as string[];
+        const unique = (input["unique"] as boolean | undefined) ?? false;
+        const index: DiagramIndex = {
+          id: indexId,
+          entityId: tableId,
+          name: input["name"] as string,
+          columnIds,
+          unique,
+        };
+        updatedDoc = domain.addIndex(updatedDoc, index);
+        const columnNames = columnIds.map((cid) => entity.columns.find((c) => c.id === cid)?.name ?? cid);
+        changes.push({ type: "addIndex", indexId, tableName: entity.name, indexName: input["name"] as string, columnNames, unique });
+        break;
+      }
+    }
+
+    const resultText = changes.length > 0
+      ? `Applied: ${changes.map(describeChange).join("; ")}`
+      : `No change applied for ${toolName}. The referenced table/column may not exist.`;
+    return { doc: updatedDoc, changes, resultText };
+  }
+}
+
+function describeChange(c: DiffChange): string {
+  switch (c.type) {
+    case "addTable": return `added table ${c.tableName} (id: ${c.tableId})`;
+    case "removeTable": return `removed table ${c.tableName}`;
+    case "updateTable": return `renamed ${c.oldName} -> ${c.newName}`;
+    case "addColumn": return `added column ${c.tableName}.${c.columnName} (id: ${c.columnId})`;
+    case "removeColumn": return `removed column ${c.tableName}.${c.columnName}`;
+    case "updateColumn": return `updated column ${c.tableName}.${c.columnName}`;
+    case "addRelation": return `added relation ${c.fromTable}->${c.toTable}`;
+    case "removeRelation": return `removed relation ${c.fromTable}->${c.toTable}`;
+    case "addIndex": return `added index ${c.indexName} on ${c.tableName}`;
+  }
+}

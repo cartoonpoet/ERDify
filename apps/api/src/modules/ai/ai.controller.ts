@@ -1,27 +1,57 @@
-import { Body, Controller, Param, Post, Get, Put, UseGuards } from "@nestjs/common";
+import { Body, Controller, Param, Post, Get, Put, UseGuards, Res } from "@nestjs/common";
+import type { Response } from "express";
 import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import { AiService } from "./ai.service";
+import { AiChatService } from "./chat/ai-chat.service";
 import { AiHistoryService } from "./ai-history.service";
-import { AiChatDto } from "./dto/chat.dto";
+import { AiChatStreamDto } from "./dto/chat-stream.dto";
 import { AiSuggestColumnsDto } from "./dto/suggest-columns.dto";
-import type { AiChatResponse, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
+import type { AiStreamEvent, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
 
 @Controller()
 @UseGuards(FlexAuthGuard)
 export class AiController {
   constructor(
     private readonly aiService: AiService,
+    private readonly aiChatService: AiChatService,
     private readonly aiHistoryService: AiHistoryService,
   ) {}
 
-  @Post("ai/chat")
-  chat(
+  @Post("ai/chat/stream")
+  async chatStream(
     @CurrentUser() user: JwtPayload,
-    @Body() dto: AiChatDto,
-  ): Promise<AiChatResponse> {
-    return this.aiService.chat(user.sub, dto.diagramId, dto.message);
+    @Body() dto: AiChatStreamDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    let aborted = false;
+    res.on("close", () => {
+      aborted = true;
+    });
+
+    const write = (e: AiStreamEvent): void => {
+      res.write(`data: ${JSON.stringify(e)}\n\n`);
+      (res as Response & { flush?: () => void }).flush?.();
+    };
+
+    await this.aiChatService.runChat(
+      {
+        userId: user.sub,
+        diagramId: dto.diagramId,
+        message: dto.message,
+        enableReadTools: dto.enableReadTools ?? false,
+        isAborted: () => aborted,
+      },
+      write,
+    );
+    res.end();
   }
 
   @Post("ai/chat/:messageId/accept")

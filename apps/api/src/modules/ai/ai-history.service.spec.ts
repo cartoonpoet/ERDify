@@ -2,7 +2,7 @@ import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AiConversation } from "@erdify/db";
-import { AiHistoryService } from "./ai-history.service";
+import { AiHistoryService, rowsToConvMessages } from "./ai-history.service";
 
 const makeRepo = (overrides: Record<string, unknown> = {}) => ({
   findOne: vi.fn(),
@@ -134,6 +134,20 @@ describe("AiHistoryService", () => {
           where: { userId: "user-1" },
         }),
       );
+    });
+  });
+
+  describe("rowsToConvMessages()", () => {
+    it("user/assistant 행을 ConvMessage로 변환하고 diff를 요약 텍스트로 붙인다", () => {
+      const rows = [
+        { role: "user", content: "users 테이블 만들어줘", diff: null },
+        { role: "assistant", content: "만들었어요", diff: [{ type: "addTable", tableId: "e1", tableName: "users" }] },
+      ] as unknown as AiConversation[];
+
+      const msgs = rowsToConvMessages(rows);
+      expect(msgs[0]).toEqual({ role: "user", content: "users 테이블 만들어줘" });
+      expect(msgs[1]!.role).toBe("assistant");
+      expect((msgs[1] as { text: string }).text).toContain("users");
     });
   });
 

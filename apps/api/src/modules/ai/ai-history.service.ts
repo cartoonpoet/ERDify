@@ -5,9 +5,22 @@ import { LessThan, Repository } from "typeorm";
 import { randomUUID } from "node:crypto";
 import { AiConversation } from "@erdify/db";
 import type { DiffChange } from "@erdify/contracts";
+import type { ConvMessage } from "./providers/provider.types";
 
 const HISTORY_LIMIT = 6;
 const TTL_DAYS = 90;
+
+export function rowsToConvMessages(rows: AiConversation[]): ConvMessage[] {
+  return rows.map((r): ConvMessage => {
+    if (r.role === "user") return { role: "user", content: r.content };
+    const diff = (r.diff as unknown as DiffChange[] | null) ?? [];
+    const labels = diff
+      .map((d) => ("tableName" in d ? d.tableName : "fromTable" in d ? `${d.fromTable}->${d.toTable}` : ""))
+      .filter(Boolean);
+    const summary = labels.length ? `\n[적용한 변경: ${labels.join(", ")}]` : "";
+    return { role: "assistant", text: (r.content ?? "") + summary, toolCalls: [] };
+  });
+}
 
 @Injectable()
 export class AiHistoryService {
@@ -59,6 +72,11 @@ export class AiHistoryService {
       take: HISTORY_LIMIT,
     });
     return rows.reverse();
+  }
+
+  async findRecentTurns(userId: string, diagramId: string | null): Promise<ConvMessage[]> {
+    const rows = await this.findRecent(userId, diagramId);
+    return rowsToConvMessages(rows);
   }
 
   async markAccepted(messageId: string, userId: string, accepted: boolean): Promise<void> {
