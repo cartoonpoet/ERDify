@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDiagramRequestSchema } from "./diagram-contract.schema";
+import { createDiagramRequestSchema } from "./diagram-contract.schema.js";
 
 describe("diagram contracts", () => {
   it("accepts a valid diagram create request", () => {

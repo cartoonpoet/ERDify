@@ -1,5 +1,5 @@
 import type { DiagramDocument, DiagramDialect } from "@erdify/domain";
-import type { MemberRoleType } from "../members/member.types";
+import type { MemberRoleType } from "../members/member.types.js";
 
 export type SharePreset = "1h" | "1d" | "7d" | "30d";
 

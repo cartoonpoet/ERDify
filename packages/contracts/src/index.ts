@@ -3,7 +3,7 @@ export {
   diagramDialectSchema,
   type CreateDiagramRequest,
   type DiagramDialectContract,
-} from "./diagrams/diagram-contract.schema";
+} from "./diagrams/diagram-contract.schema.js";
 
 export type {
   UserProfile,
@@ -11,7 +11,7 @@ export type {
   SocialOnboardTokenPayload,
   OAuthProvider,
   OAuthStatus,
-} from "./auth/auth.types";
+} from "./auth/auth.types.js";
 export type {
   DiagramResponse,
   DiagramListItem,
@@ -21,23 +21,23 @@ export type {
   SharePreset,
   ActiveUser,
   ActiveUsersResponse,
-} from "./diagrams/diagram.types";
-export type { OrgResponse } from "./organizations/organization.types";
+} from "./diagrams/diagram.types.js";
+export type { OrgResponse } from "./organizations/organization.types.js";
 export type {
   MemberRoleType,
   MemberInfo,
   PendingInvite,
   InviteResult,
-} from "./members/member.types";
-export type { ApiKeyItem, ApiKeyCreated } from "./api-keys/api-key.types";
-export type { ProjectResponse } from "./projects/project.types";
+} from "./members/member.types.js";
+export type { ApiKeyItem, ApiKeyCreated } from "./api-keys/api-key.types.js";
+export type { ProjectResponse } from "./projects/project.types.js";
 export type {
   DiffChange,
   AiChatResponse,
   ColumnSuggestion,
   OrgAiSettings,
   AiChatConfig,
-} from "./ai/ai.types";
+} from "./ai/ai.types.js";
 export {
   AI_MODELS,
   AI_PROVIDERS,
@@ -46,7 +46,7 @@ export {
   modelsForProvider,
   type AiProviderId,
   type AiModelOption,
-} from "./ai/models";
+} from "./ai/models.js";
 export {
   aiChatRequestSchema,
   aiSuggestColumnsRequestSchema,
@@ -54,7 +54,7 @@ export {
   type AiChatRequest,
   type AiSuggestColumnsRequest,
   type UpdateOrgAiSettingsRequest,
-} from "./ai/ai-contract.schema";
+} from "./ai/ai-contract.schema.js";
 export type {
   AnnouncementType,
   AnnouncementResponse,
@@ -63,4 +63,4 @@ export type {
   AiGenerateAnnouncementDto,
   AiRefineAnnouncementDto,
   AiAnnouncementResult,
-} from "./announcements/announcement.types";
+} from "./announcements/announcement.types.js";

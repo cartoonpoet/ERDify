@@ -1,5 +1,5 @@
 import type { DiagramDocument } from "@erdify/domain";
-import type { AiProviderId, AiModelOption } from "./models";
+import type { AiProviderId, AiModelOption } from "./models.js";
 
 export type DiffChange =
   | { type: "addTable"; tableId: string; tableName: string }
