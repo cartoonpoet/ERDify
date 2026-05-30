@@ -13,6 +13,21 @@ export function addColumn(
   };
 }
 
+/** 여러 컬럼을 한 번의 불변 갱신으로 추가 (addColumn N회 호출 시의 O(N^2) 문서 복제 방지). */
+export function addColumns(
+  doc: DiagramDocument,
+  entityId: string,
+  columns: DiagramColumn[]
+): DiagramDocument {
+  if (columns.length === 0) return doc;
+  return {
+    ...doc,
+    entities: doc.entities.map((e) =>
+      e.id === entityId ? { ...e, columns: [...e.columns, ...columns] } : e
+    )
+  };
+}
+
 export function updateColumn(
   doc: DiagramDocument,
   entityId: string,

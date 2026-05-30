@@ -1,6 +1,6 @@
 import { createEmptyDiagram } from "../schema/create-empty-diagram.js";
 import { addEntity } from "./entity-commands.js";
-import { addColumn, removeColumn, updateColumn } from "./column-commands.js";
+import { addColumn, addColumns, removeColumn, updateColumn } from "./column-commands.js";
 import { addIndex } from "./index-commands.js";
 import type { DiagramColumn } from "../types/index.js";
 
@@ -25,6 +25,29 @@ describe("addColumn", () => {
   it("does not affect other entities", () => {
     let doc = addEntity(base(), { id: "e2", name: "orders" });
     doc = addColumn(doc, "e1", col());
+    expect(doc.entities[1].columns).toHaveLength(0);
+  });
+});
+
+describe("addColumns", () => {
+  it("adds multiple columns in one call", () => {
+    const doc = addColumns(base(), "e1", [
+      col({ id: "c1", name: "id", ordinal: 0 }),
+      col({ id: "c2", name: "email", ordinal: 1 }),
+    ]);
+    expect(doc.entities[0].columns.map((c) => c.name)).toEqual(["id", "email"]);
+  });
+
+  it("returns the same doc reference when columns is empty", () => {
+    const doc = base();
+    expect(addColumns(doc, "e1", [])).toBe(doc);
+  });
+
+  it("appends to existing columns and leaves other entities untouched", () => {
+    let doc = addEntity(base(), { id: "e2", name: "orders" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id", ordinal: 0 }));
+    doc = addColumns(doc, "e1", [col({ id: "c2", name: "name", ordinal: 1 })]);
+    expect(doc.entities[0].columns).toHaveLength(2);
     expect(doc.entities[1].columns).toHaveLength(0);
   });
 });
