@@ -1,35 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { generateDdl } from "@erdify/domain";
-import type { DiagramDocument } from "@erdify/domain";
+import { generateDdl, formatDiagram } from "@erdify/domain";
 import { client } from "../client.js";
-
-function formatDiagram(name: string, doc: DiagramDocument): string {
-  const lines: string[] = [`Diagram: "${name}" (${doc.dialect})`, ""];
-  lines.push(`Tables (${doc.entities.length}):`);
-  for (const entity of doc.entities) {
-    lines.push(`  ${entity.name} [tableId: ${entity.id}]`);
-    for (const col of [...entity.columns].sort((a, b) => a.ordinal - b.ordinal)) {
-      const flags = [
-        col.primaryKey ? "PK" : null,
-        !col.nullable ? "NOT NULL" : null,
-        col.unique ? "UNIQUE" : null,
-      ]
-        .filter(Boolean)
-        .join(" ");
-      lines.push(`    - ${col.name} [columnId: ${col.id}]: ${col.type}${flags ? " " + flags : ""}`);
-    }
-  }
-  if (doc.relationships.length > 0) {
-    lines.push("", `Relationships (${doc.relationships.length}):`);
-    for (const rel of doc.relationships) {
-      const src = doc.entities.find((e) => e.id === rel.sourceEntityId)?.name ?? rel.sourceEntityId;
-      const tgt = doc.entities.find((e) => e.id === rel.targetEntityId)?.name ?? rel.targetEntityId;
-      lines.push(`  ${src} → ${tgt} (${rel.cardinality}) [relationshipId: ${rel.id}]`);
-    }
-  }
-  return lines.join("\n");
-}
 
 export const registerReadTools = (server: McpServer): void => {
   server.tool(
@@ -83,7 +55,7 @@ export const registerReadTools = (server: McpServer): void => {
     async ({ diagramId }) => {
       const diagram = await client.getDiagram(diagramId);
       const text = formatDiagram(diagram.name, diagram.content);
-      await client.recordToolCall(diagramId, "get_diagram", `"${diagram.name}" 다이어그램 조회`).catch(() => {});
+      void client.recordToolCall(diagramId, "get_diagram", `"${diagram.name}" 다이어그램 조회`).catch(() => {});
       return { content: [{ type: "text", text }] };
     }
   );
@@ -120,10 +92,11 @@ export const registerReadTools = (server: McpServer): void => {
         (r) => r.sourceEntityId === entity.id || r.targetEntityId === entity.id
       );
       if (related.length > 0) {
+        const nameById = new Map(diagram.content.entities.map((e) => [e.id, e.name]));
         lines.push("", `Relationships (${related.length}):`);
         for (const rel of related) {
-          const src = diagram.content.entities.find((e) => e.id === rel.sourceEntityId)?.name ?? rel.sourceEntityId;
-          const tgt = diagram.content.entities.find((e) => e.id === rel.targetEntityId)?.name ?? rel.targetEntityId;
+          const src = nameById.get(rel.sourceEntityId) ?? rel.sourceEntityId;
+          const tgt = nameById.get(rel.targetEntityId) ?? rel.targetEntityId;
           lines.push(`  ${src} → ${tgt} (${rel.cardinality}) [relationshipId: ${rel.id}]`);
         }
       }
@@ -139,7 +112,7 @@ export const registerReadTools = (server: McpServer): void => {
       const diagram = await client.getDiagram(diagramId);
       const ddl = generateDdl(diagram.content);
       const text = ddl.trim() || "-- No tables defined";
-      await client.recordToolCall(diagramId, "get_ddl", `"${diagram.name}" DDL 생성`).catch(() => {});
+      void client.recordToolCall(diagramId, "get_ddl", `"${diagram.name}" DDL 생성`).catch(() => {});
       return { content: [{ type: "text", text }] };
     }
   );

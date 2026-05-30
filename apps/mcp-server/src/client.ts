@@ -47,16 +47,32 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return res.json() as Promise<T>;
 }
 
+// 단기 write-through 캐시: 에이전트가 한 다이어그램을 연속 편집할 때 매 도구마다
+// 전체 문서를 GET하던 round-trip을 제거한다. 쓰기 후에는 로컬 최신 문서로 갱신.
+const DIAGRAM_CACHE_TTL_MS = 5_000;
+const diagramCache = new Map<string, { data: DiagramResponse; ts: number }>();
+
 export const client = {
   getOrganizations: () => request<OrganizationItem[]>("GET", "/organizations"),
   getProjects: (organizationId: string) =>
     request<ProjectItem[]>("GET", `/organizations/${organizationId}/projects`),
   getDiagrams: (projectId: string) =>
     request<DiagramItem[]>("GET", `/projects/${projectId}/diagrams`),
-  getDiagram: (diagramId: string) =>
-    request<DiagramResponse>("GET", `/diagrams/${diagramId}`),
-  updateDiagram: (diagramId: string, content: DiagramDocument) =>
-    request<void>("PATCH", `/diagrams/${diagramId}`, { content }),
+  getDiagram: async (diagramId: string): Promise<DiagramResponse> => {
+    const cached = diagramCache.get(diagramId);
+    if (cached && Date.now() - cached.ts < DIAGRAM_CACHE_TTL_MS) return cached.data;
+    const data = await request<DiagramResponse>("GET", `/diagrams/${diagramId}`);
+    diagramCache.set(diagramId, { data, ts: Date.now() });
+    return data;
+  },
+  updateDiagram: async (diagramId: string, content: DiagramDocument): Promise<void> => {
+    await request<void>("PATCH", `/diagrams/${diagramId}`, { content });
+    const prev = diagramCache.get(diagramId)?.data;
+    diagramCache.set(diagramId, {
+      data: { id: diagramId, name: prev?.name ?? "", organizationId: prev?.organizationId ?? "", content },
+      ts: Date.now(),
+    });
+  },
   recordToolCall: (diagramId: string, tool: string, summary: string) =>
     request<void>("POST", `/diagrams/${diagramId}/mcp-sessions/${MCP_SESSION_ID}/tool-calls`, {
       tool,
