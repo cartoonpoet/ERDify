@@ -5,6 +5,7 @@ import {
   addColumn,
   addEntity,
   addRelationship,
+  formatDiagram,
   generateDdl,
   generateSeedSql,
   generateSetupSql,
@@ -13,34 +14,11 @@ import {
   removeRelationship,
   updateColumn,
 } from "@erdify/domain";
-import type { DiagramColumn, DiagramDocument, DiagramRelationship, RelationshipCardinality } from "@erdify/domain";
+import type { DiagramColumn, DiagramRelationship, RelationshipCardinality } from "@erdify/domain";
 import { client } from "./client.js";
 import { getApiKey, getApiUrl, readConfig, writeConfig } from "./config.js";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-function formatDiagram(name: string, doc: DiagramDocument): string {
-  const lines: string[] = [`Diagram: "${name}" (${doc.dialect})`, ""];
-  lines.push(`Tables (${doc.entities.length}):`);
-  for (const entity of doc.entities) {
-    lines.push(`  ${entity.name} [tableId: ${entity.id}]`);
-    for (const col of [...entity.columns].sort((a, b) => a.ordinal - b.ordinal)) {
-      const flags = [col.primaryKey ? "PK" : null, !col.nullable ? "NOT NULL" : null, col.unique ? "UNIQUE" : null]
-        .filter(Boolean)
-        .join(" ");
-      lines.push(`    - ${col.name} [columnId: ${col.id}]: ${col.type}${flags ? " " + flags : ""}`);
-    }
-  }
-  if (doc.relationships.length > 0) {
-    lines.push("", `Relationships (${doc.relationships.length}):`);
-    for (const rel of doc.relationships) {
-      const src = doc.entities.find((e) => e.id === rel.sourceEntityId)?.name ?? rel.sourceEntityId;
-      const tgt = doc.entities.find((e) => e.id === rel.targetEntityId)?.name ?? rel.targetEntityId;
-      lines.push(`  ${src} → ${tgt} (${rel.cardinality}) [relationshipId: ${rel.id}]`);
-    }
-  }
-  return lines.join("\n");
-}
 
 async function prompt(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
