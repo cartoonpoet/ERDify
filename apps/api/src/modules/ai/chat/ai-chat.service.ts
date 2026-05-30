@@ -7,6 +7,7 @@ import type { DiagramDocument } from "@erdify/domain";
 import { AiService } from "../ai.service";
 import { AiHistoryService } from "../ai-history.service";
 import { ToolExecutor } from "../tools/tool-executor";
+import { DomainLoaderService } from "../../../common/services/domain-loader.service";
 import { UsageService } from "../../usage/usage.service";
 import { AnthropicProvider } from "../providers/anthropic.provider";
 import { OpenAiProvider } from "../providers/openai.provider";
@@ -18,6 +19,8 @@ import type { ConvMessage, AiProvider, NormalizedToolCall } from "../providers/p
 
 const MAX_TOKENS = 4096;
 const MAX_ITERATIONS = 8;
+/** 적용 전 자동검증에서 새 오류가 나오면 모델에게 수정 기회를 주는 최대 횟수. */
+const MAX_VALIDATION_RETRIES = 2;
 const READ_TOOL_NAMES = new Set(["listTables", "getTableDetails"]);
 const APPLY_NUDGE =
   "Now apply the schema improvements you just identified using the editing tools (addRelation, addIndex, addTable, addColumn, updateColumn, removeColumn, etc.) so the user gets a reviewable diff. Make the concrete changes now — do not just describe them again. If, and only if, no change is actually warranted, reply in one short sentence saying the schema is already fine.";
@@ -52,6 +55,7 @@ export class AiChatService {
     private readonly gemini: GeminiProvider,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Organization) private readonly orgRepo: Repository<Organization>,
+    private readonly domainLoader: DomainLoaderService,
   ) {}
 
   async runChat(params: RunChatParams, emit: (e: StreamEvent) => void): Promise<void> {
@@ -65,14 +69,23 @@ export class AiChatService {
         this.orgRepo.findOne({ where: { id: orgId } }),
       ]);
       const today = new Date().toISOString().slice(0, 10);
-      const system = buildSystemPrompt(doc, {
-        userName: user?.name ?? "Unknown",
-        userEmail: user?.email ?? "",
-        orgName: org?.name ?? "",
-        diagramId,
-        diagramName,
-        today,
-      });
+      const domain = await this.domainLoader.load();
+      // ① 결정적 스키마 분석 → VERIFIED FACTS로 주입 (추측이 아닌 코드 계산 결과)
+      const facts = domain.analyzeSchema(doc);
+      // ② 적용 전 검증의 기준선: 원본 문서에 이미 존재하던 오류는 AI 책임이 아니므로 제외한다
+      const baseErrors = new Set([...domain.validateDiagram(doc).errors, ...extraIntegrityErrors(doc)]);
+      const system = buildSystemPrompt(
+        doc,
+        {
+          userName: user?.name ?? "Unknown",
+          userEmail: user?.email ?? "",
+          orgName: org?.name ?? "",
+          diagramId,
+          diagramName,
+          today,
+        },
+        facts,
+      );
 
       const history = await this.historyService.findRecentTurns(userId, diagramId, sessionId);
       await this.historyService.saveUserMessage(userId, diagramId, message, sessionId);
@@ -87,6 +100,7 @@ export class AiChatService {
       let finalText = "";
       let usedReadTools = false;
       let nudgedToApply = false;
+      let validationAttempts = 0;
 
       for (let i = 0; i < MAX_ITERATIONS; i++) {
         if (params.isAborted?.()) return;
@@ -107,6 +121,22 @@ export class AiChatService {
             messages.push({ role: "assistant", text: turn.text, toolCalls: [] });
             messages.push({ role: "user", content: APPLY_NUDGE });
             continue;
+          }
+          // ② 적용 전 자동검증: 변경이 있으면 커밋 전에 무결성을 확인하고,
+          //    AI가 새로 만든 오류가 있으면 모델에게 수정 기회를 준다.
+          if (diffs.length > 0 && validationAttempts < MAX_VALIDATION_RETRIES) {
+            const newErrors = [...domain.validateDiagram(updatedDoc).errors, ...extraIntegrityErrors(updatedDoc)]
+              .filter((e) => !baseErrors.has(e));
+            if (newErrors.length > 0) {
+              validationAttempts++;
+              this.logger.warn(`AI proposed invalid changes for diagram ${diagramId}: ${newErrors.join(" | ")}`);
+              messages.push({ role: "assistant", text: turn.text, toolCalls: [] });
+              messages.push({
+                role: "user",
+                content: `제안한 변경이 스키마 검증에 실패했어. 다음 문제를 편집 도구로 직접 수정해줘(없는 id/컬럼을 참조하지 말고, 필요하면 listTables·getTableDetails로 실제 id를 먼저 확인해):\n- ${newErrors.join("\n- ")}`,
+              });
+              continue;
+            }
           }
           break;
         }
@@ -153,6 +183,58 @@ export class AiChatService {
       emit({ event: "error", message: e instanceof Error ? e.message : "AI 처리 중 오류가 발생했습니다." });
     }
   }
+}
+
+/**
+ * validateDiagram(format/관계 엔티티 참조)이 못 잡는 참조 무결성 오류를 추가로 수집한다.
+ * AI가 만든 변경이 구조적으로 일관적인지 확인하는 용도(무할루시네이션 안전망).
+ */
+function extraIntegrityErrors(doc: DiagramDocument): string[] {
+  const errors: string[] = [];
+  const entityById = new Map(doc.entities.map((e) => [e.id, e]));
+
+  for (const entity of doc.entities) {
+    const seen = new Set<string>();
+    for (const col of entity.columns) {
+      const key = col.name.toLowerCase();
+      if (seen.has(key)) errors.push(`Table "${entity.name}" has duplicate column name "${col.name}".`);
+      seen.add(key);
+    }
+  }
+
+  for (const rel of doc.relationships) {
+    const src = entityById.get(rel.sourceEntityId);
+    if (src) {
+      for (const cid of rel.sourceColumnIds) {
+        if (!src.columns.some((c) => c.id === cid)) {
+          errors.push(`Relationship ${rel.id} references missing source column ${cid} on "${src.name}".`);
+        }
+      }
+    }
+    const tgt = entityById.get(rel.targetEntityId);
+    if (tgt) {
+      for (const cid of rel.targetColumnIds) {
+        if (!tgt.columns.some((c) => c.id === cid)) {
+          errors.push(`Relationship ${rel.id} references missing target column ${cid} on "${tgt.name}".`);
+        }
+      }
+    }
+  }
+
+  for (const idx of doc.indexes) {
+    const entity = entityById.get(idx.entityId);
+    if (!entity) {
+      errors.push(`Index ${idx.name || idx.id} references missing table ${idx.entityId}.`);
+      continue;
+    }
+    for (const cid of idx.columnIds) {
+      if (!entity.columns.some((c) => c.id === cid)) {
+        errors.push(`Index "${idx.name || idx.id}" references missing column ${cid} on "${entity.name}".`);
+      }
+    }
+  }
+
+  return errors;
 }
 
 function toolLabel(call: NormalizedToolCall): string {

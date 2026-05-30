@@ -1,4 +1,4 @@
-import type { DiagramDocument } from "@erdify/domain";
+import type { DiagramDocument, SchemaFinding } from "@erdify/domain";
 
 export interface SessionMeta {
   userName: string;
@@ -65,10 +65,26 @@ function summarize(doc: DiagramDocument) {
   };
 }
 
-export function buildSystemPrompt(doc: DiagramDocument, meta: SessionMeta): string {
+function buildVerifiedFactsBlock(facts: SchemaFinding[]): string {
+  const lines = facts.length
+    ? facts.map((f) => `- [${f.kind}] ${f.detail}`).join("\n")
+    : "- (코드 분석으로 검출된 구조적 이슈 없음)";
+  return `
+## VERIFIED FACTS — 이 다이어그램에 대한 코드 분석 결과 (신뢰 가능, 추측 아님)
+다음은 ERDify가 현재 스키마를 결정적으로(deterministic) 분석해 계산한 사실 목록입니다.
+${lines}
+규칙:
+- 분석/정규화/리뷰 답변은 위 사실을 근거로 삼으세요. 위 목록을 **넘어서는 문제를 지어내지(hallucinate) 마세요.**
+- 사실에 명시된 테이블/컬럼만 문제로 언급하고, 세부 컬럼이 필요하면 \`getTableDetails\`로 실제 값을 확인한 뒤 말하세요.
+- 위 목록이 비어 있는데도 사용자가 개선을 요청하면, 추측 대신 "구조적 이슈는 발견되지 않았다"고 분명히 말하세요.
+`;
+}
+
+export function buildSystemPrompt(doc: DiagramDocument, meta: SessionMeta, facts: SchemaFinding[] = []): string {
   const full = buildDiagramContext(doc);
   const oversized = JSON.stringify(full).length > TOKEN_BUDGET_CHARS;
   const diagramJson = JSON.stringify(oversized ? summarize(doc) : full);
+  const verifiedFactsBlock = buildVerifiedFactsBlock(facts);
 
   const readToolsBlock = `
 ## Analysis / review / normalization / redesign requests (IMPORTANT)
@@ -134,7 +150,7 @@ Only fall back to the generic defaults below when the diagram has NO existing co
 - Never hallucinate IDs. If you cannot find a referenced table/column, say so clearly.
 - If the request is ambiguous, make a reasonable assumption and explain it.
 - After making changes, briefly summarize what was done in the user's language.
-${readToolsBlock}
+${verifiedFactsBlock}${readToolsBlock}
 ## Current diagram (JSON)
 ${diagramJson}`;
 }
