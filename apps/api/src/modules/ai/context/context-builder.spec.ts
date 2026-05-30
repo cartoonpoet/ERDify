@@ -50,6 +50,12 @@ describe("buildSystemPrompt", () => {
     const p = buildSystemPrompt(doc, meta);
     expect(p).toContain("listTables");
     expect(p).toContain("getTableDetails");
-    expect(p).toContain("do NOT ask the user");
+    expect(p).toContain("never ask the user");
+  });
+
+  it("분석 요청에 줄글로 그치지 말고 도구로 적용하라고 지시한다", () => {
+    const p = buildSystemPrompt(doc, meta);
+    expect(p).toContain("do not stop at prose");
+    expect(p).toContain("reviewable diff");
   });
 });

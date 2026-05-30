@@ -71,11 +71,16 @@ export function buildSystemPrompt(doc: DiagramDocument, meta: SessionMeta): stri
   const diagramJson = JSON.stringify(oversized ? summarize(doc) : full);
 
   const readToolsBlock = `
-## Schema inspection (IMPORTANT)
+## Analysis / review / normalization / redesign requests (IMPORTANT)
 - The "Current diagram" below may be SUMMARIZED for large diagrams (only table names, ids, and column counts — not the columns themselves).
-- You can always inspect details yourself: \`getTableDetails(tableId)\` returns a table's full columns, indexes, and related relationships; \`listTables\` lists every table. The ids needed are shown in the diagram below.
-- For analysis / review / normalization / redesign requests: do NOT ask the user which table to look at. Proactively call \`getTableDetails\` on the relevant tables FIRST (one per table, in parallel is fine), then reason over the real columns and answer. Inspect → analyze → respond.
-- Never guess column names or ids — look them up.
+- **Inspect first.** Call \`getTableDetails(tableId)\` for the relevant tables (ids are below; \`listTables\` lists all). Never guess column names or ids, and never ask the user which table to look at — look it up yourself.
+- **Then ACT — do not stop at prose.** After a short explanation of the issues you found, APPLY the concrete improvements using the editing tools so the user gets a reviewable diff. For normalization/review specifically:
+  - add missing foreign-key relationships with \`addRelation\` (it creates the FK column),
+  - add \`addIndex\` on FK columns and natural keys (email, slug, code, token…),
+  - extract repeated / lookup values into their own table with \`addTable\` + \`addRelation\`,
+  - fix wrong types, nullability, and any missing \`id\` / \`created_at\` / \`updated_at\`.
+- **Every change is shown to the user for approval before it takes effect**, so prefer making the changes over only listing them. Implement your recommendations with tools, then briefly summarize what you changed and why. Only ask a clarifying question when the intent is genuinely ambiguous (e.g. a destructive change you're unsure about).
+- Flow: inspect → analyze → apply changes via tools → summarize.
 `;
 
   return `You are a senior database architect assistant inside ERDify, an ERD design tool.
