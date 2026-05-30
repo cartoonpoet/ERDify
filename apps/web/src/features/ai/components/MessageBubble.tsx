@@ -21,6 +21,7 @@ export const MessageBubble = ({ message, onOpenReview }: MessageBubbleProps) => 
             messageId={message.id}
             diff={message.diff}
             accepted={message.accepted}
+            canReview={!!message.pendingDocument}
             onOpenReview={onOpenReview}
           />
         </div>

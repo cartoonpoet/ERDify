@@ -19,7 +19,7 @@ describe("AiController", () => {
     updateOrgAiSettings: ReturnType<typeof vi.fn>;
   };
   let aiChatServiceMock: { runChat: ReturnType<typeof vi.fn> };
-  let aiHistoryServiceMock: { markAccepted: ReturnType<typeof vi.fn> };
+  let aiHistoryServiceMock: { markAccepted: ReturnType<typeof vi.fn>; findForDiagram: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     aiServiceMock = {
@@ -28,7 +28,7 @@ describe("AiController", () => {
       updateOrgAiSettings: vi.fn(),
     };
     aiChatServiceMock = { runChat: vi.fn() };
-    aiHistoryServiceMock = { markAccepted: vi.fn() };
+    aiHistoryServiceMock = { markAccepted: vi.fn(), findForDiagram: vi.fn() };
 
     controller = new AiController(aiServiceMock as never, aiChatServiceMock as never, aiHistoryServiceMock as never);
   });
@@ -60,6 +60,18 @@ describe("AiController", () => {
       expect(writes[0]).toContain('"type":"step"');
       expect(writes[1]).toContain('"type":"done"');
       expect(res.end).toHaveBeenCalled();
+    });
+  });
+
+  describe("chatHistory()", () => {
+    it("aiHistoryService.findForDiagram을 user/diagram으로 호출한다", async () => {
+      const rows = [{ id: "m1", role: "user", content: "안녕", diff: null, accepted: null }];
+      aiHistoryServiceMock.findForDiagram.mockResolvedValue(rows);
+
+      const result = await controller.chatHistory(makeUser("user-1"), "diag-1");
+
+      expect(aiHistoryServiceMock.findForDiagram).toHaveBeenCalledWith("user-1", "diag-1");
+      expect(result).toEqual(rows);
     });
   });
 

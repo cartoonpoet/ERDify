@@ -102,6 +102,21 @@ describe("DiffCard", () => {
     expect(screen.getByRole("button", { name: /검토하기/i })).toBeInTheDocument();
   });
 
+  it("canReview=false(복원된 지난 대화)면 읽기 전용으로 표시하고 버튼이 없다", () => {
+    render(
+      <DiffCard
+        messageId="msg-1"
+        diff={makeDiffs(3)}
+        accepted={null}
+        canReview={false}
+        onOpenReview={onOpenReview}
+      />
+    );
+
+    expect(screen.getByText(/지난 대화/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
   it("accepted=true 일 때 onOpenReview를 클릭해도 버튼이 없으므로 호출되지 않는다", () => {
     render(
       <DiffCard

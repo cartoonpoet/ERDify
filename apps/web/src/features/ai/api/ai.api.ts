@@ -1,5 +1,8 @@
 import { httpClient, API_BASE_URL } from "@/shared/api/httpClient";
-import type { AiStreamEvent, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
+import type { AiStreamEvent, AiChatHistoryMessage, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
+
+export const getAiChatHistory = (diagramId: string): Promise<AiChatHistoryMessage[]> =>
+  httpClient.get<AiChatHistoryMessage[]>(`/ai/chat/history/${diagramId}`).then((r) => r.data);
 
 export const streamAiChat = async (
   diagramId: string,

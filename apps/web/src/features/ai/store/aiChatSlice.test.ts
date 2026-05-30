@@ -76,6 +76,48 @@ describe("useAIChatStore — addUserMessage", () => {
   });
 });
 
+describe("useAIChatStore — resetForDiagram / loadHistory", () => {
+  it("resetForDiagram은 diagramId를 설정하고 메시지/스트리밍 상태를 비운다", () => {
+    useAIChatStore.setState({ messages: [{ id: "x", role: "user", content: "old", diff: null, pendingDocument: null, accepted: null }], streamingText: "abc", isLoading: true });
+
+    useAIChatStore.getState().resetForDiagram("diag-2");
+
+    const s = useAIChatStore.getState();
+    expect(s.diagramId).toBe("diag-2");
+    expect(s.messages).toHaveLength(0);
+    expect(s.streamingText).toBe("");
+    expect(s.isLoading).toBe(false);
+  });
+
+  it("loadHistory는 같은 diagramId이고 메시지가 비어있을 때 복원한다 (diff는 읽기 전용 — pendingDocument=null)", () => {
+    useAIChatStore.getState().resetForDiagram("diag-2");
+    useAIChatStore.getState().loadHistory("diag-2", [
+      { id: "h1", role: "user", content: "질문", diff: null, accepted: null },
+      { id: "h2", role: "assistant", content: "답변", diff: [{ type: "addTable", tableId: "t", tableName: "users" }], accepted: true },
+    ]);
+
+    const msgs = useAIChatStore.getState().messages;
+    expect(msgs.map((m) => m.id)).toEqual(["h1", "h2"]);
+    expect(msgs[1]!.pendingDocument).toBeNull();
+    expect(msgs[1]!.accepted).toBe(true);
+  });
+
+  it("loadHistory는 diagramId가 다르면 무시한다 (전환 레이스 방지)", () => {
+    useAIChatStore.getState().resetForDiagram("diag-2");
+    useAIChatStore.getState().loadHistory("diag-OTHER", [{ id: "h1", role: "user", content: "질문", diff: null, accepted: null }]);
+    expect(useAIChatStore.getState().messages).toHaveLength(0);
+  });
+
+  it("loadHistory는 이미 메시지가 있으면 덮어쓰지 않는다", () => {
+    useAIChatStore.getState().resetForDiagram("diag-2");
+    useAIChatStore.getState().addUserMessage("새 질문");
+    useAIChatStore.getState().loadHistory("diag-2", [{ id: "h1", role: "user", content: "지난 질문", diff: null, accepted: null }]);
+    const msgs = useAIChatStore.getState().messages;
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]!.content).toBe("새 질문");
+  });
+});
+
 describe("useAIChatStore — finishAssistantStream", () => {
   it("assistant role 메시지가 diff와 pendingDocument 포함하여 추가되고 스트리밍 상태가 초기화된다", () => {
     const msg = {

@@ -5,6 +5,7 @@ import {
   suggestColumns,
   getOrgAiSettings,
   updateOrgAiSettings,
+  getAiChatHistory,
 } from "./ai.api";
 import { httpClient } from "@/shared/api/httpClient";
 import type { AiStreamEvent } from "@erdify/contracts";
@@ -33,6 +34,16 @@ describe("ai.api", () => {
     await streamAiChat("d1", "hi", false, (e) => events.push(e));
 
     expect(events.map((e) => e.type)).toEqual(["step", "done"]);
+  });
+
+  it("getAiChatHistory는 GET /ai/chat/history/:diagramId를 호출하고 r.data를 반환한다", async () => {
+    const rows = [{ id: "m1", role: "user", content: "안녕", diff: null, accepted: null }];
+    vi.mocked(httpClient.get).mockResolvedValue({ data: rows });
+
+    const result = await getAiChatHistory("diagram-1");
+
+    expect(httpClient.get).toHaveBeenCalledWith("/ai/chat/history/diagram-1");
+    expect(result).toEqual(rows);
   });
 
   it("acceptAiDiff는 POST /ai/chat/:id/accept를 호출하고 void를 반환한다", async () => {

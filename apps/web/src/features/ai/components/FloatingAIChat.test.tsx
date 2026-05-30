@@ -10,6 +10,7 @@ vi.mock("../api/ai.api", () => ({
   streamAiChat: vi.fn(),
   acceptAiDiff: vi.fn(),
   rejectAiDiff: vi.fn(),
+  getAiChatHistory: vi.fn(),
 }));
 
 vi.mock("@/shared/utils/uuid", () => ({
@@ -31,7 +32,7 @@ vi.mock("./MessageBubble", () => ({
   ),
 }));
 
-import { streamAiChat, acceptAiDiff, rejectAiDiff } from "../api/ai.api";
+import { streamAiChat, acceptAiDiff, rejectAiDiff, getAiChatHistory } from "../api/ai.api";
 import type { AiStreamEvent } from "@erdify/contracts";
 import { randomUUID } from "@/shared/utils/uuid";
 
@@ -50,6 +51,7 @@ const makeEmptyDoc = (id = "doc-1"): DiagramDocument => ({
 
 const initialAiChatState = {
   isOpen: false,
+  diagramId: "diagram-1",
   messages: [],
   isLoading: false,
   reviewingMessageId: null,
@@ -61,6 +63,8 @@ beforeEach(() => {
   vi.mocked(streamAiChat).mockReset();
   vi.mocked(acceptAiDiff).mockReset();
   vi.mocked(rejectAiDiff).mockReset();
+  vi.mocked(getAiChatHistory).mockReset();
+  vi.mocked(getAiChatHistory).mockResolvedValue([]);
   Element.prototype.scrollIntoView = vi.fn();
 });
 
@@ -149,6 +153,27 @@ describe("FloatingAIChat", () => {
       expect(messages).toHaveLength(2);
       expect(messages[1]!.role).toBe("assistant");
       expect(messages[1]!.content).toBe("오류가 발생했습니다. 다시 시도해주세요.");
+    });
+  });
+
+  it("다른 다이어그램으로 진입하면 채팅을 초기화하고 저장된 대화를 복원한다", async () => {
+    vi.mocked(getAiChatHistory).mockResolvedValueOnce([
+      { id: "hist-1", role: "user", content: "지난 질문", diff: null, accepted: null },
+      { id: "hist-2", role: "assistant", content: "지난 답변", diff: null, accepted: null },
+    ]);
+    useAIChatStore.setState({ ...initialAiChatState, diagramId: "diagram-1", isOpen: true });
+
+    await act(async () => {
+      render(<FloatingAIChat diagramId="diagram-2" />);
+    });
+
+    await waitFor(() => {
+      expect(vi.mocked(getAiChatHistory)).toHaveBeenCalledWith("diagram-2");
+    });
+    await waitFor(() => {
+      const state = useAIChatStore.getState();
+      expect(state.diagramId).toBe("diagram-2");
+      expect(state.messages.map((m) => m.content)).toEqual(["지난 질문", "지난 답변"]);
     });
   });
 

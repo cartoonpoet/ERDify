@@ -25,6 +25,14 @@ export type AiStreamEvent =
   | { type: "done"; messageId: string; content: string; diff: DiffChange[] | null; pendingDocument: DiagramDocument | null }
   | { type: "error"; message: string };
 
+export interface AiChatHistoryMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  diff: DiffChange[] | null;
+  accepted: boolean | null;
+}
+
 export interface ColumnSuggestion {
   name: string;
   type: string;

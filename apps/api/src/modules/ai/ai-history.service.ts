@@ -4,8 +4,10 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { LessThan, Repository } from "typeorm";
 import { randomUUID } from "node:crypto";
 import { AiConversation } from "@erdify/db";
-import type { DiffChange } from "@erdify/contracts";
+import type { DiffChange, AiChatHistoryMessage } from "@erdify/contracts";
 import type { ConvMessage } from "./providers/provider.types";
+
+const DISPLAY_LIMIT = 100;
 
 const HISTORY_LIMIT = 6;
 const TTL_DAYS = 90;
@@ -77,6 +79,22 @@ export class AiHistoryService {
   async findRecentTurns(userId: string, diagramId: string | null): Promise<ConvMessage[]> {
     const rows = await this.findRecent(userId, diagramId);
     return rowsToConvMessages(rows);
+  }
+
+  /** 다이어그램별 사용자 대화 기록 (UI 복원용, 오름차순). */
+  async findForDiagram(userId: string, diagramId: string): Promise<AiChatHistoryMessage[]> {
+    const rows = await this.repo.find({
+      where: { userId, diagramId },
+      order: { createdAt: "DESC" },
+      take: DISPLAY_LIMIT,
+    });
+    return rows.reverse().map((r) => ({
+      id: r.id,
+      role: r.role === "assistant" ? "assistant" : "user",
+      content: r.content,
+      diff: (r.diff as unknown as DiffChange[] | null) ?? null,
+      accepted: r.accepted ?? null,
+    }));
   }
 
   async markAccepted(messageId: string, userId: string, accepted: boolean): Promise<void> {

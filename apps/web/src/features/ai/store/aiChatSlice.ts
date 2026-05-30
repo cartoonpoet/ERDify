@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import type { DiffChange } from "@erdify/contracts";
+import type { DiffChange, AiChatHistoryMessage } from "@erdify/contracts";
 import type { DiagramDocument } from "@erdify/domain";
 import { randomUUID } from "@/shared/utils/uuid";
 
@@ -14,12 +14,15 @@ export interface AiMessage {
 
 export interface AiChatSlice {
   isOpen: boolean;
+  diagramId: string | null;
   messages: AiMessage[];
   isLoading: boolean;
   reviewingMessageId: string | null;
   enableReadTools: boolean;
   streamingStatus: string | null;
   streamingText: string;
+  resetForDiagram: (diagramId: string) => void;
+  loadHistory: (diagramId: string, messages: AiChatHistoryMessage[]) => void;
   openChat: (initialMessage?: string) => void;
   closeChat: () => void;
   addUserMessage: (content: string) => void;
@@ -38,12 +41,32 @@ export interface AiChatSlice {
 
 export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
   isOpen: false,
+  diagramId: null,
   messages: [],
   isLoading: false,
   reviewingMessageId: null,
   enableReadTools: false,
   streamingStatus: null,
   streamingText: "",
+
+  resetForDiagram: (diagramId) =>
+    set({ diagramId, messages: [], isLoading: false, reviewingMessageId: null, streamingStatus: null, streamingText: "" }),
+
+  loadHistory: (diagramId, history) =>
+    set((state) => {
+      // 전환·전송 레이스 방지: 여전히 같은 다이어그램이고 메시지가 비어있을 때만 복원
+      if (state.diagramId !== diagramId || state.messages.length > 0) return {};
+      return {
+        messages: history.map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          diff: m.diff,
+          pendingDocument: null,
+          accepted: m.accepted,
+        })),
+      };
+    }),
 
   openChat: (initialMessage) =>
     set((state) => ({

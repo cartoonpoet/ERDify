@@ -8,7 +8,7 @@ import { AiChatService } from "./chat/ai-chat.service";
 import { AiHistoryService } from "./ai-history.service";
 import { AiChatStreamDto } from "./dto/chat-stream.dto";
 import { AiSuggestColumnsDto } from "./dto/suggest-columns.dto";
-import type { AiStreamEvent, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
+import type { AiStreamEvent, AiChatHistoryMessage, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
 
 @Controller()
 @UseGuards(FlexAuthGuard)
@@ -52,6 +52,14 @@ export class AiController {
       write,
     );
     res.end();
+  }
+
+  @Get("ai/chat/history/:diagramId")
+  chatHistory(
+    @CurrentUser() user: JwtPayload,
+    @Param("diagramId") diagramId: string,
+  ): Promise<AiChatHistoryMessage[]> {
+    return this.aiHistoryService.findForDiagram(user.sub, diagramId);
   }
 
   @Post("ai/chat/:messageId/accept")

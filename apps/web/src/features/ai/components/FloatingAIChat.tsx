@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { useAIChatStore } from "../store/useAIChatStore";
 import { MessageBubble } from "./MessageBubble";
 import { AIDiffReviewPanel } from "./AIDiffReviewPanel";
-import { streamAiChat, acceptAiDiff, rejectAiDiff } from "../api/ai.api";
+import { streamAiChat, acceptAiDiff, rejectAiDiff, getAiChatHistory } from "../api/ai.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import * as s from "./FloatingAIChat.css";
 
@@ -17,9 +17,23 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     openChat, closeChat,
     addUserMessage, acceptDiff, rejectDiff,
     setEnableReadTools, startAssistantStream, appendStreamText, setStreamStatus, finishAssistantStream, failAssistantStream,
+    resetForDiagram, loadHistory,
   } = useAIChatStore();
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // 다이어그램이 바뀌면 채팅을 초기화하고 저장된 대화를 복원한다 (다이어그램별 분리).
+  // 스토어의 현재 diagramId는 getState로 읽어 의존성에서 제외 → reset이 일으키는
+  // 재실행으로 진행 중인 history fetch가 취소되는 것을 방지.
+  useEffect(() => {
+    if (useAIChatStore.getState().diagramId === diagramId) return;
+    resetForDiagram(diagramId);
+    let cancelled = false;
+    getAiChatHistory(diagramId)
+      .then((rows) => { if (!cancelled) loadHistory(diagramId, rows); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [diagramId, resetForDiagram, loadHistory]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

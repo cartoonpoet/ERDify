@@ -151,6 +151,24 @@ describe("AiHistoryService", () => {
     });
   });
 
+  describe("findForDiagram()", () => {
+    it("user+diagram으로 조회 후 오름차순 메시지로 매핑한다", async () => {
+      repo.find.mockResolvedValue([
+        { id: "2", role: "assistant", content: "답변", diff: [{ type: "addTable", tableName: "users" }], accepted: null, createdAt: new Date("2026-01-02") },
+        { id: "1", role: "user", content: "질문", diff: null, accepted: null, createdAt: new Date("2026-01-01") },
+      ]);
+
+      const result = await service.findForDiagram("user-1", "diag-1");
+
+      expect(repo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: "user-1", diagramId: "diag-1" }, order: { createdAt: "DESC" } }),
+      );
+      expect(result.map((m) => m.id)).toEqual(["1", "2"]);
+      expect(result[0]).toEqual({ id: "1", role: "user", content: "질문", diff: null, accepted: null });
+      expect(result[1]!.diff).toEqual([{ type: "addTable", tableName: "users" }]);
+    });
+  });
+
   describe("markAccepted()", () => {
     it("accepted=true로 repo.update를 호출한다", async () => {
       repo.update.mockResolvedValue({ affected: 1 });
