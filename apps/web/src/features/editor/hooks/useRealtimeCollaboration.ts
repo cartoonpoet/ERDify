@@ -23,9 +23,12 @@ export const useRealtimeCollaboration = (diagramId: string) => {
 
   const setDocument = useEditorStore((s) => s.setDocument);
   const setCollaborators = useEditorStore((s) => s.setCollaborators);
+  const setCollaborating = useEditorStore((s) => s.setCollaborating);
 
   const socketRef = useCollaborationSocket(diagramId, {
     onInit: async (bytes) => {
+      // 협업 룸 합류 완료 → 이제부터 지속성은 협업 레이어가 담당(HTTP 자동저장 비활성화)
+      setCollaborating(true);
       const Automerge = await loadAutomerge();
       const serverDoc = Automerge.load<DiagramDocument>(Uint8Array.from(bytes));
       const { isDirty, document: localDoc } = useEditorStore.getState();
@@ -83,6 +86,8 @@ export const useRealtimeCollaboration = (diagramId: string) => {
     onDisconnect: () => {
       amDocRef.current = null;
       setCollaborators([]);
+      // 협업 끊김 → HTTP 자동저장을 백업 지속성 경로로 다시 활성화
+      setCollaborating(false);
     },
   });
 

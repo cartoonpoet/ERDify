@@ -23,21 +23,22 @@ vi.mock("@/shared/store/useAuthStore", () => ({
 // vi.mock is hoisted to the top of the file, so variables referenced in the
 // factory must also be hoisted via vi.hoisted() to avoid "Cannot access before
 // initialization" errors.
-const { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, mockSubscribe, storeHook } =
+const { mockSetDocument, mockSetCollaborators, mockSetCollaborating, mockSubscribeUnsub, mockSubscribe, storeHook } =
   vi.hoisted(() => {
     const mockSetDocument = vi.fn();
     const mockSetCollaborators = vi.fn();
+    const mockSetCollaborating = vi.fn();
     const mockSubscribeUnsub = vi.fn();
     const mockSubscribe = vi.fn(() => mockSubscribeUnsub);
     const mockGetState = vi.fn(() => ({ isDirty: false, document: null }));
     const mockSetState = vi.fn();
     const storeHook = Object.assign(
-      vi.fn((selector: (s: { document: null; setDocument: typeof mockSetDocument; setCollaborators: typeof mockSetCollaborators }) => unknown) =>
-        selector({ document: null, setDocument: mockSetDocument, setCollaborators: mockSetCollaborators })
+      vi.fn((selector: (s: { document: null; setDocument: typeof mockSetDocument; setCollaborators: typeof mockSetCollaborators; setCollaborating: typeof mockSetCollaborating }) => unknown) =>
+        selector({ document: null, setDocument: mockSetDocument, setCollaborators: mockSetCollaborators, setCollaborating: mockSetCollaborating })
       ),
       { subscribe: mockSubscribe, getState: mockGetState, setState: mockSetState }
     );
-    return { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, mockSubscribe, storeHook };
+    return { mockSetDocument, mockSetCollaborators, mockSetCollaborating, mockSubscribeUnsub, mockSubscribe, storeHook };
   });
 
 vi.mock("@/features/editor/store/useEditorStore", () => ({

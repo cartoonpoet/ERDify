@@ -8,7 +8,7 @@ import { useDiagramAutosave } from "./useDiagramAutosave";
 vi.mock("@/shared/api/diagrams.api");
 
 const resetStore = () =>
-  useEditorStore.setState({ document: null, isDirty: false, selectedEntityId: null });
+  useEditorStore.setState({ document: null, isDirty: false, selectedEntityId: null, isCollaborating: false });
 
 describe("useDiagramAutosave", () => {
   beforeEach(() => {
@@ -95,6 +95,45 @@ describe("useDiagramAutosave", () => {
 
     expect(diagramsApi.updateDiagram).toHaveBeenCalledTimes(2);
     expect(diagramsApi.updateDiagram).toHaveBeenLastCalledWith("diag-1", { content: doc2 });
+  });
+
+  it("협업 중에는 자동저장(HTTP)을 건너뛴다 — 협업 레이어가 지속성 담당", () => {
+    const doc = createEmptyDiagram({ id: "d", name: "test", dialect: "postgresql" });
+    useEditorStore.setState({ isCollaborating: true });
+
+    renderHook(() => useDiagramAutosave("diag-1", 500));
+    act(() => { useEditorStore.setState({ document: doc, isDirty: true }); });
+    act(() => { vi.advanceTimersByTime(2000); });
+
+    expect(diagramsApi.updateDiagram).not.toHaveBeenCalled();
+  });
+
+  it("협업 중에는 언마운트 flush도 건너뛴다", () => {
+    const doc = createEmptyDiagram({ id: "d", name: "test", dialect: "postgresql" });
+    useEditorStore.setState({ isCollaborating: true });
+
+    const { unmount } = renderHook(() => useDiagramAutosave("diag-1", 1000));
+    act(() => { useEditorStore.setState({ document: doc, isDirty: true }); });
+    act(() => { unmount(); });
+
+    expect(diagramsApi.updateDiagram).not.toHaveBeenCalled();
+  });
+
+  it("협업이 끊기면(isCollaborating=false) 다시 자동저장한다", async () => {
+    const doc = createEmptyDiagram({ id: "d", name: "test", dialect: "postgresql" });
+    useEditorStore.setState({ isCollaborating: true });
+
+    renderHook(() => useDiagramAutosave("diag-1", 500));
+    act(() => { useEditorStore.setState({ document: doc, isDirty: true }); });
+    act(() => { vi.advanceTimersByTime(500); });
+    expect(diagramsApi.updateDiagram).not.toHaveBeenCalled();
+
+    // 협업 끊김 → 효과 재실행 → 자동저장 재개
+    act(() => { useEditorStore.setState({ isCollaborating: false }); });
+    act(() => { vi.advanceTimersByTime(500); });
+    await act(async () => {});
+
+    expect(diagramsApi.updateDiagram).toHaveBeenCalledWith("diag-1", { content: doc });
   });
 
   it("does not call updateDiagram when document is null even if isDirty is true", () => {
