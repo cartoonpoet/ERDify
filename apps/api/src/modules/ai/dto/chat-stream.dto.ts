@@ -13,6 +13,11 @@ export class AiChatStreamDto {
   @IsOptional()
   @IsString()
   sessionId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  model?: string;
 }
 
 export class AiCreateSessionDto {

@@ -6,9 +6,23 @@ import { randomUUID } from "node:crypto";
 import { AiConversation } from "@erdify/db";
 import type { DiffChange } from "@erdify/contracts";
 import type { AiSessionResponse } from "./dto/chat-stream.dto";
+import type { ConvMessage } from "./providers/provider.types";
 
 const HISTORY_LIMIT = 6;
 const TTL_DAYS = 90;
+
+/** 저장된 대화 행을 에이전트 루프용 ConvMessage[]로 복원. 과거 diff는 텍스트 요약으로(짝 없는 tool_use 방지). */
+export function rowsToConvMessages(rows: AiConversation[]): ConvMessage[] {
+  return rows.map((r): ConvMessage => {
+    if (r.role === "user") return { role: "user", content: r.content };
+    const diff = (r.diff as unknown as DiffChange[] | null) ?? [];
+    const labels = diff
+      .map((d) => ("tableName" in d ? d.tableName : "fromTable" in d ? `${d.fromTable}->${d.toTable}` : ""))
+      .filter(Boolean);
+    const summary = labels.length ? `\n[적용한 변경: ${labels.join(", ")}]` : "";
+    return { role: "assistant", text: (r.content ?? "") + summary, toolCalls: [] };
+  });
+}
 
 @Injectable()
 export class AiHistoryService {
@@ -72,6 +86,12 @@ export class AiHistoryService {
       take: HISTORY_LIMIT,
     });
     return rows.reverse();
+  }
+
+  /** 에이전트 루프용: 세션별 최근 대화를 ConvMessage 턴으로 복원. */
+  async findRecentTurns(userId: string, diagramId: string | null, sessionId?: string | null): Promise<ConvMessage[]> {
+    const rows = await this.findRecent(userId, diagramId, sessionId);
+    return rowsToConvMessages(rows);
   }
 
   async findSessions(userId: string, diagramId: string): Promise<AiSessionResponse[]> {
