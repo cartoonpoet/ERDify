@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json && vite build",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "pretest": "pnpm --filter @erdify/domain build && pnpm --filter @erdify/erd-ui build",
+    "pretest": "pnpm --filter @erdify/domain build && pnpm --filter @erdify/contracts build && pnpm --filter @erdify/erd-ui build",
     "test": "vitest run"
   },
   "dependencies": {
