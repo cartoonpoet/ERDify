@@ -16,6 +16,18 @@ interface FloatingAIChatProps {
 
 const MODEL_STORAGE_KEY = "erdify.ai.model";
 
+const parseModelLabel = (label: string) => {
+  const m = label.match(/^(.*?)\s*\((.+)\)$/);
+  return m ? { name: m[1], badge: m[2] } : { name: label, badge: null };
+};
+
+const getBadgeVariant = (badge: string | null): keyof typeof s.modelDropdownBadge => {
+  if (badge === "권장") return "blue";
+  if (badge === "고성능") return "purple";
+  if (badge === "저비용" || badge === "경량") return "green";
+  return "gray";
+};
+
 export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
   const {
     isOpen, isLoading,
@@ -31,6 +43,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
   const [input, setInput] = useState("");
   const [models, setModels] = useState<AiModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
+  const [isModelOpen, setIsModelOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const prevDiagramIdRef = useRef<string | null>(null);
 
@@ -200,21 +213,55 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
               <div>
                 <div className={s.chatHeaderTitle}>ERDify AI</div>
                 {models.length > 0 ? (
-                  <select
-                    className={s.modelSelect}
-                    value={selectedModel}
-                    onChange={(e) => handleModelChange(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    title="모델 선택"
-                  >
-                    {AI_PROVIDERS.filter((p) => models.some((m) => m.provider === p)).map((p) => (
-                      <optgroup key={p} label={PROVIDER_LABELS[p]}>
-                        {models.filter((m) => m.provider === p).map((m) => (
-                          <option key={m.value} value={m.value}>{m.label}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
+                  <>
+                    {isModelOpen && (
+                      <div
+                        className={s.modelDropdownBackdrop}
+                        onClick={(e) => { e.stopPropagation(); setIsModelOpen(false); }}
+                      />
+                    )}
+                    <div
+                      className={s.modelBtn}
+                      onClick={(e) => { e.stopPropagation(); setIsModelOpen((v) => !v); }}
+                    >
+                      <span className={s.modelBtnDot} />
+                      <span className={s.modelBtnName}>
+                        {parseModelLabel(models.find((m) => m.value === selectedModel)?.label ?? "").name}
+                      </span>
+                      {(() => {
+                        const badge = parseModelLabel(models.find((m) => m.value === selectedModel)?.label ?? "").badge;
+                        return badge ? <span className={s.modelBtnBadge}>{badge}</span> : null;
+                      })()}
+                      <span className={s.modelBtnChevron}>{isModelOpen ? "▴" : "▾"}</span>
+                      {isModelOpen && (
+                        <div className={s.modelDropdown} onClick={(e) => e.stopPropagation()}>
+                          {AI_PROVIDERS.filter((p) => models.some((m) => m.provider === p)).map((p, i) => (
+                            <React.Fragment key={p}>
+                              {i > 0 && <hr className={s.modelDropdownDivider} />}
+                              <div className={s.modelDropdownProvider}>{PROVIDER_LABELS[p]}</div>
+                              {models.filter((m) => m.provider === p).map((m) => {
+                                const { name, badge } = parseModelLabel(m.label);
+                                const isActive = m.value === selectedModel;
+                                return (
+                                  <div
+                                    key={m.value}
+                                    className={[s.modelDropdownItem, isActive ? s.modelDropdownItemActive : ""].filter(Boolean).join(" ")}
+                                    onClick={() => { handleModelChange(m.value); setIsModelOpen(false); }}
+                                  >
+                                    <span className={s.modelDropdownItemName}>{name}</span>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                      {badge && <span className={s.modelDropdownBadge[getBadgeVariant(badge)]}>{badge}</span>}
+                                      {isActive && <span className={s.modelDropdownCheck}>✓</span>}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
                 ) : (
                   <div className={s.chatHeaderSub}>모델 미설정</div>
                 )}

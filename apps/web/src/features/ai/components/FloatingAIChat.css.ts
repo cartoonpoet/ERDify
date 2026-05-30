@@ -1,4 +1,4 @@
-import { style, keyframes, globalStyle } from "@vanilla-extract/css";
+import { style, keyframes, globalStyle, styleVariants } from "@vanilla-extract/css";
 import { vars } from "@/style/tokens.css";
 
 const AI_GRADIENT = "linear-gradient(135deg, #2563eb 0%, #5b21b6 100%)";
@@ -157,22 +157,128 @@ export const chatHeaderSub = style({
   marginTop: "1px",
 });
 
-export const modelSelect = style({
-  marginTop: "2px",
-  maxWidth: "200px",
-  fontSize: vars.font.size["2xs"],
-  color: "#fff",
+export const modelBtn = style({
+  marginTop: "3px",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "5px",
   background: "rgba(255,255,255,0.15)",
-  border: "1px solid rgba(255,255,255,0.3)",
-  borderRadius: vars.radius.sm,
-  padding: "1px 4px",
+  border: "1px solid rgba(255,255,255,0.25)",
+  borderRadius: vars.radius.pill,
+  padding: "3px 10px 3px 8px",
   cursor: "pointer",
-  outline: "none",
+  transition: "background 0.15s",
+  position: "relative",
+  selectors: {
+    "&:hover": { background: "rgba(255,255,255,0.25)" },
+  },
 });
 
-// 펼침 목록은 OS가 그리므로 옵션/그룹 텍스트는 가독성을 위해 어둡게
-globalStyle(`${modelSelect} option, ${modelSelect} optgroup`, {
+export const modelBtnDot = style({
+  width: 6,
+  height: 6,
+  borderRadius: vars.radius.pill,
+  background: "rgba(255,255,255,0.6)",
+  flexShrink: 0,
+});
+
+export const modelBtnName = style({
+  fontSize: vars.font.size.xs,
+  color: "#fff",
+  fontWeight: vars.font.weight.medium,
+});
+
+export const modelBtnBadge = style({
+  fontSize: "9px",
+  background: "rgba(255,255,255,0.2)",
+  color: "rgba(255,255,255,0.9)",
+  borderRadius: vars.radius.pill,
+  padding: "0 5px",
+});
+
+export const modelBtnChevron = style({
+  fontSize: "9px",
+  color: "rgba(255,255,255,0.7)",
+});
+
+export const modelDropdown = style({
+  position: "absolute",
+  top: "calc(100% + 6px)",
+  left: 0,
+  background: vars.color.surface,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.lg,
+  boxShadow: vars.shadow.md,
+  minWidth: "220px",
+  padding: "6px 0",
+  zIndex: 10,
+});
+
+export const modelDropdownProvider = style({
+  padding: `6px 12px 3px`,
+  fontSize: "9px",
+  fontWeight: vars.font.weight.bold,
+  color: vars.color.textDisabled,
+  letterSpacing: "0.5px",
+  textTransform: "uppercase",
+});
+
+export const modelDropdownItem = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: `7px 12px`,
+  cursor: "pointer",
+  gap: vars.space["2"],
+  transition: "background 0.1s",
+  selectors: {
+    "&:hover": { background: vars.color.surfaceTertiary },
+  },
+});
+
+export const modelDropdownItemActive = style({
+  background: vars.color.selectedBg,
+  selectors: {
+    "&:hover": { background: vars.color.selectedBg },
+  },
+});
+
+export const modelDropdownItemName = style({
+  fontSize: vars.font.size.sm,
   color: vars.color.textPrimary,
+  fontWeight: vars.font.weight.medium,
+  selectors: {
+    [`${modelDropdownItemActive} &`]: {
+      color: vars.color.primary,
+      fontWeight: vars.font.weight.semibold,
+    },
+  },
+});
+
+export const modelDropdownDivider = style({
+  border: "none",
+  borderTop: `1px solid ${vars.color.surfaceSecondary}`,
+  margin: "4px 0",
+});
+
+export const modelDropdownBadge = styleVariants({
+  blue:   { fontSize: "9px", fontWeight: "500", color: "#0064E0", background: "#EEF4FF", borderRadius: "100px", padding: "1px 6px" },
+  purple: { fontSize: "9px", fontWeight: "500", color: "#7C3AED", background: "#F5F3FF", borderRadius: "100px", padding: "1px 6px" },
+  green:  { fontSize: "9px", fontWeight: "500", color: "#059669", background: "#ECFDF5", borderRadius: "100px", padding: "1px 6px" },
+  gray:   { fontSize: "9px", fontWeight: "500", color: "#6B7280", background: "#F3F4F6", borderRadius: "100px", padding: "1px 6px" },
+});
+
+export const modelDropdownBackdrop = style({
+  position: "fixed",
+  inset: 0,
+  zIndex: 9,
+});
+
+export const modelDropdownCheck = style({
+  color: vars.color.primary,
+  fontSize: vars.font.size.sm,
+  fontWeight: vars.font.weight.bold,
+  marginLeft: vars.space["1"],
 });
 
 export const chatCloseBtn = style({
