@@ -54,10 +54,31 @@ describe("ToolExecutor", () => {
     expect(res.changes).toHaveLength(0);
   });
 
-  it("존재하지 않는 테이블 수정 시 변경 없음과 안내 텍스트를 반환한다", async () => {
+  it("존재하지 않는 테이블 수정 시 명시적 오류와 listTables 안내를 반환한다", async () => {
     const res = await executor.execute("removeTable", { tableId: "nope" }, baseDoc);
     expect(res.changes).toHaveLength(0);
-    expect(res.resultText).toContain("No change applied");
+    expect(res.resultText).toContain("no table found");
+    expect(res.resultText).toContain("listTables");
+  });
+
+  it("존재하지 않는 컬럼 수정 시 getTableDetails 안내가 포함된 오류를 반환한다", async () => {
+    const res = await executor.execute("updateColumn", { tableId: "e1", columnId: "ghost", name: "x" }, baseDoc);
+    expect(res.changes).toHaveLength(0);
+    expect(res.resultText).toContain("no column with id");
+    expect(res.resultText).toContain("getTableDetails");
+  });
+
+  it("addRelation의 소스 테이블이 없으면 해당 id를 명시한 오류를 반환한다", async () => {
+    const res = await executor.execute("addRelation", { sourceTableId: "ghost", targetTableId: "e1", cardinality: "many-to-one" }, baseDoc);
+    expect(res.changes).toHaveLength(0);
+    expect(res.resultText).toContain("ghost");
+    expect(res.resultText).toContain("no table found");
+  });
+
+  it("addIndex가 존재하지 않는 컬럼을 참조하면 오류를 반환한다", async () => {
+    const res = await executor.execute("addIndex", { tableId: "e1", name: "idx_x", columnIds: ["ghost"] }, baseDoc);
+    expect(res.changes).toHaveLength(0);
+    expect(res.resultText).toContain("no column with id");
   });
 
   it("addColumn은 멱등 — 같은 이름 컬럼은 중복 추가하지 않는다", async () => {

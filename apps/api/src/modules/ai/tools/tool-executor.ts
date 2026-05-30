@@ -10,6 +10,18 @@ export interface ToolResult {
   resultText: string;
 }
 
+/** 명시적 실패 메시지: AI가 다음 turn에서 스스로 교정하도록 유효 id 조회 경로를 안내한다. */
+const tableNotFound = (doc: DiagramDocument, tableId: string): ToolResult => ({
+  doc,
+  changes: [],
+  resultText: `Error: no table found with id "${tableId}". Call listTables to get the valid table ids, then retry. Do not invent ids.`,
+});
+const columnNotFound = (doc: DiagramDocument, entityName: string, tableId: string, colId: string): ToolResult => ({
+  doc,
+  changes: [],
+  resultText: `Error: table "${entityName}" (id ${tableId}) has no column with id "${colId}". Call getTableDetails("${tableId}") to get the valid column ids, then retry. Do not invent ids.`,
+});
+
 @Injectable()
 export class ToolExecutor {
   constructor(private readonly domainLoader: DomainLoaderService) {}
@@ -70,7 +82,7 @@ export class ToolExecutor {
       case "removeTable": {
         const tableId = input["tableId"] as string;
         const entity = doc.entities.find((e) => e.id === tableId);
-        if (!entity) break;
+        if (!entity) return tableNotFound(doc, tableId);
         updatedDoc = domain.removeEntity(doc, tableId);
         changes.push({ type: "removeTable", tableId, tableName: entity.name });
         break;
@@ -78,7 +90,7 @@ export class ToolExecutor {
       case "updateTable": {
         const tableId = input["tableId"] as string;
         const entity = doc.entities.find((e) => e.id === tableId);
-        if (!entity) break;
+        if (!entity) return tableNotFound(doc, tableId);
         const newName = input["name"] as string;
         updatedDoc = domain.renameEntity(doc, tableId, newName);
         changes.push({ type: "updateTable", tableId, oldName: entity.name, newName });
@@ -87,7 +99,7 @@ export class ToolExecutor {
       case "addColumn": {
         const tableId = input["tableId"] as string;
         const entity = doc.entities.find((e) => e.id === tableId);
-        if (!entity) break;
+        if (!entity) return tableNotFound(doc, tableId);
         const colName = input["name"] as string;
         // Idempotent: a column with this name already exists → no-op with clear feedback (prevents loop duplication).
         const dup = entity.columns.find((c) => c.name.toLowerCase() === colName.toLowerCase());
@@ -114,8 +126,9 @@ export class ToolExecutor {
         const tableId = input["tableId"] as string;
         const colId = input["columnId"] as string;
         const entity = doc.entities.find((e) => e.id === tableId);
-        const col = entity?.columns.find((c) => c.id === colId);
-        if (!entity || !col) break;
+        if (!entity) return tableNotFound(doc, tableId);
+        const col = entity.columns.find((c) => c.id === colId);
+        if (!col) return columnNotFound(doc, entity.name, tableId, colId);
         updatedDoc = domain.removeColumn(doc, tableId, colId);
         changes.push({ type: "removeColumn", tableId, tableName: entity.name, columnId: colId, columnName: col.name });
         break;
@@ -124,8 +137,9 @@ export class ToolExecutor {
         const tableId = input["tableId"] as string;
         const colId = input["columnId"] as string;
         const entity = doc.entities.find((e) => e.id === tableId);
-        const col = entity?.columns.find((c) => c.id === colId);
-        if (!entity || !col) break;
+        if (!entity) return tableNotFound(doc, tableId);
+        const col = entity.columns.find((c) => c.id === colId);
+        if (!col) return columnNotFound(doc, entity.name, tableId, colId);
         const patch: Partial<Omit<DiagramColumn, "id">> = {};
         if (input["name"] !== undefined) patch.name = input["name"] as string;
         if (input["type"] !== undefined) patch.type = input["type"] as string;
@@ -140,8 +154,9 @@ export class ToolExecutor {
       case "addRelation": {
         const relId = randomUUID();
         const src = doc.entities.find((e) => e.id === input["sourceTableId"]);
+        if (!src) return tableNotFound(doc, input["sourceTableId"] as string);
         const tgt = doc.entities.find((e) => e.id === input["targetTableId"]);
-        if (!src || !tgt) break;
+        if (!tgt) return tableNotFound(doc, input["targetTableId"] as string);
 
         const fkColumnName = input["fkColumnName"] as string | undefined;
         let fkColId: string | undefined;
@@ -178,7 +193,7 @@ export class ToolExecutor {
       case "removeRelation": {
         const relId = input["relationId"] as string;
         const rel = doc.relationships.find((r) => r.id === relId);
-        if (!rel) break;
+        if (!rel) return { doc, changes: [], resultText: `Error: no relationship found with id "${relId}". Inspect the current diagram's relationships and use a valid relation id. Do not invent ids.` };
         const src = doc.entities.find((e) => e.id === rel.sourceEntityId);
         const tgt = doc.entities.find((e) => e.id === rel.targetEntityId);
         updatedDoc = domain.removeRelationship(doc, relId);
@@ -188,9 +203,11 @@ export class ToolExecutor {
       case "addIndex": {
         const tableId = input["tableId"] as string;
         const entity = updatedDoc.entities.find((e) => e.id === tableId);
-        if (!entity) break;
+        if (!entity) return tableNotFound(updatedDoc, tableId);
         const indexId = randomUUID();
         const columnIds = input["columnIds"] as string[];
+        const missingCol = columnIds.find((cid) => !entity.columns.some((c) => c.id === cid));
+        if (missingCol) return columnNotFound(updatedDoc, entity.name, tableId, missingCol);
         const unique = (input["unique"] as boolean | undefined) ?? false;
         const index: DiagramIndex = {
           id: indexId,
@@ -208,7 +225,7 @@ export class ToolExecutor {
 
     const resultText = changes.length > 0
       ? `Applied: ${changes.map(describeChange).join("; ")}`
-      : `No change applied for ${toolName}. The referenced table/column may not exist.`;
+      : `Error: tool "${toolName}" did not produce any change. Check the tool name and arguments.`;
     return { doc: updatedDoc, changes, resultText };
   }
 }
