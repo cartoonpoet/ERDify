@@ -26,10 +26,30 @@ const ANTHROPIC_MODELS = [
   { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 (저비용)" },
 ];
 
+const GEMINI_MODELS = [
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (권장)" },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (고성능)" },
+  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash (저비용)" },
+];
+
+type AiProviderId = "anthropic" | "openai" | "gemini";
+
+const PROVIDER_LABELS: Record<AiProviderId, string> = {
+  anthropic: "Anthropic",
+  openai: "OpenAI",
+  gemini: "Gemini",
+};
+
+const KEY_PLACEHOLDERS: Record<AiProviderId, string> = {
+  anthropic: "sk-ant-api03-...",
+  openai: "sk-...",
+  gemini: "AIza...",
+};
+
 export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
   const [apiKey, setApiKey] = useState("");
   const [showInput, setShowInput] = useState(false);
-  const [provider, setProvider] = useState<"anthropic" | "openai">("anthropic");
+  const [provider, setProvider] = useState<AiProviderId>("anthropic");
   const [model, setModel] = useState("");
   const queryClient = useQueryClient();
 
@@ -39,7 +59,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
   });
 
   const mutation = useMutation({
-    mutationFn: ({ apiKey, provider, model }: { apiKey: string; provider: "anthropic" | "openai"; model: string }) =>
+    mutationFn: ({ apiKey, provider, model }: { apiKey: string; provider: AiProviderId; model: string }) =>
       updateOrgAiSettings(orgId, apiKey, provider, model),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["org-ai-settings", orgId] });
@@ -58,7 +78,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
     setShowInput(true);
   };
 
-  const handleProviderChange = (next: "anthropic" | "openai") => {
+  const handleProviderChange = (next: AiProviderId) => {
     setProvider(next);
     setModel("");
   };
@@ -77,7 +97,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
     if (e.key === "Enter") handleSave();
   };
 
-  const modelOptions = provider === "openai" ? OPENAI_MODELS : ANTHROPIC_MODELS;
+  const modelOptions = provider === "openai" ? OPENAI_MODELS : provider === "gemini" ? GEMINI_MODELS : ANTHROPIC_MODELS;
 
   return (
     <div className={css.section}>
@@ -87,7 +107,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
           <span className={css.statusLabel}>AI API 키</span>
           {hasApiKey ? (
             <span className={css.statusBadgeSet}>
-              ✓ 설정됨 ({currentProvider === "openai" ? "OpenAI" : "Anthropic"}{currentModel ? ` / ${currentModel}` : ""})
+              ✓ 설정됨 ({PROVIDER_LABELS[currentProvider]}{currentModel ? ` / ${currentModel}` : ""})
             </span>
           ) : (
             <span className={css.statusBadgeUnset}>미설정</span>
@@ -120,6 +140,10 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
                 <input type="radio" name="provider" value="openai" checked={provider === "openai"} onChange={() => handleProviderChange("openai")} />
                 OpenAI (GPT)
               </label>
+              <label className={css.providerLabel}>
+                <input type="radio" name="provider" value="gemini" checked={provider === "gemini"} onChange={() => handleProviderChange("gemini")} />
+                Google (Gemini)
+              </label>
             </div>
             <div className={css.modelRow}>
               <select className={css.modelSelect} value={model} onChange={(e) => setModel(e.target.value)}>
@@ -135,7 +159,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder={provider === "openai" ? "sk-..." : "sk-ant-api03-..."}
+                placeholder={KEY_PLACEHOLDERS[provider]}
                 onKeyDown={handleKeyDown}
               />
             </div>

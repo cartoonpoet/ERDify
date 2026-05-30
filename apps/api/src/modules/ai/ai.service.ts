@@ -4,6 +4,7 @@ import { Repository } from "typeorm";
 import { randomUUID } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { DiagramDocument } from "@erdify/domain";
 import { Diagram, OrganizationAiSettings, OrganizationMember } from "@erdify/db";
 import type { ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
@@ -12,8 +13,15 @@ import { UsageService } from "../usage/usage.service";
 
 const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6";
 const DEFAULT_OPENAI_MODEL = "gpt-4o";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
-type Provider = "anthropic" | "openai";
+type Provider = "anthropic" | "openai" | "gemini";
+
+function defaultModelFor(provider: Provider): string {
+  if (provider === "openai") return DEFAULT_OPENAI_MODEL;
+  if (provider === "gemini") return DEFAULT_GEMINI_MODEL;
+  return DEFAULT_ANTHROPIC_MODEL;
+}
 
 @Injectable()
 export class AiService {
@@ -82,6 +90,14 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
         messages: [{ role: "user", content: prompt }],
       });
       text = res.choices[0]?.message?.content ?? "";
+    } else if (provider === "gemini") {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const gModel = genAI.getGenerativeModel({ model });
+      const res = await gModel.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 512 },
+      });
+      text = res.response.text();
     } else {
       const client = new Anthropic({ apiKey });
       const res = await client.messages.create({
@@ -133,7 +149,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
       throw new ForbiddenException("조직에 AI API 키가 설정되어 있지 않습니다. 관리자에게 문의하세요.");
     }
     const provider: Provider = settings.provider ?? "anthropic";
-    const model = settings.model || (provider === "openai" ? DEFAULT_OPENAI_MODEL : DEFAULT_ANTHROPIC_MODEL);
+    const model = settings.model || defaultModelFor(provider);
     return { apiKey: decrypt(settings.encryptedApiKey), provider, model };
   }
 

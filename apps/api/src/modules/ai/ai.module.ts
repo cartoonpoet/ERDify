@@ -11,6 +11,7 @@ import { AiChatService } from "./chat/ai-chat.service";
 import { ToolExecutor } from "./tools/tool-executor";
 import { AnthropicProvider } from "./providers/anthropic.provider";
 import { OpenAiProvider } from "./providers/openai.provider";
+import { GeminiProvider } from "./providers/gemini.provider";
 
 @Module({
   imports: [
@@ -27,6 +28,6 @@ import { OpenAiProvider } from "./providers/openai.provider";
     UsageModule,
   ],
   controllers: [AiController],
-  providers: [AiService, AiHistoryService, AiChatService, ToolExecutor, AnthropicProvider, OpenAiProvider],
+  providers: [AiService, AiHistoryService, AiChatService, ToolExecutor, AnthropicProvider, OpenAiProvider, GeminiProvider],
 })
 export class AiModule {}

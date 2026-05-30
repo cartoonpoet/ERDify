@@ -10,6 +10,7 @@ import { ToolExecutor } from "../tools/tool-executor";
 import { UsageService } from "../../usage/usage.service";
 import { AnthropicProvider } from "../providers/anthropic.provider";
 import { OpenAiProvider } from "../providers/openai.provider";
+import { GeminiProvider } from "../providers/gemini.provider";
 import { buildSystemPrompt } from "../context/context-builder";
 import { ERD_TOOLS } from "../erd-tools";
 import { READ_TOOLS } from "../tools/read-tools";
@@ -37,6 +38,7 @@ export class AiChatService {
     private readonly usageService: UsageService,
     private readonly anthropic: AnthropicProvider,
     private readonly openai: OpenAiProvider,
+    private readonly gemini: GeminiProvider,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Organization) private readonly orgRepo: Repository<Organization>,
   ) {}
@@ -69,7 +71,7 @@ export class AiChatService {
       await this.historyService.saveUserMessage(userId, diagramId, message);
 
       const tools = enableReadTools ? [...ERD_TOOLS, ...READ_TOOLS] : ERD_TOOLS;
-      const impl: AiProvider = provider === "openai" ? this.openai : this.anthropic;
+      const impl: AiProvider = provider === "openai" ? this.openai : provider === "gemini" ? this.gemini : this.anthropic;
       const messages: ConvMessage[] = [...history, { role: "user", content: message }];
 
       let updatedDoc: DiagramDocument = doc;

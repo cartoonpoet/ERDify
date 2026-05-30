@@ -104,7 +104,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
               <div className={s.chatHeaderIcon}>✦</div>
               <div>
                 <div className={s.chatHeaderTitle}>ERDify AI</div>
-                <div className={s.chatHeaderSub}>Claude · GPT-4o</div>
+                <div className={s.chatHeaderSub}>Claude · GPT · Gemini</div>
               </div>
             </div>
             <button type="button" className={s.chatCloseBtn} onClick={closeChat}>×</button>

@@ -35,6 +35,6 @@ export interface ColumnSuggestion {
 export interface OrgAiSettings {
   organizationId: string;
   hasApiKey: boolean;
-  provider: "anthropic" | "openai";
+  provider: "anthropic" | "openai" | "gemini";
   model: string;
 }

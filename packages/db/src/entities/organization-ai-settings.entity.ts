@@ -12,7 +12,7 @@ export class OrganizationAiSettings {
   encryptedApiKey!: string | null;
 
   @Column({ type: "varchar", length: 20, default: "anthropic" })
-  provider!: "anthropic" | "openai";
+  provider!: "anthropic" | "openai" | "gemini";
 
   @Column({ type: "varchar", length: 60, default: "" })
   model!: string;

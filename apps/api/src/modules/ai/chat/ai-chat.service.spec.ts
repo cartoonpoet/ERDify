@@ -52,6 +52,7 @@ function makeService(turns: ProviderTurn[]): { svc: Svc } {
     usage as never,
     provider as never,
     provider as never,
+    provider as never,
     userRepo as never,
     orgRepo as never,
   );
