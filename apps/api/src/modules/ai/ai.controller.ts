@@ -1,31 +1,24 @@
-import { Body, Controller, HttpCode, Param, Post, Get, Put, Query, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, HttpCode, Param, Post, Get, Put, Delete, Query, Res, UseGuards } from "@nestjs/common";
 import type { Response } from "express";
 import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import { AiService } from "./ai.service";
+import { AiChatService } from "./chat/ai-chat.service";
 import { AiHistoryService } from "./ai-history.service";
-import { AiChatDto } from "./dto/chat.dto";
 import { AiSuggestColumnsDto } from "./dto/suggest-columns.dto";
 import { AiChatStreamDto, AiCreateSessionDto } from "./dto/chat-stream.dto";
 import type { AiSessionResponse } from "./dto/chat-stream.dto";
-import type { AiChatResponse, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
+import type { ColumnSuggestion, OrgAiSettings, AiChatConfig, AiProviderId } from "@erdify/contracts";
 
 @Controller()
 @UseGuards(FlexAuthGuard)
 export class AiController {
   constructor(
     private readonly aiService: AiService,
+    private readonly aiChatService: AiChatService,
     private readonly aiHistoryService: AiHistoryService,
   ) {}
-
-  @Post("ai/chat")
-  chat(
-    @CurrentUser() user: JwtPayload,
-    @Body() dto: AiChatDto,
-  ): Promise<AiChatResponse> {
-    return this.aiService.chat(user.sub, dto.diagramId, dto.message);
-  }
 
   @Post("ai/chat/stream")
   @HttpCode(200)
@@ -35,28 +28,46 @@ export class AiController {
     @Res() res: Response,
   ): Promise<void> {
     res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
     res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    let aborted = false;
+    res.on("close", () => { aborted = true; });
 
     try {
-      for await (const ev of this.aiService.chatStream(
-        user.sub,
-        dto.diagramId,
-        dto.message,
-        dto.sessionId ?? null,
-      )) {
-        if (ev.event === "text") {
-          res.write("event: text\ndata: " + JSON.stringify({ delta: ev.delta }) + "\n\n");
-        } else if (ev.event === "done") {
-          res.write("event: done\ndata: " + JSON.stringify({ messageId: ev.messageId, diff: ev.diff, pendingDocument: ev.pendingDocument }) + "\n\n");
-        } else if (ev.event === "error") {
-          res.write("event: error\ndata: " + JSON.stringify({ message: ev.message }) + "\n\n");
-        }
-      }
+      await this.aiChatService.runChat(
+        {
+          userId: user.sub,
+          diagramId: dto.diagramId,
+          message: dto.message,
+          sessionId: dto.sessionId ?? null,
+          ...(dto.model ? { model: dto.model } : {}),
+          isAborted: () => aborted,
+        },
+        (ev) => {
+          if (ev.event === "text") {
+            res.write("event: text\ndata: " + JSON.stringify({ delta: ev.delta }) + "\n\n");
+          } else if (ev.event === "done") {
+            res.write("event: done\ndata: " + JSON.stringify({ messageId: ev.messageId, content: ev.content, diff: ev.diff, pendingDocument: ev.pendingDocument }) + "\n\n");
+          } else {
+            res.write("event: error\ndata: " + JSON.stringify({ message: ev.message }) + "\n\n");
+          }
+          (res as Response & { flush?: () => void }).flush?.();
+        },
+      );
     } finally {
       res.end();
     }
+  }
+
+  @Get("ai/chat/config/:diagramId")
+  chatConfig(
+    @CurrentUser() user: JwtPayload,
+    @Param("diagramId") diagramId: string,
+  ): Promise<AiChatConfig> {
+    return this.aiService.getDiagramAiConfig(user.sub, diagramId);
   }
 
   @Get("ai/sessions")
@@ -109,11 +120,29 @@ export class AiController {
   }
 
   @Put("organizations/:orgId/ai-settings")
-  updateOrgAiSettings(
+  setOrgProviderKey(
     @CurrentUser() user: JwtPayload,
     @Param("orgId") orgId: string,
-    @Body() body: { apiKey: string; provider: "anthropic" | "openai"; model?: string },
+    @Body() body: { provider: AiProviderId; apiKey: string },
   ): Promise<void> {
-    return this.aiService.updateOrgAiSettings(orgId, user.sub, body.apiKey, body.provider, body.model ?? "");
+    return this.aiService.setOrgProviderKey(orgId, user.sub, body.provider, body.apiKey);
+  }
+
+  @Delete("organizations/:orgId/ai-settings/:provider")
+  removeOrgProviderKey(
+    @CurrentUser() user: JwtPayload,
+    @Param("orgId") orgId: string,
+    @Param("provider") provider: AiProviderId,
+  ): Promise<void> {
+    return this.aiService.removeOrgProviderKey(orgId, user.sub, provider);
+  }
+
+  @Put("organizations/:orgId/ai-models")
+  setEnabledModels(
+    @CurrentUser() user: JwtPayload,
+    @Param("orgId") orgId: string,
+    @Body() body: { enabledModels: string[] },
+  ): Promise<void> {
+    return this.aiService.setEnabledModels(orgId, user.sub, body.enabledModels ?? []);
   }
 }
