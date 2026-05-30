@@ -250,11 +250,17 @@ export const checkboxLabel = style({
   gap: vars.space["2"],
 });
 
-export const checkboxBadge = style({
+const checkboxBadgeBase = style({
   fontSize: vars.font.size.xs,
   fontWeight: vars.font.weight.medium,
-  color: vars.color.primary,
-  background: vars.color.selectedBg,
   borderRadius: vars.radius.pill,
   padding: `1px 7px`,
+  whiteSpace: "nowrap",
+});
+
+export const checkboxBadge = styleVariants({
+  blue:   [checkboxBadgeBase, { color: "#0064E0", background: "#EEF4FF" }],
+  purple: [checkboxBadgeBase, { color: "#7C3AED", background: "#F5F3FF" }],
+  green:  [checkboxBadgeBase, { color: "#059669", background: "#ECFDF5" }],
+  gray:   [checkboxBadgeBase, { color: "#6B7280", background: "#F3F4F6" }],
 });

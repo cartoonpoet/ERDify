@@ -11,6 +11,13 @@ const parseModelLabel = (label: string) => {
   return m ? { name: m[1], badge: m[2] } : { name: label, badge: null };
 };
 
+const getBadgeVariant = (badge: string | null): keyof typeof css.checkboxBadge => {
+  if (badge === "권장") return "blue";
+  if (badge === "고성능") return "purple";
+  if (badge === "저비용" || badge === "경량") return "green";
+  return "gray";
+};
+
 const CheckMark = () => (
   <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
     <path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -171,7 +178,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
                         </div>
                         <span className={css.checkboxLabel}>
                           {name}
-                          {badge && <span className={css.checkboxBadge}>{badge}</span>}
+                          {badge && <span className={css.checkboxBadge[getBadgeVariant(badge)]}>{badge}</span>}
                         </span>
                       </div>
                     );

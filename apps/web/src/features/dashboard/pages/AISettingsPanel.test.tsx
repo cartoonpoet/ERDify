@@ -35,7 +35,7 @@ vi.mock("./ai-settings-panel.css", () => ({
   customCheckbox: "",
   customCheckboxChecked: "",
   checkboxLabel: "",
-  checkboxBadge: "",
+  checkboxBadge: { blue: "", purple: "", green: "", gray: "" },
 }));
 
 const createQc = () =>
