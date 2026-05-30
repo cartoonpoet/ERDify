@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, Get, Put, UseGuards, Res } from "@nestjs/common";
+import { Body, Controller, Param, Post, Get, Put, Delete, UseGuards, Res } from "@nestjs/common";
 import type { Response } from "express";
 import { FlexAuthGuard } from "../auth/guards/flex-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -8,7 +8,7 @@ import { AiChatService } from "./chat/ai-chat.service";
 import { AiHistoryService } from "./ai-history.service";
 import { AiChatStreamDto } from "./dto/chat-stream.dto";
 import { AiSuggestColumnsDto } from "./dto/suggest-columns.dto";
-import type { AiStreamEvent, AiChatHistoryMessage, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
+import type { AiStreamEvent, AiChatHistoryMessage, AiChatConfig, ColumnSuggestion, OrgAiSettings, AiProviderId } from "@erdify/contracts";
 
 @Controller()
 @UseGuards(FlexAuthGuard)
@@ -46,6 +46,7 @@ export class AiController {
         userId: user.sub,
         diagramId: dto.diagramId,
         message: dto.message,
+        ...(dto.model ? { model: dto.model } : {}),
         isAborted: () => aborted,
       },
       write,
@@ -59,6 +60,14 @@ export class AiController {
     @Param("diagramId") diagramId: string,
   ): Promise<AiChatHistoryMessage[]> {
     return this.aiHistoryService.findForDiagram(user.sub, diagramId);
+  }
+
+  @Get("ai/chat/config/:diagramId")
+  chatConfig(
+    @CurrentUser() user: JwtPayload,
+    @Param("diagramId") diagramId: string,
+  ): Promise<AiChatConfig> {
+    return this.aiService.getDiagramAiConfig(user.sub, diagramId);
   }
 
   @Post("ai/chat/:messageId/accept")
@@ -94,11 +103,29 @@ export class AiController {
   }
 
   @Put("organizations/:orgId/ai-settings")
-  updateOrgAiSettings(
+  setOrgProviderKey(
     @CurrentUser() user: JwtPayload,
     @Param("orgId") orgId: string,
-    @Body() body: { apiKey: string; provider: "anthropic" | "openai" | "gemini"; model?: string },
+    @Body() body: { provider: AiProviderId; apiKey: string },
   ): Promise<void> {
-    return this.aiService.updateOrgAiSettings(orgId, user.sub, body.apiKey, body.provider, body.model ?? "");
+    return this.aiService.setOrgProviderKey(orgId, user.sub, body.provider, body.apiKey);
+  }
+
+  @Delete("organizations/:orgId/ai-settings/:provider")
+  removeOrgProviderKey(
+    @CurrentUser() user: JwtPayload,
+    @Param("orgId") orgId: string,
+    @Param("provider") provider: AiProviderId,
+  ): Promise<void> {
+    return this.aiService.removeOrgProviderKey(orgId, user.sub, provider);
+  }
+
+  @Put("organizations/:orgId/ai-models")
+  setEnabledModels(
+    @CurrentUser() user: JwtPayload,
+    @Param("orgId") orgId: string,
+    @Body() body: { enabledModels: string[] },
+  ): Promise<void> {
+    return this.aiService.setEnabledModels(orgId, user.sub, body.enabledModels ?? []);
   }
 }

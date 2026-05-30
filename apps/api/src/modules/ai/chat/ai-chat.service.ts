@@ -26,6 +26,8 @@ export interface RunChatParams {
   userId: string;
   diagramId: string;
   message: string;
+  /** 조직 기본 모델을 덮어쓰는 채팅 단위 모델 선택 (provider에 맞는 모델이어야 함). */
+  model?: string;
   isAborted?: () => boolean;
 }
 
@@ -49,7 +51,7 @@ export class AiChatService {
     try {
       const { userId, diagramId, message } = params;
       const { doc, orgId, diagramName } = await this.aiService.getDiagramAndOrgId(diagramId);
-      const { apiKey, provider, model } = await this.aiService.getOrgApiKeyAndProvider(orgId, userId);
+      const { apiKey, provider, model } = await this.aiService.resolveChatCredentials(orgId, userId, params.model?.trim());
 
       const [user, org] = await Promise.all([
         this.userRepo.findOne({ where: { id: userId } }),

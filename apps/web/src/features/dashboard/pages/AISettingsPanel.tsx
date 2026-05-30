@@ -1,44 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components";
-import { getOrgAiSettings, updateOrgAiSettings } from "@/features/ai/api/ai.api";
+import { getOrgAiSettings, setOrgProviderKey, removeOrgProviderKey, setEnabledModels } from "@/features/ai/api/ai.api";
+import { AI_PROVIDERS, PROVIDER_LABELS, modelsForProvider, type AiProviderId } from "@/features/ai/models";
 import * as css from "./ai-settings-panel.css";
 
 interface AISettingsPanelProps {
   orgId: string;
   isOwner: boolean;
 }
-
-const OPENAI_MODELS = [
-  { value: "gpt-4o", label: "GPT-4o (권장)" },
-  { value: "gpt-4o-mini", label: "GPT-4o mini (저비용)" },
-  { value: "gpt-4.1", label: "GPT-4.1" },
-  { value: "gpt-4.1-mini", label: "GPT-4.1 mini" },
-  { value: "gpt-4.1-nano", label: "GPT-4.1 nano" },
-  { value: "gpt-5.4", label: "GPT-5.4" },
-  { value: "gpt-5.4-mini", label: "GPT-5.4 mini" },
-  { value: "gpt-5.4-nano", label: "GPT-5.4 nano" },
-];
-
-const ANTHROPIC_MODELS = [
-  { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6 (권장)" },
-  { value: "claude-opus-4-6", label: "Claude Opus 4.6 (고성능)" },
-  { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 (저비용)" },
-];
-
-const GEMINI_MODELS = [
-  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (권장)" },
-  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (고성능)" },
-  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash (저비용)" },
-];
-
-type AiProviderId = "anthropic" | "openai" | "gemini";
-
-const PROVIDER_LABELS: Record<AiProviderId, string> = {
-  anthropic: "Anthropic",
-  openai: "OpenAI",
-  gemini: "Gemini",
-};
 
 const KEY_PLACEHOLDERS: Record<AiProviderId, string> = {
   anthropic: "sk-ant-api03-...",
@@ -47,10 +17,9 @@ const KEY_PLACEHOLDERS: Record<AiProviderId, string> = {
 };
 
 export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
+  const [editingProvider, setEditingProvider] = useState<AiProviderId | null>(null);
   const [apiKey, setApiKey] = useState("");
-  const [showInput, setShowInput] = useState(false);
-  const [provider, setProvider] = useState<AiProviderId>("anthropic");
-  const [model, setModel] = useState("");
+  const [enabled, setEnabled] = useState<string[] | null>(null);
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
@@ -58,128 +27,123 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
     queryFn: () => getOrgAiSettings(orgId),
   });
 
-  const mutation = useMutation({
-    mutationFn: ({ apiKey, provider, model }: { apiKey: string; provider: AiProviderId; model: string }) =>
-      updateOrgAiSettings(orgId, apiKey, provider, model),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["org-ai-settings", orgId] });
-      setApiKey("");
-      setShowInput(false);
-    },
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["org-ai-settings", orgId] });
+
+  const saveKey = useMutation({
+    mutationFn: ({ provider, apiKey }: { provider: AiProviderId; apiKey: string }) => setOrgProviderKey(orgId, provider, apiKey),
+    onSuccess: () => { void invalidate(); setEditingProvider(null); setApiKey(""); },
   });
 
-  const hasApiKey = data?.hasApiKey ?? false;
-  const currentProvider = data?.provider ?? "anthropic";
-  const currentModel = data?.model ?? "";
+  const removeKey = useMutation({
+    mutationFn: (provider: AiProviderId) => removeOrgProviderKey(orgId, provider),
+    onSuccess: () => { void invalidate(); },
+  });
 
-  const handleShowInput = () => {
-    setProvider(currentProvider);
-    setModel(currentModel);
-    setShowInput(true);
+  const saveModels = useMutation({
+    mutationFn: (models: string[]) => setEnabledModels(orgId, models),
+    onSuccess: () => { void invalidate(); setEnabled(null); },
+  });
+
+  const providers = data?.providers ?? { anthropic: false, openai: false, gemini: false };
+  const registered = AI_PROVIDERS.filter((p) => providers[p]);
+  // 현재 편집 중인 허용목록(저장 전 로컬 상태). null이면 서버값 사용.
+  const enabledModels = enabled ?? data?.enabledModels ?? [];
+
+  const toggleModel = (value: string) => {
+    const base = enabled ?? data?.enabledModels ?? [];
+    setEnabled(base.includes(value) ? base.filter((v) => v !== value) : [...base, value]);
   };
-
-  const handleProviderChange = (next: AiProviderId) => {
-    setProvider(next);
-    setModel("");
-  };
-
-  const handleCancel = () => {
-    setShowInput(false);
-    setApiKey("");
-  };
-
-  const handleSave = () => {
-    if (!apiKey.trim()) return;
-    mutation.mutate({ apiKey: apiKey.trim(), provider, model });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") handleSave();
-  };
-
-  const modelOptions = provider === "openai" ? OPENAI_MODELS : provider === "gemini" ? GEMINI_MODELS : ANTHROPIC_MODELS;
 
   return (
     <div className={css.section}>
       <div className={css.sectionLabel}>AI 설정</div>
       <div className={css.card}>
-        <div className={css.statusRow}>
-          <span className={css.statusLabel}>AI API 키</span>
-          {hasApiKey ? (
-            <span className={css.statusBadgeSet}>
-              ✓ 설정됨 ({PROVIDER_LABELS[currentProvider]}{currentModel ? ` / ${currentModel}` : ""})
-            </span>
-          ) : (
-            <span className={css.statusBadgeUnset}>미설정</span>
-          )}
-        </div>
-
         <div className={css.cardBody}>
           <p className={css.descText}>
-            ERDify AI 기능(채팅, 컬럼 추천, ERD 자동 생성)을 사용하려면 AI API 키가 필요합니다.
-            키는 AES-256으로 암호화 저장되며, AI 요청에만 사용됩니다.
+            provider별 API 키를 등록하세요(여러 개 동시 등록 가능). 키는 AES-256으로 암호화 저장됩니다.
+            등록한 provider의 모델 중 "사용 가능 모델"로 선택한 것이 채팅에서 노출됩니다.
           </p>
         </div>
 
-        {isOwner && !showInput && (
-          <div className={css.actionRow}>
-            <Button variant="secondary" size="sm" onClick={handleShowInput}>
-              {hasApiKey ? "API 키 변경" : "API 키 설정"}
+        {/* provider별 키 */}
+        {AI_PROVIDERS.map((provider) => (
+          <div key={provider} className={css.statusRow}>
+            <span className={css.statusLabel}>{PROVIDER_LABELS[provider]}</span>
+            {providers[provider] ? (
+              <span className={css.statusBadgeSet}>✓ 등록됨</span>
+            ) : (
+              <span className={css.statusBadgeUnset}>미설정</span>
+            )}
+            {isOwner && editingProvider !== provider && (
+              <div className={css.actionRow}>
+                <Button variant="secondary" size="sm" onClick={() => { setEditingProvider(provider); setApiKey(""); }}>
+                  {providers[provider] ? "변경" : "키 설정"}
+                </Button>
+                {providers[provider] && (
+                  <Button variant="ghost" size="sm" onClick={() => removeKey.mutate(provider)} disabled={removeKey.isPending}>
+                    삭제
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {isOwner && editingProvider && (
+          <div className={css.inputRow}>
+            <input
+              className={css.input}
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder={KEY_PLACEHOLDERS[editingProvider]}
+              onKeyDown={(e) => { if (e.key === "Enter" && apiKey.trim()) saveKey.mutate({ provider: editingProvider, apiKey: apiKey.trim() }); }}
+            />
+            <Button variant="primary" size="sm" onClick={() => saveKey.mutate({ provider: editingProvider, apiKey: apiKey.trim() })} disabled={saveKey.isPending || !apiKey.trim()}>
+              {saveKey.isPending ? "저장 중..." : "저장"}
             </Button>
+            <Button variant="ghost" size="sm" onClick={() => { setEditingProvider(null); setApiKey(""); }}>취소</Button>
           </div>
         )}
 
-        {isOwner && showInput && (
-          <>
-            <div className={css.providerRow}>
-              <label className={css.providerLabel}>
-                <input type="radio" name="provider" value="anthropic" checked={provider === "anthropic"} onChange={() => handleProviderChange("anthropic")} />
-                Anthropic (Claude)
-              </label>
-              <label className={css.providerLabel}>
-                <input type="radio" name="provider" value="openai" checked={provider === "openai"} onChange={() => handleProviderChange("openai")} />
-                OpenAI (GPT)
-              </label>
-              <label className={css.providerLabel}>
-                <input type="radio" name="provider" value="gemini" checked={provider === "gemini"} onChange={() => handleProviderChange("gemini")} />
-                Google (Gemini)
-              </label>
-            </div>
-            <div className={css.modelRow}>
-              <select className={css.modelSelect} value={model} onChange={(e) => setModel(e.target.value)}>
-                <option value="">기본 모델 사용</option>
-                {modelOptions.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+        {/* 사용 가능 모델 (allowlist) */}
+        {registered.length > 0 && (
+          <div className={css.cardBody}>
+            <div className={css.statusLabel}>사용 가능 모델</div>
+            <p className={css.descText}>선택한 모델만 채팅에서 사용할 수 있어요. 아무것도 선택하지 않으면 등록된 provider의 모든 모델이 허용됩니다.</p>
+            {registered.map((provider) => (
+              <div key={provider} style={{ marginTop: 8 }}>
+                <div className={css.statusLabel}>{PROVIDER_LABELS[provider]}</div>
+                {modelsForProvider(provider).map((m) => (
+                  <label key={m.value} className={css.providerLabel}>
+                    <input
+                      type="checkbox"
+                      checked={enabledModels.includes(m.value)}
+                      onChange={() => toggleModel(m.value)}
+                      disabled={!isOwner}
+                    />
+                    {m.label}
+                  </label>
                 ))}
-              </select>
-            </div>
-            <div className={css.inputRow}>
-              <input
-                className={css.input}
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder={KEY_PLACEHOLDERS[provider]}
-                onKeyDown={handleKeyDown}
-              />
-            </div>
-            <div className={css.actionRow}>
-              <Button variant="primary" size="sm" onClick={handleSave} disabled={mutation.isPending || !apiKey.trim()}>
-                {mutation.isPending ? "저장 중..." : "저장"}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleCancel}>
-                취소
-              </Button>
-            </div>
-          </>
+              </div>
+            ))}
+            {isOwner && enabled !== null && (
+              <div className={css.actionRow}>
+                <Button variant="primary" size="sm" onClick={() => saveModels.mutate(enabled)} disabled={saveModels.isPending}>
+                  {saveModels.isPending ? "저장 중..." : "모델 설정 저장"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setEnabled(null)}>취소</Button>
+              </div>
+            )}
+          </div>
         )}
 
-        {mutation.isError && (
-          <p className={css.errorText}>저장에 실패했습니다. API 키를 확인해주세요.</p>
+        {(saveKey.isError || removeKey.isError || saveModels.isError) && (
+          <p className={css.errorText}>저장에 실패했습니다. 다시 시도해주세요.</p>
         )}
 
         {!isOwner && (
-          <p className={css.readonlyNote}>API 키 설정은 조직 소유자만 가능합니다.</p>
+          <p className={css.readonlyNote}>API 키·모델 설정은 조직 소유자만 가능합니다.</p>
         )}
       </div>
     </div>

@@ -16,7 +16,10 @@ describe("AiController", () => {
   let aiServiceMock: {
     suggestColumns: ReturnType<typeof vi.fn>;
     getOrgAiSettings: ReturnType<typeof vi.fn>;
-    updateOrgAiSettings: ReturnType<typeof vi.fn>;
+    setOrgProviderKey: ReturnType<typeof vi.fn>;
+    removeOrgProviderKey: ReturnType<typeof vi.fn>;
+    setEnabledModels: ReturnType<typeof vi.fn>;
+    getDiagramAiConfig: ReturnType<typeof vi.fn>;
   };
   let aiChatServiceMock: { runChat: ReturnType<typeof vi.fn> };
   let aiHistoryServiceMock: { markAccepted: ReturnType<typeof vi.fn>; findForDiagram: ReturnType<typeof vi.fn> };
@@ -25,7 +28,10 @@ describe("AiController", () => {
     aiServiceMock = {
       suggestColumns: vi.fn(),
       getOrgAiSettings: vi.fn(),
-      updateOrgAiSettings: vi.fn(),
+      setOrgProviderKey: vi.fn(),
+      removeOrgProviderKey: vi.fn(),
+      setEnabledModels: vi.fn(),
+      getDiagramAiConfig: vi.fn(),
     };
     aiChatServiceMock = { runChat: vi.fn() };
     aiHistoryServiceMock = { markAccepted: vi.fn(), findForDiagram: vi.fn() };
@@ -105,7 +111,7 @@ describe("AiController", () => {
 
   describe("getOrgAiSettings()", () => {
     it("aiService.getOrgAiSettings를 올바른 인수로 호출한다", async () => {
-      const expected = { organizationId: "org-1", hasApiKey: true, provider: "anthropic", model: "claude-sonnet-4-6" };
+      const expected = { organizationId: "org-1", providers: { anthropic: true, openai: false, gemini: false }, enabledModels: [] };
       aiServiceMock.getOrgAiSettings.mockResolvedValue(expected);
 
       const result = await controller.getOrgAiSettings(makeUser(), "org-1");
@@ -114,21 +120,37 @@ describe("AiController", () => {
     });
   });
 
-  describe("updateOrgAiSettings()", () => {
-    it("aiService.updateOrgAiSettings를 올바른 인수로 호출한다", async () => {
-      const body = { apiKey: "sk-ant-key", provider: "anthropic" as const, model: "claude-sonnet-4-6" };
-      aiServiceMock.updateOrgAiSettings.mockResolvedValue(undefined);
-
-      await controller.updateOrgAiSettings(makeUser(), "org-1", body);
-      expect(aiServiceMock.updateOrgAiSettings).toHaveBeenCalledWith("org-1", "user-1", "sk-ant-key", "anthropic", "claude-sonnet-4-6");
+  describe("setOrgProviderKey()", () => {
+    it("provider와 apiKey로 setOrgProviderKey를 호출한다", async () => {
+      aiServiceMock.setOrgProviderKey.mockResolvedValue(undefined);
+      await controller.setOrgProviderKey(makeUser(), "org-1", { provider: "openai", apiKey: "sk-x" });
+      expect(aiServiceMock.setOrgProviderKey).toHaveBeenCalledWith("org-1", "user-1", "openai", "sk-x");
     });
+  });
 
-    it("model이 없으면 빈 문자열로 대체해서 호출한다", async () => {
-      const body = { apiKey: "sk-ant-key", provider: "anthropic" as const };
-      aiServiceMock.updateOrgAiSettings.mockResolvedValue(undefined);
+  describe("removeOrgProviderKey()", () => {
+    it("provider로 removeOrgProviderKey를 호출한다", async () => {
+      aiServiceMock.removeOrgProviderKey.mockResolvedValue(undefined);
+      await controller.removeOrgProviderKey(makeUser(), "org-1", "openai");
+      expect(aiServiceMock.removeOrgProviderKey).toHaveBeenCalledWith("org-1", "user-1", "openai");
+    });
+  });
 
-      await controller.updateOrgAiSettings(makeUser(), "org-1", body as never);
-      expect(aiServiceMock.updateOrgAiSettings).toHaveBeenCalledWith("org-1", "user-1", "sk-ant-key", "anthropic", "");
+  describe("setEnabledModels()", () => {
+    it("enabledModels로 setEnabledModels를 호출한다", async () => {
+      aiServiceMock.setEnabledModels.mockResolvedValue(undefined);
+      await controller.setEnabledModels(makeUser(), "org-1", { enabledModels: ["gpt-4o"] });
+      expect(aiServiceMock.setEnabledModels).toHaveBeenCalledWith("org-1", "user-1", ["gpt-4o"]);
+    });
+  });
+
+  describe("chatConfig()", () => {
+    it("getDiagramAiConfig를 user/diagram으로 호출한다", async () => {
+      const expected = { models: [{ provider: "openai", value: "gpt-4o", label: "GPT-4o (권장)" }] };
+      aiServiceMock.getDiagramAiConfig.mockResolvedValue(expected);
+      const result = await controller.chatConfig(makeUser(), "diag-1");
+      expect(aiServiceMock.getDiagramAiConfig).toHaveBeenCalledWith("user-1", "diag-1");
+      expect(result).toEqual(expected);
     });
   });
 });

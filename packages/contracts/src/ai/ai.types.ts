@@ -1,4 +1,5 @@
 import type { DiagramDocument } from "@erdify/domain";
+import type { AiProviderId, AiModelOption } from "./models";
 
 export type DiffChange =
   | { type: "addTable"; tableId: string; tableName: string }
@@ -42,7 +43,13 @@ export interface ColumnSuggestion {
 
 export interface OrgAiSettings {
   organizationId: string;
-  hasApiKey: boolean;
-  provider: "anthropic" | "openai" | "gemini";
-  model: string;
+  /** provider별 키 등록 여부 (키 값은 노출하지 않음) */
+  providers: Record<AiProviderId, boolean>;
+  /** 관리자가 허용한 모델 value 목록. 비어있으면 등록된 provider의 모든 모델 허용. */
+  enabledModels: string[];
+}
+
+/** 채팅에서 고를 수 있는 모델 목록 (등록된 provider × 허용 모델). */
+export interface AiChatConfig {
+  models: AiModelOption[];
 }

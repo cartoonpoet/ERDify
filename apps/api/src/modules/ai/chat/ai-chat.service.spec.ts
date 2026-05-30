@@ -34,7 +34,7 @@ function makeService(turns: ProviderTurn[]): { svc: Svc } {
   };
   const aiService = {
     getDiagramAndOrgId: vi.fn(async () => ({ doc, orgId: "o1", diagramName: "shop" })),
-    getOrgApiKeyAndProvider: vi.fn(async () => ({ apiKey: "k", provider: "anthropic", model: "m" })),
+    resolveChatCredentials: vi.fn(async () => ({ apiKey: "k", provider: "anthropic", model: "m" })),
   };
   const history = {
     findRecentTurns: vi.fn(async () => []),
@@ -105,7 +105,7 @@ describe("AiChatService.runChat", () => {
     const provider = { streamTurn } as never;
     const aiService = {
       getDiagramAndOrgId: vi.fn(async () => ({ doc, orgId: "o1", diagramName: "shop" })),
-      getOrgApiKeyAndProvider: vi.fn(async () => ({ apiKey: "k", provider: "anthropic", model: "m" })),
+      resolveChatCredentials: vi.fn(async () => ({ apiKey: "k", provider: "anthropic", model: "m" })),
     };
     const history = { findRecentTurns: vi.fn(async () => []), saveUserMessage: vi.fn(async () => undefined), saveAssistantMessage: vi.fn(async () => ({ id: "m" })) };
     const usage = { log: vi.fn(async () => undefined) };

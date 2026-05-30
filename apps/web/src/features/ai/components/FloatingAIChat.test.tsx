@@ -11,6 +11,7 @@ vi.mock("../api/ai.api", () => ({
   acceptAiDiff: vi.fn(),
   rejectAiDiff: vi.fn(),
   getAiChatHistory: vi.fn(),
+  getAiChatConfig: vi.fn(),
 }));
 
 vi.mock("@/shared/utils/uuid", () => ({
@@ -32,7 +33,7 @@ vi.mock("./MessageBubble", () => ({
   ),
 }));
 
-import { streamAiChat, acceptAiDiff, rejectAiDiff, getAiChatHistory } from "../api/ai.api";
+import { streamAiChat, acceptAiDiff, rejectAiDiff, getAiChatHistory, getAiChatConfig } from "../api/ai.api";
 import type { AiStreamEvent } from "@erdify/contracts";
 import { randomUUID } from "@/shared/utils/uuid";
 
@@ -65,6 +66,8 @@ beforeEach(() => {
   vi.mocked(rejectAiDiff).mockReset();
   vi.mocked(getAiChatHistory).mockReset();
   vi.mocked(getAiChatHistory).mockResolvedValue([]);
+  vi.mocked(getAiChatConfig).mockReset();
+  vi.mocked(getAiChatConfig).mockResolvedValue({ models: [] });
   Element.prototype.scrollIntoView = vi.fn();
 });
 
@@ -102,7 +105,7 @@ describe("FloatingAIChat", () => {
   });
 
   it("메시지 전송 시 addUserMessage → streamAiChat → done 이벤트로 assistant 메시지가 추가된다", async () => {
-    vi.mocked(streamAiChat).mockImplementationOnce(async (_diagramId, _message, onEvent) => {
+    vi.mocked(streamAiChat).mockImplementationOnce(async (_diagramId, _message, _model, onEvent) => {
       const events: AiStreamEvent[] = [
         { type: "step", text: "AI 응답입니다" },
         { type: "done", messageId: "assistant-msg-id", content: "AI 응답입니다", diff: null, pendingDocument: null },
@@ -122,7 +125,7 @@ describe("FloatingAIChat", () => {
     });
 
     await waitFor(() => {
-      expect(vi.mocked(streamAiChat)).toHaveBeenCalledWith("diagram-1", "테이블 추가해줘", expect.any(Function));
+      expect(vi.mocked(streamAiChat)).toHaveBeenCalledWith("diagram-1", "테이블 추가해줘", "", expect.any(Function));
     });
 
     const messages = useAIChatStore.getState().messages;

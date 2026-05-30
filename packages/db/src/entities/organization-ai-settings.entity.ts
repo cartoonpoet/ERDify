@@ -17,6 +17,14 @@ export class OrganizationAiSettings {
   @Column({ type: "varchar", length: 60, default: "" })
   model!: string;
 
+  /** provider → 암호화된 API 키. 여러 provider 키를 동시에 보관. */
+  @Column({ name: "provider_keys", type: "jsonb", default: () => "'{}'" })
+  providerKeys!: Record<string, string>;
+
+  /** 관리자가 허용한 모델 value 목록. 비어있으면 등록된 provider의 모든 모델 허용. */
+  @Column({ name: "enabled_models", type: "jsonb", default: () => "'[]'" })
+  enabledModels!: string[];
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 

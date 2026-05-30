@@ -4,14 +4,16 @@ import {
   rejectAiDiff,
   suggestColumns,
   getOrgAiSettings,
-  updateOrgAiSettings,
+  setOrgProviderKey,
+  removeOrgProviderKey,
+  setEnabledModels,
   getAiChatHistory,
 } from "./ai.api";
 import { httpClient } from "@/shared/api/httpClient";
 import type { AiStreamEvent } from "@erdify/contracts";
 
 vi.mock("@/shared/api/httpClient", () => ({
-  httpClient: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
+  httpClient: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
   API_BASE_URL: "http://localhost:4000/api",
 }));
 
@@ -31,7 +33,7 @@ describe("ai.api", () => {
     global.fetch = vi.fn(async () => new Response(stream, { status: 200 })) as unknown as typeof fetch;
 
     const events: AiStreamEvent[] = [];
-    await streamAiChat("d1", "hi", (e) => events.push(e));
+    await streamAiChat("d1", "hi", "", (e) => events.push(e));
 
     expect(events.map((e) => e.type)).toEqual(["step", "done"]);
   });
@@ -87,16 +89,27 @@ describe("ai.api", () => {
     expect(result).toEqual(mockSettings);
   });
 
-  it("updateOrgAiSettings는 PUT /organizations/:orgId/ai-settings를 호출하고 void를 반환한다", async () => {
+  it("setOrgProviderKey는 PUT /organizations/:orgId/ai-settings를 {provider, apiKey}로 호출한다", async () => {
     vi.mocked(httpClient.put).mockResolvedValue({ data: undefined });
 
-    const result = await updateOrgAiSettings("org-1", "sk-test-key", "anthropic", "claude-3-5-sonnet-20241022");
+    await setOrgProviderKey("org-1", "openai", "sk-test-key");
 
-    expect(httpClient.put).toHaveBeenCalledWith("/organizations/org-1/ai-settings", {
-      apiKey: "sk-test-key",
-      provider: "anthropic",
-      model: "claude-3-5-sonnet-20241022",
-    });
-    expect(result).toBeUndefined();
+    expect(httpClient.put).toHaveBeenCalledWith("/organizations/org-1/ai-settings", { provider: "openai", apiKey: "sk-test-key" });
+  });
+
+  it("removeOrgProviderKey는 DELETE /organizations/:orgId/ai-settings/:provider를 호출한다", async () => {
+    vi.mocked(httpClient.delete).mockResolvedValue({ data: undefined });
+
+    await removeOrgProviderKey("org-1", "openai");
+
+    expect(httpClient.delete).toHaveBeenCalledWith("/organizations/org-1/ai-settings/openai");
+  });
+
+  it("setEnabledModels는 PUT /organizations/:orgId/ai-models를 호출한다", async () => {
+    vi.mocked(httpClient.put).mockResolvedValue({ data: undefined });
+
+    await setEnabledModels("org-1", ["gpt-4o", "claude-sonnet-4-6"]);
+
+    expect(httpClient.put).toHaveBeenCalledWith("/organizations/org-1/ai-models", { enabledModels: ["gpt-4o", "claude-sonnet-4-6"] });
   });
 });

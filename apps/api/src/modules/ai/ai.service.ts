@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { randomUUID } from "node:crypto";
@@ -7,20 +7,26 @@ import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { DiagramDocument } from "@erdify/domain";
 import { Diagram, OrganizationAiSettings, OrganizationMember } from "@erdify/db";
-import type { ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
+import type { ColumnSuggestion, OrgAiSettings, AiChatConfig, AiModelOption, AiProviderId } from "@erdify/contracts";
+import { AI_MODELS, AI_PROVIDERS, providerOfModel } from "@erdify/contracts";
 import { encrypt, decrypt } from "../../common/utils/field-cipher";
 import { UsageService } from "../usage/usage.service";
 
-const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6";
-const DEFAULT_OPENAI_MODEL = "gpt-4o";
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+interface ChatCredentials {
+  apiKey: string;
+  provider: AiProviderId;
+  model: string;
+}
 
-type Provider = "anthropic" | "openai" | "gemini";
-
-function defaultModelFor(provider: Provider): string {
-  if (provider === "openai") return DEFAULT_OPENAI_MODEL;
-  if (provider === "gemini") return DEFAULT_GEMINI_MODEL;
-  return DEFAULT_ANTHROPIC_MODEL;
+/** 등록된 provider(키 있음) × 허용 모델(allowlist 비면 전부)로 채팅에서 고를 수 있는 모델 목록. */
+function availableModels(settings: OrganizationAiSettings | null): AiModelOption[] {
+  if (!settings) return [];
+  const keys = settings.providerKeys ?? {};
+  const registered = AI_PROVIDERS.filter((p) => !!keys[p]);
+  let models = AI_MODELS.filter((m) => registered.includes(m.provider));
+  const enabled = settings.enabledModels ?? [];
+  if (enabled.length > 0) models = models.filter((m) => enabled.includes(m.value));
+  return models;
 }
 
 @Injectable()
@@ -42,30 +48,51 @@ export class AiService {
   async getOrgAiSettings(orgId: string, userId: string): Promise<OrgAiSettings> {
     await this.requireOrgMember(orgId, userId);
     const settings = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
+    const keys = settings?.providerKeys ?? {};
     return {
       organizationId: orgId,
-      hasApiKey: !!settings?.encryptedApiKey,
-      provider: settings?.provider ?? "anthropic",
-      model: settings?.model ?? "",
+      providers: { anthropic: !!keys["anthropic"], openai: !!keys["openai"], gemini: !!keys["gemini"] },
+      enabledModels: settings?.enabledModels ?? [],
     };
   }
 
-  async updateOrgAiSettings(orgId: string, userId: string, apiKey: string, provider: Provider, model: string): Promise<void> {
+  /** provider 키 등록/교체 (owner). */
+  async setOrgProviderKey(orgId: string, userId: string, provider: AiProviderId, apiKey: string): Promise<void> {
     await this.requireOrgOwner(orgId, userId);
-    const existing = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
-    if (existing) {
-      await this.settingsRepo.update(existing.id, { encryptedApiKey: encrypt(apiKey), provider, model });
-    } else {
-      await this.settingsRepo.save(
-        this.settingsRepo.create({
-          id: randomUUID(),
-          organizationId: orgId,
-          encryptedApiKey: encrypt(apiKey),
-          provider,
-          model,
-        })
-      );
-    }
+    if (!AI_PROVIDERS.includes(provider)) throw new BadRequestException("알 수 없는 provider입니다.");
+    const settings = await this.getOrCreateSettings(orgId);
+    settings.providerKeys = { ...(settings.providerKeys ?? {}), [provider]: encrypt(apiKey) };
+    await this.settingsRepo.save(settings);
+  }
+
+  /** provider 키 삭제 (owner). */
+  async removeOrgProviderKey(orgId: string, userId: string, provider: AiProviderId): Promise<void> {
+    await this.requireOrgOwner(orgId, userId);
+    const settings = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
+    if (!settings) return;
+    const next = { ...(settings.providerKeys ?? {}) };
+    delete next[provider];
+    settings.providerKeys = next;
+    await this.settingsRepo.save(settings);
+  }
+
+  /** 허용 모델 목록 설정 (owner). */
+  async setEnabledModels(orgId: string, userId: string, models: string[]): Promise<void> {
+    await this.requireOrgOwner(orgId, userId);
+    const valid = new Set(AI_MODELS.map((m) => m.value));
+    const filtered = models.filter((m) => valid.has(m));
+    const settings = await this.getOrCreateSettings(orgId);
+    settings.enabledModels = filtered;
+    await this.settingsRepo.save(settings);
+  }
+
+  // ── Chat config ─────────────────────────────────────────────────────────────
+
+  async getDiagramAiConfig(userId: string, diagramId: string): Promise<AiChatConfig> {
+    const { orgId } = await this.getDiagramAndOrgId(diagramId);
+    await this.requireOrgMember(orgId, userId);
+    const settings = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
+    return { models: availableModels(settings) };
   }
 
   // ── Column suggestions ────────────────────────────────────────────────────
@@ -73,7 +100,7 @@ export class AiService {
   async suggestColumns(userId: string, tableName: string, existingColumns: string[]): Promise<ColumnSuggestion[]> {
     const membership = await this.memberRepo.findOne({ where: { userId } });
     if (!membership) throw new ForbiddenException("조직 멤버십이 없습니다.");
-    const { apiKey, provider, model } = await this.getOrgApiKeyAndProvider(membership.organizationId, userId);
+    const { apiKey, provider, model } = await this.resolveChatCredentials(membership.organizationId, userId);
 
     const prompt = `Suggest 5 common columns for a database table named "${tableName}".
 Existing columns: ${existingColumns.length > 0 ? existingColumns.join(", ") : "none"}.
@@ -112,11 +139,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
     }
 
     this.usageService
-      .log(membership.organizationId, userId, "ai_suggest_columns", null, null, {
-        provider,
-        model,
-        table_name: tableName,
-      })
+      .log(membership.organizationId, userId, "ai_suggest_columns", null, null, { provider, model, table_name: tableName })
       .catch((e) => this.logger.error(e));
 
     try {
@@ -142,15 +165,35 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
     return { doc: diagram.content, orgId: diagram.org_id, diagramName: diagram.name };
   }
 
-  async getOrgApiKeyAndProvider(orgId: string, userId: string): Promise<{ apiKey: string; provider: Provider; model: string }> {
+  /** 요청된 모델(없으면 첫 허용 모델)에 맞는 provider 키를 해석해 반환. */
+  async resolveChatCredentials(orgId: string, userId: string, requestedModel?: string): Promise<ChatCredentials> {
     await this.requireOrgMember(orgId, userId);
     const settings = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
-    if (!settings?.encryptedApiKey) {
-      throw new ForbiddenException("조직에 AI API 키가 설정되어 있지 않습니다. 관리자에게 문의하세요.");
+    const available = availableModels(settings);
+    if (!settings || available.length === 0) {
+      throw new ForbiddenException("조직에 사용 가능한 AI 모델이 없습니다. 관리자에게 API 키 설정을 문의하세요.");
     }
-    const provider: Provider = settings.provider ?? "anthropic";
-    const model = settings.model || defaultModelFor(provider);
-    return { apiKey: decrypt(settings.encryptedApiKey), provider, model };
+    const chosen = requestedModel && available.some((m) => m.value === requestedModel)
+      ? requestedModel
+      : available[0]!.value;
+    const provider = providerOfModel(chosen)!;
+    const enc = (settings.providerKeys ?? {})[provider];
+    if (!enc) throw new ForbiddenException("선택한 모델의 provider에 API 키가 없습니다.");
+    return { apiKey: decrypt(enc), provider, model: chosen };
+  }
+
+  private async getOrCreateSettings(orgId: string): Promise<OrganizationAiSettings> {
+    const existing = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
+    if (existing) return existing;
+    return this.settingsRepo.create({
+      id: randomUUID(),
+      organizationId: orgId,
+      encryptedApiKey: null,
+      provider: "anthropic",
+      model: "",
+      providerKeys: {},
+      enabledModels: [],
+    });
   }
 
   private async requireOrgMember(orgId: string, userId: string): Promise<void> {

@@ -2,13 +2,16 @@ import { useRef, useEffect, useState } from "react";
 import { useAIChatStore } from "../store/useAIChatStore";
 import { MessageBubble } from "./MessageBubble";
 import { AIDiffReviewPanel } from "./AIDiffReviewPanel";
-import { streamAiChat, acceptAiDiff, rejectAiDiff, getAiChatHistory } from "../api/ai.api";
+import { streamAiChat, acceptAiDiff, rejectAiDiff, getAiChatHistory, getAiChatConfig } from "../api/ai.api";
+import { PROVIDER_LABELS, AI_PROVIDERS, type AiModelOption } from "../models";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import * as s from "./FloatingAIChat.css";
 
 interface FloatingAIChatProps {
   diagramId: string;
 }
+
+const MODEL_STORAGE_KEY = "erdify.ai.model";
 
 export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
   const {
@@ -20,7 +23,30 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     resetForDiagram, loadHistory,
   } = useAIChatStore();
   const [input, setInput] = useState("");
+  const [models, setModels] = useState<AiModelOption[]>([]);
+  const [selectedModel, setSelectedModel] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // 다이어그램의 조직에 등록된 provider × 허용 모델을 불러와 드롭다운을 채운다.
+  // 선택은 localStorage에 기억하되, 더 이상 허용되지 않으면 첫 모델로 폴백.
+  useEffect(() => {
+    let cancelled = false;
+    getAiChatConfig(diagramId)
+      .then((config) => {
+        if (cancelled) return;
+        setModels(config.models);
+        const saved = localStorage.getItem(MODEL_STORAGE_KEY) ?? "";
+        const valid = config.models.some((m) => m.value === saved);
+        setSelectedModel(valid ? saved : (config.models[0]?.value ?? ""));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [diagramId]);
+
+  const handleModelChange = (value: string) => {
+    setSelectedModel(value);
+    localStorage.setItem(MODEL_STORAGE_KEY, value);
+  };
 
   // 다이어그램이 바뀌면 채팅을 초기화하고 저장된 대화를 복원한다 (다이어그램별 분리).
   // 스토어의 현재 diagramId는 getState로 읽어 의존성에서 제외 → reset이 일으키는
@@ -43,7 +69,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     addUserMessage(message);
     startAssistantStream();
     try {
-      await streamAiChat(diagramId, message, (event) => {
+      await streamAiChat(diagramId, message, selectedModel, (event) => {
         if (event.type === "step") appendStreamText(event.text);
         else if (event.type === "tool_call") setStreamStatus(event.label);
         else if (event.type === "done") finishAssistantStream(event);
@@ -118,7 +144,25 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
               <div className={s.chatHeaderIcon}>✦</div>
               <div>
                 <div className={s.chatHeaderTitle}>ERDify AI</div>
-                <div className={s.chatHeaderSub}>Claude · GPT · Gemini</div>
+                {models.length > 0 ? (
+                  <select
+                    className={s.modelSelect}
+                    value={selectedModel}
+                    onChange={(e) => handleModelChange(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    title="모델 선택"
+                  >
+                    {AI_PROVIDERS.filter((p) => models.some((m) => m.provider === p)).map((p) => (
+                      <optgroup key={p} label={PROVIDER_LABELS[p]}>
+                        {models.filter((m) => m.provider === p).map((m) => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                ) : (
+                  <div className={s.chatHeaderSub}>모델 미설정</div>
+                )}
               </div>
             </div>
             <button type="button" className={s.chatCloseBtn} onClick={closeChat}>×</button>
