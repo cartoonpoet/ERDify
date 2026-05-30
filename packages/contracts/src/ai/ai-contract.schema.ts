@@ -12,7 +12,7 @@ export const aiSuggestColumnsRequestSchema = z.object({
 
 export const updateOrgAiSettingsRequestSchema = z.object({
   apiKey: z.string().min(1).max(200),
-  provider: z.enum(["anthropic", "openai"]),
+  provider: z.enum(["anthropic", "openai", "gemini"]),
   model: z.string().max(60).default(""),
 });
 

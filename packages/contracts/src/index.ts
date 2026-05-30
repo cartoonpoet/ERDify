@@ -36,7 +36,17 @@ export type {
   AiChatResponse,
   ColumnSuggestion,
   OrgAiSettings,
+  AiChatConfig,
 } from "./ai/ai.types";
+export {
+  AI_MODELS,
+  AI_PROVIDERS,
+  PROVIDER_LABELS,
+  providerOfModel,
+  modelsForProvider,
+  type AiProviderId,
+  type AiModelOption,
+} from "./ai/models";
 export {
   aiChatRequestSchema,
   aiSuggestColumnsRequestSchema,
