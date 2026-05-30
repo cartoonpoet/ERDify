@@ -81,7 +81,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
 
     addUserMessage(message, sessionId);
 
-    const tempId = crypto.randomUUID();
+    const tempId = randomUUID();
     startStreamingMessage(sessionId, tempId);
 
     const { onText, onDone, onError } = buildStreamingCallbacks(sessionId, tempId);
