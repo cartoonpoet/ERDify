@@ -1,4 +1,5 @@
 import type { DiagramDocument, SchemaFinding } from "@erdify/domain";
+import { buildIntentBlock, type ChatIntent } from "./intent";
 
 export interface SessionMeta {
   userName: string;
@@ -65,6 +66,27 @@ function summarize(doc: DiagramDocument) {
   };
 }
 
+/**
+ * 큰 다이어그램을 위한 "compact-complete" 컨텍스트: 질의에 관련된 테이블은 컬럼/인덱스까지
+ * 완전히 포함하고, 나머지는 요약(이름+컬럼 수)한다. 관계는 전부 포함해 그래프 맥락을 보존한다.
+ */
+function summarizeFocused(doc: DiagramDocument, focusTableIds: string[]) {
+  const focus = new Set(focusTableIds);
+  const ctx = buildDiagramContext(doc);
+  return {
+    id: ctx.id,
+    name: ctx.name,
+    dialect: ctx.dialect,
+    focusedTables: ctx.entities.filter((e) => focus.has(e.id)),
+    otherTables: doc.entities
+      .filter((e) => !focus.has(e.id))
+      .map((e) => ({ id: e.id, name: e.name, columnCount: e.columns.length })),
+    relationships: ctx.relationships,
+    indexes: ctx.indexes.filter((i) => focus.has(i.entityId)),
+    _note: "Large diagram: only query-relevant tables are shown in full; otherTables are summarized — call getTableDetails(tableId) for any of them. ALL relationships are included.",
+  };
+}
+
 function buildVerifiedFactsBlock(facts: SchemaFinding[]): string {
   const lines = facts.length
     ? facts.map((f) => `- [${f.kind}] ${f.detail}`).join("\n")
@@ -80,11 +102,27 @@ ${lines}
 `;
 }
 
-export function buildSystemPrompt(doc: DiagramDocument, meta: SessionMeta, facts: SchemaFinding[] = []): string {
+export interface PromptOptions {
+  /** 질의 관련 테이블 id (스키마-RAG). 큰 다이어그램에서 이 테이블만 완전히 포함한다. */
+  focusTableIds?: string[];
+  /** 결정적으로 분류된 사용자 의도. */
+  intent?: ChatIntent;
+}
+
+export function buildSystemPrompt(
+  doc: DiagramDocument,
+  meta: SessionMeta,
+  facts: SchemaFinding[] = [],
+  options: PromptOptions = {},
+): string {
   const full = buildDiagramContext(doc);
   const oversized = JSON.stringify(full).length > TOKEN_BUDGET_CHARS;
-  const diagramJson = JSON.stringify(oversized ? summarize(doc) : full);
+  const focusIds = options.focusTableIds ?? [];
+  const diagramJson = JSON.stringify(
+    !oversized ? full : focusIds.length > 0 ? summarizeFocused(doc, focusIds) : summarize(doc),
+  );
   const verifiedFactsBlock = buildVerifiedFactsBlock(facts);
+  const intentBlock = buildIntentBlock(options.intent ?? "general");
 
   const readToolsBlock = `
 ## Analysis / review / normalization / redesign requests (IMPORTANT)
@@ -150,6 +188,8 @@ Only fall back to the generic defaults below when the diagram has NO existing co
 - Never hallucinate IDs. If you cannot find a referenced table/column, say so clearly.
 - If the request is ambiguous, make a reasonable assumption and explain it.
 - After making changes, briefly summarize what was done in the user's language.
+
+${intentBlock}
 ${verifiedFactsBlock}${readToolsBlock}
 ## Current diagram (JSON)
 ${diagramJson}`;
