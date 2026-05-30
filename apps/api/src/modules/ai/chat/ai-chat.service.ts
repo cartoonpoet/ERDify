@@ -18,6 +18,9 @@ import type { ConvMessage, AiProvider, NormalizedToolCall } from "../providers/p
 
 const MAX_TOKENS = 4096;
 const MAX_ITERATIONS = 8;
+const READ_TOOL_NAMES = new Set(["listTables", "getTableDetails"]);
+const APPLY_NUDGE =
+  "Now apply the schema improvements you just identified using the editing tools (addRelation, addIndex, addTable, addColumn, updateColumn, removeColumn, etc.) so the user gets a reviewable diff. Make the concrete changes now — do not just describe them again. If, and only if, no change is actually warranted, reply in one short sentence saying the schema is already fine.";
 
 export interface RunChatParams {
   userId: string;
@@ -73,6 +76,8 @@ export class AiChatService {
       const diffs: DiffChange[] = [];
       const allToolCalls: NormalizedToolCall[] = [];
       let finalText = "";
+      let usedReadTools = false;
+      let nudgedToApply = false;
 
       for (let i = 0; i < MAX_ITERATIONS; i++) {
         if (params.isAborted?.()) return;
@@ -86,12 +91,23 @@ export class AiChatService {
           onText: (d) => emit({ type: "step", text: d }),
         });
         finalText = turn.text;
-        if (turn.toolCalls.length === 0) break;
+        if (turn.toolCalls.length === 0) {
+          // 스키마를 조회(분석)해놓고 아무 변경도 적용하지 않은 채 끝나면, 한 번만 적용을 유도.
+          // (순수 정보 질문은 읽기 도구를 쓰지 않으므로 발동하지 않음)
+          if (!nudgedToApply && usedReadTools && diffs.length === 0) {
+            nudgedToApply = true;
+            messages.push({ role: "assistant", text: turn.text, toolCalls: [] });
+            messages.push({ role: "user", content: APPLY_NUDGE });
+            continue;
+          }
+          break;
+        }
 
         messages.push({ role: "assistant", text: turn.text, toolCalls: turn.toolCalls });
         const results: { toolCallId: string; toolName: string; content: string }[] = [];
         for (const call of turn.toolCalls) {
           allToolCalls.push(call);
+          if (READ_TOOL_NAMES.has(call.name)) usedReadTools = true;
           emit({ type: "tool_call", name: call.name, label: toolLabel(call) });
           const res = await this.toolExecutor.execute(call.name, call.input, updatedDoc);
           updatedDoc = res.doc;

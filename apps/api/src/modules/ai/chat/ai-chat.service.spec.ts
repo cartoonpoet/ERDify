@@ -84,4 +84,40 @@ describe("AiChatService.runChat", () => {
     expect(done.diff).toHaveLength(1);
     expect(done.pendingDocument?.entities).toHaveLength(1);
   });
+
+  it("스키마를 조회만 하고 변경이 없으면 적용을 유도해 결국 diff를 만든다", async () => {
+    const { svc } = makeService([
+      { text: "", toolCalls: [{ id: "r1", name: "getTableDetails", input: { tableId: "e1" } }] },
+      { text: "정규화 분석 결과입니다.", toolCalls: [] }, // 분석만 → nudge 발동
+      { text: "개선사항을 적용했습니다.", toolCalls: [{ id: "t1", name: "addTable", input: { name: "roles" } }] },
+      { text: "완료", toolCalls: [] },
+    ]);
+    const events: AiStreamEvent[] = [];
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "정규화할 거 있어?" }, (e) => events.push(e));
+
+    const done = events.find((e) => e.type === "done") as Extract<AiStreamEvent, { type: "done" }>;
+    expect(done.diff).toHaveLength(1);
+    expect(done.pendingDocument?.entities.some((e) => e.name === "roles")).toBe(true);
+  });
+
+  it("읽기 도구를 쓰지 않은 순수 정보 질문은 적용을 유도하지 않는다", async () => {
+    const streamTurn = vi.fn(async () => ({ text: "3NF는 이행적 종속을 제거합니다.", toolCalls: [] }));
+    const provider = { streamTurn } as never;
+    const aiService = {
+      getDiagramAndOrgId: vi.fn(async () => ({ doc, orgId: "o1", diagramName: "shop" })),
+      getOrgApiKeyAndProvider: vi.fn(async () => ({ apiKey: "k", provider: "anthropic", model: "m" })),
+    };
+    const history = { findRecentTurns: vi.fn(async () => []), saveUserMessage: vi.fn(async () => undefined), saveAssistantMessage: vi.fn(async () => ({ id: "m" })) };
+    const usage = { log: vi.fn(async () => undefined) };
+    const userRepo = { findOne: vi.fn(async () => ({ name: "u", email: "e" })) };
+    const orgRepo = { findOne: vi.fn(async () => ({ name: "o" })) };
+    const svc = new AiChatService(aiService as never, history as never, new ToolExecutor(loader), usage as never, provider, provider, provider, userRepo as never, orgRepo as never);
+
+    const events: AiStreamEvent[] = [];
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "3NF가 뭐야?" }, (e) => events.push(e));
+
+    expect(streamTurn).toHaveBeenCalledTimes(1); // nudge 없이 1회로 종료
+    const done = events.find((e) => e.type === "done") as Extract<AiStreamEvent, { type: "done" }>;
+    expect(done.diff).toBeNull();
+  });
 });
