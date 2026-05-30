@@ -50,11 +50,11 @@ describe("AiController", () => {
         emit({ type: "done", messageId: "m1", content: "끝", diff: null, pendingDocument: null });
       });
 
-      await controller.chatStream(makeUser(), { diagramId: "d1", message: "hello", enableReadTools: false }, res as never);
+      await controller.chatStream(makeUser(), { diagramId: "d1", message: "hello" }, res as never);
 
       expect(headers["Content-Type"]).toBe("text/event-stream");
       expect(aiChatServiceMock.runChat).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: "user-1", diagramId: "d1", message: "hello", enableReadTools: false }),
+        expect.objectContaining({ userId: "user-1", diagramId: "d1", message: "hello" }),
         expect.any(Function),
       );
       expect(writes[0]).toContain('"type":"step"');

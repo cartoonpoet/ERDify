@@ -102,7 +102,7 @@ describe("FloatingAIChat", () => {
   });
 
   it("메시지 전송 시 addUserMessage → streamAiChat → done 이벤트로 assistant 메시지가 추가된다", async () => {
-    vi.mocked(streamAiChat).mockImplementationOnce(async (_diagramId, _message, _enableReadTools, onEvent) => {
+    vi.mocked(streamAiChat).mockImplementationOnce(async (_diagramId, _message, onEvent) => {
       const events: AiStreamEvent[] = [
         { type: "step", text: "AI 응답입니다" },
         { type: "done", messageId: "assistant-msg-id", content: "AI 응답입니다", diff: null, pendingDocument: null },
@@ -122,7 +122,7 @@ describe("FloatingAIChat", () => {
     });
 
     await waitFor(() => {
-      expect(vi.mocked(streamAiChat)).toHaveBeenCalledWith("diagram-1", "테이블 추가해줘", false, expect.any(Function));
+      expect(vi.mocked(streamAiChat)).toHaveBeenCalledWith("diagram-1", "테이블 추가해줘", expect.any(Function));
     });
 
     const messages = useAIChatStore.getState().messages;

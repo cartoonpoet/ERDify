@@ -46,7 +46,6 @@ export class AiController {
         userId: user.sub,
         diagramId: dto.diagramId,
         message: dto.message,
-        enableReadTools: dto.enableReadTools ?? false,
         isAborted: () => aborted,
       },
       write,

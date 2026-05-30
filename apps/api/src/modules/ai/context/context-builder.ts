@@ -61,18 +61,22 @@ function summarize(doc: DiagramDocument) {
       targetEntityId: r.targetEntityId,
       cardinality: r.cardinality,
     })),
-    _note: "Large diagram: tables summarized. Use listTables/getTableDetails to inspect specific tables in detail.",
+    _note: "Large diagram: tables summarized (names + column counts only). Call getTableDetails(tableId) to see a table's full columns/indexes/relationships.",
   };
 }
 
-export function buildSystemPrompt(doc: DiagramDocument, meta: SessionMeta, enableReadTools: boolean): string {
+export function buildSystemPrompt(doc: DiagramDocument, meta: SessionMeta): string {
   const full = buildDiagramContext(doc);
   const oversized = JSON.stringify(full).length > TOKEN_BUDGET_CHARS;
   const diagramJson = JSON.stringify(oversized ? summarize(doc) : full);
 
-  const readToolsBlock = enableReadTools
-    ? `\n## Schema exploration tools\n- You have \`listTables\` and \`getTableDetails(tableId)\`. When a table is shown only as a summary (large diagram) or you need to double-check exact column/ID details before editing, call them first. Do not guess IDs.\n`
-    : "";
+  const readToolsBlock = `
+## Schema inspection (IMPORTANT)
+- The "Current diagram" below may be SUMMARIZED for large diagrams (only table names, ids, and column counts — not the columns themselves).
+- You can always inspect details yourself: \`getTableDetails(tableId)\` returns a table's full columns, indexes, and related relationships; \`listTables\` lists every table. The ids needed are shown in the diagram below.
+- For analysis / review / normalization / redesign requests: do NOT ask the user which table to look at. Proactively call \`getTableDetails\` on the relevant tables FIRST (one per table, in parallel is fine), then reason over the real columns and answer. Inspect → analyze → respond.
+- Never guess column names or ids — look them up.
+`;
 
   return `You are a senior database architect assistant inside ERDify, an ERD design tool.
 You help users design and modify relational database schemas through natural conversation.

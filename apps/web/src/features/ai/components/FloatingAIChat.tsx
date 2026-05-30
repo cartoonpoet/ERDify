@@ -12,11 +12,11 @@ interface FloatingAIChatProps {
 
 export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
   const {
-    isOpen, messages, isLoading, enableReadTools, streamingStatus, streamingText,
+    isOpen, messages, isLoading, streamingStatus, streamingText,
     reviewingMessageId, openReview, closeReview,
     openChat, closeChat,
     addUserMessage, acceptDiff, rejectDiff,
-    setEnableReadTools, startAssistantStream, appendStreamText, setStreamStatus, finishAssistantStream, failAssistantStream,
+    startAssistantStream, appendStreamText, setStreamStatus, finishAssistantStream, failAssistantStream,
     resetForDiagram, loadHistory,
   } = useAIChatStore();
   const [input, setInput] = useState("");
@@ -43,7 +43,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     addUserMessage(message);
     startAssistantStream();
     try {
-      await streamAiChat(diagramId, message, enableReadTools, (event) => {
+      await streamAiChat(diagramId, message, (event) => {
         if (event.type === "step") appendStreamText(event.text);
         else if (event.type === "tool_call") setStreamStatus(event.label);
         else if (event.type === "done") finishAssistantStream(event);
@@ -150,13 +150,6 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
           </div>
 
           <div className={s.chatInputArea}>
-            <label className={s.deepToggle}>
-              <input type="checkbox" checked={enableReadTools} onChange={(e) => setEnableReadTools(e.target.checked)} />
-              심층 탐색 모드
-            </label>
-            {enableReadTools && (
-              <div className={s.deepNotice}>AI가 스키마를 단계적으로 탐색해 더 정확하게 작업합니다. 응답이 다소 느려질 수 있어요.</div>
-            )}
             <div className={s.chatInputRow}>
               <textarea
                 className={s.chatTextarea}

@@ -243,22 +243,6 @@ export const chatInputRow = style({
   alignItems: "flex-end",
 });
 
-export const deepToggle = style({
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
-  fontSize: vars.font.size.sm,
-  color: vars.color.textSecondary,
-  cursor: "pointer",
-  userSelect: "none",
-});
-
-export const deepNotice = style({
-  fontSize: vars.font.size.xs,
-  color: vars.color.textDisabled,
-  lineHeight: 1.4,
-});
-
 export const streamingText = style({
   width: "100%",
   marginTop: "6px",

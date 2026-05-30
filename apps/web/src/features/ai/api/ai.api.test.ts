@@ -31,7 +31,7 @@ describe("ai.api", () => {
     global.fetch = vi.fn(async () => new Response(stream, { status: 200 })) as unknown as typeof fetch;
 
     const events: AiStreamEvent[] = [];
-    await streamAiChat("d1", "hi", false, (e) => events.push(e));
+    await streamAiChat("d1", "hi", (e) => events.push(e));
 
     expect(events.map((e) => e.type)).toEqual(["step", "done"]);
   });

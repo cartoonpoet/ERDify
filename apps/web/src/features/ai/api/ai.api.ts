@@ -7,14 +7,13 @@ export const getAiChatHistory = (diagramId: string): Promise<AiChatHistoryMessag
 export const streamAiChat = async (
   diagramId: string,
   message: string,
-  enableReadTools: boolean,
   onEvent: (event: AiStreamEvent) => void,
 ): Promise<void> => {
   const res = await fetch(`${API_BASE_URL}/ai/chat/stream`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ diagramId, message, enableReadTools }),
+    body: JSON.stringify({ diagramId, message }),
   });
   if (!res.ok || !res.body) throw new Error(`AI stream failed: ${res.status}`);
 

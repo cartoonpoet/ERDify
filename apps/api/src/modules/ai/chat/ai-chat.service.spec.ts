@@ -63,7 +63,7 @@ describe("AiChatService.runChat", () => {
   it("도구 호출이 없으면 1회 turn 후 done을 emit한다", async () => {
     const { svc } = makeService([{ text: "안녕하세요", toolCalls: [] }]);
     const events: AiStreamEvent[] = [];
-    await svc.runChat({ userId: "u1", diagramId: "d1", message: "hi", enableReadTools: false }, (e) => events.push(e));
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "hi" }, (e) => events.push(e));
 
     const done = events.find((e) => e.type === "done");
     expect(done).toMatchObject({ type: "done", content: "안녕하세요", diff: null });
@@ -76,7 +76,7 @@ describe("AiChatService.runChat", () => {
       { text: "users 테이블을 추가했어요", toolCalls: [] },
     ]);
     const events: AiStreamEvent[] = [];
-    await svc.runChat({ userId: "u1", diagramId: "d1", message: "users 테이블", enableReadTools: false }, (e) => events.push(e));
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "users 테이블" }, (e) => events.push(e));
 
     expect(events.some((e) => e.type === "tool_call")).toBe(true);
     expect(events.some((e) => e.type === "tool_result")).toBe(true);

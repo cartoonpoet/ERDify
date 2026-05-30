@@ -23,7 +23,6 @@ export interface RunChatParams {
   userId: string;
   diagramId: string;
   message: string;
-  enableReadTools: boolean;
   isAborted?: () => boolean;
 }
 
@@ -45,7 +44,7 @@ export class AiChatService {
 
   async runChat(params: RunChatParams, emit: (e: AiStreamEvent) => void): Promise<void> {
     try {
-      const { userId, diagramId, message, enableReadTools } = params;
+      const { userId, diagramId, message } = params;
       const { doc, orgId, diagramName } = await this.aiService.getDiagramAndOrgId(diagramId);
       const { apiKey, provider, model } = await this.aiService.getOrgApiKeyAndProvider(orgId, userId);
 
@@ -54,23 +53,19 @@ export class AiChatService {
         this.orgRepo.findOne({ where: { id: orgId } }),
       ]);
       const today = new Date().toISOString().slice(0, 10);
-      const system = buildSystemPrompt(
-        doc,
-        {
-          userName: user?.name ?? "Unknown",
-          userEmail: user?.email ?? "",
-          orgName: org?.name ?? "",
-          diagramId,
-          diagramName,
-          today,
-        },
-        enableReadTools,
-      );
+      const system = buildSystemPrompt(doc, {
+        userName: user?.name ?? "Unknown",
+        userEmail: user?.email ?? "",
+        orgName: org?.name ?? "",
+        diagramId,
+        diagramName,
+        today,
+      });
 
       const history = await this.historyService.findRecentTurns(userId, diagramId);
       await this.historyService.saveUserMessage(userId, diagramId, message);
 
-      const tools = enableReadTools ? [...ERD_TOOLS, ...READ_TOOLS] : ERD_TOOLS;
+      const tools = [...ERD_TOOLS, ...READ_TOOLS];
       const impl: AiProvider = provider === "openai" ? this.openai : provider === "gemini" ? this.gemini : this.anthropic;
       const messages: ConvMessage[] = [...history, { role: "user", content: message }];
 

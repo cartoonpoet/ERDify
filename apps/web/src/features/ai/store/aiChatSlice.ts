@@ -18,7 +18,6 @@ export interface AiChatSlice {
   messages: AiMessage[];
   isLoading: boolean;
   reviewingMessageId: string | null;
-  enableReadTools: boolean;
   streamingStatus: string | null;
   streamingText: string;
   resetForDiagram: (diagramId: string) => void;
@@ -31,7 +30,6 @@ export interface AiChatSlice {
   setLoading: (loading: boolean) => void;
   openReview: (messageId: string) => void;
   closeReview: () => void;
-  setEnableReadTools: (v: boolean) => void;
   startAssistantStream: () => void;
   appendStreamText: (delta: string) => void;
   setStreamStatus: (label: string) => void;
@@ -45,7 +43,6 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
   messages: [],
   isLoading: false,
   reviewingMessageId: null,
-  enableReadTools: false,
   streamingStatus: null,
   streamingText: "",
 
@@ -104,7 +101,6 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
   openReview: (messageId) => set({ reviewingMessageId: messageId }),
   closeReview: () => set({ reviewingMessageId: null }),
 
-  setEnableReadTools: (v) => set({ enableReadTools: v }),
   startAssistantStream: () => set({ isLoading: true, streamingStatus: null, streamingText: "" }),
   appendStreamText: (delta) => set((state) => ({ streamingText: state.streamingText + delta })),
   setStreamStatus: (label) => set({ streamingStatus: label }),

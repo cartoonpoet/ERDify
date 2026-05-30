@@ -39,15 +39,17 @@ describe("buildDiagramContext", () => {
 
 describe("buildSystemPrompt", () => {
   it("세션 메타와 다이어그램 JSON을 포함한다", () => {
-    const p = buildSystemPrompt(doc, meta, false);
+    const p = buildSystemPrompt(doc, meta);
     expect(p).toContain("홍길동");
     expect(p).toContain("a@b.com");
     expect(p).toContain("Acme");
     expect(p).toContain("users");
   });
 
-  it("enableReadTools가 true면 읽기 도구 안내를 포함한다", () => {
-    expect(buildSystemPrompt(doc, meta, true)).toContain("listTables");
-    expect(buildSystemPrompt(doc, meta, false)).not.toContain("listTables");
+  it("읽기 도구 안내(getTableDetails/listTables)를 항상 포함하고 되묻지 말라고 지시한다", () => {
+    const p = buildSystemPrompt(doc, meta);
+    expect(p).toContain("listTables");
+    expect(p).toContain("getTableDetails");
+    expect(p).toContain("do NOT ask the user");
   });
 });
