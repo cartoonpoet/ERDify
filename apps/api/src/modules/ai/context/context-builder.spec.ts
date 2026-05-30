@@ -58,4 +58,11 @@ describe("buildSystemPrompt", () => {
     expect(p).toContain("do not stop at prose");
     expect(p).toContain("reviewable diff");
   });
+
+  it("기존 다이어그램 네이밍 규칙을 따르고 정규화 시 원본 컬럼명을 보존하라고 지시한다", () => {
+    const p = buildSystemPrompt(doc, meta);
+    expect(p).toContain("MATCH THE EXISTING DIAGRAM");
+    expect(p).toContain("PRESERVE ORIGINAL NAMES");
+    expect(p).toMatch(/keep each existing column's[\s\S]*EXACTLY as-is/);
+  });
 });
