@@ -7,7 +7,7 @@ import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import type { DiagramDocument } from "@erdify/domain";
 
 vi.mock("../api/ai.api", () => ({
-  sendAiChat: vi.fn(),
+  streamAiChat: vi.fn(),
   acceptAiDiff: vi.fn(),
   rejectAiDiff: vi.fn(),
 }));
@@ -31,7 +31,8 @@ vi.mock("./MessageBubble", () => ({
   ),
 }));
 
-import { sendAiChat, acceptAiDiff, rejectAiDiff } from "../api/ai.api";
+import { streamAiChat, acceptAiDiff, rejectAiDiff } from "../api/ai.api";
+import type { AiStreamEvent } from "@erdify/contracts";
 import { randomUUID } from "@/shared/utils/uuid";
 
 const makeEmptyDoc = (id = "doc-1"): DiagramDocument => ({
@@ -57,7 +58,7 @@ const initialAiChatState = {
 beforeEach(() => {
   useAIChatStore.setState(initialAiChatState);
   vi.mocked(randomUUID).mockReset();
-  vi.mocked(sendAiChat).mockReset();
+  vi.mocked(streamAiChat).mockReset();
   vi.mocked(acceptAiDiff).mockReset();
   vi.mocked(rejectAiDiff).mockReset();
   Element.prototype.scrollIntoView = vi.fn();
@@ -96,13 +97,13 @@ describe("FloatingAIChat", () => {
     expect(useAIChatStore.getState().isOpen).toBe(false);
   });
 
-  it("메시지 전송 시 addUserMessage → sendAiChat → addAssistantMessage 순서로 호출된다", async () => {
-    vi.mocked(randomUUID).mockReturnValueOnce("user-msg-uuid");
-    vi.mocked(sendAiChat).mockResolvedValueOnce({
-      messageId: "assistant-msg-id",
-      content: "AI 응답입니다",
-      diff: null,
-      pendingDocument: null,
+  it("메시지 전송 시 addUserMessage → streamAiChat → done 이벤트로 assistant 메시지가 추가된다", async () => {
+    vi.mocked(streamAiChat).mockImplementationOnce(async (_diagramId, _message, _enableReadTools, onEvent) => {
+      const events: AiStreamEvent[] = [
+        { type: "step", text: "AI 응답입니다" },
+        { type: "done", messageId: "assistant-msg-id", content: "AI 응답입니다", diff: null, pendingDocument: null },
+      ];
+      for (const e of events) onEvent(e);
     });
 
     useAIChatStore.setState({ ...initialAiChatState, isOpen: true });
@@ -117,7 +118,7 @@ describe("FloatingAIChat", () => {
     });
 
     await waitFor(() => {
-      expect(vi.mocked(sendAiChat)).toHaveBeenCalledWith("diagram-1", "테이블 추가해줘");
+      expect(vi.mocked(streamAiChat)).toHaveBeenCalledWith("diagram-1", "테이블 추가해줘", false, expect.any(Function));
     });
 
     const messages = useAIChatStore.getState().messages;
@@ -128,11 +129,9 @@ describe("FloatingAIChat", () => {
     expect(messages[1]!.content).toBe("AI 응답입니다");
   });
 
-  it("sendAiChat 실패 시 에러 메시지가 messages에 추가된다", async () => {
-    vi.mocked(randomUUID)
-      .mockReturnValueOnce("user-msg-uuid")
-      .mockReturnValueOnce("error-msg-uuid");
-    vi.mocked(sendAiChat).mockRejectedValueOnce(new Error("Network error"));
+  it("streamAiChat 실패 시 에러 메시지가 messages에 추가된다", async () => {
+    vi.mocked(randomUUID).mockReturnValueOnce("error-msg-uuid");
+    vi.mocked(streamAiChat).mockRejectedValueOnce(new Error("Network error"));
 
     useAIChatStore.setState({ ...initialAiChatState, isOpen: true });
 

@@ -1,5 +1,5 @@
 import {
-  sendAiChat,
+  streamAiChat,
   acceptAiDiff,
   rejectAiDiff,
   suggestColumns,
@@ -7,29 +7,32 @@ import {
   updateOrgAiSettings,
 } from "./ai.api";
 import { httpClient } from "@/shared/api/httpClient";
+import type { AiStreamEvent } from "@erdify/contracts";
 
 vi.mock("@/shared/api/httpClient", () => ({
   httpClient: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
+  API_BASE_URL: "http://localhost:4000/api",
 }));
 
 describe("ai.api", () => {
-  it("sendAiChat은 POST /ai/chat을 timeout:120000 옵션과 함께 호출하고 r.data를 반환한다", async () => {
-    const mockResponse = {
-      messageId: "msg-1",
-      content: "응답 내용",
-      diff: null,
-      pendingDocument: null,
-    };
-    vi.mocked(httpClient.post).mockResolvedValue({ data: mockResponse });
+  it("streamAiChat은 SSE data 라인을 파싱해 onEvent로 전달한다", async () => {
+    const chunks = [
+      'data: {"type":"step","text":"안녕"}\n\n',
+      'data: {"type":"done","messageId":"m1","content":"끝","diff":null,"pendingDocument":null}\n\n',
+    ];
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        const enc = new TextEncoder();
+        for (const c of chunks) controller.enqueue(enc.encode(c));
+        controller.close();
+      },
+    });
+    global.fetch = vi.fn(async () => new Response(stream, { status: 200 })) as unknown as typeof fetch;
 
-    const result = await sendAiChat("diagram-1", "테이블 추가해줘");
+    const events: AiStreamEvent[] = [];
+    await streamAiChat("d1", "hi", false, (e) => events.push(e));
 
-    expect(httpClient.post).toHaveBeenCalledWith(
-      "/ai/chat",
-      { diagramId: "diagram-1", message: "테이블 추가해줘" },
-      { timeout: 120_000 },
-    );
-    expect(result).toEqual(mockResponse);
+    expect(events.map((e) => e.type)).toEqual(["step", "done"]);
   });
 
   it("acceptAiDiff는 POST /ai/chat/:id/accept를 호출하고 void를 반환한다", async () => {

@@ -1,9 +1,8 @@
-import { randomUUID } from "@/shared/utils/uuid";
 import { useRef, useEffect, useState } from "react";
 import { useAIChatStore } from "../store/useAIChatStore";
 import { MessageBubble } from "./MessageBubble";
 import { AIDiffReviewPanel } from "./AIDiffReviewPanel";
-import { sendAiChat, acceptAiDiff, rejectAiDiff } from "../api/ai.api";
+import { streamAiChat, acceptAiDiff, rejectAiDiff } from "../api/ai.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import * as s from "./FloatingAIChat.css";
 
@@ -13,29 +12,31 @@ interface FloatingAIChatProps {
 
 export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
   const {
-    isOpen, messages, isLoading,
+    isOpen, messages, isLoading, enableReadTools, streamingStatus, streamingText,
     reviewingMessageId, openReview, closeReview,
     openChat, closeChat,
-    addUserMessage, addAssistantMessage,
-    acceptDiff, rejectDiff, setLoading,
+    addUserMessage, acceptDiff, rejectDiff,
+    setEnableReadTools, startAssistantStream, appendStreamText, setStreamStatus, finishAssistantStream, failAssistantStream,
   } = useAIChatStore();
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, streamingText, streamingStatus]);
 
   const handleSend = async (message: string) => {
     addUserMessage(message);
-    setLoading(true);
+    startAssistantStream();
     try {
-      const response = await sendAiChat(diagramId, message);
-      addAssistantMessage(response);
+      await streamAiChat(diagramId, message, enableReadTools, (event) => {
+        if (event.type === "step") appendStreamText(event.text);
+        else if (event.type === "tool_call") setStreamStatus(event.label);
+        else if (event.type === "done") finishAssistantStream(event);
+        else if (event.type === "error") failAssistantStream(event.message);
+      });
     } catch {
-      addAssistantMessage({ messageId: randomUUID(), content: "오류가 발생했습니다. 다시 시도해주세요.", diff: null, pendingDocument: null });
-    } finally {
-      setLoading(false);
+      failAssistantStream("오류가 발생했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -127,29 +128,39 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
                   <div className={s.thinkingDot} />
                   <div className={s.thinkingDot} />
                 </div>
-                AI가 생각 중...
+                {streamingStatus ?? "AI가 생각 중..."}
+                {streamingText && <div className={s.streamingText}>{streamingText}</div>}
               </div>
             )}
             <div ref={bottomRef} />
           </div>
 
           <div className={s.chatInputArea}>
-            <textarea
-              className={s.chatTextarea}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="메시지 입력 (Enter 전송)"
-              rows={2}
-            />
-            <button
-              type="button"
-              className={`${s.chatSendBtnBase} ${sendBtnDisabled ? s.chatSendBtnDisabled : s.chatSendBtnEnabled}`}
-              onClick={handleSendInput}
-              disabled={sendBtnDisabled}
-            >
-              ↑
-            </button>
+            <label className={s.deepToggle}>
+              <input type="checkbox" checked={enableReadTools} onChange={(e) => setEnableReadTools(e.target.checked)} />
+              심층 탐색 모드
+            </label>
+            {enableReadTools && (
+              <div className={s.deepNotice}>AI가 스키마를 단계적으로 탐색해 더 정확하게 작업합니다. 응답이 다소 느려질 수 있어요.</div>
+            )}
+            <div className={s.chatInputRow}>
+              <textarea
+                className={s.chatTextarea}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="메시지 입력 (Enter 전송)"
+                rows={2}
+              />
+              <button
+                type="button"
+                className={`${s.chatSendBtnBase} ${sendBtnDisabled ? s.chatSendBtnDisabled : s.chatSendBtnEnabled}`}
+                onClick={handleSendInput}
+                disabled={sendBtnDisabled}
+              >
+                ↑
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -202,6 +202,7 @@ export const chatEmptyIcon = style({
 export const chatThinking = style({
   display: "flex",
   alignItems: "center",
+  flexWrap: "wrap",
   gap: vars.space["2"],
   color: vars.color.textDisabled,
   fontSize: vars.font.size.sm,
@@ -230,10 +231,40 @@ export const chatInputArea = style({
   padding: `${vars.space["2"]} ${vars.space["3"]}`,
   borderTop: `1px solid ${vars.color.border}`,
   display: "flex",
-  gap: vars.space["2"],
-  alignItems: "flex-end",
+  flexDirection: "column",
+  gap: vars.space["1"],
   flexShrink: 0,
   background: vars.color.surface,
+});
+
+export const chatInputRow = style({
+  display: "flex",
+  gap: vars.space["2"],
+  alignItems: "flex-end",
+});
+
+export const deepToggle = style({
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  fontSize: vars.font.size.sm,
+  color: vars.color.textSecondary,
+  cursor: "pointer",
+  userSelect: "none",
+});
+
+export const deepNotice = style({
+  fontSize: vars.font.size.xs,
+  color: vars.color.textDisabled,
+  lineHeight: 1.4,
+});
+
+export const streamingText = style({
+  width: "100%",
+  marginTop: "6px",
+  fontSize: vars.font.size.sm,
+  color: vars.color.textPrimary,
+  whiteSpace: "pre-wrap",
 });
 
 export const chatTextarea = style({

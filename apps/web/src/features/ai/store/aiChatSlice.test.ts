@@ -76,38 +76,41 @@ describe("useAIChatStore — addUserMessage", () => {
   });
 });
 
-describe("useAIChatStore — addAssistantMessage", () => {
-  it("assistant role 메시지가 diff와 pendingDocument 포함하여 추가된다", () => {
-    const mockResponse = {
+describe("useAIChatStore — finishAssistantStream", () => {
+  it("assistant role 메시지가 diff와 pendingDocument 포함하여 추가되고 스트리밍 상태가 초기화된다", () => {
+    const msg = {
       messageId: "server-msg-id",
       content: "테이블을 추가했습니다",
       diff: [{ type: "addTable" as const, tableId: "tbl-1", tableName: "users" }],
       pendingDocument: { tables: [], relations: [] } as any,
     };
 
-    useAIChatStore.getState().addAssistantMessage(mockResponse);
+    useAIChatStore.getState().startAssistantStream();
+    useAIChatStore.getState().appendStreamText("테이블을");
+    useAIChatStore.getState().finishAssistantStream(msg);
 
-    const { messages } = useAIChatStore.getState();
-    expect(messages).toHaveLength(1);
-    expect(messages[0]).toEqual({
+    const state = useAIChatStore.getState();
+    expect(state.messages).toHaveLength(1);
+    expect(state.messages[0]).toEqual({
       id: "server-msg-id",
       role: "assistant",
       content: "테이블을 추가했습니다",
-      diff: mockResponse.diff,
-      pendingDocument: mockResponse.pendingDocument,
+      diff: msg.diff,
+      pendingDocument: msg.pendingDocument,
       accepted: null,
     });
+    expect(state.isLoading).toBe(false);
+    expect(state.streamingText).toBe("");
+    expect(state.streamingStatus).toBeNull();
   });
 
   it("diff=null인 경우에도 메시지가 정상적으로 추가된다", () => {
-    const mockResponse = {
+    useAIChatStore.getState().finishAssistantStream({
       messageId: "server-msg-id-2",
       content: "안녕하세요!",
       diff: null,
       pendingDocument: null,
-    };
-
-    useAIChatStore.getState().addAssistantMessage(mockResponse);
+    });
 
     const { messages } = useAIChatStore.getState();
     expect(messages[0]!.diff).toBeNull();
@@ -120,7 +123,7 @@ describe("useAIChatStore — acceptDiff / rejectDiff", () => {
     vi.mocked(randomUUID).mockReturnValueOnce("msg-accept-test");
     useAIChatStore.getState().addUserMessage("질문");
 
-    useAIChatStore.getState().addAssistantMessage({
+    useAIChatStore.getState().finishAssistantStream({
       messageId: "assistant-msg-1",
       content: "응답",
       diff: [{ type: "addTable" as const, tableId: "tbl-1", tableName: "users" }],

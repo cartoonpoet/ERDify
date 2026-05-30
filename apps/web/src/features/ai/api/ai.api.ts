@@ -1,8 +1,36 @@
-import { httpClient } from "@/shared/api/httpClient";
-import type { AiChatResponse, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
+import { httpClient, API_BASE_URL } from "@/shared/api/httpClient";
+import type { AiStreamEvent, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
 
-export const sendAiChat = (diagramId: string, message: string): Promise<AiChatResponse> =>
-  httpClient.post<AiChatResponse>("/ai/chat", { diagramId, message }, { timeout: 120_000 }).then((r) => r.data);
+export const streamAiChat = async (
+  diagramId: string,
+  message: string,
+  enableReadTools: boolean,
+  onEvent: (event: AiStreamEvent) => void,
+): Promise<void> => {
+  const res = await fetch(`${API_BASE_URL}/ai/chat/stream`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ diagramId, message, enableReadTools }),
+  });
+  if (!res.ok || !res.body) throw new Error(`AI stream failed: ${res.status}`);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() ?? "";
+    for (const part of parts) {
+      const line = part.replace(/^data: ?/, "").trim();
+      if (!line) continue;
+      onEvent(JSON.parse(line) as AiStreamEvent);
+    }
+  }
+};
 
 export const acceptAiDiff = (messageId: string): Promise<void> =>
   httpClient.post(`/ai/chat/${messageId}/accept`).then(() => undefined);

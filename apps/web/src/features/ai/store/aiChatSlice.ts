@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import type { AiChatResponse, DiffChange } from "@erdify/contracts";
+import type { DiffChange } from "@erdify/contracts";
 import type { DiagramDocument } from "@erdify/domain";
 import { randomUUID } from "@/shared/utils/uuid";
 
@@ -17,15 +17,23 @@ export interface AiChatSlice {
   messages: AiMessage[];
   isLoading: boolean;
   reviewingMessageId: string | null;
+  enableReadTools: boolean;
+  streamingStatus: string | null;
+  streamingText: string;
   openChat: (initialMessage?: string) => void;
   closeChat: () => void;
   addUserMessage: (content: string) => void;
-  addAssistantMessage: (response: AiChatResponse) => void;
   acceptDiff: (messageId: string) => void;
   rejectDiff: (messageId: string) => void;
   setLoading: (loading: boolean) => void;
   openReview: (messageId: string) => void;
   closeReview: () => void;
+  setEnableReadTools: (v: boolean) => void;
+  startAssistantStream: () => void;
+  appendStreamText: (delta: string) => void;
+  setStreamStatus: (label: string) => void;
+  finishAssistantStream: (msg: { messageId: string; content: string; diff: DiffChange[] | null; pendingDocument: DiagramDocument | null }) => void;
+  failAssistantStream: (message: string) => void;
 }
 
 export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
@@ -33,6 +41,9 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
   messages: [],
   isLoading: false,
   reviewingMessageId: null,
+  enableReadTools: false,
+  streamingStatus: null,
+  streamingText: "",
 
   openChat: (initialMessage) =>
     set((state) => ({
@@ -49,21 +60,6 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
       messages: [
         ...state.messages,
         { id: randomUUID(), role: "user", content, diff: null, pendingDocument: null, accepted: null },
-      ],
-    })),
-
-  addAssistantMessage: (response) =>
-    set((state) => ({
-      messages: [
-        ...state.messages,
-        {
-          id: response.messageId,
-          role: "assistant",
-          content: response.content,
-          diff: response.diff,
-          pendingDocument: response.pendingDocument,
-          accepted: null,
-        },
       ],
     })),
 
@@ -84,4 +80,29 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
   setLoading: (loading) => set({ isLoading: loading }),
   openReview: (messageId) => set({ reviewingMessageId: messageId }),
   closeReview: () => set({ reviewingMessageId: null }),
+
+  setEnableReadTools: (v) => set({ enableReadTools: v }),
+  startAssistantStream: () => set({ isLoading: true, streamingStatus: null, streamingText: "" }),
+  appendStreamText: (delta) => set((state) => ({ streamingText: state.streamingText + delta })),
+  setStreamStatus: (label) => set({ streamingStatus: label }),
+  finishAssistantStream: (msg) =>
+    set((state) => ({
+      isLoading: false,
+      streamingStatus: null,
+      streamingText: "",
+      messages: [
+        ...state.messages,
+        { id: msg.messageId, role: "assistant", content: msg.content, diff: msg.diff, pendingDocument: msg.pendingDocument, accepted: null },
+      ],
+    })),
+  failAssistantStream: (message) =>
+    set((state) => ({
+      isLoading: false,
+      streamingStatus: null,
+      streamingText: "",
+      messages: [
+        ...state.messages,
+        { id: randomUUID(), role: "assistant", content: message, diff: null, pendingDocument: null, accepted: null },
+      ],
+    })),
 });
