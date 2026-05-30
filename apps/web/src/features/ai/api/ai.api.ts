@@ -1,5 +1,5 @@
 import { httpClient, API_BASE_URL } from "@/shared/api/httpClient";
-import type { AiChatResponse, ColumnSuggestion, OrgAiSettings } from "@erdify/contracts";
+import type { ColumnSuggestion, OrgAiSettings, AiChatConfig, AiProviderId } from "@erdify/contracts";
 
 export interface AiSessionResponse {
   id: string;
@@ -7,9 +7,6 @@ export interface AiSessionResponse {
   name: string;
   createdAt: string;
 }
-
-export const sendAiChat = (diagramId: string, message: string): Promise<AiChatResponse> =>
-  httpClient.post<AiChatResponse>("/ai/chat", { diagramId, message }, { timeout: 120_000 }).then((r) => r.data);
 
 export const acceptAiDiff = (messageId: string): Promise<void> =>
   httpClient.post(`/ai/chat/${messageId}/accept`).then(() => undefined);
@@ -28,15 +25,25 @@ export const suggestColumns = (
 export const getOrgAiSettings = (orgId: string): Promise<OrgAiSettings> =>
   httpClient.get<OrgAiSettings>(`/organizations/${orgId}/ai-settings`).then((r) => r.data);
 
-export const updateOrgAiSettings = (orgId: string, apiKey: string, provider: "anthropic" | "openai", model: string): Promise<void> =>
-  httpClient.put(`/organizations/${orgId}/ai-settings`, { apiKey, provider, model }).then(() => undefined);
+export const setOrgProviderKey = (orgId: string, provider: AiProviderId, apiKey: string): Promise<void> =>
+  httpClient.put(`/organizations/${orgId}/ai-settings`, { provider, apiKey }).then(() => undefined);
+
+export const removeOrgProviderKey = (orgId: string, provider: AiProviderId): Promise<void> =>
+  httpClient.delete(`/organizations/${orgId}/ai-settings/${provider}`).then(() => undefined);
+
+export const setEnabledModels = (orgId: string, enabledModels: string[]): Promise<void> =>
+  httpClient.put(`/organizations/${orgId}/ai-models`, { enabledModels }).then(() => undefined);
+
+export const getAiChatConfig = (diagramId: string): Promise<AiChatConfig> =>
+  httpClient.get<AiChatConfig>(`/ai/chat/config/${diagramId}`).then((r) => r.data);
 
 export const sendAiChatStream = async (
   diagramId: string,
   message: string,
   sessionId: string | null,
+  model: string,
   onText: (delta: string) => void,
-  onDone: (result: { messageId: string; diff: unknown[] | null; pendingDocument: unknown | null }) => void,
+  onDone: (result: { messageId: string; content?: string; diff: unknown[] | null; pendingDocument: unknown | null }) => void,
   onError: (message: string) => void,
 ): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/ai/chat/stream`, {
@@ -45,7 +52,7 @@ export const sendAiChatStream = async (
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ diagramId, message, sessionId }),
+    body: JSON.stringify({ diagramId, message, sessionId, ...(model ? { model } : {}) }),
   });
 
   if (!response.ok || !response.body) {
@@ -92,7 +99,7 @@ export const sendAiChatStream = async (
       if (eventType === "text") {
         onText(parsed.delta as string);
       } else if (eventType === "done") {
-        onDone(parsed as { messageId: string; diff: unknown[] | null; pendingDocument: unknown | null });
+        onDone(parsed as { messageId: string; content?: string; diff: unknown[] | null; pendingDocument: unknown | null });
       } else if (eventType === "error") {
         onError(parsed.message as string);
       }

@@ -157,6 +157,24 @@ export const chatHeaderSub = style({
   marginTop: "1px",
 });
 
+export const modelSelect = style({
+  marginTop: "2px",
+  maxWidth: "200px",
+  fontSize: vars.font.size["2xs"],
+  color: "#fff",
+  background: "rgba(255,255,255,0.15)",
+  border: "1px solid rgba(255,255,255,0.3)",
+  borderRadius: vars.radius.sm,
+  padding: "1px 4px",
+  cursor: "pointer",
+  outline: "none",
+});
+
+// 펼침 목록은 OS가 그리므로 옵션/그룹 텍스트는 가독성을 위해 어둡게
+globalStyle(`${modelSelect} option, ${modelSelect} optgroup`, {
+  color: vars.color.textPrimary,
+});
+
 export const chatCloseBtn = style({
   background: "rgba(255,255,255,0.15)",
   border: "none",

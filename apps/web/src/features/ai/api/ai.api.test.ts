@@ -1,37 +1,19 @@
 import {
-  sendAiChat,
   acceptAiDiff,
   rejectAiDiff,
   suggestColumns,
   getOrgAiSettings,
-  updateOrgAiSettings,
+  setOrgProviderKey,
+  removeOrgProviderKey,
+  setEnabledModels,
 } from "./ai.api";
 import { httpClient } from "@/shared/api/httpClient";
 
 vi.mock("@/shared/api/httpClient", () => ({
-  httpClient: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
+  httpClient: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }));
 
 describe("ai.api", () => {
-  it("sendAiChat은 POST /ai/chat을 timeout:120000 옵션과 함께 호출하고 r.data를 반환한다", async () => {
-    const mockResponse = {
-      messageId: "msg-1",
-      content: "응답 내용",
-      diff: null,
-      pendingDocument: null,
-    };
-    vi.mocked(httpClient.post).mockResolvedValue({ data: mockResponse });
-
-    const result = await sendAiChat("diagram-1", "테이블 추가해줘");
-
-    expect(httpClient.post).toHaveBeenCalledWith(
-      "/ai/chat",
-      { diagramId: "diagram-1", message: "테이블 추가해줘" },
-      { timeout: 120_000 },
-    );
-    expect(result).toEqual(mockResponse);
-  });
-
   it("acceptAiDiff는 POST /ai/chat/:id/accept를 호출하고 void를 반환한다", async () => {
     vi.mocked(httpClient.post).mockResolvedValue({ data: undefined });
 
@@ -73,16 +55,21 @@ describe("ai.api", () => {
     expect(result).toEqual(mockSettings);
   });
 
-  it("updateOrgAiSettings는 PUT /organizations/:orgId/ai-settings를 호출하고 void를 반환한다", async () => {
+  it("setOrgProviderKey는 PUT /organizations/:orgId/ai-settings를 {provider, apiKey}로 호출한다", async () => {
     vi.mocked(httpClient.put).mockResolvedValue({ data: undefined });
+    await setOrgProviderKey("org-1", "openai", "sk-test-key");
+    expect(httpClient.put).toHaveBeenCalledWith("/organizations/org-1/ai-settings", { provider: "openai", apiKey: "sk-test-key" });
+  });
 
-    const result = await updateOrgAiSettings("org-1", "sk-test-key", "anthropic", "claude-3-5-sonnet-20241022");
+  it("removeOrgProviderKey는 DELETE /organizations/:orgId/ai-settings/:provider를 호출한다", async () => {
+    vi.mocked(httpClient.delete).mockResolvedValue({ data: undefined });
+    await removeOrgProviderKey("org-1", "openai");
+    expect(httpClient.delete).toHaveBeenCalledWith("/organizations/org-1/ai-settings/openai");
+  });
 
-    expect(httpClient.put).toHaveBeenCalledWith("/organizations/org-1/ai-settings", {
-      apiKey: "sk-test-key",
-      provider: "anthropic",
-      model: "claude-3-5-sonnet-20241022",
-    });
-    expect(result).toBeUndefined();
+  it("setEnabledModels는 PUT /organizations/:orgId/ai-models를 호출한다", async () => {
+    vi.mocked(httpClient.put).mockResolvedValue({ data: undefined });
+    await setEnabledModels("org-1", ["gpt-4o"]);
+    expect(httpClient.put).toHaveBeenCalledWith("/organizations/org-1/ai-models", { enabledModels: ["gpt-4o"] });
   });
 });

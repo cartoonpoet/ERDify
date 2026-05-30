@@ -4,14 +4,17 @@ import { useAIChatStore } from "../store/useAIChatStore";
 import { DEFAULT_SESSION_ID } from "../store/aiChatSlice";
 import { MessageBubble } from "./MessageBubble";
 import { AIDiffReviewPanel } from "./AIDiffReviewPanel";
-import { acceptAiDiff, rejectAiDiff, sendAiChatStream, getSessions, createSession } from "../api/ai.api";
+import { acceptAiDiff, rejectAiDiff, sendAiChatStream, getSessions, createSession, getAiChatConfig } from "../api/ai.api";
 import { AIChatSessionSelector } from "./AIChatSessionSelector";
+import { PROVIDER_LABELS, AI_PROVIDERS, type AiModelOption } from "../models";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import * as s from "./FloatingAIChat.css";
 
 interface FloatingAIChatProps {
   diagramId: string;
 }
+
+const MODEL_STORAGE_KEY = "erdify.ai.model";
 
 export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
   const {
@@ -26,10 +29,12 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     startStreamingMessage, appendStreamingDelta, finalizeStreamingMessage,
   } = useAIChatStore();
   const [input, setInput] = useState("");
+  const [models, setModels] = useState<AiModelOption[]>([]);
+  const [selectedModel, setSelectedModel] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const prevDiagramIdRef = useRef<string | null>(null);
 
-  // diagramId 변경 감지 — 요구사항 명시로 허용된 useEffect
+  // diagramId 변경 감지 — 세션 목록 + 사용 가능 모델을 불러온다
   useEffect(() => {
     if (prevDiagramIdRef.current === diagramId) return;
     prevDiagramIdRef.current = diagramId;
@@ -38,7 +43,20 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     getSessions(diagramId)
       .then((fetchedSessions) => setSessions(fetchedSessions))
       .catch(() => {});
+    getAiChatConfig(diagramId)
+      .then((config) => {
+        setModels(config.models);
+        const saved = localStorage.getItem(MODEL_STORAGE_KEY) ?? "";
+        const valid = config.models.some((m) => m.value === saved);
+        setSelectedModel(valid ? saved : (config.models[0]?.value ?? ""));
+      })
+      .catch(() => {});
   }, [diagramId, setCurrentDiagramId, setSessions]);
+
+  const handleModelChange = (value: string) => {
+    setSelectedModel(value);
+    localStorage.setItem(MODEL_STORAGE_KEY, value);
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -87,7 +105,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     const { onText, onDone, onError } = buildStreamingCallbacks(sessionId, tempId);
 
     try {
-      await sendAiChatStream(diagramId, message, sessionId, onText, onDone, onError);
+      await sendAiChatStream(diagramId, message, sessionId, selectedModel, onText, onDone, onError);
     } catch {
       finalizeStreamingMessage(sessionId, tempId, {
         messageId: randomUUID(),
@@ -181,7 +199,25 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
               <div className={s.chatHeaderIcon}>✦</div>
               <div>
                 <div className={s.chatHeaderTitle}>ERDify AI</div>
-                <div className={s.chatHeaderSub}>Claude · GPT-4o</div>
+                {models.length > 0 ? (
+                  <select
+                    className={s.modelSelect}
+                    value={selectedModel}
+                    onChange={(e) => handleModelChange(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    title="모델 선택"
+                  >
+                    {AI_PROVIDERS.filter((p) => models.some((m) => m.provider === p)).map((p) => (
+                      <optgroup key={p} label={PROVIDER_LABELS[p]}>
+                        {models.filter((m) => m.provider === p).map((m) => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                ) : (
+                  <div className={s.chatHeaderSub}>모델 미설정</div>
+                )}
               </div>
             </div>
             <button type="button" className={s.chatCloseBtn} onClick={closeChat}>×</button>
