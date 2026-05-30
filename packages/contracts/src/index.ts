@@ -34,6 +34,7 @@ export type { ProjectResponse } from "./projects/project.types";
 export type {
   DiffChange,
   AiChatResponse,
+  AiStreamEvent,
   ColumnSuggestion,
   OrgAiSettings,
 } from "./ai/ai.types";

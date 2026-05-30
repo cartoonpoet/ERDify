@@ -18,6 +18,13 @@ export interface AiChatResponse {
   pendingDocument: DiagramDocument | null;
 }
 
+export type AiStreamEvent =
+  | { type: "step"; text: string }
+  | { type: "tool_call"; name: string; label: string }
+  | { type: "tool_result"; change: DiffChange }
+  | { type: "done"; messageId: string; content: string; diff: DiffChange[] | null; pendingDocument: DiagramDocument | null }
+  | { type: "error"; message: string };
+
 export interface ColumnSuggestion {
   name: string;
   type: string;
