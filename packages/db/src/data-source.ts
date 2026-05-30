@@ -41,6 +41,7 @@ import { CreateAnnouncementsTable1746000000022 } from "./migrations/174600000002
 import { AddContextToErrorReports1746000000023 } from "./migrations/1746000000023-AddContextToErrorReports";
 import { CreateOauthAccountsTable1746000000024 } from "./migrations/1746000000024-CreateOauthAccountsTable";
 import { AddSessionIdToAiConversations1746000000025 } from "./migrations/1746000000025-AddSessionIdToAiConversations";
+import { MultiProviderAiKeys1746000000026 } from "./migrations/1746000000026-MultiProviderAiKeys";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -75,5 +76,6 @@ export const AppDataSource = new DataSource({
     AddContextToErrorReports1746000000023,
     CreateOauthAccountsTable1746000000024,
     AddSessionIdToAiConversations1746000000025,
+    MultiProviderAiKeys1746000000026,
   ]
 });
