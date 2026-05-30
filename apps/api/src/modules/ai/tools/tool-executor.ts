@@ -37,20 +37,29 @@ export class ToolExecutor {
 
     switch (toolName) {
       case "addTable": {
-        const entityId = randomUUID();
         const name = input["name"] as string;
+        // Idempotent: don't create a second table with the same name (invalid + prevents loop duplication).
+        const existingTable = doc.entities.find((e) => e.name.toLowerCase() === name.toLowerCase());
+        if (existingTable) {
+          return { doc, changes: [], resultText: `Table "${name}" already exists (id: ${existingTable.id}). No table created. Use its id with addColumn if you need to add columns.` };
+        }
+        const entityId = randomUUID();
         updatedDoc = domain.addEntity(doc, { id: entityId, name });
         changes.push({ type: "addTable", tableId: entityId, tableName: name });
 
         const columns = input["columns"] as Array<{ name: string; type: string; nullable?: boolean; primaryKey?: boolean; unique?: boolean; comment?: string }> | undefined;
         if (columns) {
-          for (let i = 0; i < columns.length; i++) {
-            const col = columns[i]!;
+          const seen = new Set<string>();
+          let ordinal = 0;
+          for (const col of columns) {
+            const key = col.name.toLowerCase();
+            if (seen.has(key)) continue; // skip duplicate column names within the same addTable
+            seen.add(key);
             const colId = randomUUID();
             const column: DiagramColumn = {
               id: colId, name: col.name, type: col.type,
               nullable: col.nullable ?? true, primaryKey: col.primaryKey ?? false,
-              unique: col.unique ?? false, defaultValue: null, comment: col.comment ?? null, ordinal: i,
+              unique: col.unique ?? false, defaultValue: null, comment: col.comment ?? null, ordinal: ordinal++,
             };
             updatedDoc = domain.addColumn(updatedDoc, entityId, column);
             changes.push({ type: "addColumn", tableId: entityId, tableName: name, columnId: colId, columnName: col.name, columnType: col.type, ...(col.comment ? { comment: col.comment } : {}) });
@@ -79,6 +88,12 @@ export class ToolExecutor {
         const tableId = input["tableId"] as string;
         const entity = doc.entities.find((e) => e.id === tableId);
         if (!entity) break;
+        const colName = input["name"] as string;
+        // Idempotent: a column with this name already exists → no-op with clear feedback (prevents loop duplication).
+        const dup = entity.columns.find((c) => c.name.toLowerCase() === colName.toLowerCase());
+        if (dup) {
+          return { doc, changes: [], resultText: `Column "${colName}" already exists on ${entity.name} (id: ${dup.id}). No column added.` };
+        }
         const colId = randomUUID();
         const column: DiagramColumn = {
           id: colId,

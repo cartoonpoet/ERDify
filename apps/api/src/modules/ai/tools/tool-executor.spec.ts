@@ -59,4 +59,30 @@ describe("ToolExecutor", () => {
     expect(res.changes).toHaveLength(0);
     expect(res.resultText).toContain("No change applied");
   });
+
+  it("addColumn은 멱등 — 같은 이름 컬럼은 중복 추가하지 않는다", async () => {
+    const first = await executor.execute("addColumn", { tableId: "e1", name: "email", type: "varchar" }, baseDoc);
+    expect(first.changes).toHaveLength(1);
+    const second = await executor.execute("addColumn", { tableId: "e1", name: "email", type: "varchar" }, first.doc);
+    expect(second.changes).toHaveLength(0);
+    expect(second.resultText).toContain("already exists");
+    expect(second.doc.entities[0]!.columns.filter((c) => c.name === "email")).toHaveLength(1);
+  });
+
+  it("addTable은 멱등 — 같은 이름 테이블은 중복 생성하지 않는다", async () => {
+    const res = await executor.execute("addTable", { name: "users" }, baseDoc);
+    expect(res.changes).toHaveLength(0);
+    expect(res.resultText).toContain("already exists");
+    expect(res.doc.entities).toHaveLength(1);
+  });
+
+  it("addTable 컬럼 배열 내 중복 이름은 한 번만 추가한다", async () => {
+    const res = await executor.execute(
+      "addTable",
+      { name: "orders", columns: [{ name: "id", type: "uuid" }, { name: "amount", type: "integer" }, { name: "amount", type: "integer" }] },
+      baseDoc,
+    );
+    const orders = res.doc.entities.find((e) => e.name === "orders")!;
+    expect(orders.columns.filter((c) => c.name === "amount")).toHaveLength(1);
+  });
 });
