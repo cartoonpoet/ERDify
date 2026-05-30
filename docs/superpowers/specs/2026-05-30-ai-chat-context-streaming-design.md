@@ -130,11 +130,9 @@ loop (max 8 iterations):
 `ai-history.service.ts`에 최근 턴을 **tool_use/tool_result 블록까지 재구성**하는 로직 추가.
 
 - `ai_conversations` 테이블은 이미 `tool_calls`, `diff` jsonb 컬럼 보유 → 추가 마이그레이션 불필요.
-- 최근 N턴(기존 HISTORY_LIMIT=6 유지)을 provider별 메시지 형식으로 복원:
-  - user 메시지 → user role
-  - assistant 메시지 → text + tool_use 블록(저장된 tool_calls 기반)
-  - tool_result는 diff/실행결과를 요약해 재구성 (또는 직전 턴만 정밀 복원, 그 이전은 텍스트 요약)
-- provider 인터페이스가 이 복원 형식을 Anthropic/OpenAI 각 포맷으로 변환.
+- **요청 내부 루프**: tool_use/tool_result를 정식 스레딩(모델이 직전 도구 결과를 정확히 봄). 에이전트 루프의 핵심.
+- **요청 간 히스토리(과거 메시지)**: dangling tool_use(짝 없는 tool_use 블록) API 에러를 피하기 위해 tool_use 블록을 재생하지 않고, assistant 메시지를 **텍스트 + 적용 요약**("[적용한 변경: orders, ...]")으로 복원. 별도 저장/마이그레이션 불필요하고 두 provider 모두 안전.
+- 최근 N턴(기존 HISTORY_LIMIT=6 유지)을 `ConvMessage[]`로 변환 → provider 인터페이스가 Anthropic/OpenAI 각 포맷으로 변환.
 
 ---
 
