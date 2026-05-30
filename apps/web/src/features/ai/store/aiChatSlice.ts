@@ -29,6 +29,8 @@ export interface AiChatSlice {
   sessions: AiSession[];
   sessionMessages: Record<string, AiMessage[]>;
   currentDiagramId: string | null;
+  streamingStatus: string | null;
+  setStreamingStatus: (label: string | null) => void;
   openChat: (initialMessage?: string) => void;
   closeChat: () => void;
   addUserMessage: (content: string, sessionId?: string) => void;
@@ -59,6 +61,9 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
   sessions: [],
   sessionMessages: {},
   currentDiagramId: null,
+  streamingStatus: null,
+
+  setStreamingStatus: (label) => set({ streamingStatus: label }),
 
   openChat: (initialMessage) =>
     set((state) => {
@@ -157,6 +162,7 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
       };
       const existing = state.sessionMessages[sessionId] ?? [];
       return {
+        streamingStatus: null,
         sessionMessages: { ...state.sessionMessages, [sessionId]: [...existing, streamingMessage] },
       };
     }),
@@ -178,6 +184,7 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
     set((state) => {
       const existing = state.sessionMessages[sessionId] ?? [];
       return {
+        streamingStatus: null,
         sessionMessages: {
           ...state.sessionMessages,
           [sessionId]: existing.map((m) =>

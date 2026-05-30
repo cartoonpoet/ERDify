@@ -25,6 +25,7 @@ const APPLY_NUDGE =
 /** SSE 이벤트 (프론트 sendAiChatStream과 호환되는 master 프로토콜). */
 export type StreamEvent =
   | { event: "text"; delta: string }
+  | { event: "status"; label: string } // 도구 진행 표시(메시지 본문에 누적되지 않는 일시적 상태)
   | { event: "done"; messageId: string; content: string; diff: DiffChange[] | null; pendingDocument: DiagramDocument | null }
   | { event: "error"; message: string };
 
@@ -115,7 +116,7 @@ export class AiChatService {
         for (const call of turn.toolCalls) {
           allToolCalls.push(call);
           if (READ_TOOL_NAMES.has(call.name)) usedReadTools = true;
-          emit({ event: "text", delta: `\n\n🔧 ${toolLabel(call)}\n` });
+          emit({ event: "status", label: toolLabel(call) });
           const res = await this.toolExecutor.execute(call.name, call.input, updatedDoc);
           updatedDoc = res.doc;
           for (const ch of res.changes) diffs.push(ch);

@@ -25,7 +25,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     acceptDiff, rejectDiff,
     currentSessionId, sessions, sessionMessages,
     setCurrentSession, setSessions, addSession,
-    setCurrentDiagramId,
+    setCurrentDiagramId, streamingStatus, setStreamingStatus,
     startStreamingMessage, appendStreamingDelta, finalizeStreamingMessage,
   } = useAIChatStore();
   const [input, setInput] = useState("");
@@ -105,7 +105,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     const { onText, onDone, onError } = buildStreamingCallbacks(sessionId, tempId);
 
     try {
-      await sendAiChatStream(diagramId, message, sessionId, selectedModel, onText, onDone, onError);
+      await sendAiChatStream(diagramId, message, sessionId, selectedModel, onText, onDone, onError, setStreamingStatus);
     } catch {
       finalizeStreamingMessage(sessionId, tempId, {
         messageId: randomUUID(),
@@ -241,6 +241,11 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
             {currentMessages.map((msg) => (
               <MessageBubble key={msg.id} message={msg} onOpenReview={openReview} />
             ))}
+            {streamingStatus && (
+              <div className={s.chatThinking}>
+                <span>🔧</span> {streamingStatus}
+              </div>
+            )}
             {isLoading && (
               <div className={s.chatThinking}>
                 <div className={s.thinkingDots}>

@@ -49,6 +49,8 @@ export class AiController {
         (ev) => {
           if (ev.event === "text") {
             res.write("event: text\ndata: " + JSON.stringify({ delta: ev.delta }) + "\n\n");
+          } else if (ev.event === "status") {
+            res.write("event: status\ndata: " + JSON.stringify({ label: ev.label }) + "\n\n");
           } else if (ev.event === "done") {
             res.write("event: done\ndata: " + JSON.stringify({ messageId: ev.messageId, content: ev.content, diff: ev.diff, pendingDocument: ev.pendingDocument }) + "\n\n");
           } else {

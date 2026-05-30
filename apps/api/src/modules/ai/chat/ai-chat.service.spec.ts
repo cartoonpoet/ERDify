@@ -77,8 +77,8 @@ describe("AiChatService.runChat", () => {
     const events: StreamEvent[] = [];
     await svc.runChat({ userId: "u1", diagramId: "d1", message: "users 테이블", sessionId: "s1" }, (e) => events.push(e));
 
-    // 도구 실행은 text 이벤트(🔧 진행 표시)로 노출
-    expect(events.some((e) => e.event === "text" && e.delta.includes("🔧"))).toBe(true);
+    // 도구 실행은 status 이벤트(메시지 본문에 누적되지 않는 진행 표시)로 노출
+    expect(events.some((e) => e.event === "status")).toBe(true);
     const done = events.find((e) => e.event === "done") as Extract<StreamEvent, { event: "done" }>;
     expect(done.diff).toHaveLength(1);
     expect(done.pendingDocument?.entities).toHaveLength(1);
