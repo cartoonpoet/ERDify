@@ -5,6 +5,24 @@ import { getOrgAiSettings, setOrgProviderKey, removeOrgProviderKey, setEnabledMo
 import { AI_PROVIDERS, PROVIDER_LABELS, modelsForProvider, type AiProviderId } from "@/features/ai/models";
 import * as css from "./ai-settings-panel.css";
 
+/** "Claude Sonnet 4.6 (권장)" → { name: "Claude Sonnet 4.6", badge: "권장" } */
+const parseModelLabel = (label: string) => {
+  const m = label.match(/^(.*?)\s*\((.+)\)$/);
+  return m ? { name: m[1], badge: m[2] } : { name: label, badge: null };
+};
+
+const CheckIcon = () => (
+  <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+    <path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const PROVIDER_ICON_LABEL: Record<string, string> = {
+  anthropic: "A",
+  openai: "O",
+  gemini: "G",
+};
+
 interface AISettingsPanelProps {
   orgId: string;
   isOwner: boolean;
@@ -110,29 +128,64 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
         {registered.length > 0 && (
           <div className={css.cardBody}>
             <div className={css.statusLabel}>사용 가능 모델</div>
-            <p className={css.descText}>선택한 모델만 채팅에서 사용할 수 있어요. 아무것도 선택하지 않으면 등록된 provider의 모든 모델이 허용됩니다.</p>
-            {registered.map((provider) => (
-              <div key={provider} style={{ marginTop: 8 }}>
-                <div className={css.statusLabel}>{PROVIDER_LABELS[provider]}</div>
-                {modelsForProvider(provider).map((m) => (
-                  <label key={m.value} className={css.providerLabel}>
-                    <input
-                      type="checkbox"
-                      checked={enabledModels.includes(m.value)}
-                      onChange={() => toggleModel(m.value)}
-                      disabled={!isOwner}
-                    />
-                    {m.label}
-                  </label>
-                ))}
+            <p className={css.descText}>
+              선택한 모델만 채팅에서 사용할 수 있어요. 아무것도 선택하지 않으면 등록된 provider의 모든 모델이 허용됩니다.
+            </p>
+            {registered.map((provider, i) => (
+              <div key={provider}>
+                {i > 0 && <hr className={css.providerSectionDivider} />}
+                <div className={css.providerHeader}>
+                  <span className={css.providerIcon[provider]}>
+                    {PROVIDER_ICON_LABEL[provider]}
+                  </span>
+                  <span className={css.statusLabel}>{PROVIDER_LABELS[provider]}</span>
+                </div>
+                <div className={css.modelGrid}>
+                  {modelsForProvider(provider).map((m) => {
+                    const { name, badge } = parseModelLabel(m.label);
+                    const isSelected = enabledModels.includes(m.value);
+                    const cardClass = [
+                      css.modelCard,
+                      isSelected ? css.modelCardSelected : "",
+                      !isOwner ? css.modelCardDisabled : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
+                    return (
+                      <div
+                        key={m.value}
+                        className={cardClass}
+                        role="button"
+                        tabIndex={isOwner ? 0 : -1}
+                        onClick={() => isOwner && toggleModel(m.value)}
+                        onKeyDown={(e) => e.key === "Enter" && isOwner && toggleModel(m.value)}
+                      >
+                        {isSelected && (
+                          <div className={css.modelCardCheck}>
+                            <CheckIcon />
+                          </div>
+                        )}
+                        <div className={css.modelCardName}>{name}</div>
+                        {badge && <div className={css.modelCardSub}>{badge}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ))}
             {isOwner && enabled !== null && (
               <div className={css.actionRow}>
-                <Button variant="primary" size="sm" onClick={() => saveModels.mutate(enabled)} disabled={saveModels.isPending}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => saveModels.mutate(enabled)}
+                  disabled={saveModels.isPending}
+                >
                   {saveModels.isPending ? "저장 중..." : "모델 설정 저장"}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setEnabled(null)}>취소</Button>
+                <Button variant="ghost" size="sm" onClick={() => setEnabled(null)}>
+                  취소
+                </Button>
               </div>
             )}
           </div>

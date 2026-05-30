@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { style, styleVariants } from "@vanilla-extract/css";
 import { vars } from "@/style/tokens.css";
 
 export const section = style({
@@ -152,4 +152,100 @@ export const errorText = style({
   padding: `0 ${vars.space["5"]} ${vars.space["3"]}`,
   fontSize: vars.font.size.sm,
   color: vars.color.error,
+});
+
+export const providerHeader = style({
+  display: "flex",
+  alignItems: "center",
+  gap: vars.space["2"],
+  marginBottom: vars.space["2"],
+});
+
+const providerIconBase = style({
+  width: 18,
+  height: 18,
+  borderRadius: vars.radius.sm,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: vars.font.size.xs,
+  fontWeight: vars.font.weight.bold,
+  color: "#fff",
+  flexShrink: 0,
+});
+
+export const providerIcon = styleVariants({
+  anthropic: [providerIconBase, { background: "#D97706" }],
+  openai: [providerIconBase, { background: "#10A37F" }],
+  gemini: [providerIconBase, { background: "#4285F4" }],
+});
+
+export const modelGrid = style({
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: vars.space["2"],
+});
+
+export const modelCard = style({
+  position: "relative",
+  border: `1.5px solid ${vars.color.border}`,
+  borderRadius: vars.radius.md,
+  padding: `${vars.space["3"]} ${vars.space["3"]}`,
+  cursor: "pointer",
+  userSelect: "none",
+  background: vars.color.surface,
+  transition: "border-color 0.12s, background 0.12s",
+  selectors: {
+    "&:hover": {
+      borderColor: vars.color.primary,
+      background: vars.color.selectedBg,
+    },
+  },
+});
+
+export const modelCardSelected = style({
+  borderColor: vars.color.primary,
+  background: vars.color.selectedBg,
+});
+
+export const modelCardDisabled = style({
+  pointerEvents: "none",
+  opacity: 0.5,
+});
+
+export const modelCardName = style({
+  fontSize: vars.font.size.sm,
+  fontWeight: vars.font.weight.semibold,
+  color: vars.color.textPrimary,
+  paddingRight: vars.space["4"],
+  marginBottom: 2,
+  selectors: {
+    [`${modelCardSelected} &`]: {
+      color: vars.color.primary,
+    },
+  },
+});
+
+export const modelCardSub = style({
+  fontSize: vars.font.size.xs,
+  color: vars.color.textSecondary,
+});
+
+export const modelCardCheck = style({
+  position: "absolute",
+  top: vars.space["2"],
+  right: vars.space["2"],
+  width: 16,
+  height: 16,
+  borderRadius: vars.radius.pill,
+  background: vars.color.primary,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+export const providerSectionDivider = style({
+  border: "none",
+  borderTop: `1px solid ${vars.color.surfaceSecondary}`,
+  margin: `${vars.space["3"]} 0`,
 });
