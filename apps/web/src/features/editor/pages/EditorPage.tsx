@@ -34,7 +34,7 @@ export const EditorPage = () => {
   const [showShare, setShowShare] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
-  const { isDirty, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen, undo, canEdit } = useEditorStore();
+  const { isDirty, isCollaborating, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen, undo, canEdit } = useEditorStore();
   const isAIChatOpen = useAIChatStore((s) => s.isOpen);
 
   const { data, isLoading } = useQuery({
@@ -109,7 +109,7 @@ export const EditorPage = () => {
           <span className={css.breadcrumbSep}>›</span>
           <span className={css.breadcrumbCurrent}>{data?.name}</span>
         </div>
-        <span className={css.statusText}>{isDirty ? "수정됨" : "저장됨"}</span>
+        <span className={css.statusText}>{isCollaborating ? "동기화됨" : isDirty ? "수정됨" : "저장됨"}</span>
         <div className={css.spacer} />
         <button
           onClick={() => setShowImport(true)}
