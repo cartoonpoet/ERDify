@@ -65,4 +65,23 @@ describe("buildSystemPrompt", () => {
     expect(p).toContain("PRESERVE ORIGINAL NAMES");
     expect(p).toMatch(/keep each existing column's[\s\S]*EXACTLY as-is/);
   });
+
+  it("VERIFIED FACTS 블록을 항상 포함하고 무할루시네이션을 지시한다", () => {
+    const p = buildSystemPrompt(doc, meta);
+    expect(p).toContain("VERIFIED FACTS");
+    expect(p).toContain("hallucinate");
+  });
+
+  it("facts가 주어지면 detail을 그대로 렌더링한다", () => {
+    const p = buildSystemPrompt(doc, meta, [
+      { kind: "missing_pk", table: "orders", detail: '테이블 "orders"에 기본키(PK)가 없습니다.' },
+    ]);
+    expect(p).toContain("[missing_pk]");
+    expect(p).toContain('테이블 "orders"에 기본키(PK)가 없습니다.');
+  });
+
+  it("facts가 비면 이슈 없음을 명시한다", () => {
+    const p = buildSystemPrompt(doc, meta, []);
+    expect(p).toContain("구조적 이슈 없음");
+  });
 });

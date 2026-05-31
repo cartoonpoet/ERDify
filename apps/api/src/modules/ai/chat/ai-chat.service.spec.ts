@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import * as domain from "@erdify/domain";
 import { AiChatService, type StreamEvent } from "./ai-chat.service";
-import type { AiProvider, ProviderTurn } from "../providers/provider.types";
+import type { AiProvider, ProviderTurn, ConvMessage } from "../providers/provider.types";
 import { ToolExecutor } from "../tools/tool-executor";
 import { DomainLoaderService } from "../../../common/services/domain-loader.service";
 import type { DiagramDocument } from "@erdify/domain";
@@ -54,6 +54,7 @@ function makeService(turns: ProviderTurn[]): { svc: Svc } {
     provider as never,
     userRepo as never,
     orgRepo as never,
+    loader,
   );
   return { svc };
 }
@@ -110,7 +111,7 @@ describe("AiChatService.runChat", () => {
     const usage = { log: vi.fn(async () => undefined) };
     const userRepo = { findOne: vi.fn(async () => ({ name: "u", email: "e" })) };
     const orgRepo = { findOne: vi.fn(async () => ({ name: "o" })) };
-    const svc = new AiChatService(aiService as never, history as never, new ToolExecutor(loader), usage as never, provider, provider, provider, userRepo as never, orgRepo as never);
+    const svc = new AiChatService(aiService as never, history as never, new ToolExecutor(loader), usage as never, provider, provider, provider, userRepo as never, orgRepo as never, loader);
 
     const events: StreamEvent[] = [];
     await svc.runChat({ userId: "u1", diagramId: "d1", message: "3NF가 뭐야?", sessionId: "s1" }, (e) => events.push(e));
@@ -118,5 +119,54 @@ describe("AiChatService.runChat", () => {
     expect(streamTurn).toHaveBeenCalledTimes(1); // nudge 없이 1회로 종료
     const done = events.find((e) => e.event === "done") as Extract<StreamEvent, { event: "done" }>;
     expect(done.diff).toBeNull();
+  });
+
+  it("적용 전 검증에서 새 오류가 나오면 모델에게 수정을 요구하는 메시지를 다시 보낸다", async () => {
+    // "bad" 이름의 엔티티가 있으면 검증 실패하도록 domain.validateDiagram을 오버라이드
+    const failingDomain = {
+      ...domain,
+      validateDiagram: (d: DiagramDocument) =>
+        d.entities.some((e) => e.name === "bad")
+          ? { valid: false, errors: ["INVALID_BAD_TABLE"] }
+          : { valid: true, errors: [] },
+    };
+    const failingLoader = { load: async () => failingDomain } as unknown as DomainLoaderService;
+
+    let i = 0;
+    const turns: ProviderTurn[] = [
+      { text: "", toolCalls: [{ id: "t1", name: "addTable", input: { name: "bad" } }] }, // diff 생성
+      { text: "끝", toolCalls: [] }, // 검증 실패 → 수정 요구 (시도 1)
+      { text: "끝", toolCalls: [] }, // 검증 여전히 실패 → 수정 요구 (시도 2)
+      { text: "끝", toolCalls: [] }, // MAX_VALIDATION_RETRIES 도달 → 종료
+    ];
+    const captured: ConvMessage[][] = [];
+    const provider: AiProvider = {
+      streamTurn: vi.fn(async (a) => {
+        captured.push(JSON.parse(JSON.stringify(a.messages)));
+        a.onText("…");
+        return turns[i++]!;
+      }),
+    };
+    const aiService = {
+      getDiagramAndOrgId: vi.fn(async () => ({ doc, orgId: "o1", diagramName: "shop" })),
+      resolveChatCredentials: vi.fn(async () => ({ apiKey: "k", provider: "anthropic", model: "m" })),
+    };
+    const history = { findRecentTurns: vi.fn(async () => []), saveUserMessage: vi.fn(async () => undefined), saveAssistantMessage: vi.fn(async () => ({ id: "m" })) };
+    const usage = { log: vi.fn(async () => undefined) };
+    const userRepo = { findOne: vi.fn(async () => ({ name: "u", email: "e" })) };
+    const orgRepo = { findOne: vi.fn(async () => ({ name: "o" })) };
+    const svc = new AiChatService(
+      aiService as never, history as never, new ToolExecutor(failingLoader), usage as never,
+      provider as never, provider as never, provider as never, userRepo as never, orgRepo as never, failingLoader,
+    );
+
+    const events: StreamEvent[] = [];
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "테이블 추가", sessionId: "s1" }, (e) => events.push(e));
+
+    // 검증 실패로 최소 2번의 추가 수정 요구가 발생 (총 4회 turn)
+    expect((provider.streamTurn as ReturnType<typeof vi.fn>).mock.calls.length).toBe(4);
+    // 수정 요구 메시지에 검증 오류 문자열이 포함된다
+    const allUserContents = captured.flat().filter((m) => m.role === "user").map((m) => (m as { content: string }).content);
+    expect(allUserContents.some((c) => c.includes("INVALID_BAD_TABLE"))).toBe(true);
   });
 });
