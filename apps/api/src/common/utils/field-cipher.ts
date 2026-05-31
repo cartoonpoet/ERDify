@@ -1,10 +1,14 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
 const ALGORITHM = "aes-256-cbc";
-const KEY_HEX = process.env["FIELD_ENCRYPTION_KEY"] ?? "";
 
 function getKey(): Buffer {
-  if (KEY_HEX.length === 64) return Buffer.from(KEY_HEX, "hex");
+  // Read at call time, not module-load time: when the key comes from a .env file
+  // loaded by ConfigModule at bootstrap, process.env is not yet populated when this
+  // module is first imported. Capturing it in a module-level const would fall back to
+  // the dev key and fail to decrypt values written with the real key.
+  const keyHex = process.env["FIELD_ENCRYPTION_KEY"] ?? "";
+  if (keyHex.length === 64) return Buffer.from(keyHex, "hex");
   // fallback for dev — deterministic but not secure
   return Buffer.alloc(32, "dev-key-not-for-production");
 }
