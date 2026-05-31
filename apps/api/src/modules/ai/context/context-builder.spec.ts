@@ -84,4 +84,53 @@ describe("buildSystemPrompt", () => {
     const p = buildSystemPrompt(doc, meta, []);
     expect(p).toContain("구조적 이슈 없음");
   });
+
+  it("의도 블록과 근거기반 규칙을 포함한다", () => {
+    const p = buildSystemPrompt(doc, meta, [], { intent: "edit" });
+    expect(p).toContain("intent: EDIT");
+    expect(p).toContain("Grounded answer rules");
+  });
+});
+
+describe("buildSystemPrompt — focused context (large diagram)", () => {
+  function bigDoc(): DiagramDocument {
+    const entities = Array.from({ length: 60 }, (_, i) => ({
+      id: `e${i}`,
+      name: `table_${i}`,
+      schema: null,
+      logicalName: null,
+      comment: null,
+      color: null,
+      columns: Array.from({ length: 20 }, (_, j) => ({
+        id: `e${i}_c${j}`,
+        name: `t${i}_field_${j}`,
+        type: "varchar",
+        nullable: true,
+        primaryKey: false,
+        unique: false,
+        defaultValue: null,
+        comment: "어떤 설명",
+        ordinal: j,
+      })),
+    }));
+    return { ...doc, entities, relationships: [], indexes: [] };
+  }
+
+  it("초과 크기일 때 focus 테이블만 완전히 포함하고 나머지는 요약한다", () => {
+    const big = bigDoc();
+    const p = buildSystemPrompt(big, meta, [], { focusTableIds: ["e3"] });
+    expect(p).toContain("focusedTables");
+    expect(p).toContain("otherTables");
+    // focus 테이블의 컬럼은 전체 포함
+    expect(p).toContain("t3_field_0");
+    // 비-focus 테이블의 컬럼은 포함되지 않음(요약만)
+    expect(p).not.toContain("t7_field_0");
+  });
+
+  it("초과 크기인데 focus가 없으면 전체 요약으로 폴백한다", () => {
+    const big = bigDoc();
+    const p = buildSystemPrompt(big, meta, []);
+    expect(p).toContain("tables summarized");
+    expect(p).not.toContain("t3_field_0");
+  });
 });

@@ -13,6 +13,7 @@ import { AnthropicProvider } from "../providers/anthropic.provider";
 import { OpenAiProvider } from "../providers/openai.provider";
 import { GeminiProvider } from "../providers/gemini.provider";
 import { buildSystemPrompt } from "../context/context-builder";
+import { classifyIntent } from "../context/intent";
 import { ERD_TOOLS } from "../erd-tools";
 import { READ_TOOLS } from "../tools/read-tools";
 import type { ConvMessage, AiProvider, NormalizedToolCall } from "../providers/provider.types";
@@ -74,6 +75,10 @@ export class AiChatService {
       const facts = domain.analyzeSchema(doc);
       // ② 적용 전 검증의 기준선: 원본 문서에 이미 존재하던 오류는 AI 책임이 아니므로 제외한다
       const baseErrors = new Set([...domain.validateDiagram(doc).errors, ...extraIntegrityErrors(doc)]);
+      // ④ 스키마-RAG: 큰 다이어그램에서 질의 관련 테이블을 완전한 형태로 포함하기 위한 선택
+      const focusTableIds = domain.selectRelevantTables(doc, message);
+      // ⑤ 의도 분류: 의도별 가이드 + 근거기반 규칙을 프롬프트에 반영
+      const intent = classifyIntent(message);
       const system = buildSystemPrompt(
         doc,
         {
@@ -85,6 +90,7 @@ export class AiChatService {
           today,
         },
         facts,
+        { focusTableIds, intent },
       );
 
       const history = await this.historyService.findRecentTurns(userId, diagramId, sessionId);
