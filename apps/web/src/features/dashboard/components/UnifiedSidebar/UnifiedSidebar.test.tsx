@@ -234,4 +234,29 @@ describe("UnifiedSidebar", () => {
     fireEvent.click((await screen.findByText("Backend API")).closest("button")!);
     expect(mockNavigate).toHaveBeenCalledWith("/org-1");
   });
+
+  describe("API 로드 실패 케이스", () => {
+    it("organizations 로드 실패 시 빈 조직 목록으로 렌더링된다", async () => {
+      vi.mocked(listMyOrganizations).mockRejectedValue(new Error("Network error"));
+      wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/" });
+      expect(await screen.findByText("조직을 선택하세요")).toBeInTheDocument();
+    });
+
+    it("projects 로드 실패 시 조직은 표시되고 프로젝트 목록은 비어 있다", async () => {
+      vi.mocked(listProjects).mockRejectedValue(new Error("Network error"));
+      wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+      expect(await screen.findByText("Acme Corp")).toBeInTheDocument();
+      expect(screen.queryByText("Backend API")).not.toBeInTheDocument();
+    });
+
+    it("diagrams 로드 실패 시 프로젝트는 표시되고 ERD 목록은 비어 있다", async () => {
+      vi.mocked(listDiagrams).mockRejectedValue(new Error("Network error"));
+      wrap(<UnifiedSidebar {...defaultProps} />, {
+        initialPath: "/org-1/p1",
+        routePattern: "/:orgId/:projectId",
+      });
+      expect(await screen.findByText("Backend API")).toBeInTheDocument();
+      expect(screen.queryByText("사용자 스키마")).not.toBeInTheDocument();
+    });
+  });
 });

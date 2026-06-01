@@ -324,6 +324,37 @@ describe("AIDiffReviewPanel", () => {
     expect(screen.getByText("3개 변경사항")).toBeInTheDocument();
   });
 
+  // ── 경계값 케이스 ────────────────────────────────────────────────────────────
+
+  it("diff가 빈 배열이면 0개 변경사항을 표시하고 수락/거절 버튼이 렌더링된다", () => {
+    render(
+      <AIDiffReviewPanel
+        diff={[]}
+        pendingDocument={makeEmptyDoc()}
+        currentDocument={null}
+        onAccept={onAccept}
+        onReject={onReject}
+      />
+    );
+    expect(screen.getByText("0개 변경사항")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "수락" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "거절" })).toBeInTheDocument();
+  });
+
+  it("diff가 빈 배열이면 테이블/관계 섹션이 렌더링되지 않는다", () => {
+    render(
+      <AIDiffReviewPanel
+        diff={[]}
+        pendingDocument={makeEmptyDoc()}
+        currentDocument={null}
+        onAccept={onAccept}
+        onReject={onReject}
+      />
+    );
+    expect(screen.queryByText("테이블")).not.toBeInTheDocument();
+    expect(screen.queryByText("관계")).not.toBeInTheDocument();
+  });
+
   it("PK 컬럼에 PK 배지를 표시한다", () => {
     const pendingDoc = makeDoc([
       {

@@ -251,6 +251,31 @@ it("폐기 button shows confirm and calls revokeApiKey on 확인", async () => {
   });
 });
 
+it("listApiKeys 실패 시 빈 키 목록 메시지를 표시한다", async () => {
+  vi.mocked(apiKeysApi.listApiKeys).mockRejectedValue(new Error("Network error"));
+  wrap();
+  await waitFor(() => {
+    expect(screen.getByText("API 키가 없습니다. 새 키를 생성해주세요.")).toBeInTheDocument();
+  });
+});
+
+it("createApiKey 실패 시 에러 메시지를 표시한다", async () => {
+  vi.mocked(apiKeysApi.listApiKeys).mockResolvedValue([]);
+  vi.mocked(apiKeysApi.createApiKey).mockRejectedValue(new Error("Server error"));
+  wrap();
+
+  await waitFor(() => {
+    expect(screen.getByText("API 키가 없습니다. 새 키를 생성해주세요.")).toBeInTheDocument();
+  });
+
+  fireEvent.click(screen.getByText("+ 새 키 생성"));
+  fireEvent.click(screen.getByText("키 생성"));
+
+  await waitFor(() => {
+    expect(screen.getByText("키 생성에 실패했습니다.")).toBeInTheDocument();
+  });
+});
+
 it("재생성 button shows confirm and calls regenerateApiKey on 확인", async () => {
   const regenerated: ApiKeyCreated = {
     apiKey: "erd_new_key",

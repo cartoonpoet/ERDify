@@ -58,6 +58,42 @@ describe("generateDdl — COMMENT (mysql)", () => {
   });
 });
 
+describe("generateDdl — 따옴표 이스케이프", () => {
+  it("postgresql 테이블 comment의 단따옴표를 이스케이프한다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = updateEntityComment(doc, "e1", "it's a table");
+    doc = addColumn(doc, "e1", col({ id: "c1" }));
+    const ddl = generateDdl(doc);
+    expect(ddl).toContain(`COMMENT ON TABLE "users" IS 'it''s a table'`);
+  });
+
+  it("postgresql 컬럼 comment의 단따옴표를 이스케이프한다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id", comment: "user's ID" }));
+    const ddl = generateDdl(doc);
+    expect(ddl).toContain(`COMMENT ON COLUMN "users"."id" IS 'user''s ID'`);
+  });
+
+  it("mysql 인라인 컬럼 comment의 단따옴표를 이스케이프한다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id", comment: "user's ID", primaryKey: false }));
+    const ddl = generateDdl(doc);
+    expect(ddl).toContain(`COMMENT 'user''s ID'`);
+  });
+
+  it("mysql 테이블 comment의 단따옴표를 이스케이프한다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = updateEntityComment(doc, "e1", "user's table");
+    doc = addColumn(doc, "e1", col({ id: "c1" }));
+    const ddl = generateDdl(doc);
+    expect(ddl).toContain(`COMMENT='user''s table'`);
+  });
+});
+
 describe("generateDdl — CREATE INDEX", () => {
   it("outputs CREATE INDEX for non-unique index", () => {
     let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });

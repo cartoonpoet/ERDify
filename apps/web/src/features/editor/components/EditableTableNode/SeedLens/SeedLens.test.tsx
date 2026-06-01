@@ -83,6 +83,25 @@ describe("SeedLens 컴포넌트", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("빈 문자열로 셀을 지우고 닫으면 onCommit이 변경된 데이터로 호출된다", () => {
+    const onCommit = vi.fn();
+    render(<SeedLens entity={makeComponentEntity([{ c1: "42", c2: "Alice" }])} onCommit={onCommit} />);
+    fireEvent.click(getTriggerBtn());
+    const cells = screen.getAllByPlaceholderText("NULL");
+    fireEvent.change(cells[0]!, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "완료" }));
+    expect(onCommit).toHaveBeenCalledWith([expect.objectContaining({ c1: "" })]);
+  });
+
+  it("대량 행(100개)이 있어도 렌더링이 깨지지 않는다", () => {
+    const manyRows = Array.from({ length: 100 }, (_, i) => ({ c1: String(i) }));
+    const onCommit = vi.fn();
+    render(<SeedLens entity={makeComponentEntity(manyRows)} onCommit={onCommit} />);
+    fireEvent.click(getTriggerBtn());
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("users")).toBeInTheDocument();
+  });
+
   it("행 추가 → 셀 입력 → 닫기 시 onCommit이 호출된다", () => {
     const onCommit = vi.fn();
     render(<SeedLens entity={makeComponentEntity()} onCommit={onCommit} />);
