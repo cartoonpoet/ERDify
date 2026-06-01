@@ -165,6 +165,16 @@ export const inviteBtn = style({
 export const fileDropdownWrap = style({
   position: "relative",
   flexShrink: 0,
+  selectors: {
+    "&::after": {
+      content: '""',
+      position: "absolute",
+      top: "100%",
+      left: 0,
+      right: 0,
+      height: "8px",
+    },
+  },
 });
 
 export const fileDropdownMenu = style({
