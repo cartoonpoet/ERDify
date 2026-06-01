@@ -8,7 +8,7 @@ import { getDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
 import { RelationshipPopover } from "../components/RelationshipPopover";
-import { ActivityDrawer } from "../components/ActivityDrawer";
+import { RightSidebar } from "../components/RightSidebar";
 import { InviteModal } from "../components/InviteModal";
 import { PresenceIndicator } from "../components/PresenceIndicator";
 import { ExportModal } from "../components/ExportModal";
@@ -17,8 +17,6 @@ import { FkSetupModal } from "../components/FkSetupModal";
 import { RelDeleteConfirmModal } from "../components/RelDeleteConfirmModal";
 import { SchemaFilterSidebar } from "../components/SchemaFilterSidebar";
 import { ImportIntoEditorModal } from "../components/ImportIntoEditorModal";
-import { FloatingAIChat } from "@/features/ai/components/FloatingAIChat";
-import { useAIChatStore } from "@/features/ai/store/useAIChatStore";
 import { useDiagramAutosave } from "@/features/editor/hooks/useDiagramAutosave";
 import { useVersionHistory } from "@/features/editor/hooks/useVersionHistory";
 import { useRealtimeCollaboration } from "@/features/editor/hooks/useRealtimeCollaboration";
@@ -28,14 +26,13 @@ import * as css from "./editor-page.css";
 export const EditorPage = () => {
   const { diagramId } = useParams<{ diagramId: string }>();
   const navigate = useNavigate();
-  const [showActivity, setShowActivity] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showFileMenu, setShowFileMenu] = useState(false);
 
-  const { isDirty, isCollaborating, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, setSearchOpen, undo, canEdit } = useEditorStore();
-  const isAIChatOpen = useAIChatStore((s) => s.isOpen);
+  const { isDirty, isCollaborating, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, openSearchTab, undo, canEdit } = useEditorStore();
 
   const { data, isLoading } = useQuery({
     queryKey: ["diagram", diagramId],
@@ -62,7 +59,7 @@ export const EditorPage = () => {
 
       if ((e.ctrlKey || e.metaKey) && e.key === "f") {
         e.preventDefault();
-        setSearchOpen(true);
+        openSearchTab();
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && canEditRef.current && !isEditingText) {
         e.preventDefault();
@@ -72,7 +69,7 @@ export const EditorPage = () => {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setSearchOpen, undo]);
+  }, [openSearchTab, undo]);
 
   useRealtimeCollaboration(diagramId ?? "");
   useDiagramAutosave(diagramId ?? "");
@@ -111,47 +108,52 @@ export const EditorPage = () => {
         </div>
         <span className={css.statusText}>{isCollaborating ? "동기화됨" : isDirty ? "수정됨" : "저장됨"}</span>
         <div className={css.spacer} />
-        <button
-          onClick={() => setShowImport(true)}
-          className={css.topbarBtn({ variant: "secondary" })}
-          title="DDL 가져오기"
-        >
-          가져오기
-        </button>
-        <button
-          onClick={() => setSearchOpen(true)}
-          className={css.topbarBtn({ variant: "secondary" })}
-          title="테이블 검색 (Ctrl+F)"
-          aria-label="테이블 검색"
-        >
-          🔍 검색
-        </button>
-        <PresenceIndicator />
-        <button
-          onClick={() => setShowShare(true)}
-          className={css.topbarBtn({ variant: "secondary" })}
-          style={{ display: "flex", alignItems: "center", gap: "4px" }}
-        >
-          <Share2 size={13} aria-hidden="true" /> 공유
-        </button>
-        <button
-          onClick={() => setShowExport(true)}
-          className={css.topbarBtn({ variant: "secondary" })}
-        >
-          내보내기
-        </button>
-        <button
-          onClick={() => setShowInvite(true)}
-          className={css.topbarBtn({ variant: "secondary" })}
-        >
-          + 멤버 초대
-        </button>
+
+        {/* ① 테이블 추가 */}
         <button
           onClick={handleAddTable}
-          className={css.topbarBtn({ variant: "dark" })}
+          className={css.topbarBtn({ variant: "ghost" })}
+          title="테이블 추가 (⌘T)"
         >
           + 테이블
         </button>
+
+        <div className={css.topbarDivider} />
+
+        {/* ② 파일 드롭다운 (가져오기 / 내보내기) */}
+        <div className={css.fileDropdownWrap}>
+          {showFileMenu && (
+            <div
+              style={{ position: "fixed", inset: 0, zIndex: 199 }}
+              onClick={() => setShowFileMenu(false)}
+            />
+          )}
+          <button
+            onClick={() => setShowFileMenu((v) => !v)}
+            className={css.topbarBtn({ variant: "ghost" })}
+          >
+            파일 ▾
+          </button>
+          {showFileMenu && (
+            <div className={css.fileDropdownMenu}>
+              <button
+                className={css.fileDropdownItem}
+                onClick={() => { setShowFileMenu(false); setShowImport(true); }}
+              >
+                ↓ 가져오기
+              </button>
+              <div className={css.fileDropdownSep} />
+              <button
+                className={css.fileDropdownItem}
+                onClick={() => { setShowFileMenu(false); setShowExport(true); }}
+              >
+                ↑ 내보내기
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ③ 버전 저장 */}
         <button
           onClick={() => saveVersion()}
           disabled={isSavingVersion}
@@ -159,20 +161,35 @@ export const EditorPage = () => {
         >
           버전 저장
         </button>
+
+        <div className={css.topbarDivider} />
+
+        {/* ④ 멤버 현황 + 초대 */}
+        <div className={css.presenceGroup}>
+          <PresenceIndicator />
+          <button
+            onClick={() => setShowInvite(true)}
+            className={css.inviteBtn}
+            title="멤버 초대"
+            aria-label="멤버 초대"
+          >
+            +
+          </button>
+        </div>
+
+        {/* ⑤ 공유 (primary blue) */}
         <button
-          onClick={() => setShowActivity((v) => !v)}
-          className={css.topbarBtn({ variant: showActivity ? "historyActive" : "historyInactive" })}
-          title="활동 기록"
+          onClick={() => setShowShare(true)}
+          className={css.topbarBtn({ variant: "primary" })}
         >
-          활동 기록
+          <Share2 size={13} aria-hidden="true" /> 공유
         </button>
       </div>
 
       <div className={css.content}>
         <SchemaFilterSidebar />
         <div className={css.canvasArea}>
-          <EditorCanvas hideMinimap={isAIChatOpen} />
-          {diagramId && <FloatingAIChat diagramId={diagramId} />}
+          <EditorCanvas hideMinimap={false} />
           {selectedRelationshipId && popoverPos ? (
             <RelationshipPopover
               relationshipId={selectedRelationshipId}
@@ -180,9 +197,7 @@ export const EditorPage = () => {
             />
           ) : null}
         </div>
-        {showActivity && diagramId ? (
-          <ActivityDrawer diagramId={diagramId} onClose={() => setShowActivity(false)} />
-        ) : null}
+        {diagramId && <RightSidebar diagramId={diagramId} />}
       </div>
 
       {showInvite && data?.organizationId ? (

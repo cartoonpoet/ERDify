@@ -7,6 +7,8 @@ export interface UISlice {
   selectedRelationshipId: string | null;
   popoverPos: { x: number; y: number } | null;
   searchOpen: boolean;
+  rightSidebarActiveTab: number;
+  rightSidebarPanelOpen: boolean;
   hiddenSchemas: Set<string>;
   schemaFilterExpanded: boolean;
   groupViewEnabled: boolean;
@@ -15,6 +17,9 @@ export interface UISlice {
   setSelectedRelationship: (id: string | null) => void;
   setPopoverPos: (pos: { x: number; y: number } | null) => void;
   setSearchOpen: (open: boolean) => void;
+  setRightSidebarActiveTab: (tab: number) => void;
+  setRightSidebarPanelOpen: (open: boolean) => void;
+  openSearchTab: () => void;
   toggleSchemaVisibility: (schema: string) => void;
   setSchemaFilterExpanded: (expanded: boolean) => void;
   setGroupViewEnabled: (enabled: boolean) => void;
@@ -26,6 +31,8 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
   selectedRelationshipId: null,
   popoverPos: null,
   searchOpen: false,
+  rightSidebarActiveTab: 0,
+  rightSidebarPanelOpen: true,
   hiddenSchemas: new Set<string>(),
   schemaFilterExpanded: true,
   groupViewEnabled: true,
@@ -35,6 +42,9 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
   setSelectedRelationship: (id) => set({ selectedRelationshipId: id, selectedEntityId: null }),
   setPopoverPos: (pos) => set({ popoverPos: pos }),
   setSearchOpen: (open) => set({ searchOpen: open }),
+  setRightSidebarActiveTab: (tab) => set({ rightSidebarActiveTab: tab }),
+  setRightSidebarPanelOpen: (open) => set({ rightSidebarPanelOpen: open }),
+  openSearchTab: () => set({ rightSidebarActiveTab: 1, rightSidebarPanelOpen: true }),
   toggleSchemaVisibility: (schema) =>
     set((state) => {
       const next = new Set(state.hiddenSchemas);

@@ -48,3 +48,45 @@ describe("useEditorStore", () => {
     expect(useEditorStore.getState().selectedEntityId).toBeNull();
   });
 });
+
+describe("useEditorStore — 우측 사이드바 UI 슬라이스", () => {
+  beforeEach(() => {
+    useEditorStore.setState({
+      rightSidebarActiveTab: 0,
+      rightSidebarPanelOpen: true,
+      searchOpen: false,
+    });
+  });
+
+  it("초기 rightSidebarPanelOpen은 true", () => {
+    expect(useEditorStore.getState().rightSidebarPanelOpen).toBe(true);
+  });
+
+  it("setRightSidebarPanelOpen(false)으로 패널을 닫는다", () => {
+    useEditorStore.getState().setRightSidebarPanelOpen(false);
+    expect(useEditorStore.getState().rightSidebarPanelOpen).toBe(false);
+  });
+
+  it("setRightSidebarPanelOpen(true)으로 패널을 다시 연다", () => {
+    useEditorStore.getState().setRightSidebarPanelOpen(false);
+    useEditorStore.getState().setRightSidebarPanelOpen(true);
+    expect(useEditorStore.getState().rightSidebarPanelOpen).toBe(true);
+  });
+
+  it("setRightSidebarActiveTab으로 활성 탭을 변경한다", () => {
+    useEditorStore.getState().setRightSidebarActiveTab(2);
+    expect(useEditorStore.getState().rightSidebarActiveTab).toBe(2);
+  });
+
+  it("openSearchTab은 탭 1(검색)로 전환하고 패널을 연다", () => {
+    useEditorStore.setState({ rightSidebarActiveTab: 0, rightSidebarPanelOpen: false });
+    useEditorStore.getState().openSearchTab();
+    expect(useEditorStore.getState().rightSidebarActiveTab).toBe(1);
+    expect(useEditorStore.getState().rightSidebarPanelOpen).toBe(true);
+  });
+
+  it("openSearchTab은 searchOpen(플로팅 패널)을 건드리지 않는다", () => {
+    useEditorStore.getState().openSearchTab();
+    expect(useEditorStore.getState().searchOpen).toBe(false);
+  });
+});
