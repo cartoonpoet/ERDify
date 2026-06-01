@@ -1,32 +1,27 @@
-import { useState, useRef, memo } from "react";
+import { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import { IMEInput } from "./IMEInput";
 import {
   addColumn,
-  addIndex,
-  removeColumn,
   removeEntity,
-  removeIndex,
   renameEntity,
   setEntitySchema,
   setSeedData,
   updateColumn,
   updateEntityComment,
-  updateIndex,
 } from "@erdify/domain";
 import type { DiagramIndex } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import type { EditableTableNodeType } from "@/features/editor/store/useEditorStore";
 import { getSchemaColor } from "@/shared/utils/schema-colors";
-import { DEFAULT_HEADER_COLOR, makeColumn, makeIndex } from "./constants";
-import { TypeSelect } from "./TypeSelect";
+import { DEFAULT_HEADER_COLOR, makeColumn } from "./constants";
 import { SchemaStrip } from "./SchemaStrip";
-import { IndexColumnSelect } from "./IndexColumnSelect";
 import { SeedLens } from "./SeedLens";
+import { ColumnRow } from "./ColumnRow";
+import { IndexSection } from "./IndexSection";
+import { useColumnNameSuggestions } from "@/features/editor/hooks/useColumnNameSuggestions";
 import * as css from "./editable-table-node.css";
-import { suggestColumns } from "@/features/ai/api/ai.api";
-import type { ColumnSuggestion } from "@erdify/contracts";
 
 const EMPTY_INDEXES: DiagramIndex[] = [];
 
@@ -40,26 +35,8 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
   const entityIndexes = useEditorStore((s) => s.indexesByEntityId.get(entity.id) ?? EMPTY_INDEXES);
   const allSchemas = useEditorStore((s) => s.allSchemas);
 
-  const [suggestions, setSuggestions] = useState<ColumnSuggestion[]>([]);
-  const [activeSuggestionColId, setActiveSuggestionColId] = useState<string | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleColumnNameInput = (columnId: string, value: string) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (value.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    setActiveSuggestionColId(columnId);
-    debounceRef.current = setTimeout(() => {
-      const existingColumnNames = entity.columns.map((c) => c.name);
-      suggestColumns(entity.name, existingColumnNames)
-        .then((results) => {
-          setSuggestions(results.filter((r) => r.name.toLowerCase().startsWith(value.toLowerCase())));
-        })
-        .catch(() => setSuggestions([]));
-    }, 300);
-  };
+  const { suggestions, activeSuggestionColId, handleColumnNameInput, clearSuggestions } =
+    useColumnNameSuggestions(entity.name, entity.columns);
 
   const schemaColor = entity.schema ? getSchemaColor(entity.schema, allSchemas, schemaColors) : null;
 
@@ -221,115 +198,23 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
 
       {/* 컬럼 행 */}
       {entity.columns.map((col) => (
-        <div key={col.id} className={css.editColumnItem}>
-          {/* PK */}
-          <div className={css.checkboxCell}>
-            <input
-              type="checkbox"
-              className={`${css.rowCheckbox} nodrag`}
-              checked={col.primaryKey}
-              aria-label={`${col.name} PK`}
-              onChange={(e) =>
-                applyCommand((doc) => updateColumn(doc, entity.id, col.id, { primaryKey: e.target.checked }))
-              }
-            />
-          </div>
-          {/* FK (read-only) */}
-          <div className={css.fkDotCell}>
-            {fkColumnIds.has(col.id) && <span className={css.fkDot} aria-label="FK" title="Foreign Key" />}
-          </div>
-          {/* NULL */}
-          <div className={css.checkboxCell}>
-            <input
-              type="checkbox"
-              className={`${css.rowCheckbox} nodrag`}
-              checked={col.nullable}
-              aria-label={`${col.name} NULL 허용`}
-              onChange={(e) =>
-                applyCommand((doc) => updateColumn(doc, entity.id, col.id, { nullable: e.target.checked }))
-              }
-            />
-          </div>
-          {/* UQ */}
-          <div className={css.checkboxCell}>
-            <input
-              type="checkbox"
-              className={`${css.rowCheckbox} nodrag`}
-              checked={col.unique}
-              aria-label={`${col.name} UNIQUE`}
-              onChange={(e) =>
-                applyCommand((doc) => updateColumn(doc, entity.id, col.id, { unique: e.target.checked }))
-              }
-            />
-          </div>
-          {/* 논리명 */}
-          <IMEInput
-            className={`${css.logicalNameInput} nodrag nokey`}
-            value={col.comment ?? ""}
-            placeholder="논리명..."
-            aria-label={`${col.name} 논리명`}
-            onChange={(v) => applyCommand((doc) => updateColumn(doc, entity.id, col.id, { comment: v || null }))}
-          />
-          {/* 컬럼명 */}
-          <div
-            className={css.colNameWrapper}
-            onInput={(e) => {
-              const target = e.target as HTMLInputElement;
-              handleColumnNameInput(col.id, target.value);
-            }}
-            onBlur={() => {
-              setTimeout(() => {
-                setSuggestions([]);
-                setActiveSuggestionColId(null);
-              }, 150);
-            }}
-          >
-            <IMEInput
-              className={`${css.columnNameInput} nodrag nokey`}
-              value={col.name}
-              aria-label="컬럼명"
-              onChange={(v) => applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: v }))}
-            />
-            {activeSuggestionColId === col.id && suggestions.length > 0 && (
-              <ul className={css.suggestionsList}>
-                {suggestions.map((s) => (
-                  <li
-                    key={s.name}
-                    className={css.suggestionItem}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      applyCommand((doc) => updateColumn(doc, entity.id, col.id, { name: s.name, type: s.type, nullable: s.nullable, primaryKey: s.pk }));
-                      setSuggestions([]);
-                      setActiveSuggestionColId(null);
-                    }}
-                  >
-                    <strong>{s.name}</strong>
-                    <span className={css.suggestionItemType}>{s.type}</span>
-                    {s.pk && <span className={css.suggestionItemPk}>PK</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          {/* 타입 */}
-          <TypeSelect
-            value={col.type}
-            onChange={(val) =>
-              applyCommand((doc) => updateColumn(doc, entity.id, col.id, { type: val }))
-            }
-            label={`${col.name} 타입`}
-          />
-          {/* 삭제 */}
-          <button
-            type="button"
-            className={`${css.deleteColBtn} nodrag`}
-            onClick={() => applyCommand((doc) => removeColumn(doc, entity.id, col.id))}
-            aria-label={`${col.name} 컬럼 삭제`}
-            title="컬럼 삭제"
-          >
-            ×
-          </button>
-        </div>
+        <ColumnRow
+          key={col.id}
+          col={col}
+          entityId={entity.id}
+          applyCommand={applyCommand}
+          fkColumnIds={fkColumnIds}
+          activeSuggestionColId={activeSuggestionColId}
+          suggestions={suggestions}
+          onColumnNameInput={handleColumnNameInput}
+          onBlur={() => {
+            setTimeout(() => clearSuggestions(), 150);
+          }}
+          onSelectSuggestion={(c, s) => {
+            applyCommand((doc) => updateColumn(doc, entity.id, c.id, { name: s.name, type: s.type, nullable: s.nullable, primaryKey: s.pk }));
+            clearSuggestions();
+          }}
+        />
       ))}
 
       {/* 컬럼 추가 버튼 */}
@@ -347,62 +232,13 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
       </div>
 
       {/* 인덱스 섹션 */}
-      <div className={css.indexSection}>
-        <div className={css.indexSectionHeader}>
-          <span className={css.indexSectionLabel}>Indexes</span>
-          <button
-            type="button"
-            className={`${css.indexAddBtn} nodrag`}
-            onClick={() =>
-              applyCommand((doc) => addIndex(doc, makeIndex(entity.id, entity.name)))
-            }
-            aria-label="인덱스 추가"
-          >
-            + 추가
-          </button>
-        </div>
-
-        {entityIndexes.map((idx) => (
-          <div key={idx.id} className={css.indexRow}>
-            <IMEInput
-              className={`${css.indexNameInput} nodrag nokey`}
-              value={idx.name}
-              placeholder="인덱스명..."
-              aria-label="인덱스명"
-              onChange={(v) => applyCommand((doc) => updateIndex(doc, idx.id, { name: v }))}
-            />
-            <IndexColumnSelect
-              entityColumns={entity.columns}
-              selectedIds={idx.columnIds}
-              onChange={(ids) => applyCommand((doc) => updateIndex(doc, idx.id, { columnIds: ids }))}
-            />
-            <button
-              type="button"
-              className={`${css.indexUniqueToggle}${idx.unique ? ` ${css.indexUniqueActive}` : ""} nodrag`}
-              onClick={() => applyCommand((doc) => updateIndex(doc, idx.id, { unique: !idx.unique }))}
-              aria-pressed={idx.unique}
-              aria-label={idx.unique ? "UNIQUE 인덱스 (클릭하면 일반 인덱스로 변경)" : "일반 인덱스 (클릭하면 UNIQUE로 변경)"}
-            >
-              {idx.unique ? "UNIQUE" : "INDEX"}
-            </button>
-            <button
-              type="button"
-              className={`${css.indexDeleteBtn} nodrag`}
-              onClick={() => applyCommand((doc) => removeIndex(doc, idx.id))}
-              aria-label={`${idx.name || "인덱스"} 삭제`}
-              title="인덱스 삭제"
-            >
-              ×
-            </button>
-          </div>
-        ))}
-
-        {entityIndexes.length === 0 && (
-          <div className={css.emptyIndexText}>
-            인덱스 없음
-          </div>
-        )}
-      </div>
+      <IndexSection
+        entityId={entity.id}
+        entityName={entity.name}
+        entityColumns={entity.columns}
+        entityIndexes={entityIndexes}
+        applyCommand={applyCommand}
+      />
 
       {/* 시드 데이터 섹션 */}
       <div className={css.indexSection}>

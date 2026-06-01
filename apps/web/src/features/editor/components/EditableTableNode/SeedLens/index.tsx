@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { DiagramEntity, SeedRow } from "@erdify/domain";
 import { SeedLensGrid } from "./SeedLensGrid";
@@ -26,8 +26,6 @@ export const SeedLens = ({ entity, onCommit }: SeedLensProps) => {
   const sortedCols = [...entity.columns].sort((a, b) => a.ordinal - b.ordinal);
   const rowCount = entity.seedData?.length ?? 0;
 
-  const handleCommitAndClose = useCallback(() => close(), [close]);
-
   return (
     <>
       {/* 트리거 — EditableTableNode Seed Data 섹션 헤더에 삽입 */}
@@ -45,7 +43,7 @@ export const SeedLens = ({ entity, onCommit }: SeedLensProps) => {
         createPortal(
           <>
             {/* backdrop */}
-            <div className={css.backdrop} onClick={handleCommitAndClose} />
+            <div className={css.backdrop} onClick={close} />
 
             {/* 패널 */}
             <div
@@ -61,7 +59,7 @@ export const SeedLens = ({ entity, onCommit }: SeedLensProps) => {
                 <button
                   type="button"
                   className={css.panelCloseBtn}
-                  onClick={handleCommitAndClose}
+                  onClick={close}
                   aria-label="닫기"
                 >
                   ✕
@@ -83,7 +81,7 @@ export const SeedLens = ({ entity, onCommit }: SeedLensProps) => {
                 </button>
                 <span className={css.rowCount}>{localRows.length}행</span>
                 <span className={css.kbdHint}>Tab 이동 · Esc 닫기</span>
-                <button type="button" className={css.doneBtn} onClick={handleCommitAndClose}>
+                <button type="button" className={css.doneBtn} onClick={close}>
                   완료
                 </button>
               </div>

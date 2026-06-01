@@ -8,13 +8,13 @@ type CardinalityEdgeData = {
   identifying: boolean;
 };
 
-function getLabels(cardinality: RelationshipCardinality): { source: string; target: string } {
+const getLabels = (cardinality: RelationshipCardinality): { source: string; target: string } => {
   switch (cardinality) {
     case "one-to-one":   return { source: "1", target: "1" };
     case "one-to-many":  return { source: "1", target: "N" };
     case "many-to-one":  return { source: "N", target: "1" };
   }
-}
+};
 
 export const CardinalityEdge = ({
   id,

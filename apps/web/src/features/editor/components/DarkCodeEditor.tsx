@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef } from "react";
 import type { DragEvent, UIEvent } from "react";
 import * as css from "./DarkCodeEditor.css";
 
@@ -26,20 +26,20 @@ export const DarkCodeEditor = ({
   const lineNumRef = useRef<HTMLDivElement>(null);
   const lineCount = Math.max(1, value ? value.split("\n").length : 1);
 
-  const handleScroll = useCallback((e: UIEvent<HTMLTextAreaElement>) => {
+  const handleScroll = (e: UIEvent<HTMLTextAreaElement>) => {
     if (lineNumRef.current) {
       lineNumRef.current.scrollTop = e.currentTarget.scrollTop;
     }
-  }, []);
+  };
 
-  const handleDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     onDragLeave?.();
     if (onFileDrop) {
       const file = e.dataTransfer.files[0];
       if (file) onFileDrop(file);
     }
-  }, [onFileDrop, onDragLeave]);
+  };
 
   return (
     <div

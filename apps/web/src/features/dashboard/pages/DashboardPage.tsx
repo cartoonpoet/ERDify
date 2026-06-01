@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useParams, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/shared/api/auth.api";
@@ -20,6 +19,9 @@ import {
   dropdownItem, dropdownItemDanger, body,
 } from "./dashboard-page.css";
 
+// Prefetch automerge WASM in the background so the editor opens instantly
+void import("@automerge/automerge");
+
 export interface DashboardOutletContext {
   onCreateDiagram: () => void;
   onImportDiagram: () => void;
@@ -39,9 +41,6 @@ export const DashboardPage = () => {
   const { deleteOrg, deleteProject, deleteDiagram, handleLogout, onOrgCreated, onProjectCreated, onDiagramCreated, onDiagramImported } = useDashboardActions();
   const { menuOpen, toggleMenu, closeMenu, handleBlur } = useAvatarMenu();
   const { unread, markSeen, markAllSeen } = useAnnouncements();
-
-  // Prefetch automerge WASM in the background so the editor opens instantly
-  useEffect(() => { void import("@automerge/automerge"); }, []);
 
   // resets naturally when projectId changes — no useEffect needed
   const currentSearch = searchProjectId === projectId ? searchQuery : "";

@@ -72,12 +72,12 @@ const ActiveUsersIndicator = ({ users }: { users: ActiveUser[] }) => {
 
 
 
-function applyFilter(
+const applyFilter = (
   diagrams: DiagramListItem[],
   filter: FilterType,
   userId: string | null,
   filterQuery?: string,
-): DiagramListItem[] {
+): DiagramListItem[] => {
   let result = diagrams;
   if (filter === "recent") {
     result = [...result].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
@@ -89,7 +89,7 @@ function applyFilter(
     result = result.filter((d) => d.name.toLowerCase().includes(q));
   }
   return result;
-}
+};
 
 export const DiagramGrid = () => {
   const { orgId, projectId } = useParams<{ orgId: string; projectId?: string }>();

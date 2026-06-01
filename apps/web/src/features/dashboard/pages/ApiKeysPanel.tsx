@@ -15,21 +15,21 @@ const PRESET_LABELS: Record<ExpiryPreset, string> = {
   custom: "직접 입력",
 };
 
-function expiresAtFromPreset(preset: ExpiryPreset, customDate: string): string | undefined {
+const expiresAtFromPreset = (preset: ExpiryPreset, customDate: string): string | undefined => {
   if (preset === "30d") return new Date(Date.now() + 30 * 86400000).toISOString();
   if (preset === "90d") return new Date(Date.now() + 90 * 86400000).toISOString();
   if (preset === "1y") return new Date(Date.now() + 365 * 86400000).toISOString();
   if (preset === "custom" && customDate) return new Date(customDate).toISOString();
   return undefined;
-}
+};
 
-function getStatusInfo(key: ApiKeyItem): { label: string; type: "active" | "expiring" | "expired" } {
+const getStatusInfo = (key: ApiKeyItem): { label: string; type: "active" | "expiring" | "expired" } => {
   if (!key.expiresAt) return { label: "활성", type: "active" };
   const ms = new Date(key.expiresAt).getTime() - Date.now();
   if (ms < 0) return { label: "만료됨", type: "expired" };
   if (ms < 7 * 86400000) return { label: `D-${Math.ceil(ms / 86400000)}`, type: "expiring" };
   return { label: "활성", type: "active" };
-}
+};
 
 const BADGE_CLASS: Record<"active" | "expiring" | "expired", string> = {
   active: css.badgeActive,
@@ -85,7 +85,7 @@ export const ApiKeysPanel = () => {
     },
   });
 
-  function handleCreate() {
+  const handleCreate = () => {
     if (formExpiry === "custom" && formCustomDate) {
       if (new Date(formCustomDate).getTime() <= Date.now()) return;
     }
@@ -95,21 +95,21 @@ export const ApiKeysPanel = () => {
     if (trimmedName) body.name = trimmedName;
     if (expiresAt) body.expiresAt = expiresAt;
     createMutation.mutate(body);
-  }
+  };
 
-  async function handleCopyKey() {
+  const handleCopyKey = async () => {
     if (!revealedKey) return;
     await copyToClipboard(revealedKey.apiKey);
     setCopied(true);
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
-  }
+  };
 
-  function handleDismissReveal() {
+  const handleDismissReveal = () => {
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     setRevealedKey(null);
     setCopied(false);
-  }
+  };
 
   return (
     <div className={css.page}>
