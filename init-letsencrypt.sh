@@ -12,6 +12,7 @@ docker volume create certbot_webroot 2>/dev/null || true
 docker run --rm \
   -v certbot_certs:/etc/letsencrypt \
   --entrypoint sh certbot/certbot -c "
+    # NOTE: keep in sync with DOMAINS array above
     for domain in erdify.kro.kr erdify-app.kro.kr; do
       mkdir -p /etc/letsencrypt/live/\$domain
       openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
@@ -25,7 +26,9 @@ docker run --rm \
 echo "=== [2/4] nginx 기동 (임시 인증서로 80·443 포함) ==="
 docker compose -f "$COMPOSE_FILE" up -d nginx
 echo "nginx 준비 대기 중..."
-sleep 3
+until docker compose -f "$COMPOSE_FILE" exec -T nginx nginx -t >/dev/null 2>&1; do
+  sleep 1
+done
 
 echo "=== [3/4] 실제 Let's Encrypt 인증서 발급 ==="
 for domain in "${DOMAINS[@]}"; do
@@ -43,7 +46,7 @@ for domain in "${DOMAINS[@]}"; do
 done
 
 echo "=== [4/4] nginx reload (실제 인증서 적용) ==="
-docker exec erdify-nginx-1 nginx -s reload
+docker compose -f "$COMPOSE_FILE" exec -T nginx nginx -s reload
 
 echo ""
 echo "=== 완료! 전체 서비스 기동 ==="
