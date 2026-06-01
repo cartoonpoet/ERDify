@@ -6,7 +6,13 @@ const emptyDoc = () =>
   createEmptyDiagram({ id: "test-id", name: "test", dialect: "postgresql" });
 
 const reset = () =>
-  useEditorStore.setState({ document: null, isDirty: false, selectedEntityId: null });
+  useEditorStore.setState({
+    document: null,
+    isDirty: false,
+    selectedEntityId: null,
+    viewport: { x: 0, y: 0, zoom: 1 },
+    flashingEntityId: null,
+  });
 
 describe("useEditorStore", () => {
   beforeEach(reset);
@@ -89,4 +95,16 @@ describe("useEditorStore — 우측 사이드바 UI 슬라이스", () => {
     useEditorStore.getState().openSearchTab();
     expect(useEditorStore.getState().searchOpen).toBe(false);
   });
+});
+
+it("setViewport updates viewport state", () => {
+  useEditorStore.getState().setViewport({ x: 100, y: 200, zoom: 1.5 });
+  expect(useEditorStore.getState().viewport).toEqual({ x: 100, y: 200, zoom: 1.5 });
+});
+
+it("setFlashingEntityId updates and clears flashingEntityId", () => {
+  useEditorStore.getState().setFlashingEntityId("entity-abc");
+  expect(useEditorStore.getState().flashingEntityId).toBe("entity-abc");
+  useEditorStore.getState().setFlashingEntityId(null);
+  expect(useEditorStore.getState().flashingEntityId).toBeNull();
 });

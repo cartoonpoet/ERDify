@@ -13,6 +13,8 @@ export interface UISlice {
   schemaFilterExpanded: boolean;
   groupViewEnabled: boolean;
   schemaColors: Record<string, string>;
+  viewport: { x: number; y: number; zoom: number };
+  flashingEntityId: string | null;
   setSelectedEntity: (id: string | null) => void;
   setSelectedRelationship: (id: string | null) => void;
   setPopoverPos: (pos: { x: number; y: number } | null) => void;
@@ -24,6 +26,8 @@ export interface UISlice {
   setSchemaFilterExpanded: (expanded: boolean) => void;
   setGroupViewEnabled: (enabled: boolean) => void;
   setSchemaColor: (schema: string, color: string) => void;
+  setViewport: (v: { x: number; y: number; zoom: number }) => void;
+  setFlashingEntityId: (id: string | null) => void;
 }
 
 export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) => ({
@@ -37,6 +41,8 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
   schemaFilterExpanded: true,
   groupViewEnabled: true,
   schemaColors: {},
+  viewport: { x: 0, y: 0, zoom: 1 },
+  flashingEntityId: null,
 
   setSelectedEntity: (id) => set({ selectedEntityId: id, selectedRelationshipId: null, popoverPos: null }),
   setSelectedRelationship: (id) => set({ selectedRelationshipId: id, selectedEntityId: null }),
@@ -56,4 +62,6 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
   setGroupViewEnabled: (enabled) => set({ groupViewEnabled: enabled }),
   setSchemaColor: (schema, color) =>
     set((state) => ({ schemaColors: { ...state.schemaColors, [schema]: color } })),
+  setViewport: (v) => set({ viewport: v }),
+  setFlashingEntityId: (id) => set({ flashingEntityId: id }),
 });
