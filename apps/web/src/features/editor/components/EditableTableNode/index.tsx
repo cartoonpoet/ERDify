@@ -59,7 +59,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
           ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
           boxShadow,
         }}
-        onAnimationEnd={isFlashing ? () => setFlashingEntityId(null) : undefined}
+        onAnimationEnd={() => setFlashingEntityId(null)}
       >
         <Handle type="target" position={Position.Left} />
         {collaboratorColor && (
@@ -149,7 +149,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
         ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
         boxShadow,
       }}
-      onAnimationEnd={isFlashing ? () => setFlashingEntityId(null) : undefined}
+      onAnimationEnd={() => setFlashingEntityId(null)}
     >
       <Handle type="target" position={Position.Left} />
       <SchemaStrip
