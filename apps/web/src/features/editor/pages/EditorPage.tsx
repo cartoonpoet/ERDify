@@ -133,7 +133,7 @@ export const EditorPage = () => {
             onClick={() => setShowFileMenu((v) => !v)}
             className={css.topbarBtn({ variant: "ghost" })}
           >
-            파일 ▾
+            파일 <span className={css.fileDropdownChevron}>▾</span>
           </button>
           {showFileMenu && (
             <div className={css.fileDropdownMenu}>
@@ -141,14 +141,18 @@ export const EditorPage = () => {
                 className={css.fileDropdownItem}
                 onClick={() => { setShowFileMenu(false); setShowImport(true); }}
               >
-                ↓ 가져오기
+                <span className={css.fileDropdownItemIcon}>↓</span>
+                가져오기
+                <span className={css.fileDropdownKbd}>⌘I</span>
               </button>
               <div className={css.fileDropdownSep} />
               <button
                 className={css.fileDropdownItem}
                 onClick={() => { setShowFileMenu(false); setShowExport(true); }}
               >
-                ↑ 내보내기
+                <span className={css.fileDropdownItemIcon}>↑</span>
+                내보내기
+                <span className={css.fileDropdownKbd}>⌘E</span>
               </button>
             </div>
           )}

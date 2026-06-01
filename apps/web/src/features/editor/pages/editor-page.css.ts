@@ -206,6 +206,31 @@ export const fileDropdownSep = style({
   margin: "4px 0",
 });
 
+export const fileDropdownItemIcon = style({
+  fontSize: 12,
+  color: vars.color.textDisabled,
+  width: 16,
+  textAlign: "center",
+  flexShrink: 0,
+});
+
+export const fileDropdownKbd = style({
+  marginLeft: "auto",
+  fontSize: 10,
+  color: vars.color.textDisabled,
+  background: vars.color.surfaceSecondary,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: 3,
+  padding: "1px 5px",
+  fontFamily: vars.font.family,
+  flexShrink: 0,
+});
+
+export const fileDropdownChevron = style({
+  fontSize: 9,
+  opacity: 0.5,
+});
+
 export const content = style({
   flex: 1,
   display: "flex",
