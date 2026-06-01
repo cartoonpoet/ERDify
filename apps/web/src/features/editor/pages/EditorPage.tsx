@@ -36,6 +36,9 @@ export const EditorPage = () => {
 
   const { isDirty, isCollaborating, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, openSearchTab, undo, canEdit } = useEditorStore();
 
+  const viewport = useEditorStore((s) => s.viewport);
+  const setFlashingEntityId = useEditorStore((s) => s.setFlashingEntityId);
+
   const { data, isLoading } = useQuery({
     queryKey: ["diagram", diagramId],
     queryFn: () => getDiagram(diagramId!),
@@ -78,12 +81,21 @@ export const EditorPage = () => {
   const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "");
 
   const handleAddTable = () => {
+    const canvas = document.querySelector(".react-flow");
+    const rect = canvas?.getBoundingClientRect();
+    const width = rect?.width ?? window.innerWidth;
+    const height = rect?.height ?? window.innerHeight;
+    const centerX = (width / 2 - viewport.x) / viewport.zoom;
+    const centerY = (height / 2 - viewport.y) / viewport.zoom;
+    const id = randomUUID();
     applyCommand((doc) =>
       addEntity(doc, {
-        id: randomUUID(),
-        name: `Table_${doc.entities.length + 1}`
+        id,
+        name: `Table_${doc.entities.length + 1}`,
+        position: { x: centerX - 140, y: centerY - 60 },
       })
     );
+    setFlashingEntityId(id);
   };
 
   if (isLoading) {
