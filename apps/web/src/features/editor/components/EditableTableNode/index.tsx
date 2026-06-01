@@ -34,6 +34,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
   const fkColumnIds = useEditorStore((s) => s.fkColumnIds);
   const entityIndexes = useEditorStore((s) => s.indexesByEntityId.get(entity.id) ?? EMPTY_INDEXES);
   const allSchemas = useEditorStore((s) => s.allSchemas);
+  const isFlashing = useEditorStore((s) => s.flashingEntityId === entity.id);
 
   const { suggestions, activeSuggestionColId, handleColumnNameInput, clearSuggestions } =
     useColumnNameSuggestions(entity.name, entity.columns);
@@ -51,7 +52,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
   if (!canEdit) {
     return (
       <div
-        className={`${css.tableNodeWrapper} ${css.tableNodeWrapperReadOnly}`}
+        className={`${css.tableNodeWrapper} ${css.tableNodeWrapperReadOnly}${isFlashing ? ` ${css.tableNodeGlow}` : ""}`}
         style={{
           border: `2px solid ${borderColor}`,
           ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
@@ -140,7 +141,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
   // ─── 편집 모드 ───
   return (
     <div
-      className={`${css.tableNodeWrapper} ${css.tableNodeWrapperEdit}`}
+      className={`${css.tableNodeWrapper} ${css.tableNodeWrapperEdit}${isFlashing ? ` ${css.tableNodeGlow}` : ""}`}
       style={{
         border: `2px solid ${borderColor}`,
         ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
