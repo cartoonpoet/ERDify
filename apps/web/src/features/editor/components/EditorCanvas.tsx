@@ -180,6 +180,7 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   const groupViewEnabled = useEditorStore((s) => s.groupViewEnabled);
   const allSchemas = useEditorStore((s) => s.allSchemas);
   const setViewport = useEditorStore((s) => s.setViewport);
+  const { getViewport } = useReactFlow();
   // 엔티티 스키마 맵 — 스키마 값이 실제로 바뀔 때만 새 참조 (컬럼명 변경 시 edges 재렌더링 방지)
   const entitySchemaByEntityId = useEditorStore(
     useShallow((s) => {
@@ -377,6 +378,9 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
         zoomOnScroll={false}
         panOnScroll
         onMove={(_event, viewport) => setViewport(viewport)}
+        onInit={() => {
+          requestAnimationFrame(() => setViewport(getViewport()));
+        }}
         fitView
         onlyRenderVisibleElements
       >

@@ -35,6 +35,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
   const entityIndexes = useEditorStore((s) => s.indexesByEntityId.get(entity.id) ?? EMPTY_INDEXES);
   const allSchemas = useEditorStore((s) => s.allSchemas);
   const isFlashing = useEditorStore((s) => s.flashingEntityId === entity.id);
+  const setFlashingEntityId = useEditorStore((s) => s.setFlashingEntityId);
 
   const { suggestions, activeSuggestionColId, handleColumnNameInput, clearSuggestions } =
     useColumnNameSuggestions(entity.name, entity.columns);
@@ -58,6 +59,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
           ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
           boxShadow,
         }}
+        onAnimationEnd={isFlashing ? () => setFlashingEntityId(null) : undefined}
       >
         <Handle type="target" position={Position.Left} />
         {collaboratorColor && (
@@ -147,6 +149,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
         ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
         boxShadow,
       }}
+      onAnimationEnd={isFlashing ? () => setFlashingEntityId(null) : undefined}
     >
       <Handle type="target" position={Position.Left} />
       <SchemaStrip
