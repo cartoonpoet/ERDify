@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { addEntity } from "@erdify/domain";
 import { Share2 } from "lucide-react";
+import { ReactFlowProvider } from "@xyflow/react";
 import { getDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
@@ -186,19 +187,21 @@ export const EditorPage = () => {
         </button>
       </div>
 
-      <div className={css.content}>
-        <SchemaFilterSidebar />
-        <div className={css.canvasArea}>
-          <EditorCanvas hideMinimap={false} />
-          {selectedRelationshipId && popoverPos ? (
-            <RelationshipPopover
-              relationshipId={selectedRelationshipId}
-              pos={popoverPos}
-            />
-          ) : null}
+      <ReactFlowProvider>
+        <div className={css.content}>
+          <SchemaFilterSidebar />
+          <div className={css.canvasArea}>
+            <EditorCanvas hideMinimap={false} />
+            {selectedRelationshipId && popoverPos ? (
+              <RelationshipPopover
+                relationshipId={selectedRelationshipId}
+                pos={popoverPos}
+              />
+            ) : null}
+          </div>
+          {diagramId && <RightSidebar diagramId={diagramId} />}
         </div>
-        {diagramId && <RightSidebar diagramId={diagramId} />}
-      </div>
+      </ReactFlowProvider>
 
       {showInvite && data?.organizationId ? (
         <InviteModal
