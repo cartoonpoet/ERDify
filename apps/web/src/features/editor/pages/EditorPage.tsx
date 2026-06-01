@@ -160,7 +160,7 @@ export const EditorPage = () => {
           disabled={isSavingVersion}
           className={css.topbarBtn({ variant: "success" })}
         >
-          버전 저장
+          ↑ 버전 저장
         </button>
 
         <div className={css.topbarDivider} />
