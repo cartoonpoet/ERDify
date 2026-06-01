@@ -1,4 +1,4 @@
-import { style, styleVariants } from "@vanilla-extract/css";
+import { style, styleVariants, keyframes } from "@vanilla-extract/css";
 import { vars } from "@/style/tokens.css";
 
 // ─── 공통 래퍼 ───────────────────────────────────────────────
@@ -725,4 +725,15 @@ export const indexColEmpty = style({
   padding: "6px 10px",
   fontSize: vars.font.size.xs,
   color: "#9ca3af",
+});
+
+// ─── 테이블 추가 글로우 플래시 ──────────────────────────────
+const glowFlash = keyframes({
+  "0%":   { outline: "0px solid rgba(99, 102, 241, 0)",    outlineOffset: "0px" },
+  "20%":  { outline: "3px solid rgba(99, 102, 241, 0.85)", outlineOffset: "2px" },
+  "100%": { outline: "2px solid rgba(99, 102, 241, 0)",    outlineOffset: "1px" },
+});
+
+export const tableNodeGlow = style({
+  animation: `${glowFlash} 1.4s ease-out forwards`,
 });
