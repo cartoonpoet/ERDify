@@ -121,18 +121,13 @@ export const EditorPage = () => {
 
         <div className={css.topbarDivider} />
 
-        {/* ② 파일 드롭다운 (가져오기 / 내보내기) */}
-        <div className={css.fileDropdownWrap}>
-          {showFileMenu && (
-            <div
-              style={{ position: "fixed", inset: 0, zIndex: 199 }}
-              onClick={() => setShowFileMenu(false)}
-            />
-          )}
-          <button
-            onClick={() => setShowFileMenu((v) => !v)}
-            className={css.topbarBtn({ variant: "ghost" })}
-          >
+        {/* ② 파일 드롭다운 (hover) */}
+        <div
+          className={css.fileDropdownWrap}
+          onMouseEnter={() => setShowFileMenu(true)}
+          onMouseLeave={() => setShowFileMenu(false)}
+        >
+          <button className={css.topbarBtn({ variant: "ghost" })}>
             파일 <span className={css.fileDropdownChevron}>▾</span>
           </button>
           {showFileMenu && (
@@ -153,6 +148,14 @@ export const EditorPage = () => {
                 <span className={css.fileDropdownItemIcon}>↑</span>
                 내보내기
                 <span className={css.fileDropdownKbd}>⌘E</span>
+              </button>
+              <div className={css.fileDropdownSep} />
+              <button
+                className={css.fileDropdownItem}
+                onClick={() => { setShowFileMenu(false); setShowExport(true); }}
+              >
+                <span className={css.fileDropdownItemIcon}>⎘</span>
+                복사본 저장
               </button>
             </div>
           )}
