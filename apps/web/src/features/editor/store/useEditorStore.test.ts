@@ -97,14 +97,18 @@ describe("useEditorStore — 우측 사이드바 UI 슬라이스", () => {
   });
 });
 
-it("setViewport updates viewport state", () => {
-  useEditorStore.getState().setViewport({ x: 100, y: 200, zoom: 1.5 });
-  expect(useEditorStore.getState().viewport).toEqual({ x: 100, y: 200, zoom: 1.5 });
-});
+describe("useEditorStore — viewport / flashingEntityId", () => {
+  beforeEach(reset);
 
-it("setFlashingEntityId updates and clears flashingEntityId", () => {
-  useEditorStore.getState().setFlashingEntityId("entity-abc");
-  expect(useEditorStore.getState().flashingEntityId).toBe("entity-abc");
-  useEditorStore.getState().setFlashingEntityId(null);
-  expect(useEditorStore.getState().flashingEntityId).toBeNull();
+  it("setViewport updates viewport state", () => {
+    useEditorStore.getState().setViewport({ x: 100, y: 200, zoom: 1.5 });
+    expect(useEditorStore.getState().viewport).toEqual({ x: 100, y: 200, zoom: 1.5 });
+  });
+
+  it("setFlashingEntityId updates and clears flashingEntityId", () => {
+    useEditorStore.getState().setFlashingEntityId("entity-abc");
+    expect(useEditorStore.getState().flashingEntityId).toBe("entity-abc");
+    useEditorStore.getState().setFlashingEntityId(null);
+    expect(useEditorStore.getState().flashingEntityId).toBeNull();
+  });
 });

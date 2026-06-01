@@ -1,5 +1,6 @@
 // apps/web/src/features/editor/stores/uiSlice.ts
 import type { StateCreator } from "zustand";
+import type { Viewport } from "@xyflow/react";
 import type { EditorState } from "./editor-store.types";
 
 export interface UISlice {
@@ -13,7 +14,7 @@ export interface UISlice {
   schemaFilterExpanded: boolean;
   groupViewEnabled: boolean;
   schemaColors: Record<string, string>;
-  viewport: { x: number; y: number; zoom: number };
+  viewport: Viewport;
   flashingEntityId: string | null;
   setSelectedEntity: (id: string | null) => void;
   setSelectedRelationship: (id: string | null) => void;
@@ -26,7 +27,7 @@ export interface UISlice {
   setSchemaFilterExpanded: (expanded: boolean) => void;
   setGroupViewEnabled: (enabled: boolean) => void;
   setSchemaColor: (schema: string, color: string) => void;
-  setViewport: (v: { x: number; y: number; zoom: number }) => void;
+  setViewport: (v: Viewport) => void;
   setFlashingEntityId: (id: string | null) => void;
 }
 
