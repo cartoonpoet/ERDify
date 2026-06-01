@@ -1,7 +1,7 @@
 import type { DiagramDocument } from "@erdify/domain";
 import { MCP_SESSION_ID } from "./session.js";
 
-const API_URL = process.env.ERDIFY_API_URL ?? "http://erdify-app.kro.kr/api";
+const API_URL = process.env.ERDIFY_API_URL ?? "https://erdify-app.kro.kr/api";
 const API_KEY = process.env.ERDIFY_API_KEY ?? "";
 
 export interface OrganizationItem {

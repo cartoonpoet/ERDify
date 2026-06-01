@@ -50,6 +50,6 @@ export function getApiUrl(): string {
   return (
     process.env["ERDIFY_API_URL"] ??
     readConfig().apiUrl ??
-    "http://erdify-app.kro.kr/api"
+    "https://erdify-app.kro.kr/api"
   );
 }

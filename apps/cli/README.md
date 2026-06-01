@@ -1,6 +1,6 @@
 # @erdify/cli
 
-Command-line interface for [ERDify](http://erdify-app.kro.kr) — manage your database schemas and ERD diagrams directly from the terminal.
+Command-line interface for [ERDify](https://erdify-app.kro.kr) — manage your database schemas and ERD diagrams directly from the terminal.
 
 ## Installation
 
@@ -10,7 +10,7 @@ npm install -g @erdify/cli
 
 ## Setup
 
-**1. Get an API key** — Log in to [ERDify](http://erdify-app.kro.kr) → Settings → API Keys
+**1. Get an API key** — Log in to [ERDify](https://erdify-app.kro.kr) → Settings → API Keys
 
 **2. Authenticate**
 

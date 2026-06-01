@@ -1,10 +1,10 @@
 # @erdify/mcp-server
 
-MCP server for [ERDify](http://erdify-app.kro.kr) — lets AI assistants (Claude, Cursor, etc.) read and modify your ERD diagrams using natural language.
+MCP server for [ERDify](https://erdify-app.kro.kr) — lets AI assistants (Claude, Cursor, etc.) read and modify your ERD diagrams using natural language.
 
 ## Prerequisites
 
-1. An [ERDify](http://erdify-app.kro.kr) account
+1. An [ERDify](https://erdify-app.kro.kr) account
 2. An API key — log in → Settings → API Keys → create a new key
 
 ---

@@ -4,7 +4,7 @@
 
 사용하는 AI 도구(Cursor · Claude · Gemini · Codex)에서 MCP로 연결하세요. 스키마 설계부터 DDL·ORM 생성, 팀 실시간 협업까지 — AI와 함께 일하는 데이터베이스 도구입니다.
 
-**🌐 [erdify.kro.kr](http://erdify.kro.kr)** · **앱: [erdify-app.kro.kr](http://erdify-app.kro.kr)**
+**🌐 [erdify.kro.kr](https://erdify.kro.kr)** · **앱: [erdify-app.kro.kr](https://erdify-app.kro.kr)**
 
 ---
 
@@ -28,7 +28,7 @@
 
 ## MCP 연동 — AI 도구에서 스키마 관리
 
-[설정 → API](http://erdify-app.kro.kr/settings/api)에서 API 키를 발급한 뒤, 사용하는 AI 도구에 설정하세요.
+[설정 → API](https://erdify-app.kro.kr/settings/api)에서 API 키를 발급한 뒤, 사용하는 AI 도구에 설정하세요.
 
 ### Cursor
 
@@ -128,7 +128,7 @@ curl "https://api.erdify.com/v1/projects/proj_abc/ddl?dialect=postgresql" \
   -H "Authorization: Bearer erd_your_api_key_here"
 ```
 
-자세한 API 레퍼런스: [erdify.kro.kr/docs/api-reference](http://erdify.kro.kr/docs/api-reference)
+자세한 API 레퍼런스: [erdify.kro.kr/docs/api-reference](https://erdify.kro.kr/docs/api-reference)
 
 ---
 
