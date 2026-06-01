@@ -1,0 +1,143 @@
+name: Test
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          pnpm --filter @erdify/domain build
+          pnpm --filter @erdify/contracts build
+          pnpm --filter @erdify/erd-ui build
+
+      - name: Test — packages/domain
+        id: domain
+        run: |
+          mkdir -p .ci
+          cd packages/domain
+          npx vitest run --reporter=json --outputFile=$GITHUB_WORKSPACE/.ci/domain.json
+        continue-on-error: true
+
+      - name: Test — apps/web
+        id: web
+        run: |
+          cd apps/web
+          npx vitest run --reporter=json --outputFile=$GITHUB_WORKSPACE/.ci/web.json
+        continue-on-error: true
+
+      - name: Parse results & build Telegram message
+        id: msg
+        if: always()
+        run: |
+          node << 'EOF'
+          const fs = require('fs');
+
+          function parse(path) {
+            try {
+              const d = JSON.parse(fs.readFileSync(path, 'utf8'));
+              const failed = [];
+              for (const f of d.testResults ?? []) {
+                for (const t of f.assertionResults ?? []) {
+                  if (t.status === 'failed') {
+                    const suite = t.ancestorTitles.join(' > ');
+                    failed.push((suite ? suite + ' > ' : '') + t.title);
+                  }
+                }
+              }
+              return { total: d.numTotalTests, passed: d.numPassedTests, failed };
+            } catch { return null; }
+          }
+
+          const web    = parse('.ci/web.json');
+          const domain = parse('.ci/domain.json');
+
+          const allFailed = [
+            ...(web    ? web.failed.map(t => `[web] ${t}`)    : ['web 결과 없음']),
+            ...(domain ? domain.failed.map(t => `[domain] ${t}`) : ['domain 결과 없음']),
+          ];
+
+          const ok = allFailed.length === 0;
+          const icon = ok ? '✅' : '❌';
+          const branch = process.env.BRANCH;
+          const sha = (process.env.COMMIT_SHA || '').slice(0, 7);
+          const commitMsg = (process.env.COMMIT_MSG || '').split('\n')[0].slice(0, 72);
+          const runUrl = process.env.GITHUB_RUN_URL;
+
+          const webLine = web
+            ? `• apps/web: ${web.passed}/${web.total} ${web.failed.length ? '❌' : '✓'}`
+            : '• apps/web: 실행 안 됨';
+          const domainLine = domain
+            ? `• packages/domain: ${domain.passed}/${domain.total} ${domain.failed.length ? '❌' : '✓'}`
+            : '• packages/domain: 실행 안 됨';
+
+          let failBlock = '';
+          if (allFailed.length > 0) {
+            const items = allFailed.slice(0, 15).map(t => `  • ${t}`).join('\n');
+            const more = allFailed.length > 15 ? `\n  … 외 ${allFailed.length - 15}개` : '';
+            failBlock = `\n\n💥 실패한 테스트\n${items}${more}`;
+          }
+
+          const msg = [
+            `${icon} ERDify 테스트 ${ok ? '통과' : '실패'}`,
+            `Branch: ${branch}  |  ${sha} — ${commitMsg}`,
+            '',
+            '📊 결과',
+            webLine,
+            domainLine,
+            failBlock,
+            '',
+            `🔗 ${runUrl}`,
+          ].join('\n').trim();
+
+          // Write to file to avoid shell escaping issues
+          fs.writeFileSync('.ci/telegram-msg.txt', msg);
+          console.log('Message preview:\n' + msg);
+          EOF
+
+      - name: Send Telegram notification
+        if: always() && env.TELEGRAM_BOT_TOKEN != ''
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message || github.event.pull_request.title }}
+          COMMIT_SHA: ${{ github.sha }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          format: markdown
+          message_file: .ci/telegram-msg.txt
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: .ci/
+          retention-days: 14
+
+      - name: Fail job if tests failed
+        if: steps.domain.outcome == 'failure' || steps.web.outcome == 'failure'
+        run: exit 1
