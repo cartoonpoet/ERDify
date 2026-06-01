@@ -669,6 +669,168 @@ describe("DiagramsService", () => {
     });
   });
 
+  describe("duplicate", () => {
+    const makeSourceDoc = (): DiagramDocument =>
+      makeDoc({
+        name: "원본",
+        entities: [
+          makeEntity("ent-1", [makeColumn("col-1")]),
+          makeEntity("ent-2", [makeColumn("col-2")]),
+        ],
+        relationships: [
+          {
+            ...makeRelationship("rel-1"),
+            sourceEntityId: "ent-1",
+            sourceColumnIds: ["col-1"],
+            targetEntityId: "ent-2",
+            targetColumnIds: ["col-2"],
+          },
+        ],
+        indexes: [
+          {
+            id: "idx-1",
+            entityId: "ent-1",
+            columnIds: ["col-1"],
+            name: "idx_users_id",
+            unique: false,
+          },
+        ],
+        layout: {
+          entityPositions: {
+            "ent-1": { x: 10, y: 20 },
+            "ent-2": { x: 30, y: 40 },
+          },
+        },
+      });
+
+    it("throws NotFoundException for unknown diagram", async () => {
+      diagramRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.duplicate("x", "user-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("throws ForbiddenException for viewer role", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+
+      await expect(service.duplicate("diag-1", "user-1")).rejects.toThrow(ForbiddenException);
+    });
+
+    it("copies name with (복사본) suffix", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.create.mockImplementation((d: Partial<Diagram>) => d as Diagram);
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.duplicate("diag-1", "user-1");
+
+      const doc = result.content as unknown as DiagramDocument;
+      expect(doc.name).toBe("원본 (복사본)");
+    });
+
+    it("assigns new IDs to all entities and columns", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.create.mockImplementation((d: Partial<Diagram>) => d as Diagram);
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.duplicate("diag-1", "user-1");
+
+      const doc = result.content as unknown as DiagramDocument;
+      expect(doc.entities[0]!.id).not.toBe("ent-1");
+      expect(doc.entities[1]!.id).not.toBe("ent-2");
+      expect(doc.entities[0]!.columns[0]!.id).not.toBe("col-1");
+      expect(doc.entities[1]!.columns[0]!.id).not.toBe("col-2");
+    });
+
+    it("remaps relationship entity and column IDs to new IDs", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.create.mockImplementation((d: Partial<Diagram>) => d as Diagram);
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.duplicate("diag-1", "user-1");
+
+      const doc = result.content as unknown as DiagramDocument;
+      const newEnt1Id = doc.entities[0]!.id;
+      const newEnt2Id = doc.entities[1]!.id;
+      const newCol1Id = doc.entities[0]!.columns[0]!.id;
+      const newCol2Id = doc.entities[1]!.columns[0]!.id;
+      const rel = doc.relationships[0]!;
+
+      expect(rel.id).not.toBe("rel-1");
+      expect(rel.sourceEntityId).toBe(newEnt1Id);
+      expect(rel.targetEntityId).toBe(newEnt2Id);
+      expect(rel.sourceColumnIds).toEqual([newCol1Id]);
+      expect(rel.targetColumnIds).toEqual([newCol2Id]);
+    });
+
+    it("remaps index entityId and columnIds to new IDs", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.create.mockImplementation((d: Partial<Diagram>) => d as Diagram);
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.duplicate("diag-1", "user-1");
+
+      const doc = result.content as unknown as DiagramDocument;
+      const newEnt1Id = doc.entities[0]!.id;
+      const newCol1Id = doc.entities[0]!.columns[0]!.id;
+      const idx = doc.indexes[0]!;
+
+      expect(idx.id).not.toBe("idx-1");
+      expect(idx.entityId).toBe(newEnt1Id);
+      expect(idx.columnIds).toEqual([newCol1Id]);
+    });
+
+    it("remaps layout entityPositions keys to new entity IDs", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.create.mockImplementation((d: Partial<Diagram>) => d as Diagram);
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.duplicate("diag-1", "user-1");
+
+      const doc = result.content as unknown as DiagramDocument;
+      const newEnt1Id = doc.entities[0]!.id;
+      const newEnt2Id = doc.entities[1]!.id;
+      const positions = doc.layout.entityPositions;
+
+      expect(positions["ent-1"]).toBeUndefined();
+      expect(positions["ent-2"]).toBeUndefined();
+      expect(positions[newEnt1Id]).toEqual({ x: 10, y: 20 });
+      expect(positions[newEnt2Id]).toEqual({ x: 30, y: 40 });
+    });
+
+    it("returns diagram with org metadata", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.create.mockImplementation((d: Partial<Diagram>) => d as Diagram);
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.duplicate("diag-1", "user-1");
+
+      expect(result.organizationId).toBe("org-1");
+      expect(result.organizationName).toBe("Test Org");
+      expect(result.projectName).toBe("Test Project");
+      expect(result.myRole).toBe("editor");
+    });
+  });
+
   describe("getActiveUsers", () => {
     const diagramIds = ["diag-1", "diag-2"];
 

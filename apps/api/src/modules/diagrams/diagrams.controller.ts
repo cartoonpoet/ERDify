@@ -74,6 +74,12 @@ export class DiagramsController {
     return this.diagramsService.restoreVersion(id, versionId, user.sub);
   }
 
+  @Post("diagrams/:id/duplicate")
+  @HttpCode(HttpStatus.CREATED)
+  duplicate(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
+    return this.diagramsService.duplicate(id, user.sub);
+  }
+
   @Delete("diagrams/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@CurrentUser() user: JwtPayload, @Param("id") id: string) {

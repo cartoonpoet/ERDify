@@ -48,6 +48,10 @@ export class DiagramsService {
     return this.crud.remove(diagramId, userId);
   }
 
+  duplicate(diagramId: string, userId: string) {
+    return this.crud.duplicate(diagramId, userId);
+  }
+
   canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {
     return this.crud.canAccessDiagram(diagramId, userId);
   }

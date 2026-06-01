@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { addEntity } from "@erdify/domain";
 import { Share2 } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
-import { getDiagram } from "@/shared/api/diagrams.api";
+import { getDiagram, duplicateDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
 import { RelationshipPopover } from "../components/RelationshipPopover";
@@ -32,6 +32,7 @@ export const EditorPage = () => {
   const [showShare, setShowShare] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showFileMenu, setShowFileMenu] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   const { isDirty, isCollaborating, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, openSearchTab, undo, canEdit } = useEditorStore();
 
@@ -152,10 +153,21 @@ export const EditorPage = () => {
               <div className={css.fileDropdownSep} />
               <button
                 className={css.fileDropdownItem}
-                onClick={() => { setShowFileMenu(false); setShowExport(true); }}
+                disabled={isDuplicating}
+                onClick={async () => {
+                  if (!diagramId) return;
+                  setShowFileMenu(false);
+                  setIsDuplicating(true);
+                  try {
+                    const copy = await duplicateDiagram(diagramId);
+                    navigate(`/editor/${copy.id}`);
+                  } finally {
+                    setIsDuplicating(false);
+                  }
+                }}
               >
                 <span className={css.fileDropdownItemIcon}>⎘</span>
-                복사본 저장
+                {isDuplicating ? "복사 중…" : "복사본 저장"}
               </button>
             </div>
           )}

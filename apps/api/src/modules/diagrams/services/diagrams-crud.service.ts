@@ -130,6 +130,66 @@ export class DiagramsCrudService {
     await this.diagramRepo.remove(diagram);
   }
 
+  async duplicate(
+    diagramId: string,
+    userId: string
+  ): Promise<Diagram & { organizationId: string; organizationName: string; projectName: string; myRole: string }> {
+    const { diagram, orgId, orgName, projectName } = await this.getDiagramWithOrg(diagramId);
+    const member = await this.authorizationService.requireEditorOrOwner(orgId, userId);
+    const src = diagram.content as DiagramDocument;
+
+    // 엔티티 ID 재매핑
+    const entityIdMap = new Map<string, string>();
+    src.entities.forEach((e) => entityIdMap.set(e.id, randomUUID()));
+
+    // 컬럼 ID 재매핑
+    const columnIdMap = new Map<string, string>();
+    src.entities.forEach((e) => e.columns.forEach((c) => columnIdMap.set(c.id, randomUUID())));
+
+    const now = new Date().toISOString();
+    const newId = randomUUID();
+    const newName = `${src.name} (복사본)`;
+
+    const newContent: DiagramDocument = {
+      ...src,
+      id: newId,
+      name: newName,
+      metadata: { ...src.metadata, revision: 1, createdAt: now, updatedAt: now },
+      entities: src.entities.map((e) => ({
+        ...e,
+        id: entityIdMap.get(e.id)!,
+        columns: e.columns.map((c) => ({ ...c, id: columnIdMap.get(c.id)! })),
+      })),
+      relationships: src.relationships.map((r) => ({
+        ...r,
+        id: randomUUID(),
+        sourceEntityId: entityIdMap.get(r.sourceEntityId) ?? r.sourceEntityId,
+        targetEntityId: entityIdMap.get(r.targetEntityId) ?? r.targetEntityId,
+        sourceColumnIds: r.sourceColumnIds.map((id) => columnIdMap.get(id) ?? id),
+        targetColumnIds: r.targetColumnIds.map((id) => columnIdMap.get(id) ?? id),
+      })),
+      indexes: src.indexes.map((i) => ({
+        ...i,
+        id: randomUUID(),
+        entityId: entityIdMap.get(i.entityId) ?? i.entityId,
+        columnIds: i.columnIds.map((id) => columnIdMap.get(id) ?? id),
+      })),
+      layout: {
+        entityPositions: Object.fromEntries(
+          Object.entries(src.layout.entityPositions).map(([oldId, pos]) => [
+            entityIdMap.get(oldId) ?? oldId,
+            pos,
+          ])
+        ),
+      },
+    };
+
+    const saved = await this.diagramRepo.save(
+      this.diagramRepo.create({ id: newId, projectId: diagram.projectId, name: newName, content: newContent, createdBy: userId })
+    );
+    return { ...saved, organizationId: orgId, organizationName: orgName, projectName, myRole: member.role };
+  }
+
   async canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {
     try {
       const { orgId } = await this.getDiagramWithOrg(diagramId);

@@ -58,6 +58,10 @@ export function getPublicDiagram(shareToken: string): Promise<PublicDiagramRespo
   return httpClient.get<PublicDiagramResponse>(`/diagrams/public/${shareToken}`).then((r) => r.data);
 }
 
+export function duplicateDiagram(diagramId: string): Promise<DiagramResponse> {
+  return httpClient.post<DiagramResponse>(`/diagrams/${diagramId}/duplicate`).then((r) => r.data);
+}
+
 export function getActiveDiagramUsers(diagramIds: string[]): Promise<ActiveUsersResponse> {
   if (diagramIds.length === 0) return Promise.resolve({});
   return httpClient
