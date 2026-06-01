@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERDify — Header & 우측 패널 배치 시안</title>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+
+:root {
+  --surface:    #FFFFFF;
+  --surface-2:  #F1F4F7;
+  --surface-3:  #F8F9FB;
+  --text-1:     #1C2B33;
+  --text-2:     #5D6C7B;
+  --text-3:     #BCC0C4;
+  --border:     #DEE3E9;
+  --border-2:   #CBD2D9;
+  --primary:    #0064E0;
+  --primary-bg: #EEF4FF;
+  --success:    #31A24C;
+  --error:      #E41E3F;
+  --warning:    #D97706;
+  --ai-grad:    linear-gradient(135deg, #2563eb 0%, #5b21b6 100%);
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-lg:  0 16px 48px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  --r-sm: 6px; --r-md: 8px; --r-lg: 14px;
+  --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+body { font-family: var(--font); background: var(--surface-2); color: var(--text-1); }
+
+/* ━━━ 시안 전환 바 ━━━ */
+.selector {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #1C2B33; display: flex; align-items: center;
+  gap: 0; padding: 0 20px; height: 44px;
+}
+.selector-logo { font-size: 14px; font-weight: 800; color: #fff; margin-right: 20px; letter-spacing: -0.5px; opacity: .9; }
+.sel-tab {
+  height: 100%; padding: 0 16px; border: none; background: none;
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,0.5); cursor: pointer; position: relative;
+  transition: color .15s; white-space: nowrap;
+}
+.sel-tab:hover { color: rgba(255,255,255,0.8); }
+.sel-tab.active { color: #fff; }
+.sel-tab.active::after {
+  content: ''; position: absolute; bottom: 0; left: 16px; right: 16px;
+  height: 2px; background: #60a5fa; border-radius: 2px 2px 0 0;
+}
+.sel-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  padding: 2px 6px; border-radius: 100px; margin-left: 6px; vertical-align: middle;
+}
+.badge-confirm { background: rgba(49,162,76,0.3); color: #6ee7b7; }
+.badge-alt { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+
+/* ━━━ 화면 컨테이너 ━━━ */
+.screen { display: none; height: calc(100vh - 44px); margin-top: 44px; flex-direction: column; overflow: hidden; }
+.screen.active { display: flex; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   공통: 캔버스 / 노드 / 스키마 사이드바
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.body-row { display: flex; flex: 1; overflow: hidden; }
+
+.schema-sidebar {
+  width: 180px; flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;
+}
+.ss-header { height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.ss-title { font-size: 9px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; }
+.ss-list { padding: 6px; overflow-y: auto; flex: 1; }
+.ss-row { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: var(--r-sm); cursor: pointer; }
+.ss-row:hover { background: var(--surface-2); }
+.ss-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ss-name { font-size: 12px; color: var(--text-1); flex: 1; }
+.ss-cnt { font-size: 10px; color: var(--text-2); font-weight: 600; }
+
+.canvas {
+  flex: 1; position: relative; overflow: hidden;
+  background: var(--surface-3);
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.node {
+  position: absolute; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-md); min-width: 160px; box-shadow: var(--shadow-md); overflow: hidden;
+}
+.node-hd { padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text-1); }
+.node-badge { font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 100px; color: var(--primary); background: var(--primary-bg); }
+.node-col { padding: 4px 12px; display: flex; align-items: center; gap: 7px; border-bottom: 1px solid var(--surface-2); font-size: 12px; }
+.node-col:last-child { border-bottom: none; }
+.pk { font-size: 9px; color: #D97706; font-weight: 700; min-width: 14px; }
+.fk { font-size: 9px; color: var(--primary); font-weight: 700; min-width: 14px; }
+.cn { color: var(--text-1); }
+.ct { margin-left: auto; font-size: 10px; color: var(--text-3); }
+.rels { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   공통: 우측 탭 패널 (A안 베이스)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.right-side { display: flex; flex-direction: row; flex-shrink: 0; border-left: 1px solid var(--border); }
+.right-panel {
+  width: 0; overflow: hidden;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  transition: width .22s cubic-bezier(.4,0,.2,1);
+}
+.right-panel.open { width: 280px; }
+.right-tabbar {
+  width: 44px; flex-shrink: 0;
+  background: var(--surface-2);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: 8px; gap: 2px;
+}
+.rtab-btn {
+  width: 34px; height: 38px; border: none; background: none; color: var(--text-3);
+  cursor: pointer; border-radius: var(--r-sm); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px; position: relative;
+  font-family: var(--font); transition: all .15s;
+}
+.rtab-btn:hover { background: var(--border); color: var(--text-2); }
+.rtab-btn.on { background: var(--primary-bg); color: var(--primary); }
+.rtab-btn.on::after {
+  content:''; position:absolute; right:0; top:50%; transform:translateY(-50%);
+  width:3px; height:18px; background:var(--primary); border-radius:3px 0 0 3px;
+}
+.rtab-icon { font-size: 14px; }
+.rtab-lbl { font-size: 8px; font-weight: 700; letter-spacing: -.2px; }
+.rtab-sep { width: 20px; height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   공통: 패널 내부 콘텐츠
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.panel-header { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 44px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.panel-title { font-size: 13px; font-weight: 700; color: var(--text-1); }
+
+.ai-header-strip {
+  padding: 14px 16px; background: var(--ai-grad);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.ai-icon-box { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.ai-name { font-size: 13px; font-weight: 700; color: #fff; }
+.ai-sub { font-size: 10px; color: rgba(255,255,255,0.6); }
+.ai-model { margin-left: auto; display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 100px; padding: 3px 9px; font-size: 10px; font-weight: 600; color: #fff; cursor: pointer; }
+.ai-model-dot { width: 5px; height: 5px; border-radius: 50%; background: #fff; opacity: 0.7; }
+
+.chat-msgs { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.chat-msgs::-webkit-scrollbar { width: 3px; }
+.chat-msgs::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.bubble-u { align-self: flex-end; max-width: 88%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-1); border-radius: 10px 10px 3px 10px; padding: 8px 11px; font-size: 12px; line-height: 1.6; }
+.bubble-a { align-self: flex-start; max-width: 94%; background: var(--primary-bg); border: 1px solid #C7D9F9; color: var(--text-1); border-radius: 10px 10px 10px 3px; padding: 8px 11px; font-size: 12px; line-height: 1.6; }
+.bubble-a code { background: rgba(0,100,224,0.08); color: var(--primary); padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+.msg-t { font-size: 10px; color: var(--text-3); }
+.msg-t.r { text-align: right; }
+
+.chat-input-row { padding: 8px 12px; border-top: 1px solid var(--border); flex-shrink: 0; display: flex; gap: 6px; align-items: flex-end; background: var(--surface); }
+.chat-ta { flex: 1; border: 1.5px solid var(--border); border-radius: var(--r-md); padding: 8px 11px; font-size: 12px; font-family: var(--font); color: var(--text-1); outline: none; resize: none; min-height: 36px; line-height: 1.5; transition: border-color .15s; background: var(--surface); }
+.chat-ta:focus { border-color: var(--primary); }
+.chat-ta::placeholder { color: var(--text-3); }
+.chat-send { width: 34px; height: 34px; flex-shrink: 0; background: var(--ai-grad); border: none; border-radius: var(--r-sm); color: #fff; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.chat-send:hover { opacity: .85; }
+
+.chip { font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 100px; border: 1px solid var(--border); background: none; color: var(--text-2); cursor: pointer; font-family: var(--font); transition: all .15s; display: inline-flex; align-items: center; gap: 5px; }
+.chip:hover { border-color: var(--border-2); }
+.chip.on { background: var(--primary-bg); border-color: var(--primary); color: var(--text-1); }
+.cdot { width: 5px; height: 5px; border-radius: 50%; }
+
+.h-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-bottom: 1px solid var(--surface-2); cursor: pointer; transition: background .1s; }
+.h-item:hover { background: var(--surface-3); }
+.h-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.h-human { background: color-mix(in srgb, #60a5fa 15%, transparent); color: #2563EB; }
+.h-ai    { background: color-mix(in srgb, #a78bfa 15%, transparent); color: #7C3AED; }
+.h-text { font-size: 12px; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h-meta { font-size: 10px; color: var(--text-2); margin-top: 2px; }
+.h-revert { margin-top: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; background: none; border: 1px solid var(--border); border-radius: 100px; color: var(--text-2); cursor: pointer; font-family: var(--font); }
+.h-revert:hover { border-color: var(--border-2); }
+
+.search-input { width: 100%; border: 1.5px solid var(--border); border-radius: var(--r-md); padding: 8px 11px; font-size: 12px; font-family: var(--font); color: var(--text-1); outline: none; transition: border-color .15s; background: var(--surface); }
+.search-input:focus { border-color: var(--primary); }
+.search-input::placeholder { color: var(--text-3); }
+.s-item { padding: 7px 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: background .1s; border-bottom: 1px solid var(--surface-2); }
+.s-item:hover { background: var(--surface-3); }
+.s-item.sel { background: var(--primary-bg); }
+.s-icon { font-size: 11px; color: var(--text-3); width: 14px; }
+.s-name { font-size: 12px; color: var(--text-1); font-weight: 600; flex: 1; }
+.s-badge { font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 100px; color: var(--primary); background: var(--primary-bg); }
+.s-cols { font-size: 11px; color: var(--text-2); padding: 2px 14px 7px 36px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   공통: 헤더 버튼 스타일
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.hbtn {
+  height: 30px; padding: 0 11px; border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--text-1); font-size: 12px; font-weight: 600;
+  font-family: var(--font); cursor: pointer; transition: background .15s;
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; flex-shrink: 0;
+}
+.hbtn:hover { background: var(--surface-2); }
+.hbtn-ghost { background: none; border-color: transparent; color: var(--text-2); }
+.hbtn-ghost:hover { background: var(--surface-2); border-color: var(--border); color: var(--text-1); }
+.hbtn-primary { background: var(--text-1); color: #fff; border-color: var(--text-1); }
+.hbtn-primary:hover { background: #2a3543; }
+.hbtn-success { background: var(--success); color: #fff; border-color: var(--success); }
+.hbtn-success:hover { background: #28913f; }
+.hbtn-ai { background: var(--ai-grad); color: #fff; border: none; }
+.hbtn-ai:hover { opacity: .9; }
+.hbtn-icon { font-size: 13px; }
+.hbtn-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; margin: 0 2px; }
+
+/* 공유 버튼 특별 스타일 */
+.share-btn {
+  height: 30px; padding: 0 12px; border-radius: var(--r-sm);
+  background: var(--primary); color: #fff; border: none; font-size: 12px; font-weight: 600;
+  font-family: var(--font); cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  flex-shrink: 0; transition: opacity .15s;
+}
+.share-btn:hover { opacity: .9; }
+
+/* 프레즌스 영역 */
+.presence { display: flex; align-items: center; }
+.av { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; margin-left: -6px; }
+.av:first-child { margin-left: 0; }
+.invite-btn {
+  width: 26px; height: 26px; border-radius: 50%; border: 2px dashed var(--border-2);
+  background: var(--surface-2); display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--text-3); cursor: pointer; margin-left: 2px; transition: all .15s;
+}
+.invite-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-bg); }
+
+/* 드롭다운 */
+.dropdown { position: relative; }
+.dropdown-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 100;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg); min-width: 180px; overflow: hidden; padding: 4px 0;
+  display: none;
+}
+.dropdown:hover .dropdown-menu,
+.dropdown.open .dropdown-menu { display: block; }
+.dm-item {
+  display: flex; align-items: center; gap: 9px; padding: 8px 13px;
+  font-size: 12px; color: var(--text-1); cursor: pointer; transition: background .1s;
+  font-weight: 500;
+}
+.dm-item:hover { background: var(--surface-2); }
+.dm-item-icon { font-size: 12px; color: var(--text-3); width: 16px; text-align: center; }
+.dm-sep { height: 1px; background: var(--border); margin: 4px 0; }
+.dm-kbd { margin-left: auto; font-size: 10px; color: var(--text-3); background: var(--surface-2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-family: var(--font); }
+
+/* 저장 상태 표시 */
+.save-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+.save-lbl { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+
+/* 브레드크럼 */
+.back-btn { background: none; border: none; color: var(--text-2); cursor: pointer; font-size: 18px; padding: 2px 4px; border-radius: var(--r-sm); display: flex; align-items: center; }
+.back-btn:hover { background: var(--surface-2); }
+.bc { display: flex; align-items: center; gap: 5px; font-size: 13px; }
+.bc-seg { color: var(--text-2); font-weight: 500; }
+.bc-sep { color: var(--text-3); font-size: 11px; }
+.bc-cur { color: var(--text-1); font-weight: 700; }
+.spacer { flex: 1; }
+
+/* 주석 박스 */
+.annotation {
+  position: absolute; background: #FFFBEB; border: 1px solid #FDE68A;
+  border-radius: var(--r-md); padding: 10px 14px; font-size: 11px; color: #92400E;
+  box-shadow: var(--shadow-sm); max-width: 220px; line-height: 1.6; pointer-events: none;
+  z-index: 50;
+}
+.annotation strong { font-weight: 700; display: block; margin-bottom: 3px; color: #78350F; }
+.annotation-arrow { position: absolute; }
+.ann-tag {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 100px; margin-right: 4px; vertical-align: middle;
+}
+.ann-header { background: #DBEAFE; color: #1E40AF; }
+.ann-panel  { background: #F3E8FF; color: #6B21A8; }
+
+/* 범례 패널 */
+.legend {
+  position: absolute; bottom: 20px; left: 20px; z-index: 50;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+  padding: 12px 16px; box-shadow: var(--shadow-md); min-width: 240px;
+}
+.legend-title { font-size: 10px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+.legend-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 11px; line-height: 1.5; }
+.legend-row:last-child { margin-bottom: 0; }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; margin-top: 2px; }
+
+/* 툴팁 */
+.tooltip-wrap { position: relative; display: inline-flex; }
+.tooltip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--text-1); color: #fff; font-size: 10px; font-weight: 600;
+  padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity .15s; z-index: 200;
+}
+.tooltip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border: 4px solid transparent; border-top-color: var(--text-1); }
+.tooltip-wrap:hover .tooltip { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- 시안 전환 바 -->
+<div class="selector">
+  <div class="selector-logo">ERDify</div>
+  <button class="sel-tab active" onclick="showScreen('v1', this)">
+    V1 — Header 집중형 <span class="sel-badge badge-confirm">추천</span>
+  </button>
+  <button class="sel-tab" onclick="showScreen('v2', this)">
+    V2 — Header 미니멀 <span class="sel-badge badge-alt">대안</span>
+  </button>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  V1: Header 집중형
+  Header: 테이블추가 / 파일(가져오기·내보내기) / 버전저장 / 공유·멤버초대
+  우측 패널: AI채팅 / 검색 / 활동기록
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div class="screen active" id="screen-v1">
+
+  <!-- ── 헤더 ── -->
+  <div style="height:48px;flex-shrink:0;display:flex;align-items:center;gap:6px;padding:0 14px;background:var(--surface);border-bottom:1px solid var(--border);">
+    <button class="back-btn">←</button>
+    <div class="bc">
+      <span class="bc-seg">Acme</span><span class="bc-sep">›</span>
+      <span class="bc-seg">Backend</span><span class="bc-sep">›</span>
+      <span class="bc-cur">user_service_erd</span>
+    </div>
+    <div class="save-dot" style="margin-left:8px"></div>
+    <span class="save-lbl" style="margin-left:4px">저장됨</span>
+    <div class="spacer"></div>
+
+    <!-- ① 테이블 추가 -->
+    <div class="tooltip-wrap">
+      <button class="hbtn hbtn-ghost" onclick="void 0">
+        <span class="hbtn-icon">＋</span> 테이블
+      </button>
+      <div class="tooltip">새 테이블 추가 (⌘T)</div>
+    </div>
+
+    <div class="hbtn-divider"></div>
+
+    <!-- ② 파일 드롭다운 (가져오기 + 내보내기) -->
+    <div class="dropdown" id="dd-file-v1">
+      <div class="tooltip-wrap">
+        <button class="hbtn hbtn-ghost" onclick="toggleDd('dd-file-v1')">
+          파일 <span style="font-size:9px;opacity:.6">▾</span>
+        </button>
+        <div class="tooltip">가져오기 · 내보내기</div>
+      </div>
+      <div class="dropdown-menu">
+        <div class="dm-item"><span class="dm-item-icon">↓</span> 가져오기<span class="dm-kbd">⌘I</span></div>
+        <div class="dm-item"><span class="dm-item-icon">↑</span> 내보내기<span class="dm-kbd">⌘E</span></div>
+        <div class="dm-sep"></div>
+        <div class="dm-item"><span class="dm-item-icon">⎘</span> 복사본 저장</div>
+      </div>
+    </div>
+
+    <!-- ③ 버전 저장 -->
+    <div class="tooltip-wrap">
+      <button class="hbtn hbtn-success" onclick="void 0">
+        <span class="hbtn-icon">↑</span> 버전 저장
+      </button>
+      <div class="tooltip">현재 상태를 버전으로 저장 (⌘S)</div>
+    </div>
+
+    <div class="hbtn-divider"></div>
+
+    <!-- ④ 멤버 현황 + 초대 -->
+    <div class="presence">
+      <div class="av" style="background:#2563EB" title="Junho">J</div>
+      <div class="av" style="background:#7C3AED" title="Siyeon">S</div>
+      <div class="tooltip-wrap" style="margin-left:4px">
+        <button class="invite-btn" onclick="void 0">＋</button>
+        <div class="tooltip">멤버 초대</div>
+      </div>
+    </div>
+
+    <!-- ⑤ 공유 -->
+    <button class="share-btn" onclick="void 0">
+      <span>↗</span> 공유
+    </button>
+  </div>
+
+  <!-- ── 바디 ── -->
+  <div class="body-row">
+    <div class="schema-sidebar">
+      <div class="ss-header"><span class="ss-title">스키마</span></div>
+      <div class="ss-list">
+        <div class="ss-row"><div class="ss-dot" style="background:#7C3AED"></div><span class="ss-name">public</span><span class="ss-cnt">12</span></div>
+        <div class="ss-row"><div class="ss-dot" style="background:#2563EB"></div><span class="ss-name">auth</span><span class="ss-cnt">5</span></div>
+        <div class="ss-row"><div class="ss-dot" style="background:#D97706"></div><span class="ss-name">billing</span><span class="ss-cnt">8</span></div>
+      </div>
+    </div>
+
+    <!-- 캔버스 -->
+    <div class="canvas" style="position:relative">
+      <div class="node" style="top:44px;left:28px">
+        <div class="node-hd">users <span class="node-badge">public</span></div>
+        <div class="node-col"><span class="pk">PK</span><span class="cn">id</span><span class="ct">uuid</span></div>
+        <div class="node-col"><span class="fk"></span><span class="cn">email</span><span class="ct">varchar</span></div>
+        <div class="node-col"><span class="fk"></span><span class="cn">name</span><span class="ct">varchar</span></div>
+      </div>
+      <div class="node" style="top:44px;left:250px">
+        <div class="node-hd">sessions <span class="node-badge">auth</span></div>
+        <div class="node-col"><span class="pk">PK</span><span class="cn">id</span><span class="ct">uuid</span></div>
+        <div class="node-col"><span class="fk">FK</span><span class="cn">user_id</span><span class="ct">uuid</span></div>
+        <div class="node-col"><span class="fk"></span><span class="cn">token</span><span class="ct">text</span></div>
+      </div>
+      <div class="node" style="top:210px;left:28px">
+        <div class="node-hd">orders <span class="node-badge">billing</span></div>
+        <div class="node-col"><span class="pk">PK</span><span class="cn">id</span><span class="ct">uuid</span></div>
+        <div class="node-col"><span class="fk">FK</span><span class="cn">user_id</span><span class="ct">uuid</span></div>
+        <div class="node-col"><span class="fk"></span><span class="cn">amount</span><span class="ct">numeric</span></div>
+      </div>
+      <svg class="rels">
+        <line x1="198" y1="76" x2="250" y2="76" stroke="#CBD2D9" stroke-width="1.5" stroke-dasharray="5,4"/>
+        <line x1="108" y1="136" x2="108" y2="230" stroke="#CBD2D9" stroke-width="1.5" stroke-dasharray="5,4"/>
+      </svg>
+
+      <!-- 범례 -->
+      <div class="legend">
+        <div class="legend-title">기능 배치 구분</div>
+        <div class="legend-row">
+          <div class="legend-dot" style="background:#BFDBFE"></div>
+          <div><span class="ann-tag ann-header">Header</span>문서 전역 액션 — 테이블 추가, 파일(가져오기/내보내기), 버전 저장, 공유·멤버 초대</div>
+        </div>
+        <div class="legend-row">
+          <div class="legend-dot" style="background:#E9D5FF"></div>
+          <div><span class="ann-tag ann-panel">우측 패널</span>컨텍스트 탐색 — AI 채팅, 검색, 활동 기록</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우측 탭 패널 (A안 스타일) -->
+    <div class="right-side">
+      <div class="right-panel open" id="v1-panel">
+
+        <!-- AI 탭 콘텐츠 -->
+        <div id="v1-pc-ai" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+          <div class="ai-header-strip">
+            <div class="ai-icon-box">✦</div>
+            <div><div class="ai-name">ERDify AI</div><div class="ai-sub">Claude Sonnet 4.6</div></div>
+            <button class="ai-model"><div class="ai-model-dot"></div>모델 ▾</button>
+          </div>
+          <div class="chat-msgs">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div class="bubble-u">users에 role 컬럼 추가해줘</div>
+              <div class="msg-t r">방금 전</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div class="bubble-a"><code>role varchar(20) DEFAULT 'user'</code> 컬럼을 추가하겠습니다. 적용할까요?</div>
+              <div class="msg-t">AI · 방금 전</div>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <textarea class="chat-ta" placeholder="ERD에 대해 물어보세요..." rows="1"></textarea>
+            <button class="chat-send">↑</button>
+          </div>
+        </div>
+
+        <!-- 검색 탭 콘텐츠 -->
+        <div id="v1-pc-search" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+          <div class="panel-header"><span class="panel-title">검색</span></div>
+          <div style="padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+            <input class="search-input" id="v1-search" type="text" placeholder="테이블, 컬럼 이름 검색...">
+          </div>
+          <div style="flex:1;overflow-y:auto">
+            <div class="s-item sel"><span class="s-icon">▦</span><span class="s-name">users</span><span class="s-badge">public</span></div>
+            <div class="s-cols">id, email, name, created_at</div>
+            <div class="s-item"><span class="s-icon">▦</span><span class="s-name">sessions</span><span class="s-badge">auth</span></div>
+            <div class="s-cols">id, user_id, token, expires_at</div>
+            <div class="s-item"><span class="s-icon">▦</span><span class="s-name">orders</span><span class="s-badge">billing</span></div>
+            <div class="s-cols">id, user_id, amount, status</div>
+          </div>
+        </div>
+
+        <!-- 활동 기록 탭 콘텐츠 -->
+        <div id="v1-pc-history" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+          <div class="panel-header"><span class="panel-title">활동 기록</span></div>
+          <div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-shrink:0">
+            <button class="chip on"><span class="cdot" style="background:#2563EB"></span>사람</button>
+            <button class="chip on"><span class="cdot" style="background:#7C3AED"></span>AI</button>
+          </div>
+          <div style="flex:1;overflow-y:auto">
+            <div class="h-item">
+              <div class="h-icon h-human">J</div>
+              <div style="flex:1;min-width:0">
+                <div class="h-text">orders 테이블 status 컬럼 추가</div>
+                <div class="h-meta">2분 전 · Junho</div>
+                <button class="h-revert">되돌리기</button>
+              </div>
+            </div>
+            <div class="h-item">
+              <div class="h-icon h-ai">✦</div>
+              <div style="flex:1;min-width:0">
+                <div class="h-text">AI: sessions 정규화 제안 적용</div>
+                <div class="h-meta">8분 전</div>
+              </div>
+            </div>
+            <div class="h-item">
+              <div class="h-icon h-human">S</div>
+              <div style="flex:1;min-width:0">
+                <div class="h-text">users ↔ sessions FK 추가</div>
+                <div class="h-meta">15분 전 · Siyeon</div>
+                <button class="h-revert">되돌리기</button>
+              </div>
+            </div>
+            <div class="h-item">
+              <div class="h-icon h-human">J</div>
+              <div style="flex:1;min-width:0">
+                <div class="h-text">billing 스키마 orders 테이블 생성</div>
+                <div class="h-meta">32분 전 · Junho</div>
+                <button class="h-revert">되돌리기</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 탭 바 (항상 표시, 맨 우측) -->
+      <div class="right-tabbar">
+        <div class="tooltip-wrap" style="position:static">
+          <button class="rtab-btn on" id="v1-tab-ai" onclick="switchTab('v1','ai')" title="AI 채팅">
+            <span class="rtab-icon">✦</span><span class="rtab-lbl">AI</span>
+          </button>
+        </div>
+        <div class="tooltip-wrap" style="position:static">
+          <button class="rtab-btn" id="v1-tab-search" onclick="switchTab('v1','search')" title="검색">
+            <span class="rtab-icon">🔍</span><span class="rtab-lbl">검색</span>
+          </button>
+        </div>
+        <div class="rtab-sep"></div>
+        <div class="tooltip-wrap" style="position:static">
+          <button class="rtab-btn" id="v1-tab-history" onclick="switchTab('v1','history')" title="활동 기록">
+            <span class="rtab-icon">⏱</span><span class="rtab-lbl">기록</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  V2: Header 미니멀 (아이콘 위주)
+  Header: 아이콘 버튼만 나열, 레이블 없음 → 더 컴팩트
+  우측 패널: 동일 (AI / 검색 / 기록)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div class="screen" id="screen-v2">
+
+  <!-- ── 헤더 ── -->
+  <div style="height:48px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding:0 14px;background:var(--surface);border-bottom:1px solid var(--border);">
+    <button class="back-btn">←</button>
+    <div class="bc">
+      <span class="bc-seg">Acme</span><span class="bc-sep">›</span>
+      <span class="bc-seg">Backend</span><span class="bc-sep">›</span>
+      <span class="bc-cur">user_service_erd</span>
+    </div>
+    <div class="save-dot" style="margin-left:8px"></div>
+    <span class="save-lbl" style="margin-left:4px">저장됨</span>
+    <div class="spacer"></div>
+
+    <!-- 아이콘 버튼 그룹 -->
+    <div style="display:flex;align-items:center;gap:2px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-md);padding:3px;">
+      <div class="tooltip-wrap">
+        <button style="width:32px;height:28px;border:none;background:none;border-radius:var(--r-sm);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:all .15s" onmouseover="this.style.background='var(--surface)';this.style.color='var(--text-1)'" onmouseout="this.style.background='none';this.style.color='var(--text-2)'">＋</button>
+        <div class="tooltip">테이블 추가 (⌘T)</div>
+      </div>
+      <div style="width:1px;height:18px;background:var(--border)"></div>
+      <div class="tooltip-wrap">
+        <button style="width:32px;height:28px;border:none;background:none;border-radius:var(--r-sm);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:all .15s" onmouseover="this.style.background='var(--surface)';this.style.color='var(--text-1)'" onmouseout="this.style.background='none';this.style.color='var(--text-2)'">↓</button>
+        <div class="tooltip">가져오기</div>
+      </div>
+      <div class="tooltip-wrap">
+        <button style="width:32px;height:28px;border:none;background:none;border-radius:var(--r-sm);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:all .15s" onmouseover="this.style.background='var(--surface)';this.style.color='var(--text-1)'" onmouseout="this.style.background='none';this.style.color='var(--text-2)'">↑</button>
+        <div class="tooltip">내보내기 (⌘E)</div>
+      </div>
+    </div>
+
+    <div class="hbtn-divider" style="margin:0 4px"></div>
+
+    <!-- 버전 저장 -->
+    <div class="tooltip-wrap">
+      <button class="hbtn hbtn-success" style="gap:4px">
+        <span style="font-size:11px">↑</span> 버전 저장
+      </button>
+      <div class="tooltip">현재 상태를 버전으로 저장 (⌘S)</div>
+    </div>
+
+    <div class="hbtn-divider" style="margin:0 4px"></div>
+
+    <!-- 멤버 + 초대 + 공유 -->
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="presence">
+        <div class="av" style="background:#2563EB">J</div>
+        <div class="av" style="background:#7C3AED">S</div>
+        <div class="av" style="background:#D97706">K</div>
+      </div>
+      <div class="tooltip-wrap">
+        <button class="invite-btn">＋</button>
+        <div class="tooltip">멤버 초대</div>
+      </div>
+    </div>
+
+    <button class="share-btn">↗ 공유</button>
+  </div>
+
+  <!-- ── 바디 ── -->
+  <div class="body-row">
+    <div class="schema-sidebar">
+      <div class="ss-header"><span class="ss-title">스키마</span></div>
+      <div class="ss-list">
+        <div class="ss-row"><div class="ss-dot" style="background:#7C3AED"></div><span class="ss-name">public</span><span class="ss-cnt">12</span></div>
+        <div class="ss-row"><div class="ss-dot" style="background:#2563EB"></div><span class="ss-name">auth</span><span class="ss-cnt">5</span></div>
+        <div class="ss-row"><div class="ss-dot" style="background:#D97706"></div><span class="ss-name">billing</span><span class="ss-cnt">8</span></div>
+      </div>
+    </div>
+
+    <div class="canvas" style="position:relative">
+      <div class="node" style="top:44px;left:28px">
+        <div class="node-hd">users <span class="node-badge">public</span></div>
+        <div class="node-col"><span class="pk">PK</span><span class="cn">id</span><span class="ct">uuid</span></div>
+        <div class="node-col"><span class="fk"></span><span class="cn">email</span><span class="ct">varchar</span></div>
+        <div class="node-col"><span class="fk"></span><span class="cn">name</span><span class="ct">varchar</span></div>
+      </div>
+      <div class="node" style="top:44px;left:250px">
+        <div class="node-hd">sessions <span class="node-badge">auth</span></div>
+        <div class="node-col"><span class="pk">PK</span><span class="cn">id</span><span class="ct">uuid</span></div>
+        <div class="node-col"><span class="fk">FK</span><span class="cn">user_id</span><span class="ct">uuid</span></div>
+        <div class="node-col"><span class="fk"></span><span class="cn">token</span><span class="ct">text</span></div>
+      </div>
+      <div class="node" style="top:210px;left:28px">
+        <div class="node-hd">orders <span class="node-badge">billing</span></div>
+        <div class="node-col"><span class="pk">PK</span><span class="cn">id</span><span class="ct">uuid</span></div>
+        <div class="node-col"><span class="fk">FK</span><span class="cn">user_id</span><span class="ct">uuid</span></div>
+        <div class="node-col"><span class="fk"></span><span class="cn">amount</span><span class="ct">numeric</span></div>
+      </div>
+      <svg class="rels">
+        <line x1="198" y1="76" x2="250" y2="76" stroke="#CBD2D9" stroke-width="1.5" stroke-dasharray="5,4"/>
+        <line x1="108" y1="136" x2="108" y2="230" stroke="#CBD2D9" stroke-width="1.5" stroke-dasharray="5,4"/>
+      </svg>
+
+      <div class="legend">
+        <div class="legend-title">V2 차이점</div>
+        <div class="legend-row">
+          <div class="legend-dot" style="background:#BFDBFE"></div>
+          <div>테이블추가·가져오기·내보내기를 아이콘 버튼 그룹으로 통합 → 헤더가 더 좁아짐</div>
+        </div>
+        <div class="legend-row">
+          <div class="legend-dot" style="background:#E9D5FF"></div>
+          <div>우측 패널은 V1과 동일 (AI / 검색 / 기록)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우측 탭 패널 (V2) -->
+    <div class="right-side">
+      <div class="right-panel open" id="v2-panel">
+
+        <div id="v2-pc-ai" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+          <div class="ai-header-strip">
+            <div class="ai-icon-box">✦</div>
+            <div><div class="ai-name">ERDify AI</div><div class="ai-sub">Claude Sonnet 4.6</div></div>
+            <button class="ai-model"><div class="ai-model-dot"></div>모델 ▾</button>
+          </div>
+          <div class="chat-msgs">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div class="bubble-u">orders와 users 관계 설명해줘</div>
+              <div class="msg-t r">방금 전</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div class="bubble-a"><code>orders.user_id</code> → <code>users.id</code> N:1 관계입니다. 한 사용자가 여러 주문을 가질 수 있습니다.</div>
+              <div class="msg-t">AI · 방금 전</div>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <textarea class="chat-ta" placeholder="ERD에 대해 물어보세요..." rows="1"></textarea>
+            <button class="chat-send">↑</button>
+          </div>
+        </div>
+
+        <div id="v2-pc-search" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+          <div class="panel-header"><span class="panel-title">검색</span></div>
+          <div style="padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+            <input class="search-input" id="v2-search" type="text" placeholder="테이블, 컬럼 이름 검색...">
+          </div>
+          <div style="flex:1;overflow-y:auto">
+            <div class="s-item sel"><span class="s-icon">▦</span><span class="s-name">users</span><span class="s-badge">public</span></div>
+            <div class="s-cols">id, email, name, created_at</div>
+            <div class="s-item"><span class="s-icon">▦</span><span class="s-name">sessions</span><span class="s-badge">auth</span></div>
+            <div class="s-cols">id, user_id, token, expires_at</div>
+            <div class="s-item"><span class="s-icon">▦</span><span class="s-name">orders</span><span class="s-badge">billing</span></div>
+            <div class="s-cols">id, user_id, amount, status</div>
+          </div>
+        </div>
+
+        <div id="v2-pc-history" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+          <div class="panel-header"><span class="panel-title">활동 기록</span></div>
+          <div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-shrink:0">
+            <button class="chip on"><span class="cdot" style="background:#2563EB"></span>사람</button>
+            <button class="chip on"><span class="cdot" style="background:#7C3AED"></span>AI</button>
+          </div>
+          <div style="flex:1;overflow-y:auto">
+            <div class="h-item">
+              <div class="h-icon h-human">J</div>
+              <div style="flex:1;min-width:0">
+                <div class="h-text">orders 테이블 status 컬럼 추가</div>
+                <div class="h-meta">2분 전 · Junho</div>
+                <button class="h-revert">되돌리기</button>
+              </div>
+            </div>
+            <div class="h-item">
+              <div class="h-icon h-ai">✦</div>
+              <div style="flex:1;min-width:0">
+                <div class="h-text">AI: sessions 정규화 제안 적용</div>
+                <div class="h-meta">8분 전</div>
+              </div>
+            </div>
+            <div class="h-item">
+              <div class="h-icon h-human">K</div>
+              <div style="flex:1;min-width:0">
+                <div class="h-text">billing 스키마 추가</div>
+                <div class="h-meta">25분 전 · Kyunghee</div>
+                <button class="h-revert">되돌리기</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="right-tabbar">
+        <button class="rtab-btn on" id="v2-tab-ai" onclick="switchTab('v2','ai')">
+          <span class="rtab-icon">✦</span><span class="rtab-lbl">AI</span>
+        </button>
+        <button class="rtab-btn" id="v2-tab-search" onclick="switchTab('v2','search')">
+          <span class="rtab-icon">🔍</span><span class="rtab-lbl">검색</span>
+        </button>
+        <div class="rtab-sep"></div>
+        <button class="rtab-btn" id="v2-tab-history" onclick="switchTab('v2','history')">
+          <span class="rtab-icon">⏱</span><span class="rtab-lbl">기록</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+const TABS = ['ai','search','history'];
+const tabState = { v1: 'ai', v2: 'ai' };
+
+function switchTab(screen, tab) {
+  const panel = document.getElementById(screen + '-panel');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen && tabState[screen] === tab) {
+    panel.classList.remove('open');
+    document.getElementById(screen + '-tab-' + tab).classList.remove('on');
+    return;
+  }
+  panel.classList.add('open');
+  tabState[screen] = tab;
+  TABS.forEach(t => {
+    const pc = document.getElementById(screen + '-pc-' + t);
+    const btn = document.getElementById(screen + '-tab-' + t);
+    if (pc) pc.style.display = t === tab ? 'flex' : 'none';
+    if (btn) btn.classList.toggle('on', t === tab);
+  });
+  if (tab === 'search') setTimeout(() => {
+    const inp = document.getElementById(screen + '-search');
+    if (inp) inp.focus();
+  }, 50);
+}
+
+function showScreen(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sel-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggleDd(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  document.addEventListener('click', function handler(e) {
+    if (!el.contains(e.target)) { el.classList.remove('open'); document.removeEventListener('click', handler); }
+  }, { once: false });
+}
+
+// chip 토글
+document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => c.classList.toggle('on')));
+</script>
+</body>
+</html>
