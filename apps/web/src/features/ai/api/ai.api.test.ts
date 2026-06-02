@@ -6,7 +6,6 @@ import {
   setOrgProviderKey,
   removeOrgProviderKey,
   setEnabledModels,
-  getSessionMessages,
 } from "./ai.api";
 import { httpClient } from "@/shared/api/httpClient";
 
@@ -72,41 +71,5 @@ describe("ai.api", () => {
     vi.mocked(httpClient.put).mockResolvedValue({ data: undefined });
     await setEnabledModels("org-1", ["gpt-4o"]);
     expect(httpClient.put).toHaveBeenCalledWith("/organizations/org-1/ai-models", { enabledModels: ["gpt-4o"] });
-  });
-
-  it("getSessionMessages는 GET /ai/sessions/:sessionId/messages를 호출하고 r.data를 반환한다", async () => {
-    const mockMessages = [
-      {
-        id: "msg-1",
-        role: "user" as const,
-        content: "안녕",
-        diff: null,
-        accepted: null,
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
-      {
-        id: "msg-2",
-        role: "assistant" as const,
-        content: "안녕하세요!",
-        diff: null,
-        accepted: null,
-        createdAt: "2026-01-01T00:01:00.000Z",
-      },
-    ];
-    vi.mocked(httpClient.get).mockResolvedValue({ data: mockMessages });
-
-    const result = await getSessionMessages("sess-abc");
-
-    expect(httpClient.get).toHaveBeenCalledWith("/ai/sessions/sess-abc/messages");
-    expect(result).toEqual(mockMessages);
-  });
-
-  it("getSessionMessages는 빈 세션에 대해 빈 배열을 반환한다", async () => {
-    vi.mocked(httpClient.get).mockResolvedValue({ data: [] });
-
-    const result = await getSessionMessages("empty-sess");
-
-    expect(httpClient.get).toHaveBeenCalledWith("/ai/sessions/empty-sess/messages");
-    expect(result).toEqual([]);
   });
 });

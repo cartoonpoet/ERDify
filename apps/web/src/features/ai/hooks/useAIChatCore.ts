@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import type React from "react";
 import { useAIChatStore } from "../store/useAIChatStore";
 import { DEFAULT_SESSION_ID } from "../store/aiChatSlice";
-import { acceptAiDiff, rejectAiDiff, sendAiChatStream, createSession, getSessionMessages } from "../api/ai.api";
+import { acceptAiDiff, rejectAiDiff, sendAiChatStream, createSession } from "../api/ai.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import type { AiMessage } from "../store/aiChatSlice";
 
@@ -19,24 +19,20 @@ interface UseAIChatCoreReturn {
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   handleAccept: (messageId: string) => Promise<void>;
   handleReject: (messageId: string) => Promise<void>;
-  handleSelectSession: (sessionId: string) => Promise<void>;
+  handleSelectSession: (sessionId: string) => void;
   handleNewSession: () => Promise<void>;
-  isSessionLoading: boolean;
 }
 
 export const useAIChatCore = (diagramId: string, selectedModel: string): UseAIChatCoreReturn => {
   const {
     isLoading,
-    isSessionLoading,
     reviewingMessageId, closeReview,
     addUserMessage,
     acceptDiff, rejectDiff,
     currentSessionId, sessionMessages,
-    setSessions,
     setCurrentSession, addSession,
     setStreamingStatus,
     startStreamingMessage, appendStreamingDelta, finalizeStreamingMessage,
-    setSessionMessages, setIsSessionLoading,
   } = useAIChatStore();
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -80,8 +76,6 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
       }
     }
 
-    const isFirstMessage = (sessionMessages[sessionId] ?? []).length === 0;
-
     addUserMessage(message, sessionId);
 
     const tempId = randomUUID();
@@ -98,14 +92,6 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
         diff: null,
         pendingDocument: null,
       });
-    }
-
-    if (isFirstMessage) {
-      const newName = message.slice(0, 30);
-      const updatedSessions = useAIChatStore.getState().sessions.map((s) =>
-        s.id === sessionId ? { ...s, name: newName } : s
-      );
-      setSessions(updatedSessions);
     }
   };
 
@@ -138,38 +124,8 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
     await rejectAiDiff(messageId).catch(() => {});
   };
 
-  const handleSelectSession = async (sessionId: string) => {
+  const handleSelectSession = (sessionId: string) => {
     setCurrentSession(sessionId);
-
-    if (sessionId === DEFAULT_SESSION_ID) return;
-    if (sessionMessages[sessionId] !== undefined) return;
-
-    setIsSessionLoading(true);
-    try {
-      const items = await getSessionMessages(sessionId);
-      const messages: AiMessage[] = items.map((item) => ({
-        id: item.id,
-        role: item.role,
-        content: item.content,
-        diff: item.diff,
-        accepted: item.accepted,
-        pendingDocument: null,
-      }));
-      setSessionMessages(sessionId, messages);
-    } catch {
-      setSessionMessages(sessionId, [
-        {
-          id: randomUUID(),
-          role: "assistant",
-          content: "대화를 불러오지 못했습니다. 다시 시도해주세요.",
-          diff: null,
-          accepted: null,
-          pendingDocument: null,
-        },
-      ]);
-    } finally {
-      setIsSessionLoading(false);
-    }
   };
 
   const handleNewSession = async () => {
@@ -209,6 +165,5 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
     handleReject,
     handleSelectSession,
     handleNewSession,
-    isSessionLoading,
   };
 };

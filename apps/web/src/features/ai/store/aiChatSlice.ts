@@ -24,7 +24,6 @@ export interface AiSession {
 export interface AiChatSlice {
   isOpen: boolean;
   isLoading: boolean;
-  isSessionLoading: boolean;
   reviewingMessageId: string | null;
   currentSessionId: string | null;
   sessions: AiSession[];
@@ -45,8 +44,6 @@ export interface AiChatSlice {
   setSessions: (sessions: AiSession[]) => void;
   addSession: (session: AiSession) => void;
   setCurrentDiagramId: (diagramId: string) => void;
-  setSessionMessages: (sessionId: string, messages: AiMessage[]) => void;
-  setIsSessionLoading: (loading: boolean) => void;
   startStreamingMessage: (sessionId: string, tempId: string) => void;
   appendStreamingDelta: (sessionId: string, tempId: string, delta: string) => void;
   finalizeStreamingMessage: (
@@ -59,7 +56,6 @@ export interface AiChatSlice {
 export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
   isOpen: false,
   isLoading: false,
-  isSessionLoading: false,
   reviewingMessageId: null,
   currentSessionId: null,
   sessions: [],
@@ -152,13 +148,6 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
         sessionMessages: {},
       };
     }),
-
-  setSessionMessages: (sessionId, messages) =>
-    set((state) => ({
-      sessionMessages: { ...state.sessionMessages, [sessionId]: messages },
-    })),
-
-  setIsSessionLoading: (loading) => set({ isSessionLoading: loading }),
 
   startStreamingMessage: (sessionId, tempId) =>
     set((state) => {

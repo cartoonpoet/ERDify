@@ -1,19 +1,10 @@
 import { httpClient, API_BASE_URL } from "@/shared/api/httpClient";
-import type { ColumnSuggestion, OrgAiSettings, AiChatConfig, AiProviderId, DiffChange } from "@erdify/contracts";
+import type { ColumnSuggestion, OrgAiSettings, AiChatConfig, AiProviderId } from "@erdify/contracts";
 
 export interface AiSessionResponse {
   id: string;
   diagramId: string;
   name: string;
-  createdAt: string;
-}
-
-export interface AiMessageHistoryItem {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  diff: DiffChange[] | null;
-  accepted: boolean | null;
   createdAt: string;
 }
 
@@ -124,6 +115,3 @@ export const getSessions = (diagramId: string): Promise<AiSessionResponse[]> =>
 
 export const createSession = (diagramId: string): Promise<{ sessionId: string }> =>
   httpClient.post<{ sessionId: string }>("/ai/sessions", { diagramId }).then((r) => r.data);
-
-export const getSessionMessages = (sessionId: string): Promise<AiMessageHistoryItem[]> =>
-  httpClient.get<AiMessageHistoryItem[]>(`/ai/sessions/${sessionId}/messages`).then((r) => r.data);
