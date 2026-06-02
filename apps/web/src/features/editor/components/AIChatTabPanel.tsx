@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useParams, Link } from "react-router-dom";
 import { useAIChatStore } from "@/features/ai/store/useAIChatStore";
 import { MessageBubble } from "@/features/ai/components/MessageBubble";
 import { AIDiffReviewPanel } from "@/features/ai/components/AIDiffReviewPanel";
@@ -14,6 +15,7 @@ interface AIChatTabPanelProps {
 }
 
 export const AIChatTabPanel = ({ diagramId }: AIChatTabPanelProps) => {
+  const { orgId } = useParams<{ orgId: string }>();
   const {
     isLoading,
     openReview,
@@ -99,7 +101,9 @@ export const AIChatTabPanel = ({ diagramId }: AIChatTabPanelProps) => {
                 </div>
               </>
             ) : (
-              <div className={s.chatHeaderSub}>모델 미설정</div>
+              <Link to={`/${orgId}/settings`} className={s.chatHeaderSub} style={{ color: "rgba(255,255,255,0.75)", textDecoration: "underline", cursor: "pointer" }}>
+                AI 설정하기 →
+              </Link>
             )}
           </div>
         </div>
