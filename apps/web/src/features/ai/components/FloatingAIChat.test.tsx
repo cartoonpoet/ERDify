@@ -14,6 +14,7 @@ vi.mock("../api/ai.api", () => ({
   getSessions: vi.fn().mockResolvedValue([]),
   createSession: vi.fn(),
   getAiChatConfig: vi.fn().mockResolvedValue({ models: [] }),
+  getSessionMessages: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@/shared/utils/uuid", () => ({
@@ -35,7 +36,7 @@ vi.mock("./MessageBubble", () => ({
   ),
 }));
 
-import { sendAiChatStream, acceptAiDiff, rejectAiDiff, createSession } from "../api/ai.api";
+import { sendAiChatStream, acceptAiDiff, rejectAiDiff, createSession, getSessionMessages } from "../api/ai.api";
 import { randomUUID } from "@/shared/utils/uuid";
 
 const makeEmptyDoc = (id = "doc-1"): DiagramDocument => ({
@@ -55,6 +56,7 @@ const initialAiChatState = {
   isOpen: false,
   sessionMessages: {},
   isLoading: false,
+  isSessionLoading: false,
   reviewingMessageId: null,
   currentSessionId: null,
   sessions: [],
@@ -67,6 +69,7 @@ beforeEach(() => {
   vi.mocked(acceptAiDiff).mockReset();
   vi.mocked(rejectAiDiff).mockReset();
   vi.mocked(createSession).mockReset();
+  vi.mocked(getSessionMessages).mockReset();
   Element.prototype.scrollIntoView = vi.fn();
 });
 
@@ -271,5 +274,51 @@ describe("FloatingAIChat", () => {
     const rejectedMsg = allMessages.find((m) => m.id === reviewMsgId);
     expect(rejectedMsg?.accepted).toBe(false);
     expect(state.reviewingMessageId).toBeNull();
+  });
+});
+
+describe("FloatingAIChat — isSessionLoading UI", () => {
+  it("isSessionLoading=true 시 로딩 인디케이터가 렌더링된다", () => {
+    useAIChatStore.setState({ ...initialAiChatState, isOpen: true, isSessionLoading: true });
+    render(<FloatingAIChat diagramId="diagram-1" />);
+    expect(screen.getByText("대화를 불러오는 중...")).toBeInTheDocument();
+  });
+
+  it("isSessionLoading=false 시 빈 상태 안내 메시지가 렌더링된다", () => {
+    useAIChatStore.setState({ ...initialAiChatState, isOpen: true, isSessionLoading: false });
+    render(<FloatingAIChat diagramId="diagram-1" />);
+    expect(screen.getByText(/ERD에 대해 무엇이든 물어보세요/)).toBeInTheDocument();
+    expect(screen.queryByText("대화를 불러오는 중...")).not.toBeInTheDocument();
+  });
+
+  it("handleSelectSession 호출 후 로드된 메시지가 화면에 표시된다", async () => {
+    vi.mocked(getSessionMessages).mockResolvedValueOnce([
+      { id: "hist-1", role: "user", content: "이전 메시지", diff: null, accepted: null, createdAt: "2026-01-01T00:00:00Z" },
+    ]);
+    vi.mocked(randomUUID).mockReturnValue("msg-uuid");
+
+    useAIChatStore.setState({
+      ...initialAiChatState,
+      isOpen: true,
+      sessions: [{ id: "sess-1", name: "세션1", createdAt: "2026-01-01T00:00:00Z" }],
+      currentSessionId: null,
+    });
+
+    render(<FloatingAIChat diagramId="diagram-1" />);
+
+    // 세션 선택 드롭다운 클릭 — currentSessionId가 null이므로 "새 대화" 표시
+    const dropdownBtn = screen.getByRole("button", { name: /새 대화/ });
+    fireEvent.click(dropdownBtn);
+
+    // "세션1" 선택
+    await act(async () => {
+      fireEvent.click(screen.getByText("세션1"));
+    });
+
+    await waitFor(() => {
+      const state = useAIChatStore.getState();
+      expect(state.sessionMessages["sess-1"]).toBeDefined();
+      expect(state.sessionMessages["sess-1"]![0]!.content).toBe("이전 메시지");
+    });
   });
 });

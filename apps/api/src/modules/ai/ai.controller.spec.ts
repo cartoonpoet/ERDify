@@ -22,7 +22,7 @@ describe("AiController", () => {
     getDiagramAiConfig: ReturnType<typeof vi.fn>;
   };
   let aiChatServiceMock: { runChat: ReturnType<typeof vi.fn> };
-  let aiHistoryServiceMock: { markAccepted: ReturnType<typeof vi.fn>; findSessions: ReturnType<typeof vi.fn>; createSession: ReturnType<typeof vi.fn> };
+  let aiHistoryServiceMock: { markAccepted: ReturnType<typeof vi.fn>; findSessions: ReturnType<typeof vi.fn>; createSession: ReturnType<typeof vi.fn>; findSessionMessages: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     aiServiceMock = {
@@ -34,7 +34,7 @@ describe("AiController", () => {
       getDiagramAiConfig: vi.fn(),
     };
     aiChatServiceMock = { runChat: vi.fn() };
-    aiHistoryServiceMock = { markAccepted: vi.fn(), findSessions: vi.fn(), createSession: vi.fn() };
+    aiHistoryServiceMock = { markAccepted: vi.fn(), findSessions: vi.fn(), createSession: vi.fn(), findSessionMessages: vi.fn() };
 
     controller = new AiController(aiServiceMock as never, aiChatServiceMock as never, aiHistoryServiceMock as never);
   });
@@ -81,6 +81,42 @@ describe("AiController", () => {
       const result = await controller.createSession(makeUser("user-1"), { diagramId: "diag-1" });
       expect(aiHistoryServiceMock.createSession).toHaveBeenCalledWith("user-1", "diag-1");
       expect(result).toEqual({ sessionId: "sess-1" });
+    });
+
+    it("getSessionMessages는 findSessionMessages를 sessionId·userId로 호출하고 메시지 배열을 반환한다", async () => {
+      const mockMessages = [
+        {
+          id: "msg-1",
+          role: "user",
+          content: "안녕",
+          diff: null,
+          accepted: null,
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "msg-2",
+          role: "assistant",
+          content: "안녕하세요!",
+          diff: null,
+          accepted: null,
+          createdAt: "2026-01-01T00:01:00.000Z",
+        },
+      ];
+      aiHistoryServiceMock.findSessionMessages.mockResolvedValue(mockMessages);
+
+      const result = await controller.getSessionMessages(makeUser("user-1"), "sess-abc");
+
+      expect(aiHistoryServiceMock.findSessionMessages).toHaveBeenCalledWith("sess-abc", "user-1");
+      expect(result).toEqual(mockMessages);
+    });
+
+    it("getSessionMessages는 빈 세션에 대해 빈 배열을 반환한다", async () => {
+      aiHistoryServiceMock.findSessionMessages.mockResolvedValue([]);
+
+      const result = await controller.getSessionMessages(makeUser("user-1"), "empty-sess");
+
+      expect(aiHistoryServiceMock.findSessionMessages).toHaveBeenCalledWith("empty-sess", "user-1");
+      expect(result).toEqual([]);
     });
   });
 

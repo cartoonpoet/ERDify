@@ -8,7 +8,7 @@ import { AiChatService } from "./chat/ai-chat.service";
 import { AiHistoryService } from "./ai-history.service";
 import { AiSuggestColumnsDto } from "./dto/suggest-columns.dto";
 import { AiChatStreamDto, AiCreateSessionDto } from "./dto/chat-stream.dto";
-import type { AiSessionResponse } from "./dto/chat-stream.dto";
+import type { AiSessionResponse, AiMessageHistoryItem } from "./dto/chat-stream.dto";
 import type { ColumnSuggestion, OrgAiSettings, AiChatConfig, AiProviderId } from "@erdify/contracts";
 
 @Controller()
@@ -78,6 +78,14 @@ export class AiController {
     @Query("diagramId") diagramId: string,
   ): Promise<AiSessionResponse[]> {
     return this.aiHistoryService.findSessions(user.sub, diagramId);
+  }
+
+  @Get("ai/sessions/:sessionId/messages")
+  getSessionMessages(
+    @CurrentUser() user: JwtPayload,
+    @Param("sessionId") sessionId: string,
+  ): Promise<AiMessageHistoryItem[]> {
+    return this.aiHistoryService.findSessionMessages(sessionId, user.sub);
   }
 
   @Post("ai/sessions")

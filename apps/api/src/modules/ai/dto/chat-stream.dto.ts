@@ -1,4 +1,5 @@
 import { IsString, IsOptional, MinLength, MaxLength } from "class-validator";
+import type { DiffChange } from "@erdify/contracts";
 
 export class AiChatStreamDto {
   @IsString()
@@ -30,5 +31,14 @@ export interface AiSessionResponse {
   id: string;
   diagramId: string;
   name: string;
+  createdAt: string;
+}
+
+export interface AiMessageHistoryItem {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  diff: DiffChange[] | null;
+  accepted: boolean | null;
   createdAt: string;
 }

@@ -5,10 +5,11 @@ import { LessThan, Repository } from "typeorm";
 import { randomUUID } from "node:crypto";
 import { AiConversation } from "@erdify/db";
 import type { DiffChange } from "@erdify/contracts";
-import type { AiSessionResponse } from "./dto/chat-stream.dto";
+import type { AiSessionResponse, AiMessageHistoryItem } from "./dto/chat-stream.dto";
 import type { ConvMessage } from "./providers/provider.types";
 
 const HISTORY_LIMIT = 6;
+const MESSAGE_LIMIT = 50;
 const TTL_DAYS = 90;
 
 /** 저장된 대화 행을 에이전트 루프용 ConvMessage[]로 복원. 과거 diff는 텍스트 요약으로(짝 없는 tool_use 방지). */
@@ -120,6 +121,23 @@ export class AiHistoryService {
       id: row.sessionId,
       diagramId,
       name: row.firstName ? row.firstName.slice(0, 30) : "새 세션",
+      createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+    }));
+  }
+
+  async findSessionMessages(sessionId: string, userId: string, limit = MESSAGE_LIMIT): Promise<AiMessageHistoryItem[]> {
+    const rows = await this.repo.find({
+      where: { sessionId, userId },
+      order: { createdAt: "ASC" },
+      take: limit,
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      role: row.role,
+      content: row.content,
+      diff: (row.diff as unknown as DiffChange[] | null) ?? null,
+      accepted: row.accepted,
       createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
     }));
   }

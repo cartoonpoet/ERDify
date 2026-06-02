@@ -28,7 +28,7 @@ export const AIChatTabPanel = ({ diagramId }: AIChatTabPanelProps) => {
     input, setInput, bottomRef, currentMessages, sendBtnDisabled,
     reviewingMessage, currentDocument,
     handleSendInput, handleKeyDown, handleAccept, handleReject,
-    handleSelectSession, handleNewSession,
+    handleSelectSession, handleNewSession, isSessionLoading,
   } = useAIChatCore(diagramId, selectedModel);
 
   return (
@@ -113,30 +113,43 @@ export const AIChatTabPanel = ({ diagramId }: AIChatTabPanelProps) => {
       />
 
       <div className={s.chatMessages}>
-        {currentMessages.length === 0 && (
-          <div className={s.chatEmpty}>
-            <div className={s.chatEmptyIcon}>✦</div>
-            ERD에 대해 무엇이든 물어보세요.<br />
-            <span style={{ fontSize: 12 }}>"orders 테이블 추가해줘" 같은 명령도 가능해요.</span>
-          </div>
-        )}
-        {currentMessages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} onOpenReview={openReview} />
-        ))}
-        {streamingStatus && (
-          <div className={s.chatThinking}>
-            <span>🔧</span> {streamingStatus}
-          </div>
-        )}
-        {isLoading && (
+        {isSessionLoading ? (
           <div className={s.chatThinking}>
             <div className={s.thinkingDots}>
               <div className={s.thinkingDot} />
               <div className={s.thinkingDot} />
               <div className={s.thinkingDot} />
             </div>
-            AI가 생각 중...
+            대화를 불러오는 중...
           </div>
+        ) : (
+          <>
+            {currentMessages.length === 0 && (
+              <div className={s.chatEmpty}>
+                <div className={s.chatEmptyIcon}>✦</div>
+                ERD에 대해 무엇이든 물어보세요.<br />
+                <span style={{ fontSize: 12 }}>"orders 테이블 추가해줘" 같은 명령도 가능해요.</span>
+              </div>
+            )}
+            {currentMessages.map((msg) => (
+              <MessageBubble key={msg.id} message={msg} onOpenReview={openReview} />
+            ))}
+            {streamingStatus && (
+              <div className={s.chatThinking}>
+                <span>🔧</span> {streamingStatus}
+              </div>
+            )}
+            {isLoading && (
+              <div className={s.chatThinking}>
+                <div className={s.thinkingDots}>
+                  <div className={s.thinkingDot} />
+                  <div className={s.thinkingDot} />
+                  <div className={s.thinkingDot} />
+                </div>
+                AI가 생각 중...
+              </div>
+            )}
+          </>
         )}
         <div ref={bottomRef} />
       </div>
