@@ -37,7 +37,7 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
   popoverPos: null,
   searchOpen: false,
   rightSidebarActiveTab: 0,
-  rightSidebarPanelOpen: true,
+  rightSidebarPanelOpen: false,
   hiddenSchemas: new Set<string>(),
   schemaFilterExpanded: true,
   groupViewEnabled: true,

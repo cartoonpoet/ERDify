@@ -1,3 +1,4 @@
+import { Search } from "lucide-react";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { AIChatTabPanel } from "./AIChatTabPanel";
 import { HistoryTabPanel } from "./HistoryTabPanel";
@@ -60,7 +61,7 @@ export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
           aria-label="검색"
           title="검색"
         >
-          <span className={css.tabIcon}>🔍</span>
+          <Search size={14} className={css.tabIcon} />
           <span className={css.tabLabel}>검색</span>
         </button>
         <div className={css.tabSep} />
