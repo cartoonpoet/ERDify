@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
 import { useAIChatStore } from "../store/useAIChatStore";
 import { MessageBubble } from "./MessageBubble";
 import { AIDiffReviewPanel } from "./AIDiffReviewPanel";
@@ -15,7 +14,6 @@ interface FloatingAIChatProps {
 }
 
 export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
-  const { orgId } = useParams<{ orgId: string }>();
   const {
     isOpen, isLoading,
     openReview,
@@ -112,9 +110,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
                     </div>
                   </>
                 ) : (
-                  <Link to={`/${orgId}/settings`} className={s.chatHeaderSub} style={{ color: "rgba(255,255,255,0.75)", textDecoration: "underline", cursor: "pointer" }}>
-                    AI 설정하기 →
-                  </Link>
+                  <div className={s.chatHeaderSub}>모델 미설정</div>
                 )}
               </div>
             </div>
