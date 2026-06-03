@@ -7,8 +7,8 @@ export const container = style({
   alignItems: "center",
   gap: vars.space["2"],
   padding: `6px ${vars.space["4"]}`,
-  background: "rgba(255,255,255,0.08)",
-  borderTop: "1px solid rgba(255,255,255,0.12)",
+  background: vars.color.surfaceTertiary,
+  borderTop: `1px solid ${vars.color.border}`,
   flexShrink: 0,
 });
 
@@ -18,17 +18,17 @@ export const dropdownBtn = style({
   alignItems: "center",
   justifyContent: "space-between",
   gap: vars.space["1"],
-  background: "rgba(255,255,255,0.12)",
-  border: "1px solid rgba(255,255,255,0.2)",
+  background: vars.color.surface,
+  border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radius.sm,
-  color: "#fff",
+  color: vars.color.textPrimary,
   fontSize: vars.font.size.sm,
   padding: `4px 10px`,
   cursor: "pointer",
   textAlign: "left",
   transition: "background 0.15s",
   selectors: {
-    "&:hover": { background: "rgba(255,255,255,0.2)" },
+    "&:hover": { background: vars.color.surfaceSecondary },
   },
 });
 
@@ -42,7 +42,7 @@ export const dropdownBtnLabel = style({
 export const dropdownArrow = style({
   flexShrink: 0,
   fontSize: "10px",
-  opacity: 0.8,
+  color: vars.color.textSecondary,
   transition: "transform 0.15s",
 });
 
@@ -52,17 +52,17 @@ export const dropdownArrowOpen = style({
 
 export const newSessionBtn = style({
   flexShrink: 0,
-  background: "rgba(255,255,255,0.18)",
-  border: "1px solid rgba(255,255,255,0.25)",
+  background: vars.color.surface,
+  border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radius.sm,
-  color: "#fff",
+  color: vars.color.textPrimary,
   fontSize: vars.font.size.sm,
   padding: `4px 10px`,
   cursor: "pointer",
   whiteSpace: "nowrap",
   transition: "background 0.15s",
   selectors: {
-    "&:hover": { background: "rgba(255,255,255,0.3)" },
+    "&:hover": { background: vars.color.surfaceSecondary },
   },
 });
 
