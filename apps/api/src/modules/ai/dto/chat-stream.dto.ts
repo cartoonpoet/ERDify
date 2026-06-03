@@ -32,3 +32,22 @@ export interface AiSessionResponse {
   name: string;
   createdAt: string;
 }
+
+export interface SessionMessagesQuery {
+  limit?: string;
+  before?: string;
+}
+
+export interface SessionMessageItem {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  diff: unknown[] | null;
+  accepted: boolean | null;
+  createdAt: string;
+}
+
+export interface SessionMessagesResponse {
+  messages: SessionMessageItem[];
+  hasMore: boolean;
+}

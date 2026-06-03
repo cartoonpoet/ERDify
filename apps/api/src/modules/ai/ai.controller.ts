@@ -8,7 +8,7 @@ import { AiChatService } from "./chat/ai-chat.service";
 import { AiHistoryService } from "./ai-history.service";
 import { AiSuggestColumnsDto } from "./dto/suggest-columns.dto";
 import { AiChatStreamDto, AiCreateSessionDto } from "./dto/chat-stream.dto";
-import type { AiSessionResponse } from "./dto/chat-stream.dto";
+import type { AiSessionResponse, SessionMessagesResponse } from "./dto/chat-stream.dto";
 import type { ColumnSuggestion, OrgAiSettings, AiChatConfig, AiProviderId } from "@erdify/contracts";
 
 @Controller()
@@ -87,6 +87,33 @@ export class AiController {
   ): Promise<{ sessionId: string }> {
     const sessionId = await this.aiHistoryService.createSession(user.sub, dto.diagramId);
     return { sessionId };
+  }
+
+  @Get("ai/sessions/:sessionId/messages")
+  async getSessionMessages(
+    @CurrentUser() user: JwtPayload,
+    @Param("sessionId") sessionId: string,
+    @Query("limit") limitStr?: string,
+    @Query("before") before?: string,
+  ): Promise<SessionMessagesResponse> {
+    const limit = limitStr ? Math.min(parseInt(limitStr, 10) || 50, 100) : 50;
+    const { messages, hasMore } = await this.aiHistoryService.findSessionMessages(
+      user.sub,
+      sessionId,
+      limit,
+      before,
+    );
+    return {
+      messages: messages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        diff: (m.diff as unknown[] | null) ?? null,
+        accepted: m.accepted,
+        createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt),
+      })),
+      hasMore,
+    };
   }
 
   @Post("ai/chat/:messageId/accept")
