@@ -14,6 +14,7 @@ export const container = style({
 
 export const dropdownBtn = style({
   flex: 1,
+  minWidth: 0,
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
