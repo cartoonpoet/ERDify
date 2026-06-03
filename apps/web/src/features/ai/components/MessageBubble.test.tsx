@@ -58,6 +58,29 @@ describe("MessageBubble", () => {
     expect(screen.getByText("무엇을 도와드릴까요?")).toBeInTheDocument();
   });
 
+  it("role=assistant 일 때 마크다운을 HTML로 렌더링한다", () => {
+    const message = makeAssistantMessage({
+      content: "**굵은** 텍스트와 `코드`\n\n- 항목 1\n- 항목 2",
+    });
+    const { container } = render(
+      <MessageBubble message={message} onOpenReview={onOpenReview} />,
+    );
+
+    expect(container.querySelector("strong")?.textContent).toBe("굵은");
+    expect(container.querySelector("code")?.textContent).toBe("코드");
+    expect(container.querySelectorAll("li")).toHaveLength(2);
+  });
+
+  it("role=user 일 때는 마크다운을 변환하지 않고 원문 그대로 둔다", () => {
+    const message = makeUserMessage({ content: "**굵게** 안 됨" });
+    const { container } = render(
+      <MessageBubble message={message} onOpenReview={onOpenReview} />,
+    );
+
+    expect(container.querySelector("strong")).toBeNull();
+    expect(screen.getByText("**굵게** 안 됨")).toBeInTheDocument();
+  });
+
   it("diff=null 일 때 DiffCard를 렌더링하지 않는다", () => {
     const message = makeUserMessage({ diff: null });
     render(<MessageBubble message={message} onOpenReview={onOpenReview} />);
