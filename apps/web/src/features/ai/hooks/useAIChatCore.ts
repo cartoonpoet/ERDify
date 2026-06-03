@@ -20,7 +20,7 @@ interface UseAIChatCoreReturn {
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   handleAccept: (messageId: string) => Promise<void>;
   handleReject: (messageId: string) => Promise<void>;
-  handleSelectSession: (sessionId: string) => void;
+  handleSelectSession: (sessionId: string) => Promise<void>;
   handleNewSession: () => Promise<void>;
   handleLoadMore: () => Promise<void>;
   canLoadMore: boolean;
