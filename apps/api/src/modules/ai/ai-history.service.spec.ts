@@ -158,8 +158,8 @@ describe("AiHistoryService", () => {
       );
       expect(hasMore).toBe(true);
       expect(messages).toHaveLength(2);
-      expect(messages[0].id).toBe("m2"); // 최신 2개를 오름차순: m2 → m3
-      expect(messages[1].id).toBe("m3");
+      expect(messages[0]?.id).toBe("m2"); // 최신 2개를 오름차순: m2 → m3
+      expect(messages[1]?.id).toBe("m3");
     });
 
     it("결과가 limit 이하면 hasMore=false", async () => {
