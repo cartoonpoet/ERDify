@@ -137,6 +137,68 @@ describe("AiHistoryService", () => {
     });
   });
 
+  describe("findSessionMessages()", () => {
+    it("최신 limit개를 오름차순으로 반환하고 hasMore=true를 계산한다", async () => {
+      const rows = [
+        { id: "m3", createdAt: new Date("2024-01-03") },
+        { id: "m2", createdAt: new Date("2024-01-02") },
+        { id: "m1", createdAt: new Date("2024-01-01") },
+      ];
+      // limit=2 → take=3, 결과 3개 → hasMore=true, 반환은 2개
+      repo.find.mockResolvedValue(rows);
+
+      const { messages, hasMore } = await service.findSessionMessages("user-1", "sess-1", 2);
+
+      expect(repo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: "user-1", sessionId: "sess-1" },
+          order: { createdAt: "DESC" },
+          take: 3,
+        }),
+      );
+      expect(hasMore).toBe(true);
+      expect(messages).toHaveLength(2);
+      expect(messages[0].id).toBe("m1"); // DESC 결과를 reverse → 오름차순
+      expect(messages[1].id).toBe("m2");
+    });
+
+    it("결과가 limit 이하면 hasMore=false", async () => {
+      repo.find.mockResolvedValue([{ id: "m1", createdAt: new Date("2024-01-01") }]);
+
+      const { messages, hasMore } = await service.findSessionMessages("user-1", "sess-1", 50);
+
+      expect(hasMore).toBe(false);
+      expect(messages).toHaveLength(1);
+    });
+
+    it("beforeId가 있으면 해당 메시지의 createdAt 기준으로 더 오래된 것을 조회한다", async () => {
+      const refDate = new Date("2024-01-03");
+      repo.findOne.mockResolvedValue({ id: "m3", createdAt: refDate });
+      repo.find.mockResolvedValue([{ id: "m1", createdAt: new Date("2024-01-01") }]);
+
+      await service.findSessionMessages("user-1", "sess-1", 50, "m3");
+
+      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: "m3", userId: "user-1" } });
+      expect(repo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ createdAt: expect.anything() }),
+        }),
+      );
+    });
+
+    it("beforeId에 해당하는 메시지가 없으면 최신 메시지를 반환한다", async () => {
+      repo.findOne.mockResolvedValue(null);
+      repo.find.mockResolvedValue([{ id: "m1", createdAt: new Date("2024-01-01") }]);
+
+      const { messages } = await service.findSessionMessages("user-1", "sess-1", 50, "nonexistent");
+
+      expect(repo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: "user-1", sessionId: "sess-1" } }),
+      );
+      expect(messages).toHaveLength(1);
+    });
+  });
+
   describe("markAccepted()", () => {
     it("accepted=true로 repo.update를 호출한다", async () => {
       repo.update.mockResolvedValue({ affected: 1 });

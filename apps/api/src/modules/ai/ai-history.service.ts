@@ -131,6 +131,34 @@ export class AiHistoryService {
     return randomUUID();
   }
 
+  async findSessionMessages(
+    userId: string,
+    sessionId: string,
+    limit: number,
+    beforeId?: string,
+  ): Promise<{ messages: AiConversation[]; hasMore: boolean }> {
+    let beforeCreatedAt: Date | undefined;
+
+    if (beforeId) {
+      const ref = await this.repo.findOne({ where: { id: beforeId, userId } });
+      if (ref) beforeCreatedAt = ref.createdAt;
+    }
+
+    const rows = await this.repo.find({
+      where: {
+        userId,
+        sessionId,
+        ...(beforeCreatedAt ? { createdAt: LessThan(beforeCreatedAt) } : {}),
+      },
+      order: { createdAt: "DESC" },
+      take: limit + 1,
+    });
+
+    const hasMore = rows.length > limit;
+    const messages = rows.slice(-limit).reverse();
+    return { messages, hasMore };
+  }
+
   async markAccepted(messageId: string, userId: string, accepted: boolean): Promise<void> {
     await this.repo.update({ id: messageId, userId }, { accepted });
   }
