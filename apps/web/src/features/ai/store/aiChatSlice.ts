@@ -30,7 +30,12 @@ export interface AiChatSlice {
   sessionMessages: Record<string, AiMessage[]>;
   currentDiagramId: string | null;
   streamingStatus: string | null;
+  sessionHasMore: Record<string, boolean>;
+  sessionHistoryLoading: Record<string, boolean>;
   setStreamingStatus: (label: string | null) => void;
+  setSessionMessages: (sessionId: string, messages: AiMessage[], hasMore: boolean) => void;
+  prependSessionMessages: (sessionId: string, messages: AiMessage[], hasMore: boolean) => void;
+  setSessionHistoryLoading: (sessionId: string, loading: boolean) => void;
   openChat: (initialMessage?: string) => void;
   closeChat: () => void;
   addUserMessage: (content: string, sessionId?: string) => void;
@@ -62,8 +67,30 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
   sessionMessages: {},
   currentDiagramId: null,
   streamingStatus: null,
+  sessionHasMore: {},
+  sessionHistoryLoading: {},
 
   setStreamingStatus: (label) => set({ streamingStatus: label }),
+
+  setSessionMessages: (sessionId, messages, hasMore) =>
+    set((state) => ({
+      sessionMessages: { ...state.sessionMessages, [sessionId]: messages },
+      sessionHasMore: { ...state.sessionHasMore, [sessionId]: hasMore },
+    })),
+
+  prependSessionMessages: (sessionId, messages, hasMore) =>
+    set((state) => ({
+      sessionMessages: {
+        ...state.sessionMessages,
+        [sessionId]: [...messages, ...(state.sessionMessages[sessionId] ?? [])],
+      },
+      sessionHasMore: { ...state.sessionHasMore, [sessionId]: hasMore },
+    })),
+
+  setSessionHistoryLoading: (sessionId, loading) =>
+    set((state) => ({
+      sessionHistoryLoading: { ...state.sessionHistoryLoading, [sessionId]: loading },
+    })),
 
   openChat: (initialMessage) =>
     set((state) => {

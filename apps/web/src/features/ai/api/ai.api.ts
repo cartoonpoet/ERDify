@@ -115,3 +115,30 @@ export const getSessions = (diagramId: string): Promise<AiSessionResponse[]> =>
 
 export const createSession = (diagramId: string): Promise<{ sessionId: string }> =>
   httpClient.post<{ sessionId: string }>("/ai/sessions", { diagramId }).then((r) => r.data);
+
+export interface SessionMessageItem {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  diff: unknown;
+  accepted: boolean | null;
+  createdAt: string;
+}
+
+export interface SessionMessagesResponse {
+  messages: SessionMessageItem[];
+  hasMore: boolean;
+}
+
+export const getSessionMessages = (
+  sessionId: string,
+  opts?: { limit?: number; before?: string },
+): Promise<SessionMessagesResponse> =>
+  httpClient
+    .get<SessionMessagesResponse>(`/ai/sessions/${sessionId}/messages`, {
+      params: {
+        limit: opts?.limit ?? 50,
+        ...(opts?.before ? { before: opts.before } : {}),
+      },
+    })
+    .then((r) => r.data);

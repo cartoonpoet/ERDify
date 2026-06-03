@@ -1,3 +1,17 @@
+import type { SessionMessageItem } from "./api/ai.api";
+import type { AiMessage } from "./store/aiChatSlice";
+
+export const mapToAiMessages = (items: SessionMessageItem[]): AiMessage[] =>
+  items.map((item) => ({
+    id: item.id,
+    role: item.role,
+    content: item.content,
+    diff: item.diff as import("@erdify/contracts").DiffChange[] | null,
+    pendingDocument: null,
+    accepted: item.accepted,
+    isStreaming: false,
+  }));
+
 export type ModelBadgeVariant = "blue" | "purple" | "green" | "gray";
 
 export const parseModelLabel = (label: string): { name: string; badge: string | null } => {
