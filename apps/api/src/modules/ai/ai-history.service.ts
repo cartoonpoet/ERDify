@@ -155,7 +155,7 @@ export class AiHistoryService {
     });
 
     const hasMore = rows.length > limit;
-    const messages = rows.slice(-limit).reverse();
+    const messages = rows.slice(0, limit).reverse();
     return { messages, hasMore };
   }
 
