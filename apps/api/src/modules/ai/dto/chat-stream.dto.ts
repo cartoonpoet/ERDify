@@ -33,16 +33,11 @@ export interface AiSessionResponse {
   createdAt: string;
 }
 
-export interface SessionMessagesQuery {
-  limit?: string;
-  before?: string;
-}
-
 export interface SessionMessageItem {
   id: string;
   role: "user" | "assistant";
   content: string;
-  diff: unknown[] | null;
+  diff: unknown;
   accepted: boolean | null;
   createdAt: string;
 }

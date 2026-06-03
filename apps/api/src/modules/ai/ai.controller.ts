@@ -108,7 +108,7 @@ export class AiController {
         id: m.id,
         role: m.role,
         content: m.content,
-        diff: (m.diff as unknown[] | null) ?? null,
+        diff: m.diff ?? null,
         accepted: m.accepted,
         createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt),
       })),
