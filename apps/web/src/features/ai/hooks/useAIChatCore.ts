@@ -3,9 +3,10 @@ import { useState, useRef, useEffect } from "react";
 import type React from "react";
 import { useAIChatStore } from "../store/useAIChatStore";
 import { DEFAULT_SESSION_ID } from "../store/aiChatSlice";
-import { acceptAiDiff, rejectAiDiff, sendAiChatStream, createSession } from "../api/ai.api";
+import { acceptAiDiff, rejectAiDiff, sendAiChatStream, createSession, getSessionMessages } from "../api/ai.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import type { AiMessage } from "../store/aiChatSlice";
+import { mapToAiMessages } from "../ai-chat-utils";
 
 interface UseAIChatCoreReturn {
   input: string;
@@ -21,6 +22,9 @@ interface UseAIChatCoreReturn {
   handleReject: (messageId: string) => Promise<void>;
   handleSelectSession: (sessionId: string) => void;
   handleNewSession: () => Promise<void>;
+  handleLoadMore: () => Promise<void>;
+  canLoadMore: boolean;
+  isLoadingHistory: boolean;
 }
 
 export const useAIChatCore = (diagramId: string, selectedModel: string): UseAIChatCoreReturn => {
@@ -33,15 +37,23 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
     setCurrentSession, addSession,
     setStreamingStatus,
     startStreamingMessage, appendStreamingDelta, finalizeStreamingMessage,
+    sessionHasMore, sessionHistoryLoading,
+    setSessionMessages, prependSessionMessages, setSessionHistoryLoading,
   } = useAIChatStore();
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [sessionMessages]);
+  const lastMessageIdRef = useRef<string | null>(null);
 
   const currentMessages = sessionMessages[currentSessionId ?? DEFAULT_SESSION_ID] ?? [];
+
+  useEffect(() => {
+    const lastId = currentMessages[currentMessages.length - 1]?.id ?? null;
+    if (lastId && lastId !== lastMessageIdRef.current) {
+      lastMessageIdRef.current = lastId;
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [currentMessages]);
 
   const buildStreamingCallbacks = (sessionId: string, tempId: string) => ({
     onText: (delta: string) => appendStreamingDelta(sessionId, tempId, delta),
@@ -124,8 +136,18 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
     await rejectAiDiff(messageId).catch(() => {});
   };
 
-  const handleSelectSession = (sessionId: string) => {
+  const handleSelectSession = async (sessionId: string) => {
     setCurrentSession(sessionId);
+    if (sessionMessages[sessionId]) return;
+    setSessionHistoryLoading(sessionId, true);
+    try {
+      const { messages, hasMore } = await getSessionMessages(sessionId);
+      setSessionMessages(sessionId, mapToAiMessages(messages), hasMore);
+    } catch {
+      // 실패 시 빈 메시지 유지
+    } finally {
+      setSessionHistoryLoading(sessionId, false);
+    }
   };
 
   const handleNewSession = async () => {
@@ -143,6 +165,26 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
     }
   };
 
+  const handleLoadMore = async () => {
+    const sessionId = currentSessionId;
+    if (!sessionId) return;
+    if (!sessionHasMore[sessionId]) return;
+    if (sessionHistoryLoading[sessionId]) return;
+
+    const oldest = currentMessages[0];
+    if (!oldest) return;
+
+    setSessionHistoryLoading(sessionId, true);
+    try {
+      const { messages, hasMore } = await getSessionMessages(sessionId, { before: oldest.id });
+      prependSessionMessages(sessionId, mapToAiMessages(messages), hasMore);
+    } catch {
+      // 실패 시 무시
+    } finally {
+      setSessionHistoryLoading(sessionId, false);
+    }
+  };
+
   const sendBtnDisabled = isLoading || !input.trim();
 
   const reviewingMessage = reviewingMessageId
@@ -150,6 +192,9 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
     : null;
 
   const currentDocument = useEditorStore.getState().document;
+
+  const canLoadMore = !!currentSessionId && !!sessionHasMore[currentSessionId];
+  const isLoadingHistory = !!currentSessionId && !!sessionHistoryLoading[currentSessionId];
 
   return {
     input,
@@ -165,5 +210,8 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
     handleReject,
     handleSelectSession,
     handleNewSession,
+    handleLoadMore,
+    canLoadMore,
+    isLoadingHistory,
   };
 };
