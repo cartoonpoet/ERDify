@@ -140,7 +140,7 @@ export class AiHistoryService {
     let beforeCreatedAt: Date | undefined;
 
     if (beforeId) {
-      const ref = await this.repo.findOne({ where: { id: beforeId, userId } });
+      const ref = await this.repo.findOne({ where: { id: beforeId, userId, sessionId } });
       if (ref) beforeCreatedAt = ref.createdAt;
     }
 

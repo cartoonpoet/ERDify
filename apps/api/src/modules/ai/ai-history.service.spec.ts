@@ -178,7 +178,7 @@ describe("AiHistoryService", () => {
 
       await service.findSessionMessages("user-1", "sess-1", 50, "m3");
 
-      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: "m3", userId: "user-1" } });
+      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: "m3", userId: "user-1", sessionId: "sess-1" } });
       expect(repo.find).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ createdAt: expect.anything() }),
