@@ -1,3 +1,4 @@
+import type { DiffChange } from "@erdify/contracts";
 import type { SessionMessageItem } from "./api/ai.api";
 import type { AiMessage } from "./store/aiChatSlice";
 
@@ -6,7 +7,7 @@ export const mapToAiMessages = (items: SessionMessageItem[]): AiMessage[] =>
     id: item.id,
     role: item.role,
     content: item.content,
-    diff: item.diff as import("@erdify/contracts").DiffChange[] | null,
+    diff: item.diff as DiffChange[] | null,
     pendingDocument: null,
     accepted: item.accepted,
     isStreaming: false,
