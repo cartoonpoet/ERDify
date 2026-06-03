@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useAIChatStore } from "../store/useAIChatStore";
 import { MessageBubble } from "./MessageBubble";
 import { AIDiffReviewPanel } from "./AIDiffReviewPanel";
@@ -22,6 +22,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
   } = useAIChatStore();
 
   const [isModelOpen, setIsModelOpen] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { models, selectedModel, handleModelSelect } =
     useAIModelSelection(diagramId);
 
@@ -30,7 +31,22 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     reviewingMessage, currentDocument,
     handleSendInput, handleKeyDown, handleAccept, handleReject,
     handleSelectSession, handleNewSession,
+    handleLoadMore, canLoadMore, isLoadingHistory,
   } = useAIChatCore(diagramId, selectedModel);
+
+  const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (e.currentTarget.scrollTop === 0 && canLoadMore && !isLoadingHistory) {
+      const container = messagesContainerRef.current;
+      const prevScrollHeight = container?.scrollHeight ?? 0;
+      handleLoadMore().then(() => {
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight - prevScrollHeight;
+          }
+        });
+      });
+    }
+  };
 
   return (
     <>
@@ -124,8 +140,17 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
             onNewSession={handleNewSession}
           />
 
-          <div className={s.chatMessages}>
-            {currentMessages.length === 0 && (
+          <div className={s.chatMessages} ref={messagesContainerRef} onScroll={handleMessagesScroll}>
+            {isLoadingHistory && (
+              <div className={s.chatThinking} style={{ justifyContent: "center" }}>
+                <div className={s.thinkingDots}>
+                  <div className={s.thinkingDot} />
+                  <div className={s.thinkingDot} />
+                  <div className={s.thinkingDot} />
+                </div>
+              </div>
+            )}
+            {currentMessages.length === 0 && !isLoadingHistory && (
               <div className={s.chatEmpty}>
                 <div className={s.chatEmptyIcon}>✦</div>
                 ERD에 대해 무엇이든 물어보세요.<br />
