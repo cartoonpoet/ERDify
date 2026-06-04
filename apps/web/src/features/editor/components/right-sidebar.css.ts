@@ -9,6 +9,26 @@ export const container = style({
   borderLeft: `1px solid ${vars.color.border}`,
 });
 
+/* ── 드래그로 폭을 조절하는 리사이즈 핸들 (패널 왼쪽 모서리) ── */
+export const resizeHandle = style({
+  width: 5,
+  flexShrink: 0,
+  cursor: "col-resize",
+  background: "transparent",
+  position: "relative",
+  zIndex: 1,
+  transition: "background 150ms ease",
+  selectors: {
+    "&:hover": {
+      background: vars.color.primary,
+    },
+  },
+});
+
+export const resizeHandleActive = style({
+  background: vars.color.primary,
+});
+
 /* ── 슬라이딩 패널 (탭바 왼쪽) ── */
 export const panel = style({
   width: 280,
@@ -18,6 +38,11 @@ export const panel = style({
   background: vars.color.surface,
   borderRight: `1px solid ${vars.color.border}`,
   transition: "width 220ms cubic-bezier(0.4, 0, 0.2, 1)",
+});
+
+/* 드래그 중에는 폭 트랜지션을 끄고 커서를 따라 즉시 반응시킨다 */
+export const panelResizing = style({
+  transition: "none",
 });
 
 export const panelClosed = style({

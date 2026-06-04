@@ -1,3 +1,4 @@
+import { type MouseEvent as ReactMouseEvent, useCallback, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { AIChatTabPanel } from "./AIChatTabPanel";
@@ -14,8 +15,43 @@ interface RightSidebarProps {
 export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
   const activeTab = useEditorStore((s) => s.rightSidebarActiveTab);
   const panelOpen = useEditorStore((s) => s.rightSidebarPanelOpen);
+  const panelWidth = useEditorStore((s) => s.rightSidebarWidth);
   const setActiveTab = useEditorStore((s) => s.setRightSidebarActiveTab);
   const setPanelOpen = useEditorStore((s) => s.setRightSidebarPanelOpen);
+  const setPanelWidth = useEditorStore((s) => s.setRightSidebarWidth);
+
+  const [resizing, setResizing] = useState(false);
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const handleResizeStart = useCallback(
+    (e: ReactMouseEvent) => {
+      e.preventDefault();
+      dragRef.current = { startX: e.clientX, startWidth: panelWidth };
+      setResizing(true);
+
+      const handleMove = (ev: MouseEvent) => {
+        if (!dragRef.current) return;
+        // 핸들이 패널 왼쪽에 있으므로, 왼쪽으로 끌수록 패널이 넓어진다.
+        const delta = dragRef.current.startX - ev.clientX;
+        setPanelWidth(dragRef.current.startWidth + delta);
+      };
+
+      const handleUp = () => {
+        dragRef.current = null;
+        setResizing(false);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        window.removeEventListener("mousemove", handleMove);
+        window.removeEventListener("mouseup", handleUp);
+      };
+
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      window.addEventListener("mousemove", handleMove);
+      window.addEventListener("mouseup", handleUp);
+    },
+    [panelWidth, setPanelWidth],
+  );
 
   const handleTabClick = (tabId: number) => {
     if (panelOpen && activeTab === tabId) {
@@ -39,7 +75,23 @@ export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
 
   return (
     <div className={css.container}>
-      <div className={[css.panel, panelOpen ? "" : css.panelClosed].join(" ")}>
+      {panelOpen && (
+        <div
+          className={[css.resizeHandle, resizing ? css.resizeHandleActive : ""].join(" ")}
+          onMouseDown={handleResizeStart}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="패널 크기 조절"
+        />
+      )}
+      <div
+        className={[
+          css.panel,
+          resizing ? css.panelResizing : "",
+          panelOpen ? "" : css.panelClosed,
+        ].join(" ")}
+        style={panelOpen ? { width: panelWidth } : undefined}
+      >
         <div className={css.panelBody}>
           {renderPanel(activeTab as TabId)}
         </div>
