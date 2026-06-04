@@ -7,6 +7,7 @@ import { AuthorizationService } from "../../../common/services/authorization.ser
 import type { DiagramDocument } from "@erdify/domain";
 import type { CreateDiagramDto } from "../dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "../dto/update-diagram.dto";
+import type { DuplicateDiagramDto } from "../dto/duplicate-diagram.dto";
 
 @Injectable()
 export class DiagramsCrudService {
@@ -132,7 +133,8 @@ export class DiagramsCrudService {
 
   async duplicate(
     diagramId: string,
-    userId: string
+    userId: string,
+    dto?: DuplicateDiagramDto
   ): Promise<Diagram & { organizationId: string; organizationName: string; projectName: string; myRole: string }> {
     const { diagram, orgId, orgName, projectName } = await this.getDiagramWithOrg(diagramId);
     const member = await this.authorizationService.requireEditorOrOwner(orgId, userId);
@@ -148,12 +150,14 @@ export class DiagramsCrudService {
 
     const now = new Date().toISOString();
     const newId = randomUUID();
-    const newName = `${src.name} (복사본)`;
+    const newName = dto?.name ?? `${src.name} (복사본)`;
+    const newDialect = dto?.dialect ?? src.dialect;
 
     const newContent: DiagramDocument = {
       ...src,
       id: newId,
       name: newName,
+      dialect: newDialect as DiagramDocument["dialect"],
       metadata: { ...src.metadata, revision: 1, createdAt: now, updatedAt: now },
       entities: src.entities.map((e) => ({
         ...e,

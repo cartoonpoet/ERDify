@@ -13,6 +13,7 @@ import { AddColumnDto } from "./dto/add-column.dto";
 import { UpdateColumnDto } from "./dto/update-column.dto";
 import { AddRelationshipDto } from "./dto/add-relationship.dto";
 import { UpdateRelationshipDto } from "./dto/update-relationship.dto";
+import { DuplicateDiagramDto } from "./dto/duplicate-diagram.dto";
 
 @Controller()
 @UseGuards(FlexAuthGuard)
@@ -76,8 +77,8 @@ export class DiagramsController {
 
   @Post("diagrams/:id/duplicate")
   @HttpCode(HttpStatus.CREATED)
-  duplicate(@CurrentUser() user: JwtPayload, @Param("id") id: string) {
-    return this.diagramsService.duplicate(id, user.sub);
+  duplicate(@CurrentUser() user: JwtPayload, @Param("id") id: string, @Body() dto: DuplicateDiagramDto) {
+    return this.diagramsService.duplicate(id, user.sub, dto);
   }
 
   @Delete("diagrams/:id")

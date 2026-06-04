@@ -6,6 +6,8 @@ import { addEntity } from "@erdify/domain";
 import { Share2 } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { getDiagram, duplicateDiagram } from "@/shared/api/diagrams.api";
+import { SaveCopyModal } from "../components/SaveCopyModal";
+import type { DiagramDialect } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { EditorCanvas } from "../components/EditorCanvas";
 import { RelationshipPopover } from "../components/RelationshipPopover";
@@ -32,6 +34,7 @@ export const EditorPage = () => {
   const [showShare, setShowShare] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showFileMenu, setShowFileMenu] = useState(false);
+  const [showSaveCopy, setShowSaveCopy] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
 
   const { isDirty, isCollaborating, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, openSearchTab, undo, canEdit } = useEditorStore();
@@ -166,16 +169,10 @@ export const EditorPage = () => {
               <button
                 className={css.fileDropdownItem}
                 disabled={isDuplicating}
-                onClick={async () => {
+                onClick={() => {
                   if (!diagramId) return;
                   setShowFileMenu(false);
-                  setIsDuplicating(true);
-                  try {
-                    const copy = await duplicateDiagram(diagramId);
-                    navigate(`/editor/${copy.id}`);
-                  } finally {
-                    setIsDuplicating(false);
-                  }
+                  setShowSaveCopy(true);
                 }}
               >
                 <span className={css.fileDropdownItemIcon}>⎘</span>
@@ -258,6 +255,24 @@ export const EditorPage = () => {
       <FkSetupModal />
       <RelDeleteConfirmModal />
       <ImportIntoEditorModal open={showImport} onClose={() => setShowImport(false)} />
+
+      {showSaveCopy && data && diagramId ? (
+        <SaveCopyModal
+          open={showSaveCopy}
+          onClose={() => setShowSaveCopy(false)}
+          defaultName={`${data.name} (복사본)`}
+          defaultDialect={(data.content.dialect ?? "postgresql") as DiagramDialect}
+          onSave={async (name, dialect) => {
+            setIsDuplicating(true);
+            try {
+              const copy = await duplicateDiagram(diagramId, { name, dialect });
+              navigate(`/diagrams/${copy.id}`);
+            } finally {
+              setIsDuplicating(false);
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 };

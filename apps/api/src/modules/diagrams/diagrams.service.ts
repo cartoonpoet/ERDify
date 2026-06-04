@@ -9,6 +9,7 @@ import type { AddColumnDto } from "./dto/add-column.dto";
 import type { UpdateColumnDto } from "./dto/update-column.dto";
 import type { AddRelationshipDto } from "./dto/add-relationship.dto";
 import type { UpdateRelationshipDto } from "./dto/update-relationship.dto";
+import type { DuplicateDiagramDto } from "./dto/duplicate-diagram.dto";
 import type { ActiveUsersResponse } from "@erdify/contracts";
 import { DiagramsCrudService } from "./services/diagrams-crud.service";
 import { DiagramsSchemaService } from "./services/diagrams-schema.service";
@@ -48,8 +49,8 @@ export class DiagramsService {
     return this.crud.remove(diagramId, userId);
   }
 
-  duplicate(diagramId: string, userId: string) {
-    return this.crud.duplicate(diagramId, userId);
+  duplicate(diagramId: string, userId: string, dto?: DuplicateDiagramDto) {
+    return this.crud.duplicate(diagramId, userId, dto);
   }
 
   canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {
