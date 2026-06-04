@@ -3,6 +3,10 @@ import type { StateCreator } from "zustand";
 import type { Viewport } from "@xyflow/react";
 import type { EditorState } from "./editor-store.types";
 
+export const RIGHT_SIDEBAR_MIN_WIDTH = 240;
+export const RIGHT_SIDEBAR_MAX_WIDTH = 720;
+export const RIGHT_SIDEBAR_DEFAULT_WIDTH = 280;
+
 export interface UISlice {
   selectedEntityId: string | null;
   selectedRelationshipId: string | null;
@@ -10,6 +14,7 @@ export interface UISlice {
   searchOpen: boolean;
   rightSidebarActiveTab: number;
   rightSidebarPanelOpen: boolean;
+  rightSidebarWidth: number;
   hiddenSchemas: Set<string>;
   schemaFilterExpanded: boolean;
   groupViewEnabled: boolean;
@@ -22,6 +27,7 @@ export interface UISlice {
   setSearchOpen: (open: boolean) => void;
   setRightSidebarActiveTab: (tab: number) => void;
   setRightSidebarPanelOpen: (open: boolean) => void;
+  setRightSidebarWidth: (width: number) => void;
   openSearchTab: () => void;
   toggleSchemaVisibility: (schema: string) => void;
   setSchemaFilterExpanded: (expanded: boolean) => void;
@@ -38,6 +44,7 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
   searchOpen: false,
   rightSidebarActiveTab: 0,
   rightSidebarPanelOpen: false,
+  rightSidebarWidth: RIGHT_SIDEBAR_DEFAULT_WIDTH,
   hiddenSchemas: new Set<string>(),
   schemaFilterExpanded: true,
   groupViewEnabled: true,
@@ -51,6 +58,13 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
   setSearchOpen: (open) => set({ searchOpen: open }),
   setRightSidebarActiveTab: (tab) => set({ rightSidebarActiveTab: tab }),
   setRightSidebarPanelOpen: (open) => set({ rightSidebarPanelOpen: open }),
+  setRightSidebarWidth: (width) =>
+    set({
+      rightSidebarWidth: Math.max(
+        RIGHT_SIDEBAR_MIN_WIDTH,
+        Math.min(RIGHT_SIDEBAR_MAX_WIDTH, Math.round(width)),
+      ),
+    }),
   openSearchTab: () => set({ rightSidebarActiveTab: 1, rightSidebarPanelOpen: true }),
   toggleSchemaVisibility: (schema) =>
     set((state) => {
