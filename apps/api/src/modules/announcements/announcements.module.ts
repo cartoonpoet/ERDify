@@ -4,9 +4,10 @@ import { Announcement, User } from "@erdify/db";
 import { AnnouncementsService } from "./announcements.service";
 import { AnnouncementsAiService } from "./announcements-ai.service";
 import { AnnouncementsController } from "./announcements.controller";
+import { AiModule } from "../ai/ai.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Announcement, User])],
+  imports: [TypeOrmModule.forFeature([Announcement, User]), AiModule],
   providers: [AnnouncementsService, AnnouncementsAiService],
   controllers: [AnnouncementsController],
 })

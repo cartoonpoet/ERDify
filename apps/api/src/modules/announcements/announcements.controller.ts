@@ -78,7 +78,7 @@ export class AnnouncementsController {
     @Req() req: { user: { sub: string } },
   ): Promise<AiAnnouncementResult> {
     await this.assertAdmin(req.user.sub);
-    return this.aiService.generate(body);
+    return this.aiService.generate(body, req.user.sub);
   }
 
   @Post("admin/announcements/ai/refine")
@@ -88,7 +88,7 @@ export class AnnouncementsController {
     @Req() req: { user: { sub: string } },
   ): Promise<AiAnnouncementResult> {
     await this.assertAdmin(req.user.sub);
-    return this.aiService.refine(body);
+    return this.aiService.refine(body, req.user.sub);
   }
 
   private async assertAdmin(userId: string): Promise<void> {

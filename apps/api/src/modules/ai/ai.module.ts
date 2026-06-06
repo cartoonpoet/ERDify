@@ -29,5 +29,6 @@ import { GeminiProvider } from "./providers/gemini.provider";
   ],
   controllers: [AiController],
   providers: [AiService, AiHistoryService, AiChatService, ToolExecutor, AnthropicProvider, OpenAiProvider, GeminiProvider],
+  exports: [AiService],
 })
 export class AiModule {}

@@ -108,35 +108,7 @@ Return ONLY a JSON array, no explanation:
 [{"name": "...", "type": "...", "nullable": true/false, "pk": true/false}]
 Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, jsonb.`;
 
-    let text = "";
-    if (provider === "openai") {
-      const client = new OpenAI({ apiKey });
-      const res = await client.chat.completions.create({
-        model,
-        max_tokens: 512,
-        messages: [{ role: "user", content: prompt }],
-      });
-      text = res.choices[0]?.message?.content ?? "";
-    } else if (provider === "gemini") {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const gModel = genAI.getGenerativeModel({ model });
-      const res = await gModel.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 512 },
-      });
-      text = res.response.text();
-    } else {
-      const client = new Anthropic({ apiKey });
-      const res = await client.messages.create({
-        model,
-        max_tokens: 512,
-        messages: [{ role: "user", content: prompt }],
-      });
-      text = res.content
-        .filter((b) => b.type === "text")
-        .map((b) => (b as { type: "text"; text: string }).text)
-        .join("");
-    }
+    const text = await this.oneShot(provider, apiKey, model, prompt, 512);
 
     this.usageService
       .log(membership.organizationId, userId, "ai_suggest_columns", null, null, { provider, model, table_name: tableName })
@@ -149,6 +121,49 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
     } catch {
       return [];
     }
+  }
+
+  // ── One-shot completion (column suggestions, announcements 등 재사용) ────────
+
+  /** provider별 SDK를 통일된 인터페이스로 호출하는 단발성 텍스트 완성. */
+  private async oneShot(provider: AiProviderId, apiKey: string, model: string, prompt: string, maxTokens: number): Promise<string> {
+    if (provider === "openai") {
+      const client = new OpenAI({ apiKey });
+      const isNewModel = /^gpt-5/.test(model);
+      const res = await client.chat.completions.create({
+        model,
+        ...(isNewModel ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
+        messages: [{ role: "user", content: prompt }],
+      });
+      return res.choices[0]?.message?.content ?? "";
+    }
+    if (provider === "gemini") {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const gModel = genAI.getGenerativeModel({ model });
+      const res = await gModel.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: maxTokens },
+      });
+      return res.response.text();
+    }
+    const client = new Anthropic({ apiKey });
+    const res = await client.messages.create({
+      model,
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: prompt }],
+    });
+    return res.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as { type: "text"; text: string }).text)
+      .join("");
+  }
+
+  /** 유저가 속한 조직의 등록 키로 단발성 텍스트 완성을 수행한다(조직 외부 어드민 기능에서 재사용). */
+  async completeForUser(userId: string, prompt: string, maxTokens: number): Promise<string> {
+    const membership = await this.memberRepo.findOne({ where: { userId } });
+    if (!membership) throw new ForbiddenException("조직 멤버십이 없습니다. AI 키가 등록된 조직에 속해 있어야 합니다.");
+    const { apiKey, provider, model } = await this.resolveChatCredentials(membership.organizationId, userId);
+    return this.oneShot(provider, apiKey, model, prompt, maxTokens);
   }
 
   // ── Shared helpers (used by AiChatService) ──────────────────────────────────

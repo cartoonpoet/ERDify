@@ -1,7 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import Anthropic from "@anthropic-ai/sdk";
 import type { AiGenerateAnnouncementDto, AiRefineAnnouncementDto, AiAnnouncementResult, AnnouncementType } from "@erdify/contracts";
+import { AiService } from "../ai/ai.service";
 
 const TONE_GUIDE: Record<AnnouncementType, string> = {
   maintenance: "정중하고 명확한 안내 어조. 일시, 영향 범위, 조치 방법 순으로 구성한다.",
@@ -14,10 +13,9 @@ const TONE_GUIDE: Record<AnnouncementType, string> = {
 export class AnnouncementsAiService {
   private readonly logger = new Logger(AnnouncementsAiService.name);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly aiService: AiService) {}
 
-  async generate(dto: AiGenerateAnnouncementDto): Promise<AiAnnouncementResult> {
-    const client = new Anthropic({ apiKey: this.config.get<string>("ANTHROPIC_API_KEY") });
+  async generate(dto: AiGenerateAnnouncementDto, userId: string): Promise<AiAnnouncementResult> {
     const tone = TONE_GUIDE[dto.type];
     const prompt = `당신은 SaaS 서비스의 공지사항 작성 전문가입니다.
 아래 키워드를 바탕으로 서비스 공지사항을 작성해주세요.
@@ -29,11 +27,10 @@ export class AnnouncementsAiService {
 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력하세요.
 {"title": "공지 제목 (50자 이내)", "content": "공지 내용 (존댓말, 2-4문장)"}`;
 
-    return this.callAndParse(client, prompt, dto.keywords);
+    return this.callAndParse(prompt, dto.keywords, userId);
   }
 
-  async refine(dto: AiRefineAnnouncementDto): Promise<AiAnnouncementResult> {
-    const client = new Anthropic({ apiKey: this.config.get<string>("ANTHROPIC_API_KEY") });
+  async refine(dto: AiRefineAnnouncementDto, userId: string): Promise<AiAnnouncementResult> {
     const prompt = `당신은 SaaS 서비스의 공지사항 편집 전문가입니다.
 아래 공지사항의 내용은 그대로 유지하면서, 가독성(문장 길이, 존댓말 통일, 핵심 강조)만 개선해주세요.
 
@@ -43,20 +40,13 @@ export class AnnouncementsAiService {
 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력하세요.
 {"title": "개선된 제목", "content": "개선된 내용"}`;
 
-    return this.callAndParse(client, prompt, dto.title);
+    return this.callAndParse(prompt, dto.title, userId);
   }
 
-  private async callAndParse(client: Anthropic, prompt: string, fallbackLabel: string): Promise<AiAnnouncementResult> {
+  /** 어드민이 속한 조직에 등록된 AI 키로 생성한다. 실패 시 빈 내용으로 안전하게 fallback. */
+  private async callAndParse(prompt: string, fallbackLabel: string, userId: string): Promise<AiAnnouncementResult> {
     try {
-      const res = await client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 512,
-        messages: [{ role: "user", content: prompt }],
-      });
-      const text = res.content
-        .filter((b) => b.type === "text")
-        .map((b) => (b as { type: "text"; text: string }).text)
-        .join("");
+      const text = await this.aiService.completeForUser(userId, prompt, 512);
       const match = text.match(/\{[\s\S]*\}/);
       if (match) {
         const parsed = JSON.parse(match[0]) as { title?: string; content?: string };
