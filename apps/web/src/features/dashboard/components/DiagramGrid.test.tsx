@@ -151,7 +151,7 @@ describe("DiagramGrid", () => {
       wrap();
       await screen.findByText("User Schema");
       const moreButtons = screen.getAllByLabelText("더보기");
-      fireEvent.click(moreButtons[0]);
+      fireEvent.click(moreButtons[0]!);
       expect(screen.getByText("수정")).toBeInTheDocument();
       expect(screen.getByText("공유하기")).toBeInTheDocument();
       expect(screen.getByText("삭제")).toBeInTheDocument();
@@ -162,7 +162,7 @@ describe("DiagramGrid", () => {
       vi.spyOn(window, "confirm").mockReturnValue(true);
       wrap({ outletCtx: { onDeleteDiagram } });
       await screen.findByText("User Schema");
-      fireEvent.click(screen.getAllByLabelText("더보기")[0]);
+      fireEvent.click(screen.getAllByLabelText("더보기")[0]!);
       fireEvent.click(screen.getByText("삭제"));
       expect(onDeleteDiagram).toHaveBeenCalledWith("d1");
       vi.restoreAllMocks();
@@ -173,7 +173,7 @@ describe("DiagramGrid", () => {
       vi.spyOn(window, "confirm").mockReturnValue(false);
       wrap({ outletCtx: { onDeleteDiagram } });
       await screen.findByText("User Schema");
-      fireEvent.click(screen.getAllByLabelText("더보기")[0]);
+      fireEvent.click(screen.getAllByLabelText("더보기")[0]!);
       fireEvent.click(screen.getByText("삭제"));
       expect(onDeleteDiagram).not.toHaveBeenCalled();
       vi.restoreAllMocks();

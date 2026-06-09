@@ -38,7 +38,6 @@ const activeAnnouncement: AnnouncementResponse = {
   startsAt: new Date(Date.now() - 1000).toISOString(),
   endsAt: new Date(Date.now() + 86400000).toISOString(),
   createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
 };
 
 beforeEach(() => {
@@ -83,7 +82,7 @@ it("'삭제' 클릭 후 confirm 승인 시 adminDeleteAnnouncement가 호출된�
   await waitFor(() => {
     const spy = vi.mocked(announcementsApi.adminDeleteAnnouncement);
     expect(spy).toHaveBeenCalled();
-    expect(spy.mock.calls[0][0]).toBe("a1");
+    expect(spy.mock.calls[0]?.[0]).toBe("a1");
   });
   vi.unstubAllGlobals();
 });

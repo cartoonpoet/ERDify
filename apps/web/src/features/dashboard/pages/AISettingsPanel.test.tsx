@@ -116,7 +116,7 @@ it("'키 설정' 클릭 시 API 키 입력창이 나타난다", async () => {
   await waitFor(() => {
     expect(screen.getAllByText("키 설정").length).toBeGreaterThan(0);
   });
-  fireEvent.click(screen.getAllByText("키 설정")[0]);
+  fireEvent.click(screen.getAllByText("키 설정")[0]!);
   expect(screen.getByPlaceholderText(/API Key/)).toBeInTheDocument();
 });
 
@@ -130,7 +130,7 @@ it("'취소' 클릭 시 API 키 입력창이 사라진다", async () => {
   await waitFor(() => {
     expect(screen.getAllByText("키 설정").length).toBeGreaterThan(0);
   });
-  fireEvent.click(screen.getAllByText("키 설정")[0]);
+  fireEvent.click(screen.getAllByText("키 설정")[0]!);
   expect(screen.getByPlaceholderText(/API Key/)).toBeInTheDocument();
   fireEvent.click(screen.getByText("취소"));
   expect(screen.queryByPlaceholderText(/API Key/)).not.toBeInTheDocument();
