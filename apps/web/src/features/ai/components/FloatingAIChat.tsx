@@ -34,6 +34,10 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     handleLoadMore, canLoadMore, isLoadingHistory,
   } = useAIChatCore(diagramId, selectedModel);
 
+  const handleModelToggle = (e: React.MouseEvent) => { e.stopPropagation(); setIsModelOpen((v) => !v); };
+  const handleModelBackdropClick = (e: React.MouseEvent) => { e.stopPropagation(); setIsModelOpen(false); };
+  const handleSelectModel = (value: string) => () => { handleModelSelect(value); setIsModelOpen(false); };
+
   const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (e.currentTarget.scrollTop === 0 && canLoadMore && !isLoadingHistory) {
       const container = messagesContainerRef.current;
@@ -80,12 +84,12 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
                     {isModelOpen && (
                       <div
                         className={s.modelDropdownBackdrop}
-                        onClick={(e) => { e.stopPropagation(); setIsModelOpen(false); }}
+                        onClick={handleModelBackdropClick}
                       />
                     )}
                     <div
                       className={s.modelBtn}
-                      onClick={(e) => { e.stopPropagation(); setIsModelOpen((v) => !v); }}
+                      onClick={handleModelToggle}
                     >
                       <span className={s.modelBtnDot} />
                       <span className={s.modelBtnName}>
@@ -109,7 +113,7 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
                                   <div
                                     key={m.value}
                                     className={[s.modelDropdownItem, isActive ? s.modelDropdownItemActive : ""].filter(Boolean).join(" ")}
-                                    onClick={() => { handleModelSelect(m.value); setIsModelOpen(false); }}
+                                    onClick={handleSelectModel(m.value)}
                                   >
                                     <span className={s.modelDropdownItemName}>{name}</span>
                                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>

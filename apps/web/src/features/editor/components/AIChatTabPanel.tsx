@@ -31,6 +31,10 @@ export const AIChatTabPanel = ({ diagramId }: AIChatTabPanelProps) => {
     handleSelectSession, handleNewSession,
   } = useAIChatCore(diagramId, selectedModel);
 
+  const handleModelToggle = (e: React.MouseEvent) => { e.stopPropagation(); setIsModelOpen((v) => !v); };
+  const handleModelBackdropClick = (e: React.MouseEvent) => { e.stopPropagation(); setIsModelOpen(false); };
+  const handleSelectModel = (value: string) => () => { handleModelSelect(value); setIsModelOpen(false); };
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {reviewingMessage?.diff && reviewingMessage.pendingDocument && (
@@ -53,12 +57,12 @@ export const AIChatTabPanel = ({ diagramId }: AIChatTabPanelProps) => {
                 {isModelOpen && (
                   <div
                     className={s.modelDropdownBackdrop}
-                    onClick={(e) => { e.stopPropagation(); setIsModelOpen(false); }}
+                    onClick={handleModelBackdropClick}
                   />
                 )}
                 <div
                   className={s.modelBtn}
-                  onClick={(e) => { e.stopPropagation(); setIsModelOpen((v) => !v); }}
+                  onClick={handleModelToggle}
                 >
                   <span className={s.modelBtnDot} />
                   <span className={s.modelBtnName}>
@@ -82,7 +86,7 @@ export const AIChatTabPanel = ({ diagramId }: AIChatTabPanelProps) => {
                               <div
                                 key={m.value}
                                 className={[s.modelDropdownItem, isActive ? s.modelDropdownItemActive : ""].filter(Boolean).join(" ")}
-                                onClick={() => { handleModelSelect(m.value); setIsModelOpen(false); }}
+                                onClick={handleSelectModel(m.value)}
                               >
                                 <span className={s.modelDropdownItemName}>{name}</span>
                                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>

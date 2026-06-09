@@ -90,6 +90,36 @@ describe("QueryErrorBoundary — inline variant", () => {
   });
 });
 
+describe("QueryErrorBoundary — page variant 클릭", () => {
+  it("'홈으로 이동' 클릭 시 에러 화면이 사라진다", () => {
+    const qc = new QueryClient();
+    let shouldThrow = true;
+    const MaybeThrow = () => { if (shouldThrow) throw { response: { status: 500 } }; return <div>복구됨</div>; };
+    const { rerender } = render(
+      <MemoryRouter>
+        <QueryClientProvider client={qc}>
+          <QueryErrorBoundary variant="page">
+            <MaybeThrow />
+          </QueryErrorBoundary>
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "홈으로 이동" })).toBeInTheDocument();
+    shouldThrow = false;
+    fireEvent.click(screen.getByRole("button", { name: "홈으로 이동" }));
+    rerender(
+      <MemoryRouter>
+        <QueryClientProvider client={qc}>
+          <QueryErrorBoundary variant="page">
+            <MaybeThrow />
+          </QueryErrorBoundary>
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("복구됨")).toBeInTheDocument();
+  });
+});
+
 describe("QueryErrorBoundary — renders children when no error", () => {
   it("renders children", () => {
     const qc = new QueryClient();

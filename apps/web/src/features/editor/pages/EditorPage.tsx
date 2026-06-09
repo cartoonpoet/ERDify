@@ -1,15 +1,7 @@
-import { randomUUID } from "@/shared/utils/uuid";
-import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/shared/lib/queryKeys";
-import { addEntity } from "@erdify/domain";
 import { Share2 } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
-import { getDiagram, duplicateDiagram } from "@/shared/api/diagrams.api";
-import { SaveCopyModal } from "../components/SaveCopyModal";
 import type { DiagramDialect } from "@erdify/domain";
-import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import { SaveCopyModal } from "../components/SaveCopyModal";
 import { EditorCanvas } from "../components/EditorCanvas";
 import { RelationshipPopover } from "../components/RelationshipPopover";
 import { RightSidebar } from "../components/RightSidebar";
@@ -21,86 +13,28 @@ import { FkSetupModal } from "../components/FkSetupModal";
 import { RelDeleteConfirmModal } from "../components/RelDeleteConfirmModal";
 import { SchemaFilterSidebar } from "../components/SchemaFilterSidebar";
 import { ImportIntoEditorModal } from "../components/ImportIntoEditorModal";
-import { useDiagramAutosave } from "@/features/editor/hooks/useDiagramAutosave";
-import { useVersionHistory } from "@/features/editor/hooks/useVersionHistory";
-import { useRealtimeCollaboration } from "@/features/editor/hooks/useRealtimeCollaboration";
 import { EditorPageSkeleton } from "./EditorPageSkeleton";
+import { useEditorPage } from "../hooks/useEditorPage";
 import * as css from "./editor-page.css";
 
 export const EditorPage = () => {
-  const { diagramId } = useParams<{ diagramId: string }>();
-  const navigate = useNavigate();
-  const [showInvite, setShowInvite] = useState(false);
-  const [showExport, setShowExport] = useState(false);
-  const [showShare, setShowShare] = useState(false);
-  const [showImport, setShowImport] = useState(false);
-  const [showFileMenu, setShowFileMenu] = useState(false);
-  const [showSaveCopy, setShowSaveCopy] = useState(false);
-  const [isDuplicating, setIsDuplicating] = useState(false);
-
-  const { isDirty, isCollaborating, setDocument, setCanEdit, applyCommand, selectedRelationshipId, popoverPos, openSearchTab, undo, canEdit } = useEditorStore();
-
-  const viewport = useEditorStore((s) => s.viewport);
-  const setFlashingEntityId = useEditorStore((s) => s.setFlashingEntityId);
-
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.diagram(diagramId!),
-    queryFn: () => getDiagram(diagramId!),
-    enabled: !!diagramId
-  });
-
-  useEffect(() => {
-    if (data) {
-      setDocument(data.content);
-      setCanEdit(data.myRole !== "viewer");
-    }
-  // data.id가 바뀔 때(다른 다이어그램으로 이동)만 재초기화, 백그라운드 refetch는 무시
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.id]);
-
-  const canEditRef = useRef(canEdit);
-  canEditRef.current = canEdit;
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      const isEditingText = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-
-      if ((e.ctrlKey || e.metaKey) && e.key === "f") {
-        e.preventDefault();
-        openSearchTab();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "z" && canEditRef.current && !isEditingText) {
-        e.preventDefault();
-        undo();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openSearchTab, undo]);
-
-  useRealtimeCollaboration(diagramId ?? "");
-  useDiagramAutosave(diagramId ?? "");
-  const { saveVersion, isSavingVersion } = useVersionHistory(diagramId ?? "");
-
-  const handleAddTable = () => {
-    const canvas = document.querySelector(".react-flow");
-    const rect = canvas?.getBoundingClientRect();
-    const width = rect?.width ?? window.innerWidth;
-    const height = rect?.height ?? window.innerHeight;
-    const centerX = (width / 2 - viewport.x) / viewport.zoom;
-    const centerY = (height / 2 - viewport.y) / viewport.zoom;
-    const id = randomUUID();
-    applyCommand((doc) =>
-      addEntity(doc, {
-        id,
-        name: `Table_${doc.entities.length + 1}`,
-        position: { x: centerX - 140, y: centerY - 60 },
-      })
-    );
-    setFlashingEntityId(id);
-  };
+  const {
+    diagramId, data, isLoading,
+    isDirty, isCollaborating,
+    selectedRelationshipId, popoverPos,
+    showInvite, setShowInvite,
+    showExport, setShowExport,
+    showShare, setShowShare,
+    showImport, setShowImport,
+    showFileMenu,
+    showSaveCopy, setShowSaveCopy,
+    isDuplicating,
+    saveVersion, isSavingVersion,
+    handleBack,
+    handleFileMenuOpen, handleFileMenuClose,
+    handleImportOpen, handleExportOpen, handleSaveCopyOpen,
+    handleAddTable, handleSaveCopy,
+  } = useEditorPage();
 
   if (isLoading) {
     return <EditorPageSkeleton />;
@@ -110,7 +44,7 @@ export const EditorPage = () => {
     <div className={css.root}>
       <div className={css.topbar}>
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className={css.backBtn}
           title="뒤로가기"
           aria-label="뒤로가기"
@@ -127,7 +61,6 @@ export const EditorPage = () => {
         <span className={css.statusText}>{isCollaborating ? "동기화됨" : isDirty ? "수정됨" : "저장됨"}</span>
         <div className={css.spacer} />
 
-        {/* ① 테이블 추가 */}
         <button
           onClick={handleAddTable}
           className={css.topbarBtn({ variant: "ghost" })}
@@ -138,11 +71,10 @@ export const EditorPage = () => {
 
         <div className={css.topbarDivider} />
 
-        {/* ② 파일 드롭다운 (hover) */}
         <div
           className={css.fileDropdownWrap}
-          onMouseEnter={() => setShowFileMenu(true)}
-          onMouseLeave={() => setShowFileMenu(false)}
+          onMouseEnter={handleFileMenuOpen}
+          onMouseLeave={handleFileMenuClose}
         >
           <button className={css.topbarBtn({ variant: "ghost" })}>
             파일 <span className={css.fileDropdownChevron}>▾</span>
@@ -151,7 +83,7 @@ export const EditorPage = () => {
             <div className={css.fileDropdownMenu}>
               <button
                 className={css.fileDropdownItem}
-                onClick={() => { setShowFileMenu(false); setShowImport(true); }}
+                onClick={handleImportOpen}
               >
                 <span className={css.fileDropdownItemIcon}>↓</span>
                 가져오기
@@ -160,7 +92,7 @@ export const EditorPage = () => {
               <div className={css.fileDropdownSep} />
               <button
                 className={css.fileDropdownItem}
-                onClick={() => { setShowFileMenu(false); setShowExport(true); }}
+                onClick={handleExportOpen}
               >
                 <span className={css.fileDropdownItemIcon}>↑</span>
                 내보내기
@@ -170,11 +102,7 @@ export const EditorPage = () => {
               <button
                 className={css.fileDropdownItem}
                 disabled={isDuplicating}
-                onClick={() => {
-                  if (!diagramId) return;
-                  setShowFileMenu(false);
-                  setShowSaveCopy(true);
-                }}
+                onClick={handleSaveCopyOpen}
               >
                 <span className={css.fileDropdownItemIcon}>⎘</span>
                 {isDuplicating ? "복사 중…" : "복사본 저장"}
@@ -183,7 +111,6 @@ export const EditorPage = () => {
           )}
         </div>
 
-        {/* ③ 버전 저장 */}
         <button
           onClick={() => saveVersion()}
           disabled={isSavingVersion}
@@ -194,7 +121,6 @@ export const EditorPage = () => {
 
         <div className={css.topbarDivider} />
 
-        {/* ④ 멤버 현황 + 초대 */}
         <div className={css.presenceGroup}>
           <PresenceIndicator />
           <button
@@ -207,7 +133,6 @@ export const EditorPage = () => {
           </button>
         </div>
 
-        {/* ⑤ 공유 (primary blue) */}
         <button
           onClick={() => setShowShare(true)}
           className={css.topbarBtn({ variant: "primary" })}
@@ -263,15 +188,7 @@ export const EditorPage = () => {
           onClose={() => setShowSaveCopy(false)}
           defaultName={`${data.name} (복사본)`}
           defaultDialect={(data.content.dialect ?? "postgresql") as DiagramDialect}
-          onSave={async (name, dialect) => {
-            setIsDuplicating(true);
-            try {
-              const copy = await duplicateDiagram(diagramId, { name, dialect });
-              navigate(`/diagrams/${copy.id}`);
-            } finally {
-              setIsDuplicating(false);
-            }
-          }}
+          onSave={handleSaveCopy}
         />
       ) : null}
     </div>

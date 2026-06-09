@@ -45,6 +45,8 @@ export const ExportModal = ({ open, diagramName, onClose }: ExportModalProps) =>
     });
   }
 
+  const handleTabSelect = (value: ExportTab) => () => { setTab(value); setCopied(false); };
+
   function handleDownload() {
     const blob = new Blob([code], { type: currentTab.mime });
     const url = URL.createObjectURL(blob);
@@ -63,7 +65,7 @@ export const ExportModal = ({ open, diagramName, onClose }: ExportModalProps) =>
             <button
               key={t.value}
               className={`${css.tab}${tab === t.value ? ` ${css.tabActive}` : ""}`}
-              onClick={() => { setTab(t.value); setCopied(false); }}
+              onClick={handleTabSelect(t.value)}
               type="button"
             >
               {t.label}

@@ -17,6 +17,7 @@ const ErrorFallback = ({ error, variant, backLabel, backPath, onRetry }: Fallbac
   const navigate = useNavigate();
   const status = getErrorStatus(error);
   const { icon, title, desc, retryable, guide } = ERROR_CONTENT[status];
+  const handleRetryAndBack = () => { onRetry(); navigate(backPath); };
 
   return (
     <div className={variant === "page" ? css.pageFallback : css.inlineFallback}>
@@ -24,7 +25,7 @@ const ErrorFallback = ({ error, variant, backLabel, backPath, onRetry }: Fallbac
       <div className={css.title}>{title}</div>
       <div className={css.desc}>{desc}</div>
       {variant === "page" ? (
-        <button type="button" className={css.actionBtn} onClick={() => { onRetry(); navigate(backPath); }}>
+        <button type="button" className={css.actionBtn} onClick={handleRetryAndBack}>
           {backLabel}
         </button>
       ) : (

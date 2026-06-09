@@ -15,6 +15,7 @@ export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps
   const { data: me } = useQuery({ queryKey: queryKeys.me(), queryFn: getMe });
 
   const isAdmin = !!me?.isAdmin;
+  const handleApiKeysNav = () => { if (orgId) navigate(`/${orgId}/api-keys`); };
   const errorReportsActive = pathname === "/admin/error-reports";
   const announcementsActive = pathname === "/admin/announcements";
 
@@ -22,7 +23,7 @@ export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps
     <div className={css.sidebarBottomBar}>
       <button
         className={[css.projRow, apiKeysActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
-        onClick={() => { if (orgId) navigate(`/${orgId}/api-keys`); }}
+        onClick={handleApiKeysNav}
         aria-pressed={apiKeysActive}
       >
         <span className={css.projArrow} aria-hidden="true" />

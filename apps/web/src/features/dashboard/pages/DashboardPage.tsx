@@ -46,6 +46,7 @@ export const DashboardPage = () => {
   // resets naturally when projectId changes — no useEffect needed
   const currentSearch = searchProjectId === projectId ? searchQuery : "";
   const handleSearchChange = (q: string) => setSearch(projectId ?? "", q);
+  const handleOpenProfile = () => { closeMenu(); openModal("profile"); };
 
   const outletCtx: DashboardOutletContext = {
     onCreateDiagram: () => openModal("diagram"),
@@ -93,7 +94,7 @@ export const DashboardPage = () => {
               <div className={dropdownHeader}>
                 <div className={dropdownEmail}>{me?.name ?? me?.email ?? "사용자"}</div>
               </div>
-              <button className={dropdownItem} onClick={() => { closeMenu(); openModal("profile"); }}>
+              <button className={dropdownItem} onClick={handleOpenProfile}>
                 회원정보 수정
               </button>
               <button className={`${dropdownItem} ${dropdownItemDanger}`} onClick={handleLogout}>

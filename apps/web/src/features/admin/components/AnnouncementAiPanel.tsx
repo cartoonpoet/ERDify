@@ -58,6 +58,8 @@ export const AnnouncementAiPanel = ({ type, currentTitle, currentContent, onAppl
     }
   };
 
+  const handleApplyPreview = () => { onApply(preview!); setPreview(null); };
+
   return (
     <div style={panelStyle}>
       <span style={labelStyle}>✨ AI 작성 보조</span>
@@ -81,7 +83,7 @@ export const AnnouncementAiPanel = ({ type, currentTitle, currentContent, onAppl
           <div style={{ fontSize: "12px", fontWeight: 600, color: vars.color.textPrimary }}>{preview.title}</div>
           <div style={{ fontSize: "12px", color: vars.color.textSecondary, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{preview.content}</div>
           <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
-            <button style={btnStyle} onClick={() => { onApply(preview); setPreview(null); }}>적용</button>
+            <button style={btnStyle} onClick={handleApplyPreview}>적용</button>
             <button style={{ ...btnStyle, background: "transparent", color: vars.color.textSecondary, border: `1px solid ${vars.color.border}` }} onClick={() => setPreview(null)}>취소</button>
           </div>
         </div>

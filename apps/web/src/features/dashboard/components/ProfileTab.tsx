@@ -82,6 +82,7 @@ export const ProfileTab = ({ onClose }: ProfileTabProps) => {
   };
 
   const isPending = avatarMutation.isPending || profileMutation.isPending;
+  const handleClearFile = () => { setPendingFile(null); setPreviewUrl(null); };
 
   return (
     <form className={form} onSubmit={handleSubmit}>
@@ -101,7 +102,7 @@ export const ProfileTab = ({ onClose }: ProfileTabProps) => {
             <button
               type="button"
               className={css.fileClearBtn}
-              onClick={() => { setPendingFile(null); setPreviewUrl(null); }}
+              onClick={handleClearFile}
             >
               ✕
             </button>

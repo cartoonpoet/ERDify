@@ -32,6 +32,10 @@ export const MemberManagementPage = () => {
   const getInitial = (email: string): string =>
     (email.split("@")[0]?.[0] ?? "?").toUpperCase();
 
+  const handleRemoveMember = (member: { userId: string; email: string }) => () => {
+    if (window.confirm(`${member.email}을 조직에서 내보내시겠습니까?`)) removeMember(member.userId);
+  };
+
   return (
     <div className={css.page}>
       <div className={css.header}>
@@ -84,11 +88,7 @@ export const MemberManagementPage = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          if (window.confirm(`${member.email}을 조직에서 내보내시겠습니까?`)) {
-                            removeMember(member.userId);
-                          }
-                        }}
+                        onClick={handleRemoveMember(member)}
                       >
                         내보내기
                       </Button>

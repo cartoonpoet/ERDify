@@ -106,6 +106,36 @@ it("카드 클릭 시 모델이 토글되고 저장 버튼이 나타난다", asy
   });
 });
 
+it("'키 설정' 클릭 시 API 키 입력창이 나타난다", async () => {
+  vi.mocked(aiApi.getOrgAiSettings).mockResolvedValue({
+    organizationId: "org-1",
+    providers: { anthropic: false, openai: false, gemini: false },
+    enabledModels: [],
+  });
+  wrap();
+  await waitFor(() => {
+    expect(screen.getAllByText("키 설정").length).toBeGreaterThan(0);
+  });
+  fireEvent.click(screen.getAllByText("키 설정")[0]);
+  expect(screen.getByPlaceholderText(/API Key/)).toBeInTheDocument();
+});
+
+it("'취소' 클릭 시 API 키 입력창이 사라진다", async () => {
+  vi.mocked(aiApi.getOrgAiSettings).mockResolvedValue({
+    organizationId: "org-1",
+    providers: { anthropic: false, openai: false, gemini: false },
+    enabledModels: [],
+  });
+  wrap();
+  await waitFor(() => {
+    expect(screen.getAllByText("키 설정").length).toBeGreaterThan(0);
+  });
+  fireEvent.click(screen.getAllByText("키 설정")[0]);
+  expect(screen.getByPlaceholderText(/API Key/)).toBeInTheDocument();
+  fireEvent.click(screen.getByText("취소"));
+  expect(screen.queryByPlaceholderText(/API Key/)).not.toBeInTheDocument();
+});
+
 it("isOwner=false이면 저장 버튼이 없다", async () => {
   vi.mocked(aiApi.getOrgAiSettings).mockResolvedValue({
     ...settingsWithAnthropic,

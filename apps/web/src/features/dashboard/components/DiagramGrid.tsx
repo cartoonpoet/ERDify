@@ -1,16 +1,9 @@
-import { useState, useEffect } from "react";
 import type { FocusEvent } from "react";
-import { Link, useParams, useOutletContext } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import { MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
-import { listDiagrams } from "@/shared/api/diagrams.api";
-import { listProjects } from "@/shared/api/projects.api";
-import { getMe } from "@/shared/api/auth.api";
-import { queryKeys } from "@/shared/lib/queryKeys";
 import type { DiagramListItem } from "@/shared/api/diagrams.api";
-import type { DashboardOutletContext } from "../pages/DashboardPage";
 import { Button, Skeleton } from "@/components";
 import {
   mainArea, mainHeader, mainTitle, filterRow, filterChip, filterChipVariants,
@@ -21,14 +14,11 @@ import {
   filterRowDisabled, sectionError, sectionErrorIcon, sectionErrorTitle, sectionErrorDesc, sectionErrorBtn, sectionErrorGuide,
   activeUsersRow, avatarStack, avatar, avatarOverflow, activeUsersBadge, activeDot, activeUsersCount,
 } from "./DiagramGrid.css";
-import { useActiveDiagramUsers } from "../hooks/useActiveDiagramUsers";
 import type { ActiveUser } from "@erdify/contracts";
-import { getErrorStatus, ERROR_CONTENT } from "@/shared/utils/queryErrorContent";
-import { reportError } from "@/shared/services/errorReporter";
+import { ERROR_CONTENT } from "@/shared/utils/queryErrorContent";
 import { ShareDiagramModal } from "@/shared/components/ShareDiagramModal";
 import { EditDiagramModal } from "@/features/dashboard/components/EditDiagramModal";
-
-type FilterType = "all" | "recent" | "mine";
+import { useDiagramGrid } from "../hooks/useDiagramGrid";
 
 const DiagramCardPreview = ({ diagram }: { diagram: DiagramListItem }) => {
   const entities = Array.isArray(diagram.previewEntities) ? diagram.previewEntities : [];
@@ -71,66 +61,30 @@ const ActiveUsersIndicator = ({ users }: { users: ActiveUser[] }) => {
   );
 };
 
-
-
-const applyFilter = (
-  diagrams: DiagramListItem[],
-  filter: FilterType,
-  userId: string | null,
-  filterQuery?: string,
-): DiagramListItem[] => {
-  let result = diagrams;
-  if (filter === "recent") {
-    result = [...result].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  } else if (filter === "mine") {
-    result = result.filter((d) => d.createdBy !== null && d.createdBy === userId);
-  }
-  if (filterQuery) {
-    const q = filterQuery.toLowerCase();
-    result = result.filter((d) => d.name.toLowerCase().includes(q));
-  }
-  return result;
-};
-
 export const DiagramGrid = () => {
-  const { orgId, projectId } = useParams<{ orgId: string; projectId?: string }>();
-  const { onCreateDiagram, onImportDiagram, onDeleteDiagram, searchQuery } =
-    useOutletContext<DashboardOutletContext>();
-
-  const { data: me } = useQuery({ queryKey: queryKeys.me(), queryFn: getMe });
-  const { data: projects = [] } = useQuery({
-    queryKey: queryKeys.projects(orgId!),
-    queryFn: () => listProjects(orgId!),
-    enabled: !!orgId,
-  });
-  const { data: diagrams = [], isLoading, isError, error, refetch } = useQuery({
-    queryKey: queryKeys.diagrams(projectId!),
-    queryFn: () => listDiagrams(projectId!),
-    enabled: !!projectId,
-    throwOnError: false,
-  });
-
-  const projectName = projects.find((p) => p.id === projectId)?.name;
-  const currentUserId = me?.id ?? null;
-
-  const diagramIds = diagrams.map((d) => d.id);
-  const activeUsers = useActiveDiagramUsers(diagramIds);
-
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [shareDiagramItem, setShareDiagramItem] = useState<DiagramListItem | null>(null);
-  const [editDiagramItem, setEditDiagramItem] = useState<DiagramListItem | null>(null);
-
-  const filtered = applyFilter(diagrams, activeFilter, currentUserId, searchQuery || undefined);
-  const errorStatus = isError ? getErrorStatus(error) : null;
-  const isPermissionError = errorStatus === 403;
-
-  useEffect(() => {
-    if (isError && error) {
-      const path = (error as { config?: { url?: string } })?.config?.url ?? `/api/diagrams/${projectId}`;
-      reportError(error, { path, url: window.location.href });
-    }
-  }, [isError, error, projectId]);
+  const {
+    projectId,
+    projectName,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    activeUsers,
+    activeFilter, setActiveFilter,
+    menuOpenId,
+    shareDiagramItem, setShareDiagramItem,
+    editDiagramItem, setEditDiagramItem,
+    filtered,
+    errorStatus,
+    isPermissionError,
+    onCreateDiagram,
+    onImportDiagram,
+    handleMenuClose,
+    handleEditDiagram,
+    handleShareDiagram,
+    handleDeleteDiagram,
+    handleMenuToggle,
+  } = useDiagramGrid();
 
   return (
     <div className={mainArea}>
@@ -198,7 +152,7 @@ export const DiagramGrid = () => {
               className={diagramCardWrapper}
               tabIndex={0}
               onBlur={(e: FocusEvent<HTMLDivElement>) => {
-                if (!e.currentTarget.contains(e.relatedTarget)) setMenuOpenId(null);
+                if (!e.currentTarget.contains(e.relatedTarget)) handleMenuClose();
               }}
             >
               <Link to={`/diagrams/${diagram.id}`} className={diagramCard} aria-label={`${diagram.name} 다이어그램 열기`}>
@@ -217,43 +171,20 @@ export const DiagramGrid = () => {
                 aria-label="더보기"
                 aria-expanded={menuOpenId === diagram.id}
                 aria-haspopup="menu"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMenuOpenId(menuOpenId === diagram.id ? null : diagram.id);
-                }}
+                onClick={handleMenuToggle(diagram.id)}
               >
                 <MoreVertical size={13} aria-hidden="true" />
               </button>
               {menuOpenId === diagram.id && (
                 <div className={ctxMenu}>
-                  <button
-                    className={ctxItem}
-                    onClick={() => {
-                      setEditDiagramItem(diagram);
-                      setMenuOpenId(null);
-                    }}
-                  >
+                  <button className={ctxItem} onClick={handleEditDiagram(diagram)}>
                     <Pencil size={13} aria-hidden="true" /> 수정
                   </button>
-                  <button
-                    className={ctxItem}
-                    onClick={() => {
-                      setShareDiagramItem(diagram);
-                      setMenuOpenId(null);
-                    }}
-                  >
+                  <button className={ctxItem} onClick={handleShareDiagram(diagram)}>
                     <Share2 size={13} aria-hidden="true" /> 공유하기
                   </button>
                   <div className={ctxDivider} />
-                  <button
-                    className={ctxItemDanger}
-                    onClick={() => {
-                      if (window.confirm(`"${diagram.name}" ERD를 삭제하시겠습니까?`)) {
-                        onDeleteDiagram(diagram.id);
-                      }
-                      setMenuOpenId(null);
-                    }}
-                  >
+                  <button className={ctxItemDanger} onClick={handleDeleteDiagram(diagram)}>
                     <Trash2 size={13} aria-hidden="true" /> 삭제
                   </button>
                 </div>

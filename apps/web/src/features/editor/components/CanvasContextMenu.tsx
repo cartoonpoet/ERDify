@@ -48,6 +48,8 @@ export const CanvasContextMenu = ({ menuX, menuY, clientX, clientY, onClose }: C
     onClose();
   };
 
+  const handleToggleGroupView = () => { setGroupViewEnabled(!groupViewEnabled); onClose(); };
+
   if (!document) return null;
 
   return (
@@ -67,7 +69,7 @@ export const CanvasContextMenu = ({ menuX, menuY, clientX, clientY, onClose }: C
       <div className={css.separator} />
       <button
         type="button"
-        onClick={() => { setGroupViewEnabled(!groupViewEnabled); onClose(); }}
+        onClick={handleToggleGroupView}
         className={css.menuItem}
       >
         <span className={css.iconSm}>{groupViewEnabled ? "◻" : "▦"}</span>

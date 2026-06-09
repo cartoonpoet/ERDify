@@ -17,6 +17,9 @@ vi.mock("@/shared/api/auth.api", () => ({
 vi.mock("@/shared/components/ShareDiagramModal", () => ({
   ShareDiagramModal: () => null,
 }));
+vi.mock("@/features/dashboard/components/EditDiagramModal", () => ({
+  EditDiagramModal: () => null,
+}));
 
 import { listDiagrams } from "@/shared/api/diagrams.api";
 import { listProjects } from "@/shared/api/projects.api";
@@ -141,6 +144,40 @@ describe("DiagramGrid", () => {
   it("projectId가 없으면 '프로젝트를 선택하세요'를 렌더링한다", async () => {
     wrap({ noProject: true });
     expect(await screen.findByText("프로젝트를 선택하세요")).toBeInTheDocument();
+  });
+
+  describe("컨텍스트 메뉴", () => {
+    it("더보기 버튼 클릭 시 수정/공유하기/삭제 메뉴가 열린다", async () => {
+      wrap();
+      await screen.findByText("User Schema");
+      const moreButtons = screen.getAllByLabelText("더보기");
+      fireEvent.click(moreButtons[0]);
+      expect(screen.getByText("수정")).toBeInTheDocument();
+      expect(screen.getByText("공유하기")).toBeInTheDocument();
+      expect(screen.getByText("삭제")).toBeInTheDocument();
+    });
+
+    it("삭제 클릭 후 confirm 승인 시 onDeleteDiagram이 호출된다", async () => {
+      const onDeleteDiagram = vi.fn();
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      wrap({ outletCtx: { onDeleteDiagram } });
+      await screen.findByText("User Schema");
+      fireEvent.click(screen.getAllByLabelText("더보기")[0]);
+      fireEvent.click(screen.getByText("삭제"));
+      expect(onDeleteDiagram).toHaveBeenCalledWith("d1");
+      vi.restoreAllMocks();
+    });
+
+    it("삭제 클릭 후 confirm 취소 시 onDeleteDiagram이 호출되지 않는다", async () => {
+      const onDeleteDiagram = vi.fn();
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      wrap({ outletCtx: { onDeleteDiagram } });
+      await screen.findByText("User Schema");
+      fireEvent.click(screen.getAllByLabelText("더보기")[0]);
+      fireEvent.click(screen.getByText("삭제"));
+      expect(onDeleteDiagram).not.toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
   });
 
   describe("에러 상태", () => {

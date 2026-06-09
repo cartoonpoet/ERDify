@@ -3,7 +3,14 @@
     "allow": [
       "Bash(git diff *)",
       "Bash(git diff)",
-      "Skill"
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(grep *)",
+      "Read",
+      "Skill",
+      "Agent"
     ]
   },
   "hooks": {

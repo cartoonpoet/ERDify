@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemberManagementPage } from "./MemberManagementPage";
@@ -62,5 +62,60 @@ describe("MemberManagementPage", () => {
   it("'멤버 관리' 제목을 렌더링한다", async () => {
     wrap();
     expect(await screen.findByText("멤버 관리")).toBeInTheDocument();
+  });
+
+  describe("멤버 내보내기", () => {
+    beforeEach(() => {
+      vi.mocked(useMembers).mockReturnValue({
+        members: [
+          { userId: "u1", email: "a@b.com", name: "Test User", role: "owner", joinedAt: "" },
+          { userId: "u2", email: "b@b.com", name: "Other User", role: "editor", joinedAt: "" },
+        ],
+        isLoading: false,
+        updateRole: vi.fn(),
+        removeMember: vi.fn(),
+      });
+    });
+
+    it("다른 멤버에게 내보내기 버튼이 표시된다", async () => {
+      wrap();
+      expect(await screen.findByRole("button", { name: "내보내기" })).toBeInTheDocument();
+    });
+
+    it("confirm 승인 시 removeMember가 호출된다", async () => {
+      const removeMember = vi.fn();
+      vi.mocked(useMembers).mockReturnValue({
+        members: [
+          { userId: "u1", email: "a@b.com", name: "Test User", role: "owner", joinedAt: "" },
+          { userId: "u2", email: "b@b.com", name: "Other User", role: "editor", joinedAt: "" },
+        ],
+        isLoading: false,
+        updateRole: vi.fn(),
+        removeMember,
+      });
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      wrap();
+      fireEvent.click(await screen.findByRole("button", { name: "내보내기" }));
+      await waitFor(() => expect(removeMember).toHaveBeenCalledWith("u2"));
+      vi.restoreAllMocks();
+    });
+
+    it("confirm 취소 시 removeMember가 호출되지 않는다", async () => {
+      const removeMember = vi.fn();
+      vi.mocked(useMembers).mockReturnValue({
+        members: [
+          { userId: "u1", email: "a@b.com", name: "Test User", role: "owner", joinedAt: "" },
+          { userId: "u2", email: "b@b.com", name: "Other User", role: "editor", joinedAt: "" },
+        ],
+        isLoading: false,
+        updateRole: vi.fn(),
+        removeMember,
+      });
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      wrap();
+      fireEvent.click(await screen.findByRole("button", { name: "내보내기" }));
+      expect(removeMember).not.toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
   });
 });

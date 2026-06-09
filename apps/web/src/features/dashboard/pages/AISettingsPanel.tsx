@@ -1,12 +1,8 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/shared/lib/queryKeys";
+import { useAISettings } from "@/features/dashboard/hooks/useAISettings";
 import { Button } from "@/components";
-import { getOrgAiSettings, setOrgProviderKey, removeOrgProviderKey, setEnabledModels } from "@/features/ai/api/ai.api";
-import { AI_PROVIDERS, PROVIDER_LABELS, modelsForProvider, type AiProviderId } from "@/features/ai/models";
+import { AI_PROVIDERS, PROVIDER_LABELS, modelsForProvider } from "@/features/ai/models";
 import * as css from "./ai-settings-panel.css";
 
-/** "Claude Sonnet 4.6 (권장)" → { name: "Claude Sonnet 4.6", badge: "권장" } */
 const parseModelLabel = (label: string) => {
   const m = label.match(/^(.*?)\s*\((.+)\)$/);
   return m ? { name: m[1], badge: m[2] } : { name: label, badge: null };
@@ -36,49 +32,17 @@ interface AISettingsPanelProps {
   isOwner: boolean;
 }
 
-const KEY_PLACEHOLDERS: Record<AiProviderId, string> = {
-  anthropic: "sk-ant-api03-...",
-  openai: "sk-...",
-  gemini: "AIza...",
-};
-
 export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
-  const [editingProvider, setEditingProvider] = useState<AiProviderId | null>(null);
-  const [apiKey, setApiKey] = useState("");
-  const [enabled, setEnabled] = useState<string[] | null>(null);
-  const queryClient = useQueryClient();
-
-  const { data } = useQuery({
-    queryKey: queryKeys.orgAiSettings(orgId),
-    queryFn: () => getOrgAiSettings(orgId),
-  });
-
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.orgAiSettings(orgId) });
-
-  const saveKey = useMutation({
-    mutationFn: ({ provider, apiKey }: { provider: AiProviderId; apiKey: string }) => setOrgProviderKey(orgId, provider, apiKey),
-    onSuccess: () => { void invalidate(); setEditingProvider(null); setApiKey(""); },
-  });
-
-  const removeKey = useMutation({
-    mutationFn: (provider: AiProviderId) => removeOrgProviderKey(orgId, provider),
-    onSuccess: () => { void invalidate(); },
-  });
-
-  const saveModels = useMutation({
-    mutationFn: (models: string[]) => setEnabledModels(orgId, models),
-    onSuccess: () => { void invalidate(); setEnabled(null); },
-  });
-
-  const providers = data?.providers ?? { anthropic: false, openai: false, gemini: false };
-  const registered = AI_PROVIDERS.filter((p) => providers[p]);
-  // 현재 편집 중인 허용목록(저장 전 로컬 상태). null이면 서버값 사용.
-  const enabledModels = enabled ?? data?.enabledModels ?? [];
-
-  const toggleModel = (value: string) => {
-    const base = enabled ?? data?.enabledModels ?? [];
-    setEnabled(base.includes(value) ? base.filter((v) => v !== value) : [...base, value]);
-  };
+  const {
+    data,
+    editingProvider, setEditingProvider,
+    apiKey, setApiKey,
+    enabled, setEnabled,
+    providers, registered, enabledModels,
+    saveKey, removeKey, saveModels,
+    toggleModel,
+    handleProviderEdit, handleProviderEditCancel,
+  } = useAISettings(orgId);
 
   return (
     <div className={css.section}>
@@ -91,7 +55,6 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
           </p>
         </div>
 
-        {/* provider별 키 */}
         {AI_PROVIDERS.map((provider) => (
           <div key={provider} className={css.statusRow}>
             <span className={css.statusLabel}>{PROVIDER_LABELS[provider]}</span>
@@ -102,7 +65,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
             )}
             {isOwner && editingProvider !== provider && (
               <div className={css.actionRow}>
-                <Button variant="secondary" size="sm" onClick={() => { setEditingProvider(provider); setApiKey(""); }}>
+                <Button variant="secondary" size="sm" onClick={handleProviderEdit(provider)}>
                   {providers[provider] ? "변경" : "키 설정"}
                 </Button>
                 {providers[provider] && (
@@ -122,17 +85,16 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder={KEY_PLACEHOLDERS[editingProvider]}
+              placeholder={`${editingProvider} API Key`}
               onKeyDown={(e) => { if (e.key === "Enter" && apiKey.trim()) saveKey.mutate({ provider: editingProvider, apiKey: apiKey.trim() }); }}
             />
             <Button variant="primary" size="sm" onClick={() => saveKey.mutate({ provider: editingProvider, apiKey: apiKey.trim() })} disabled={saveKey.isPending || !apiKey.trim()}>
               {saveKey.isPending ? "저장 중..." : "저장"}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => { setEditingProvider(null); setApiKey(""); }}>취소</Button>
+            <Button variant="ghost" size="sm" onClick={handleProviderEditCancel}>취소</Button>
           </div>
         )}
 
-        {/* 사용 가능 모델 (allowlist) */}
         {registered.length > 0 && (
           <div className={css.cardBody}>
             <div className={css.statusLabel}>사용 가능 모델</div>

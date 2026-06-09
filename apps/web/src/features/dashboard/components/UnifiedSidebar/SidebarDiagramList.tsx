@@ -29,6 +29,12 @@ export const SidebarDiagramList = ({
 }: SidebarDiagramListProps) => {
   const navigate = useNavigate();
 
+  const handleDeleteProject = (project: ProjectResponse) => () => {
+    if (window.confirm(`"${project.name}" 프로젝트를 삭제하시겠습니까? 모든 ERD가 함께 삭제됩니다.`)) {
+      onDeleteProject(project.id);
+    }
+  };
+
   const handleSelectProject = (pid: string) => {
     if (pid === projectId) {
       navigate(`/${orgId}`);
@@ -58,11 +64,7 @@ export const SidebarDiagramList = ({
                 <button
                   className={css.projDeleteBtn}
                   aria-label={`${project.name} 삭제`}
-                  onClick={() => {
-                    if (window.confirm(`"${project.name}" 프로젝트를 삭제하시겠습니까? 모든 ERD가 함께 삭제됩니다.`)) {
-                      onDeleteProject(project.id);
-                    }
-                  }}
+                  onClick={handleDeleteProject(project)}
                 >
                   ×
                 </button>

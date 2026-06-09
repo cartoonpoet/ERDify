@@ -47,6 +47,12 @@ export const AnnouncementsAdminPage = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.adminAnnouncements() }),
   });
 
+  const handleCreateNew = () => { setEditing(undefined); setFormOpen(true); };
+  const handleEditAnnouncement = (a: AnnouncementResponse) => () => { setEditing(a); setFormOpen(true); };
+  const handleDeleteAnnouncement = (a: AnnouncementResponse) => () => {
+    if (window.confirm(`"${a.title}" 공지를 삭제하시겠습니까?`)) deleteMut.mutate(a.id);
+  };
+
   const handleSubmit = async (dto: CreateAnnouncementDto) => {
     if (editing) {
       await updateMut.mutateAsync({ id: editing.id, dto });
@@ -59,7 +65,7 @@ export const AnnouncementsAdminPage = () => {
     <div className={css.page}>
       <div className={css.pageHeader}>
         <span className={css.pageTitle}>공지 관리</span>
-        <Button variant="primary" size="md" onClick={() => { setEditing(undefined); setFormOpen(true); }}>
+        <Button variant="primary" size="md" onClick={handleCreateNew}>
           + 새 공지 작성
         </Button>
       </div>
@@ -86,17 +92,8 @@ export const AnnouncementsAdminPage = () => {
             </div>
             <div style={{ fontSize: "12px", color: "var(--text-2)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{a.content}</div>
             <div className={css.cardActions}>
-              <button className={css.actionBtn} onClick={() => { setEditing(a); setFormOpen(true); }}>수정</button>
-              <button
-                className={css.deleteBtn}
-                onClick={() => {
-                  if (window.confirm(`"${a.title}" 공지를 삭제하시겠습니까?`)) {
-                    deleteMut.mutate(a.id);
-                  }
-                }}
-              >
-                삭제
-              </button>
+              <button className={css.actionBtn} onClick={handleEditAnnouncement(a)}>수정</button>
+              <button className={css.deleteBtn} onClick={handleDeleteAnnouncement(a)}>삭제</button>
             </div>
           </div>
         ))}

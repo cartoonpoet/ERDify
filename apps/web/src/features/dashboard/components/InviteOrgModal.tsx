@@ -30,6 +30,8 @@ export const InviteOrgModal = ({ open, onClose, orgId }: InviteOrgModalProps) =>
     }
   };
 
+  const handleReInvite = () => { setResult(null); setRole("editor"); setError(null); };
+
   const handleClose = () => {
     setEmail("");
     setRole("editor");
@@ -47,7 +49,7 @@ export const InviteOrgModal = ({ open, onClose, orgId }: InviteOrgModalProps) =>
             {result === "added" ? "멤버로 추가되었습니다." : "가입 초대 메일을 보냈습니다."}
           </div>
           <div className={css.resultFooter}>
-            <Button variant="secondary" size="md" onClick={() => { setResult(null); setRole("editor"); setError(null); }}>
+            <Button variant="secondary" size="md" onClick={handleReInvite}>
               추가 초대
             </Button>
             <Button variant="primary" size="md" onClick={handleClose}>
