@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import {
   listVersions,
   restoreVersion,
@@ -21,7 +22,7 @@ export function useVersionHistory(diagramId: string, enabled = true): UseVersion
   const setDocument = useEditorStore((s) => s.setDocument);
 
   const versionsQuery = useQuery({
-    queryKey: ["diagram-versions", diagramId],
+    queryKey: queryKeys.diagramVersions(diagramId),
     queryFn: () => listVersions(diagramId),
     enabled: !!diagramId && enabled,
   });
@@ -29,14 +30,14 @@ export function useVersionHistory(diagramId: string, enabled = true): UseVersion
   const saveVersionMutation = useMutation({
     mutationFn: () => saveVersion(diagramId),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["diagram-versions", diagramId] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.diagramVersions(diagramId) })
   });
 
   const restoreMutation = useMutation({
     mutationFn: (versionId: string) => restoreVersion(diagramId, versionId),
     onSuccess: (diagram) => {
       setDocument(diagram.content);
-      queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.diagram(diagramId) });
     }
   });
 

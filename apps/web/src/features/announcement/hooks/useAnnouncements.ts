@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { AnnouncementResponse } from "@erdify/contracts";
 import { getActiveAnnouncements } from "@/shared/api/announcements.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 
 const STORAGE_KEY = "seen_announcements";
 
@@ -21,7 +22,7 @@ export const useAnnouncements = () => {
   const [seenIds, setSeenIds] = useState<string[]>(getSeenIds);
 
   const { data: announcements = [] } = useQuery({
-    queryKey: ["announcements-active"],
+    queryKey: queryKeys.announcementsActive(),
     queryFn: getActiveAnnouncements,
     staleTime: 5 * 60 * 1000,
   });

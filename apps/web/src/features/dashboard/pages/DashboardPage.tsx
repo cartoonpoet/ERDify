@@ -1,6 +1,7 @@
 import { useParams, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/shared/api/auth.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { QueryErrorBoundary } from "@/shared/components/QueryErrorBoundary";
 import { UnifiedSidebar } from "@/features/dashboard/components/UnifiedSidebar";
 import { CreateOrgModal } from "../components/CreateOrgModal";
@@ -35,7 +36,7 @@ const getInitial = (email: string | undefined | null): string =>
 
 export const DashboardPage = () => {
   const { orgId, projectId } = useParams<{ orgId: string; projectId?: string }>();
-  const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
+  const { data: me } = useQuery({ queryKey: queryKeys.me(), queryFn: getMe });
 
   const { activeModal, openModal, closeModal, searchQuery, searchProjectId, setSearch } = useDashboardStore();
   const { deleteOrg, deleteProject, deleteDiagram, handleLogout, onOrgCreated, onProjectCreated, onDiagramCreated, onDiagramImported } = useDashboardActions();

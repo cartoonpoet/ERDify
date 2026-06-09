@@ -2,6 +2,7 @@ import { randomUUID } from "@/shared/utils/uuid";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { addEntity } from "@erdify/domain";
 import { Share2 } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
@@ -43,7 +44,7 @@ export const EditorPage = () => {
   const setFlashingEntityId = useEditorStore((s) => s.setFlashingEntityId);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["diagram", diagramId],
+    queryKey: queryKeys.diagram(diagramId!),
     queryFn: () => getDiagram(diagramId!),
     enabled: !!diagramId
   });

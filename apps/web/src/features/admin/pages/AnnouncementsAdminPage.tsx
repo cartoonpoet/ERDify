@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import type { AnnouncementResponse, CreateAnnouncementDto } from "@erdify/contracts";
@@ -26,24 +27,24 @@ export const AnnouncementsAdminPage = () => {
   const [editing, setEditing] = useState<AnnouncementResponse | undefined>();
 
   const { data: announcements = [], isLoading } = useQuery({
-    queryKey: ["admin-announcements"],
+    queryKey: queryKeys.adminAnnouncements(),
     queryFn: adminListAnnouncements,
   });
 
   const createMut = useMutation({
     mutationFn: adminCreateAnnouncement,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-announcements"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.adminAnnouncements() }),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: CreateAnnouncementDto }) =>
       adminUpdateAnnouncement(id, dto),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-announcements"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.adminAnnouncements() }),
   });
 
   const deleteMut = useMutation({
     mutationFn: adminDeleteAnnouncement,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-announcements"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.adminAnnouncements() }),
   });
 
   const handleSubmit = async (dto: CreateAnnouncementDto) => {

@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent, type ChangeEvent, type DragEvent } fr
 import { Button, Input } from "@/components";
 import { getMe, updateProfile, uploadAvatar } from "@/shared/api/auth.api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { form, footer } from "./modal-form.css";
 import * as css from "./ProfileModal.css";
 
@@ -18,10 +19,10 @@ export const ProfileTab = ({ onClose }: ProfileTabProps) => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
+  const { data: me } = useQuery({ queryKey: queryKeys.me(), queryFn: getMe });
 
   const [name, setName] = useState<string>(() => {
-    const cached = queryClient.getQueryData<Awaited<ReturnType<typeof getMe>>>(["me"]);
+    const cached = queryClient.getQueryData<Awaited<ReturnType<typeof getMe>>>(queryKeys.me());
     return cached?.name ?? "";
   });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);

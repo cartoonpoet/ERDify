@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { GroupedErrorReport, ApiErrorType, OccurrenceItem } from "@/shared/api/errorReports.api";
 import { getErrorReportOccurrences } from "@/shared/api/errorReports.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import * as css from "../admin.css";
 
 interface Props {
@@ -110,7 +111,7 @@ export const ErrorReportSlideOver = ({ report, onClose, onResolved }: Props) => 
   const [copied, setCopied] = useState(false);
 
   const { data: occurrences, isLoading } = useQuery({
-    queryKey: ["error-report-occurrences", report.errorType, report.path],
+    queryKey: queryKeys.errorReportOccurrences(report.errorType, report.path),
     queryFn: () => getErrorReportOccurrences({ errorType: report.errorType, path: report.path }),
   });
 

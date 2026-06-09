@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/shared/api/auth.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import * as css from "./unified-sidebar.css";
 
 interface SidebarBottomBarProps {
@@ -11,7 +12,7 @@ interface SidebarBottomBarProps {
 export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
+  const { data: me } = useQuery({ queryKey: queryKeys.me(), queryFn: getMe });
 
   const isAdmin = !!me?.isAdmin;
   const errorReportsActive = pathname === "/admin/error-reports";

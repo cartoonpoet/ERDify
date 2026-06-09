@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listApiKeys, createApiKey, revokeApiKey, regenerateApiKey } from "@/shared/api/api-keys.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import type { ApiKeyItem, ApiKeyCreated } from "@/shared/api/api-keys.api";
 import { copyToClipboard } from "@/shared/utils/clipboard";
 import * as css from "./api-keys-panel.css";
@@ -52,7 +53,7 @@ export const ApiKeysPanel = () => {
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: keys = [], isLoading } = useQuery({
-    queryKey: ["api-keys"],
+    queryKey: queryKeys.apiKeys(),
     queryFn: listApiKeys,
   });
 
@@ -64,7 +65,7 @@ export const ApiKeysPanel = () => {
       setFormName("");
       setFormExpiry("1y");
       setFormCustomDate("");
-      void queryClient.invalidateQueries({ queryKey: ["api-keys"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeys() });
     },
   });
 
@@ -72,7 +73,7 @@ export const ApiKeysPanel = () => {
     mutationFn: revokeApiKey,
     onSuccess: () => {
       setConfirmRevokeId(null);
-      void queryClient.invalidateQueries({ queryKey: ["api-keys"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeys() });
     },
   });
 
@@ -81,7 +82,7 @@ export const ApiKeysPanel = () => {
     onSuccess: (data) => {
       setRevealedKey(data);
       setConfirmRegenerateId(null);
-      void queryClient.invalidateQueries({ queryKey: ["api-keys"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeys() });
     },
   });
 

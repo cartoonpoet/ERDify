@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { Button } from "@/components";
 import { getOrgAiSettings, setOrgProviderKey, removeOrgProviderKey, setEnabledModels } from "@/features/ai/api/ai.api";
 import { AI_PROVIDERS, PROVIDER_LABELS, modelsForProvider, type AiProviderId } from "@/features/ai/models";
@@ -48,11 +49,11 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
-    queryKey: ["org-ai-settings", orgId],
+    queryKey: queryKeys.orgAiSettings(orgId),
     queryFn: () => getOrgAiSettings(orgId),
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["org-ai-settings", orgId] });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.orgAiSettings(orgId) });
 
   const saveKey = useMutation({
     mutationFn: ({ provider, apiKey }: { provider: AiProviderId; apiKey: string }) => setOrgProviderKey(orgId, provider, apiKey),

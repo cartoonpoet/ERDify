@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { EditorCanvas } from "@/features/editor/components/EditorCanvas";
 import { Skeleton } from "@/shared/components/Skeleton";
 import * as css from "./shared-diagram-page.css";
@@ -12,7 +13,7 @@ export const SharedDiagramPage = () => {
   const { setDocument, setCanEdit } = useEditorStore();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["public-diagram", shareToken],
+    queryKey: queryKeys.publicDiagram(shareToken!),
     queryFn: () => getPublicDiagram(shareToken!),
     enabled: !!shareToken,
   });

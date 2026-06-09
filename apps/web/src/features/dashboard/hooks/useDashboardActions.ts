@@ -5,6 +5,7 @@ import { deleteProject } from "@/shared/api/projects.api";
 import { deleteDiagram } from "@/shared/api/diagrams.api";
 import { logout } from "@/shared/api/auth.api";
 import { useAuthStore } from "@/shared/store/useAuthStore";
+import { queryKeys } from "@/shared/lib/queryKeys";
 
 export const useDashboardActions = () => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export const useDashboardActions = () => {
     mutationFn: (id: string) => deleteOrganization(id),
     onSuccess: (_data, deletedOrgId) => {
       if (orgId === deletedOrgId) navigate("/");
-      void queryClient.invalidateQueries({ queryKey: ["orgs"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.orgs() });
     },
   });
 
@@ -27,14 +28,14 @@ export const useDashboardActions = () => {
     },
     onSuccess: (_data, deletedProjectId) => {
       if (projectId === deletedProjectId) navigate(`/${orgId}`);
-      void queryClient.invalidateQueries({ queryKey: ["projects", orgId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects(orgId!) });
     },
   });
 
   const deleteDiagramMutation = useMutation({
     mutationFn: (id: string) => deleteDiagram(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["diagrams", projectId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.diagrams(projectId!) });
     },
   });
 
@@ -50,8 +51,8 @@ export const useDashboardActions = () => {
     deleteProject: (id: string) => deleteProjectMutation.mutate(id),
     deleteDiagram: (id: string) => deleteDiagramMutation.mutate(id),
     handleLogout,
-    onOrgCreated: () => void queryClient.invalidateQueries({ queryKey: ["orgs"] }),
-    onProjectCreated: () => void queryClient.invalidateQueries({ queryKey: ["projects", orgId] }),
+    onOrgCreated: () => void queryClient.invalidateQueries({ queryKey: queryKeys.orgs() }),
+    onProjectCreated: () => void queryClient.invalidateQueries({ queryKey: queryKeys.projects(orgId!) }),
     onDiagramCreated: (id: string) => navigate(`/diagrams/${id}`),
     onDiagramImported: (id: string) => navigate(`/diagrams/${id}`),
   };

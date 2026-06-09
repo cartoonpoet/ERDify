@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMembers, updateMemberRole, removeMember as removeMemberApi } from "@/shared/api/members.api";
 import type { MemberRoleType } from "@/shared/api/members.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 
 export const useMembers = (orgId: string) => {
   const queryClient = useQueryClient();
 
   const { data: members = [], isLoading } = useQuery({
-    queryKey: ["members", orgId],
+    queryKey: queryKeys.members(orgId),
     queryFn: () => getMembers(orgId),
     enabled: !!orgId,
   });
@@ -15,14 +16,14 @@ export const useMembers = (orgId: string) => {
     mutationFn: ({ userId, role }: { userId: string; role: MemberRoleType }) =>
       updateMemberRole(orgId, userId, role),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["members", orgId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.members(orgId) });
     },
   });
 
   const removeMemberMutation = useMutation({
     mutationFn: (userId: string) => removeMemberApi(orgId, userId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["members", orgId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.members(orgId) });
     },
   });
 

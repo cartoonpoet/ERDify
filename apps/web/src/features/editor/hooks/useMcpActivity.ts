@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { listMcpSessions, revertMcpSession } from "@/shared/api/mcp-sessions.api";
 import type { McpSessionResponse } from "@/shared/api/mcp-sessions.api";
 
@@ -13,7 +14,7 @@ export const useMcpActivity = (diagramId: string): UseMcpActivityResult => {
   const queryClient = useQueryClient();
 
   const sessionsQuery = useQuery({
-    queryKey: ["mcp-sessions", diagramId],
+    queryKey: queryKeys.mcpSessions(diagramId),
     queryFn: () => listMcpSessions(diagramId),
     enabled: !!diagramId,
     refetchInterval: 10000,
@@ -22,8 +23,8 @@ export const useMcpActivity = (diagramId: string): UseMcpActivityResult => {
   const revertMutation = useMutation({
     mutationFn: (sessionId: string) => revertMcpSession(diagramId, sessionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
-      queryClient.invalidateQueries({ queryKey: ["mcp-sessions", diagramId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.diagram(diagramId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.mcpSessions(diagramId) });
     },
   });
 

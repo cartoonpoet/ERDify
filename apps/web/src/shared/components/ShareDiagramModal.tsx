@@ -4,6 +4,7 @@ import { Copy, Check } from "lucide-react";
 import { Modal } from "@/components";
 import { shareDiagram, revokeDiagramShare } from "@/shared/api/diagrams.api";
 import type { SharePreset } from "@/shared/api/diagrams.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { copyToClipboard } from "@/shared/utils/clipboard";
 import * as css from "./share-diagram-modal.css";
 
@@ -46,8 +47,8 @@ export const ShareDiagramModal = ({
       setMutationError(null);
       setShareToken(data.shareToken);
       setExpiresAt(data.expiresAt);
-      void queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
-      void queryClient.invalidateQueries({ queryKey: ["diagrams"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.diagram(diagramId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.diagramsAll() });
     },
     onError: () => setMutationError("링크 생성에 실패했습니다."),
   });
@@ -58,8 +59,8 @@ export const ShareDiagramModal = ({
       setMutationError(null);
       setShareToken(null);
       setExpiresAt(null);
-      void queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
-      void queryClient.invalidateQueries({ queryKey: ["diagrams"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.diagram(diagramId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.diagramsAll() });
     },
     onError: () => setMutationError("링크 비활성화에 실패했습니다."),
   });

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { getDiagram, listVersions, restoreVersion } from "@/shared/api/diagrams.api";
 import type { DiagramVersionResponse } from "@/shared/api/diagrams.api";
 import { listMcpSessions, revertMcpSession } from "@/shared/api/mcp-sessions.api";
@@ -29,13 +30,13 @@ export const useActivityFeed = (diagramId: string): UseActivityFeedResult => {
   const setDocument = useEditorStore((s) => s.setDocument);
 
   const versionsQuery = useQuery({
-    queryKey: ["diagram-versions", diagramId],
+    queryKey: queryKeys.diagramVersions(diagramId),
     queryFn: () => listVersions(diagramId),
     enabled: !!diagramId,
   });
 
   const sessionsQuery = useQuery({
-    queryKey: ["mcp-sessions", diagramId],
+    queryKey: queryKeys.mcpSessions(diagramId),
     queryFn: () => listMcpSessions(diagramId),
     enabled: !!diagramId,
   });
@@ -57,8 +58,8 @@ export const useActivityFeed = (diagramId: string): UseActivityFeedResult => {
     mutationFn: (versionId: string) => restoreVersion(diagramId, versionId),
     onSuccess: (diagram) => {
       setDocument(diagram.content);
-      queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
-      queryClient.invalidateQueries({ queryKey: ["diagram-versions", diagramId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.diagram(diagramId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.diagramVersions(diagramId) });
     },
   });
 
@@ -67,8 +68,8 @@ export const useActivityFeed = (diagramId: string): UseActivityFeedResult => {
     onSuccess: async () => {
       const diagram = await getDiagram(diagramId);
       setDocument(diagram.content);
-      queryClient.invalidateQueries({ queryKey: ["diagram", diagramId] });
-      queryClient.invalidateQueries({ queryKey: ["mcp-sessions", diagramId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.diagram(diagramId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.mcpSessions(diagramId) });
     },
   });
 

@@ -8,6 +8,7 @@ import { MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
 import { listDiagrams } from "@/shared/api/diagrams.api";
 import { listProjects } from "@/shared/api/projects.api";
 import { getMe } from "@/shared/api/auth.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import type { DiagramListItem } from "@/shared/api/diagrams.api";
 import type { DashboardOutletContext } from "../pages/DashboardPage";
 import { Button, Skeleton } from "@/components";
@@ -96,14 +97,14 @@ export const DiagramGrid = () => {
   const { onCreateDiagram, onImportDiagram, onDeleteDiagram, searchQuery } =
     useOutletContext<DashboardOutletContext>();
 
-  const { data: me } = useQuery({ queryKey: ["me"], queryFn: getMe });
+  const { data: me } = useQuery({ queryKey: queryKeys.me(), queryFn: getMe });
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects", orgId],
+    queryKey: queryKeys.projects(orgId!),
     queryFn: () => listProjects(orgId!),
     enabled: !!orgId,
   });
   const { data: diagrams = [], isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["diagrams", projectId],
+    queryKey: queryKeys.diagrams(projectId!),
     queryFn: () => listDiagrams(projectId!),
     enabled: !!projectId,
     throwOnError: false,

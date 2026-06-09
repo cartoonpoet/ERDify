@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { listMyOrganizations } from "@/shared/api/organizations.api";
 import { listProjects } from "@/shared/api/projects.api";
 import { listDiagrams } from "@/shared/api/diagrams.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { SidebarOrgSection } from "./SidebarOrgSection";
 import { SidebarDiagramList } from "./SidebarDiagramList";
 import { SidebarBottomBar } from "./SidebarBottomBar";
@@ -36,16 +37,16 @@ export const UnifiedSidebar = ({
   const displayProjectId = orgId ? projectId : undefined;
 
   const { data: orgs = [] } = useQuery({
-    queryKey: ["orgs"],
+    queryKey: queryKeys.orgs(),
     queryFn: listMyOrganizations,
   });
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects", displayOrgId],
+    queryKey: queryKeys.projects(displayOrgId!),
     queryFn: () => listProjects(displayOrgId!),
     enabled: !!displayOrgId,
   });
   const { data: diagrams = [] } = useQuery({
-    queryKey: ["diagrams", displayProjectId],
+    queryKey: queryKeys.diagrams(displayProjectId!),
     queryFn: () => listDiagrams(displayProjectId!),
     enabled: !!displayProjectId,
   });

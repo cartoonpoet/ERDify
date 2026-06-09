@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getErrorReports, resolveErrorReport } from "@/shared/api/errorReports.api";
 import type { GroupedErrorReport, ApiErrorType } from "@/shared/api/errorReports.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { ErrorReportSlideOver } from "../components/ErrorReportSlideOver";
 import * as css from "../admin.css";
 
@@ -15,7 +16,7 @@ export const ErrorReportsPage = () => {
   const [selected, setSelected] = useState<GroupedErrorReport | null>(null);
 
   const { data } = useQuery({
-    queryKey: ["admin", "error-reports", tab, typeFilter],
+    queryKey: queryKeys.adminErrorReports(tab, typeFilter),
     queryFn: () =>
       getErrorReports({
         resolved: tab === "resolved",
@@ -26,7 +27,7 @@ export const ErrorReportsPage = () => {
   const resolve = useMutation({
     mutationFn: resolveErrorReport,
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["admin", "error-reports"] });
+      void qc.invalidateQueries({ queryKey: queryKeys.adminErrorReportsAll() });
       setSelected(null);
     },
   });

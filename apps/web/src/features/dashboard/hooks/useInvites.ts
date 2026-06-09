@@ -5,12 +5,13 @@ import {
   cancelInvite,
 } from "@/shared/api/members.api";
 import type { InviteResult, MemberRoleType } from "@/shared/api/members.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 
 export const useInvites = (orgId: string) => {
   const queryClient = useQueryClient();
 
   const { data: invites = [], isLoading } = useQuery({
-    queryKey: ["invites", orgId],
+    queryKey: queryKeys.invites(orgId),
     queryFn: () => getPendingInvites(orgId),
     enabled: !!orgId,
   });
@@ -20,16 +21,16 @@ export const useInvites = (orgId: string) => {
       inviteMemberByEmail(orgId, email, role),
     onSuccess: (result: InviteResult) => {
       if (result.status === "added") {
-        void queryClient.invalidateQueries({ queryKey: ["members", orgId] });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.members(orgId) });
       }
-      void queryClient.invalidateQueries({ queryKey: ["invites", orgId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.invites(orgId) });
     },
   });
 
   const cancelMutation = useMutation({
     mutationFn: (inviteId: string) => cancelInvite(orgId, inviteId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["invites", orgId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.invites(orgId) });
     },
   });
 

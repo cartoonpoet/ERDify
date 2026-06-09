@@ -1,4 +1,11 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(git diff *)",
+      "Bash(git diff)",
+      "Skill"
+    ]
+  },
   "hooks": {
     "Stop": [
       {

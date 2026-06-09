@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Modal, Button, Input } from "@/components";
 import { updateDiagram } from "@/shared/api/diagrams.api";
 import type { DiagramListItem } from "@/shared/api/diagrams.api";
+import { queryKeys } from "@/shared/lib/queryKeys";
 import { form, footer, selectInput } from "./modal-form.css";
 
 interface EditDiagramModalProps {
@@ -29,7 +30,7 @@ export const EditDiagramModal = ({ open, onClose, diagram }: EditDiagramModalPro
     try {
       if (trimmedName !== diagram.name || dialect !== diagram.dialect) {
         await updateDiagram(diagram.id, { name: trimmedName, dialect });
-        queryClient.invalidateQueries({ queryKey: ["diagrams", diagram.projectId] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.diagrams(diagram.projectId) });
       }
 
       onClose();
