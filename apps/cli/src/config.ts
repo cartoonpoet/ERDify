@@ -47,9 +47,9 @@ export function getApiKey(): string {
 }
 
 export function getApiUrl(): string {
-  return (
-    process.env["ERDIFY_API_URL"] ??
-    readConfig().apiUrl ??
-    "https://erdify-app.kro.kr/api"
-  );
+  // 원격 호스트를 http로 두면 nginx 301(http→https)에서 fetch가 Authorization 헤더를
+  // 떨궈 401이 난다. localhost를 제외하고 https로 강제한다.
+  const raw =
+    process.env["ERDIFY_API_URL"] ?? readConfig().apiUrl ?? "https://erdify-app.kro.kr/api";
+  return raw.replace(/^http:\/\/(?!localhost|127\.0\.0\.1)/, "https://");
 }

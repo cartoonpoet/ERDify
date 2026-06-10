@@ -1,7 +1,12 @@
 import type { DiagramDocument } from "@erdify/domain";
 import { MCP_SESSION_ID } from "./session.js";
 
-const API_URL = process.env.ERDIFY_API_URL ?? "https://erdify-app.kro.kr/api";
+// 원격 호스트를 http로 두면 nginx 301(http→https)에서 fetch가 Authorization 헤더를
+// 떨궈 401이 난다. localhost를 제외하고 https로 강제한다.
+const API_URL = (process.env.ERDIFY_API_URL ?? "https://erdify-app.kro.kr/api").replace(
+  /^http:\/\/(?!localhost|127\.0\.0\.1)/,
+  "https://"
+);
 const API_KEY = process.env.ERDIFY_API_KEY ?? "";
 
 export interface OrganizationItem {
