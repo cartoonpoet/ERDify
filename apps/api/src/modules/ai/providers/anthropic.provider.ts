@@ -42,6 +42,6 @@ export class AnthropicProvider implements AiProvider {
         const t = b as { id: string; name: string; input: Record<string, unknown> };
         return { id: t.id, name: t.name, input: t.input };
       });
-    return { text, toolCalls };
+    return { text, toolCalls, truncated: final.stop_reason === "max_tokens" };
   }
 }

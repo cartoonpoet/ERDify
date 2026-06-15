@@ -91,6 +91,7 @@ export class GeminiProvider implements AiProvider {
       input: (fc.args ?? {}) as Record<string, unknown>,
     }));
 
-    return { text, toolCalls };
+    const truncated = response.candidates?.[0]?.finishReason === "MAX_TOKENS";
+    return { text, toolCalls, truncated };
   }
 }
