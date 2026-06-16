@@ -46,9 +46,11 @@ export class OpenAiProvider implements AiProvider {
     });
 
     let text = "";
+    let truncated = false;
     const acc = new Map<number, { id: string; name: string; args: string }>();
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta;
+      if (chunk.choices[0]?.finish_reason === "length") truncated = true;
       if (delta?.content) {
         text += delta.content;
         args.onText(delta.content);
@@ -62,6 +64,6 @@ export class OpenAiProvider implements AiProvider {
       }
     }
     const toolCalls = [...acc.values()].map((t) => ({ id: t.id, name: t.name, input: JSON.parse(t.args || "{}") as Record<string, unknown> }));
-    return { text, toolCalls };
+    return { text, toolCalls, truncated };
   }
 }

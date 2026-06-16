@@ -18,13 +18,16 @@ import { ERD_TOOLS } from "../erd-tools";
 import { READ_TOOLS } from "../tools/read-tools";
 import type { ConvMessage, AiProvider, NormalizedToolCall } from "../providers/provider.types";
 
-const MAX_TOKENS = 4096;
-const MAX_ITERATIONS = 8;
+const MAX_TOKENS = 8192;
+const MAX_ITERATIONS = 16;
 /** 적용 전 자동검증에서 새 오류가 나오면 모델에게 수정 기회를 주는 최대 횟수. */
 const MAX_VALIDATION_RETRIES = 2;
 const READ_TOOL_NAMES = new Set(["listTables", "getTableDetails"]);
 const APPLY_NUDGE =
   "Now apply the schema improvements you just identified using the editing tools (addRelation, addIndex, addTable, addColumn, updateColumn, removeColumn, etc.) so the user gets a reviewable diff. Make the concrete changes now — do not just describe them again. If, and only if, no change is actually warranted, reply in one short sentence saying the schema is already fine.";
+/** 응답이 출력 길이 제한으로 잘렸을 때, 이미 적용한 변경은 유지한 채 남은 작업을 끝까지 이어가도록 유도. */
+const CONTINUE_NUDGE =
+  "직전 응답이 출력 길이 제한으로 중간에 끊겼어. 이미 적용된 변경은 그대로 두고, 같은 내용을 반복하지 말고 아직 처리하지 못한 나머지 작업을 편집 도구로 이어서 끝까지 완료해줘. 모든 작업이 끝났으면 그때 한 줄로 마무리해줘.";
 
 /** SSE 이벤트 (프론트 sendAiChatStream과 호환되는 master 프로토콜). */
 export type StreamEvent =
@@ -123,6 +126,14 @@ export class AiChatService {
         });
         finalText = turn.text;
         if (turn.toolCalls.length === 0) {
+          // 출력 토큰 한도로 응답이 잘렸으면 끝난 게 아니다 — 남은 작업을 이어가도록 유도한다.
+          // (큰 테이블 정규화처럼 변경량이 많을 때 일부만 적용되고 멈추는 문제를 방지)
+          if (turn.truncated && i < MAX_ITERATIONS - 1) {
+            this.logger.warn(`AI turn truncated by max_tokens for diagram ${diagramId}; continuing`);
+            messages.push({ role: "assistant", text: turn.text, toolCalls: [] });
+            messages.push({ role: "user", content: CONTINUE_NUDGE });
+            continue;
+          }
           // 스키마를 조회(분석)만 하고 변경 없이 끝나면 한 번 적용을 유도
           if (!nudgedToApply && usedReadTools && diffs.length === 0) {
             nudgedToApply = true;

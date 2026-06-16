@@ -14,6 +14,8 @@ export type ConvMessage =
 export interface ProviderTurn {
   text: string;
   toolCalls: NormalizedToolCall[];
+  /** 출력 토큰 한도(max_tokens)에 걸려 응답이 중간에 잘렸으면 true. 끊긴 작업을 이어가기 위한 신호. */
+  truncated: boolean;
 }
 
 export interface StreamTurnArgs {

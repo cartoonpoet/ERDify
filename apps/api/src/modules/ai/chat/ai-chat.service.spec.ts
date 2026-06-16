@@ -61,7 +61,7 @@ function makeService(turns: ProviderTurn[]): { svc: Svc } {
 
 describe("AiChatService.runChat", () => {
   it("도구 호출이 없으면 1회 turn 후 done을 emit한다", async () => {
-    const { svc } = makeService([{ text: "안녕하세요", toolCalls: [] }]);
+    const { svc } = makeService([{ text: "안녕하세요", toolCalls: [], truncated: false }]);
     const events: StreamEvent[] = [];
     await svc.runChat({ userId: "u1", diagramId: "d1", message: "hi", sessionId: "s1" }, (e) => events.push(e));
 
@@ -72,8 +72,8 @@ describe("AiChatService.runChat", () => {
 
   it("도구 호출을 실행하고 결과를 다음 turn에 먹인 뒤 종료한다", async () => {
     const { svc } = makeService([
-      { text: "", toolCalls: [{ id: "t1", name: "addTable", input: { name: "users" } }] },
-      { text: "users 테이블을 추가했어요", toolCalls: [] },
+      { text: "", toolCalls: [{ id: "t1", name: "addTable", input: { name: "users" } }], truncated: false },
+      { text: "users 테이블을 추가했어요", toolCalls: [], truncated: false },
     ]);
     const events: StreamEvent[] = [];
     await svc.runChat({ userId: "u1", diagramId: "d1", message: "users 테이블", sessionId: "s1" }, (e) => events.push(e));
@@ -87,10 +87,10 @@ describe("AiChatService.runChat", () => {
 
   it("스키마를 조회만 하고 변경이 없으면 적용을 유도해 결국 diff를 만든다", async () => {
     const { svc } = makeService([
-      { text: "", toolCalls: [{ id: "r1", name: "getTableDetails", input: { tableId: "e1" } }] },
-      { text: "정규화 분석 결과입니다.", toolCalls: [] }, // 분석만 → nudge 발동
-      { text: "개선사항을 적용했습니다.", toolCalls: [{ id: "t1", name: "addTable", input: { name: "roles" } }] },
-      { text: "완료", toolCalls: [] },
+      { text: "", toolCalls: [{ id: "r1", name: "getTableDetails", input: { tableId: "e1" } }], truncated: false },
+      { text: "정규화 분석 결과입니다.", toolCalls: [], truncated: false }, // 분석만 → nudge 발동
+      { text: "개선사항을 적용했습니다.", toolCalls: [{ id: "t1", name: "addTable", input: { name: "roles" } }], truncated: false },
+      { text: "완료", toolCalls: [], truncated: false },
     ]);
     const events: StreamEvent[] = [];
     await svc.runChat({ userId: "u1", diagramId: "d1", message: "정규화할 거 있어?", sessionId: "s1" }, (e) => events.push(e));
@@ -100,8 +100,51 @@ describe("AiChatService.runChat", () => {
     expect(done.pendingDocument?.entities.some((e) => e.name === "roles")).toBe(true);
   });
 
+  it("출력 길이 제한으로 응답이 잘리면 끊긴 작업을 이어가 끝까지 적용한다", async () => {
+    // 큰 테이블 정규화처럼 변경량이 많아 한 turn 출력이 max_tokens에 걸려 잘린 상황을 모사한다.
+    // 첫 turn은 일부만 적용하고 truncated=true로 끝난다 → 이어가기 nudge 후 나머지를 마저 적용해야 한다.
+    const captured: ConvMessage[][] = [];
+    let i = 0;
+    const turns: ProviderTurn[] = [
+      // 1) users를 분리하던 중 출력이 잘림 → 도구 결과로 자연스럽게 다음 turn 진행(이미 적용한 변경 유지)
+      { text: "users 분리 중…", toolCalls: [{ id: "t1", name: "addTable", input: { name: "users" } }], truncated: true },
+      // 2) 도구 없이 텍스트만 내다가 또 잘림 → 이어가기 nudge가 발동돼야 함
+      { text: "이어서 roles를…", toolCalls: [], truncated: true },
+      // 3) nudge를 받고 나머지(roles)를 마저 적용
+      { text: "roles까지 적용", toolCalls: [{ id: "t2", name: "addTable", input: { name: "roles" } }], truncated: false },
+      // 4) 모든 작업 완료
+      { text: "정규화를 모두 마쳤어요", toolCalls: [], truncated: false },
+    ];
+    const provider: AiProvider = {
+      streamTurn: vi.fn(async (a) => {
+        captured.push(JSON.parse(JSON.stringify(a.messages)));
+        a.onText("…");
+        return turns[i++]!;
+      }),
+    };
+    const aiService = {
+      getDiagramAndOrgId: vi.fn(async () => ({ doc, orgId: "o1", diagramName: "shop" })),
+      resolveChatCredentials: vi.fn(async () => ({ apiKey: "k", provider: "anthropic", model: "m" })),
+    };
+    const history = { findRecentTurns: vi.fn(async () => []), saveUserMessage: vi.fn(async () => undefined), saveAssistantMessage: vi.fn(async () => ({ id: "m" })) };
+    const usage = { log: vi.fn(async () => undefined) };
+    const userRepo = { findOne: vi.fn(async () => ({ name: "u", email: "e" })) };
+    const orgRepo = { findOne: vi.fn(async () => ({ name: "o" })) };
+    const svc = new AiChatService(aiService as never, history as never, new ToolExecutor(loader), usage as never, provider as never, provider as never, provider as never, userRepo as never, orgRepo as never, loader);
+
+    const events: StreamEvent[] = [];
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "Contract 정규화해줘", sessionId: "s1" }, (e) => events.push(e));
+
+    // 잘린 뒤 이어가기 nudge가 한 번 들어가고, 양쪽 turn의 변경이 모두 적용돼야 한다.
+    const allUserContents = captured.flat().filter((m) => m.role === "user").map((m) => (m as { content: string }).content);
+    expect(allUserContents.some((c) => c.includes("출력 길이 제한"))).toBe(true);
+    const done = events.find((e) => e.event === "done") as Extract<StreamEvent, { event: "done" }>;
+    expect(done.diff).toHaveLength(2);
+    expect(done.pendingDocument?.entities.map((e) => e.name).sort()).toEqual(["roles", "users"]);
+  });
+
   it("읽기 도구를 쓰지 않은 순수 정보 질문은 적용을 유도하지 않는다", async () => {
-    const streamTurn = vi.fn(async () => ({ text: "3NF는 이행적 종속을 제거합니다.", toolCalls: [] }));
+    const streamTurn = vi.fn(async () => ({ text: "3NF는 이행적 종속을 제거합니다.", toolCalls: [], truncated: false }));
     const provider = { streamTurn } as never;
     const aiService = {
       getDiagramAndOrgId: vi.fn(async () => ({ doc, orgId: "o1", diagramName: "shop" })),
@@ -140,7 +183,7 @@ describe("AiChatService.runChat", () => {
       streamTurn: vi.fn(async (a) => {
         captured = a.system;
         a.onText("…");
-        return { text: "안녕", toolCalls: [] };
+        return { text: "안녕", toolCalls: [], truncated: false };
       }),
     };
     const aiService = {
@@ -173,10 +216,10 @@ describe("AiChatService.runChat", () => {
 
     let i = 0;
     const turns: ProviderTurn[] = [
-      { text: "", toolCalls: [{ id: "t1", name: "addTable", input: { name: "bad" } }] }, // diff 생성
-      { text: "끝", toolCalls: [] }, // 검증 실패 → 수정 요구 (시도 1)
-      { text: "끝", toolCalls: [] }, // 검증 여전히 실패 → 수정 요구 (시도 2)
-      { text: "끝", toolCalls: [] }, // MAX_VALIDATION_RETRIES 도달 → 종료
+      { text: "", toolCalls: [{ id: "t1", name: "addTable", input: { name: "bad" } }], truncated: false }, // diff 생성
+      { text: "끝", toolCalls: [], truncated: false }, // 검증 실패 → 수정 요구 (시도 1)
+      { text: "끝", toolCalls: [], truncated: false }, // 검증 여전히 실패 → 수정 요구 (시도 2)
+      { text: "끝", toolCalls: [], truncated: false }, // MAX_VALIDATION_RETRIES 도달 → 종료
     ];
     const captured: ConvMessage[][] = [];
     const provider: AiProvider = {
