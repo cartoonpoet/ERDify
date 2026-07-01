@@ -25,4 +25,7 @@ export class AddColumnDto {
 
   @IsOptional()
   defaultValue?: string | null;
+
+  @IsOptional()
+  comment?: string | null;
 }

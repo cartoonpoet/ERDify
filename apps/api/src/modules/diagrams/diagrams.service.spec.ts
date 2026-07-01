@@ -476,6 +476,23 @@ describe("DiagramsService", () => {
       expect(col.defaultValue).toBeNull();
       expect(col.comment).toBeNull();
     });
+
+    it("persists comment (logical name) when provided", async () => {
+      const doc = makeDoc({ entities: [makeEntity()] });
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: doc as unknown as object }));
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.addColumn("diag-1", "ent-1", "user-1", {
+        name: "email",
+        type: "varchar",
+        comment: "이메일",
+      });
+
+      const resultDoc = result.content as unknown as DiagramDocument;
+      expect(resultDoc.entities[0]!.columns[0]!.comment).toBe("이메일");
+    });
   });
 
   describe("updateColumn", () => {

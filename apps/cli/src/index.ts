@@ -178,12 +178,20 @@ add
   .option("--not-null", "NOT NULL constraint")
   .option("--unique", "UNIQUE constraint")
   .option("--default <value>", "Default value")
+  .option("--comment <value>", "Logical name / column comment (논리명)")
   .action(
     async (
       diagramId: string,
       tableId: string,
       name: string,
-      opts: { type: string; pk?: boolean; notNull?: boolean; unique?: boolean; default?: string }
+      opts: {
+        type: string;
+        pk?: boolean;
+        notNull?: boolean;
+        unique?: boolean;
+        default?: string;
+        comment?: string;
+      }
     ) => {
       const { content: doc } = await client.getDiagram(diagramId).catch(handleError);
       const entity = doc.entities.find((e) => e.id === tableId);
@@ -199,7 +207,7 @@ add
         primaryKey: opts.pk ?? false,
         unique: opts.unique ?? false,
         defaultValue: opts.default ?? null,
-        comment: null,
+        comment: opts.comment ?? null,
         ordinal: entity.columns.length,
       };
       const updated = addColumn(doc, tableId, column);

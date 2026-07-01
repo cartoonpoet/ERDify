@@ -25,7 +25,11 @@ const columnInputSchema = z.object({
     .nullable()
     .optional()
     .describe("SQL default expression, set to null to remove"),
-  comment: z.string().nullable().optional().describe("Optional column comment"),
+  comment: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("Optional logical name / column comment (논리명)"),
 });
 
 type ColumnInput = z.infer<typeof columnInputSchema>;
@@ -39,7 +43,7 @@ function buildColumn(input: ColumnInput, ordinal: number): DiagramColumn {
     primaryKey: input.primaryKey ?? false,
     unique: input.unique ?? false,
     defaultValue: input.defaultValue ?? null,
-    comment: null,
+    comment: input.comment ?? null,
     ordinal,
   };
 }

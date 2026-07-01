@@ -98,7 +98,7 @@ export class DiagramsSchemaService {
         primaryKey: dto.primaryKey ?? false,
         unique: dto.unique ?? false,
         defaultValue: dto.defaultValue ?? null,
-        comment: null,
+        comment: dto.comment ?? null,
         ordinal: entity.columns.length,
       };
       return domain.addColumn(doc, tableId, column);
