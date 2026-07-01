@@ -34,7 +34,7 @@ const columnInputSchema = z.object({
 
 type ColumnInput = z.infer<typeof columnInputSchema>;
 
-function buildColumn(input: ColumnInput, ordinal: number): DiagramColumn {
+export function buildColumn(input: ColumnInput, ordinal: number): DiagramColumn {
   return {
     id: randomUUID(),
     name: input.name,
