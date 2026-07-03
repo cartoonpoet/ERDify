@@ -9,9 +9,41 @@ import type {
 } from "../types/index.js";
 
 function quote(name: string, dialect: DiagramDocument["dialect"]): string {
-  if (dialect === "postgresql") return `"${name}"`;
-  if (dialect === "mssql") return `[${name}]`;
-  return `\`${name}\``;
+  // 식별자 앞뒤 공백은 MySQL `ERROR 1166 Incorrect column name`을 유발하므로 export 시 방어적으로 trim한다.
+  const n = name.trim();
+  if (dialect === "postgresql") return `"${n}"`;
+  if (dialect === "mssql") return `[${n}]`;
+  return `\`${n}\``;
+}
+
+// DEFAULT 값 자동 quoting이 필요없는(이미 안전한) 형태들
+const SQL_DEFAULT_KEYWORDS = new Set([
+  "NULL", "TRUE", "FALSE", "CURRENT_TIMESTAMP", "CURRENT_DATE", "CURRENT_TIME",
+  "CURRENT_USER", "NOW", "LOCALTIME", "LOCALTIMESTAMP",
+]);
+
+function isStringType(type: string): boolean {
+  return /\b(char|varchar|nchar|nvarchar|character|text|clob|enum|set)\b/i.test(type);
+}
+
+/** 문자열 컬럼의 DEFAULT가 인용되지 않은 맨몸 리터럴이면 true (예: `DEFAULT 코드값` → 문법 오류) */
+function defaultNeedsQuoting(defaultValue: string): boolean {
+  const v = defaultValue.trim();
+  if (v === "") return false;
+  if (/^['"`]/.test(v)) return false; // 이미 인용됨
+  if (/^-?\d+(\.\d+)?$/.test(v)) return false; // 숫자
+  if (v.includes("(")) return false; // 함수/표현식
+  if (SQL_DEFAULT_KEYWORDS.has(v.toUpperCase())) return false; // SQL 키워드
+  return true;
+}
+
+/** 타입 필드에 잘못 섞여 들어간 절(DEFAULT/CHARSET=/세미콜론 이후)을 제거한다. */
+function sanitizeType(type: string): { value: string; changed: boolean } {
+  let v = type.split(";")[0] ?? type; // 세미콜론 이후 제거
+  v = v.replace(/\s+DEFAULT\s+.*/i, ""); // 타입 필드엔 DEFAULT 절이 올 수 없음
+  v = v.replace(/\s+CHARSET\s*=\s*\S+/i, ""); // `CHARSET=utf8mb4` 형태 제거
+  v = v.trim();
+  return { value: v, changed: v !== type.trim() };
 }
 
 function referentialAction(action: DiagramRelationship["onDelete"]): string {
@@ -28,11 +60,39 @@ function escapeComment(value: string): string {
   return value.replace(/'/g, "''");
 }
 
-function columnDdl(col: DiagramColumn, dialect: DiagramDocument["dialect"]): string {
-  const parts: string[] = [quote(col.name, dialect), col.type];
+function columnDdl(
+  col: DiagramColumn,
+  dialect: DiagramDocument["dialect"],
+  entityName: string,
+  warnings: DdlWarning[],
+): string {
+  const colName = col.name.trim();
+  const { value: type, changed: typeChanged } = sanitizeType(col.type);
+  if (typeChanged) {
+    warnings.push({
+      code: "type_sanitized",
+      entity: entityName,
+      column: colName,
+      message: `Sanitized column type for "${entityName}.${colName}": "${col.type}" → "${type}".`,
+    });
+  }
+
+  const parts: string[] = [quote(col.name, dialect), type];
   if (!col.nullable) parts.push("NOT NULL");
   if (col.unique && !col.primaryKey) parts.push("UNIQUE");
-  if (col.defaultValue !== null) parts.push(`DEFAULT ${col.defaultValue}`);
+  if (col.defaultValue !== null) {
+    if (isStringType(type) && defaultNeedsQuoting(col.defaultValue)) {
+      parts.push(`DEFAULT '${escapeComment(col.defaultValue.trim())}'`);
+      warnings.push({
+        code: "default_autoquoted",
+        entity: entityName,
+        column: colName,
+        message: `Auto-quoted DEFAULT for "${entityName}.${colName}": ${col.defaultValue} → '${col.defaultValue.trim()}'.`,
+      });
+    } else {
+      parts.push(`DEFAULT ${col.defaultValue}`);
+    }
+  }
   // AUTO_INCREMENT는 MySQL/MariaDB 문법. 다른 dialect에서는 잘못된 SQL이 되므로 출력하지 않는다.
   if (col.autoIncrement && (dialect === "mysql" || dialect === "mariadb")) {
     parts.push("AUTO_INCREMENT");
@@ -49,8 +109,13 @@ function qualifiedName(entity: DiagramEntity, dialect: DiagramDocument["dialect"
   return `${quote(entity.schema, dialect)}.${quote(entity.name, dialect)}`;
 }
 
-function entityDdl(entity: DiagramEntity, dialect: DiagramDocument["dialect"]): string {
+function entityDdl(
+  entity: DiagramEntity,
+  dialect: DiagramDocument["dialect"],
+  warnings: DdlWarning[],
+): string {
   const lines: string[] = [];
+  const entityName = entity.name.trim();
   lines.push(`CREATE TABLE ${qualifiedName(entity, dialect)} (`);
 
   const sorted = [...entity.columns].sort((a, b) => a.ordinal - b.ordinal);
@@ -59,7 +124,7 @@ function entityDdl(entity: DiagramEntity, dialect: DiagramDocument["dialect"]): 
 
   sorted.forEach((col, i) => {
     const isLast = i === sorted.length - 1 && !hasTrailing;
-    lines.push(`${columnDdl(col, dialect)}${isLast ? "" : ","}`);
+    lines.push(`${columnDdl(col, dialect, entityName, warnings)}${isLast ? "" : ","}`);
   });
 
   if (pkCols.length > 0) {
@@ -220,6 +285,46 @@ function checkAutoIncrement(
   }
 }
 
+/** 식별자(테이블/컬럼/스키마/인덱스명)의 앞뒤 공백을 감지해 경고한다. export 시엔 quote()가 방어적으로 trim한다. */
+function collectIdentifierWarnings(doc: DiagramDocument, warnings: DdlWarning[]): void {
+  const hasWhitespace = (s: string): boolean => s !== s.trim() && s.trim() !== "";
+  for (const entity of doc.entities) {
+    const entityName = entity.name.trim();
+    if (hasWhitespace(entity.name)) {
+      warnings.push({
+        code: "identifier_whitespace",
+        entity: entityName,
+        message: `Table identifier "${entity.name}" has leading/trailing whitespace (auto-trimmed on export).`,
+      });
+    }
+    if (entity.schema && hasWhitespace(entity.schema)) {
+      warnings.push({
+        code: "identifier_whitespace",
+        entity: entityName,
+        message: `Schema identifier "${entity.schema}" has leading/trailing whitespace (auto-trimmed on export).`,
+      });
+    }
+    for (const col of entity.columns) {
+      if (hasWhitespace(col.name)) {
+        warnings.push({
+          code: "identifier_whitespace",
+          entity: entityName,
+          column: col.name.trim(),
+          message: `Column identifier "${col.name}" in "${entityName}" has leading/trailing whitespace (auto-trimmed on export).`,
+        });
+      }
+    }
+  }
+  for (const idx of doc.indexes) {
+    if (hasWhitespace(idx.name)) {
+      warnings.push({
+        code: "identifier_whitespace",
+        message: `Index identifier "${idx.name}" has leading/trailing whitespace (auto-trimmed on export).`,
+      });
+    }
+  }
+}
+
 /**
  * DDL과 export 경고를 함께 반환하는 export 채널.
  * 실행 불가능한 항목은 SQL 주석으로 강등되고 `warnings`에 기록된다.
@@ -229,8 +334,10 @@ export function generateDdlReport(doc: DiagramDocument): DdlReport {
   const warnings: DdlWarning[] = [];
   const parts: string[] = [];
 
+  collectIdentifierWarnings(doc, warnings);
+
   for (const entity of entities) {
-    const table = entityDdl(entity, dialect);
+    const table = entityDdl(entity, dialect, warnings);
     const comments = commentsDdl(entity, dialect);
     const entityIndexes = indexes
       .filter((idx) => idx.entityId === entity.id)

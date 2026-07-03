@@ -97,7 +97,10 @@ export type DdlWarningCode =
   | "fk_unresolved_columns"
   | "fk_column_count_mismatch"
   | "autoincrement_not_keyed"
-  | "autoincrement_multiple";
+  | "autoincrement_multiple"
+  | "identifier_whitespace"
+  | "default_autoquoted"
+  | "type_sanitized";
 
 export interface DdlWarning {
   code: DdlWarningCode;

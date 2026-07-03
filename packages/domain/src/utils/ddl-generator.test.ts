@@ -253,3 +253,45 @@ describe("generateDdl — AUTO_INCREMENT", () => {
     expect(warnings.map((w) => w.code)).toContain("autoincrement_multiple");
   });
 });
+
+describe("generateDdlReport — 식별자/기본값/타입 검증 (T4)", () => {
+  it("컬럼명 후행 공백을 trim해서 출력하고 identifier_whitespace 경고를 남긴다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id   ", primaryKey: false }));
+    const { sql, warnings } = generateDdlReport(doc);
+    expect(sql).toContain("`id`"); // trim됨
+    expect(sql).not.toContain("`id   `");
+    expect(warnings.map((w) => w.code)).toContain("identifier_whitespace");
+  });
+
+  it("문자열 컬럼의 미인용 DEFAULT를 자동 quoting하고 default_autoquoted 경고", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "t" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "code", type: "varchar(20)", primaryKey: false, defaultValue: "코드값" }));
+    const { sql, warnings } = generateDdlReport(doc);
+    expect(sql).toContain("DEFAULT '코드값'");
+    expect(warnings.map((w) => w.code)).toContain("default_autoquoted");
+  });
+
+  it("숫자/함수/키워드 DEFAULT는 그대로 두고 경고하지 않는다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "t" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "cnt", type: "int", primaryKey: false, defaultValue: "0" }));
+    doc = addColumn(doc, "e1", col({ id: "c2", name: "ts", type: "timestamp", primaryKey: false, defaultValue: "CURRENT_TIMESTAMP", ordinal: 1 }));
+    const { sql, warnings } = generateDdlReport(doc);
+    expect(sql).toContain("DEFAULT 0");
+    expect(sql).toContain("DEFAULT CURRENT_TIMESTAMP");
+    expect(warnings.filter((w) => w.code === "default_autoquoted")).toHaveLength(0);
+  });
+
+  it("타입 필드에 섞인 DEFAULT CHARSET= 절을 제거하고 type_sanitized 경고", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "t" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "body", type: "text DEFAULT CHARSET=utf8mb4", primaryKey: false }));
+    const { sql, warnings } = generateDdlReport(doc);
+    expect(sql).toContain("`body` text");
+    expect(sql).not.toContain("CHARSET=utf8mb4");
+    expect(warnings.map((w) => w.code)).toContain("type_sanitized");
+  });
+});
