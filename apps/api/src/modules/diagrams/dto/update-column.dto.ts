@@ -30,4 +30,8 @@ export class UpdateColumnDto {
 
   @IsOptional()
   comment?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  autoIncrement?: boolean;
 }

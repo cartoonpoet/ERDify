@@ -71,6 +71,18 @@ export const ColumnRow = ({
           }
         />
       </div>
+      {/* AI (AUTO_INCREMENT) */}
+      <div className={css.checkboxCell}>
+        <input
+          type="checkbox"
+          className={`${css.rowCheckbox} nodrag`}
+          checked={col.autoIncrement ?? false}
+          aria-label={`${col.name} AUTO_INCREMENT`}
+          onChange={(e) =>
+            applyCommand((doc) => updateColumn(doc, entityId, col.id, { autoIncrement: e.target.checked }))
+          }
+        />
+      </div>
       {/* 논리명 */}
       <IMEInput
         className={`${css.logicalNameInput} nodrag nokey`}

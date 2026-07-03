@@ -28,6 +28,7 @@ export const makeColumn = (ordinal: number): DiagramColumn => ({
   unique: false,
   defaultValue: null,
   comment: null,
+  autoIncrement: false,
   ordinal,
 });
 

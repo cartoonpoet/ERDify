@@ -51,6 +51,20 @@ describe("parseDdl", () => {
     expect(doc.entities[0]!.columns[0]!.defaultValue).toBe("'active'");
   });
 
+  it("AUTO_INCREMENT → autoIncrement가 true로 파싱된다", () => {
+    const sql = `CREATE TABLE t (id BIGINT NOT NULL AUTO_INCREMENT, PRIMARY KEY (id));`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.entities[0]!.columns[0]!.autoIncrement).toBe(true);
+  });
+
+  it("AUTO_INCREMENT 없으면 autoIncrement가 false다", () => {
+    const sql = `CREATE TABLE t (id BIGINT NOT NULL);`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.entities[0]!.columns[0]!.autoIncrement).toBe(false);
+  });
+
   it("인라인 FOREIGN KEY REFERENCES → 올바른 source/target 엔티티 ID로 relationship 생성", () => {
     const sql = `
       CREATE TABLE orders (id INT PRIMARY KEY);

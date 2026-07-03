@@ -86,6 +86,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
           <span className={css.roColHeaderCellFk}>FK</span>
           <span className={css.roColHeaderCellNullable}>?</span>
           <span className={css.roColHeaderCellFixed}>UQ</span>
+          <span className={css.roColHeaderCellFixed} title="AUTO_INCREMENT">AI</span>
           <span className={css.roColHeaderCellFluid}>논리명</span>
           <span className={css.roColHeaderCellWide}>컬럼명</span>
           <span className={css.roColHeaderCellType}>타입</span>
@@ -106,6 +107,9 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
               </div>
               <div className={css.roBadgeCell}>
                 {col.unique && !col.primaryKey && <span className={css.roUqBadge}>UQ</span>}
+              </div>
+              <div className={css.roBadgeCell}>
+                {col.autoIncrement && <span className={css.roAiBadge}>AI</span>}
               </div>
               <div className={css.roLogicalNameCell}>{col.comment ?? ""}</div>
               <div className={css.roColumnNameCell}>{col.name}</div>
@@ -194,6 +198,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
         <span className={css.colHeaderCellFixed}>FK</span>
         <span className={css.colHeaderCellFixed}>NULL</span>
         <span className={css.colHeaderCellFixed}>UQ</span>
+        <span className={css.colHeaderCellFixed} title="AUTO_INCREMENT">AI</span>
         <span className={css.colHeaderCellFluid}>논리명</span>
         <span className={css.colHeaderCellFluid}>컬럼명</span>
         <span className={css.colHeaderCellType}>타입</span>

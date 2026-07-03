@@ -13,6 +13,8 @@ export interface DiagramColumn {
   unique: boolean;
   defaultValue: string | null;
   comment: string | null;
+  /** AUTO_INCREMENT(MySQL/MariaDB) 여부. 기존 저장 데이터 호환을 위해 optional(undefined=false). */
+  autoIncrement?: boolean;
   ordinal: number;
 }
 
@@ -93,7 +95,9 @@ export interface DiagramValidationResult {
 export type DdlWarningCode =
   | "fk_missing_entity"
   | "fk_unresolved_columns"
-  | "fk_column_count_mismatch";
+  | "fk_column_count_mismatch"
+  | "autoincrement_not_keyed"
+  | "autoincrement_multiple";
 
 export interface DdlWarning {
   code: DdlWarningCode;

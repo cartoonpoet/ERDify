@@ -99,6 +99,7 @@ export class DiagramsSchemaService {
         unique: dto.unique ?? false,
         defaultValue: dto.defaultValue ?? null,
         comment: dto.comment ?? null,
+        autoIncrement: dto.autoIncrement ?? false,
         ordinal: entity.columns.length,
       };
       return domain.addColumn(doc, tableId, column);
@@ -125,6 +126,7 @@ export class DiagramsSchemaService {
       if (dto.unique !== undefined) changes.unique = dto.unique;
       if (dto.defaultValue !== undefined) changes.defaultValue = dto.defaultValue ?? null;
       if (dto.comment !== undefined) changes.comment = dto.comment ?? null;
+      if (dto.autoIncrement !== undefined) changes.autoIncrement = dto.autoIncrement;
       return domain.updateColumn(doc, tableId, columnId, changes);
     });
   }

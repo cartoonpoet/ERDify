@@ -206,3 +206,50 @@ describe("generateDdlReport — 경고 채널 + FK 강등", () => {
     expect(generateDdl(doc)).toBe(generateDdlReport(doc).sql);
   });
 });
+
+describe("generateDdl — AUTO_INCREMENT", () => {
+  it("mysql에서 autoIncrement 컬럼에 AUTO_INCREMENT를 출력한다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id", type: "bigint", autoIncrement: true }));
+    expect(generateDdl(doc)).toContain("`id` bigint NOT NULL AUTO_INCREMENT");
+  });
+
+  it("postgresql에서는 AUTO_INCREMENT를 출력하지 않는다 (잘못된 문법)", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id", type: "bigint", autoIncrement: true }));
+    expect(generateDdl(doc)).not.toContain("AUTO_INCREMENT");
+  });
+
+  it("autoIncrement가 없으면 AUTO_INCREMENT를 출력하지 않는다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id" }));
+    expect(generateDdl(doc)).not.toContain("AUTO_INCREMENT");
+  });
+
+  it("PK인 autoIncrement 컬럼은 경고가 없다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id", type: "bigint", autoIncrement: true, primaryKey: true }));
+    expect(generateDdlReport(doc).warnings).toHaveLength(0);
+  });
+
+  it("키가 아닌 autoIncrement 컬럼은 autoincrement_not_keyed 경고", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "seq", type: "bigint", autoIncrement: true, primaryKey: false }));
+    const { warnings } = generateDdlReport(doc);
+    expect(warnings.map((w) => w.code)).toContain("autoincrement_not_keyed");
+  });
+
+  it("한 테이블에 autoIncrement 컬럼이 2개면 autoincrement_multiple 경고", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id", type: "bigint", autoIncrement: true, primaryKey: true }));
+    doc = addColumn(doc, "e1", col({ id: "c2", name: "seq", type: "bigint", autoIncrement: true, primaryKey: false, ordinal: 1 }));
+    const { warnings } = generateDdlReport(doc);
+    expect(warnings.map((w) => w.code)).toContain("autoincrement_multiple");
+  });
+});

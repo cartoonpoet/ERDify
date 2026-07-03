@@ -235,7 +235,9 @@ function parseCreateTable(stmt: string): {
     const colCommentMatch = line.match(/COMMENT\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
     if (colCommentMatch) comment = (colCommentMatch[1] ?? "").replace(/^['"]|['"]$/g, "");
 
-    columns.push({ name: colName, type: colType, nullable, primaryKey, unique, defaultValue, comment, ordinal: columns.length });
+    const autoIncrement = /\bAUTO_?INCREMENT\b/i.test(upperLine);
+
+    columns.push({ name: colName, type: colType, nullable, primaryKey, unique, defaultValue, comment, autoIncrement, ordinal: columns.length });
   }
 
   for (const col of columns) {

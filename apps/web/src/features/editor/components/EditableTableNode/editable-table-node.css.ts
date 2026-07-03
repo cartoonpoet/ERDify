@@ -225,6 +225,12 @@ export const roUqBadge = style({
   fontWeight: vars.font.weight.bold,
 });
 
+export const roAiBadge = style({
+  color: "#0d9488",
+  fontSize: 8,
+  fontWeight: vars.font.weight.bold,
+});
+
 export const roLogicalNameCell = style({
   flex: 1,
   minWidth: 0,

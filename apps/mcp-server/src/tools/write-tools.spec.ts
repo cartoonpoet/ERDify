@@ -16,6 +16,11 @@ describe("buildColumn", () => {
     expect(column.comment).toBeNull();
   });
 
+  it("autoIncrement를 반영하고, 미전달 시 false로 초기화한다", () => {
+    expect(buildColumn({ name: "id", type: "bigint", autoIncrement: true }, 0).autoIncrement).toBe(true);
+    expect(buildColumn({ name: "id", type: "bigint" }, 0).autoIncrement).toBe(false);
+  });
+
   it("기본값(nullable/primaryKey/unique/defaultValue)을 적용한다", () => {
     const column = buildColumn({ name: "email", type: "varchar" }, 3);
 

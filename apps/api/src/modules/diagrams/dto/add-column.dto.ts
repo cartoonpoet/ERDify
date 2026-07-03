@@ -28,4 +28,8 @@ export class AddColumnDto {
 
   @IsOptional()
   comment?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  autoIncrement?: boolean = false;
 }

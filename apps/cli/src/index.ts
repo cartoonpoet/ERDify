@@ -184,6 +184,7 @@ add
   .option("--unique", "UNIQUE constraint")
   .option("--default <value>", "Default value")
   .option("--comment <value>", "Logical name / column comment (논리명)")
+  .option("--auto-increment", "MySQL/MariaDB AUTO_INCREMENT")
   .action(
     async (
       diagramId: string,
@@ -196,6 +197,7 @@ add
         unique?: boolean;
         default?: string;
         comment?: string;
+        autoIncrement?: boolean;
       }
     ) => {
       const { content: doc } = await client.getDiagram(diagramId).catch(handleError);
@@ -213,6 +215,7 @@ add
         unique: opts.unique ?? false,
         defaultValue: opts.default ?? null,
         comment: opts.comment ?? null,
+        autoIncrement: opts.autoIncrement ?? false,
         ordinal: entity.columns.length,
       };
       const updated = addColumn(doc, tableId, column);

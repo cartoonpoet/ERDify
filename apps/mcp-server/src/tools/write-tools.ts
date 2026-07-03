@@ -49,6 +49,10 @@ const columnInputSchema = z.object({
     .nullable()
     .optional()
     .describe("Optional logical name / column comment (논리명)"),
+  autoIncrement: z
+    .boolean()
+    .optional()
+    .describe("MySQL/MariaDB AUTO_INCREMENT. Defaults to false. The column should be a key (usually PK)."),
 });
 
 type ColumnInput = z.infer<typeof columnInputSchema>;
@@ -63,6 +67,7 @@ export function buildColumn(input: ColumnInput, ordinal: number): DiagramColumn 
     unique: input.unique ?? false,
     defaultValue: input.defaultValue ?? null,
     comment: input.comment ?? null,
+    autoIncrement: input.autoIncrement ?? false,
     ordinal,
   };
 }

@@ -33,6 +33,10 @@ function columnDdl(col: DiagramColumn, dialect: DiagramDocument["dialect"]): str
   if (!col.nullable) parts.push("NOT NULL");
   if (col.unique && !col.primaryKey) parts.push("UNIQUE");
   if (col.defaultValue !== null) parts.push(`DEFAULT ${col.defaultValue}`);
+  // AUTO_INCREMENT는 MySQL/MariaDB 문법. 다른 dialect에서는 잘못된 SQL이 되므로 출력하지 않는다.
+  if (col.autoIncrement && (dialect === "mysql" || dialect === "mariadb")) {
+    parts.push("AUTO_INCREMENT");
+  }
   if (col.comment && dialect !== "postgresql" && dialect !== "mssql") {
     parts.push(`COMMENT '${escapeComment(col.comment)}'`);
   }
@@ -180,6 +184,43 @@ function fkDdl(
 }
 
 /**
+ * MySQL/MariaDB에서 AUTO_INCREMENT 컬럼은 (1) 키(PK 또는 인덱스 구성 컬럼)여야 하고
+ * (2) 테이블당 하나만 허용된다. 위반 시 경고를 남긴다(SQL은 그대로 출력 — 강등 아님).
+ */
+function checkAutoIncrement(
+  entity: DiagramEntity,
+  indexes: DiagramIndex[],
+  dialect: DiagramDocument["dialect"],
+  warnings: DdlWarning[],
+): void {
+  if (dialect !== "mysql" && dialect !== "mariadb") return;
+  const autoCols = entity.columns.filter((c) => c.autoIncrement);
+  if (autoCols.length === 0) return;
+
+  const indexedColumnIds = new Set(
+    indexes.filter((idx) => idx.entityId === entity.id).flatMap((idx) => idx.columnIds),
+  );
+  for (const col of autoCols) {
+    const keyed = col.primaryKey || indexedColumnIds.has(col.id);
+    if (!keyed) {
+      warnings.push({
+        code: "autoincrement_not_keyed",
+        entity: entity.name,
+        column: col.name,
+        message: `AUTO_INCREMENT column "${entity.name}.${col.name}" is not a key (PK or index) — MySQL requires it to be defined as a key.`,
+      });
+    }
+  }
+  if (autoCols.length > 1) {
+    warnings.push({
+      code: "autoincrement_multiple",
+      entity: entity.name,
+      message: `Table "${entity.name}" has ${autoCols.length} AUTO_INCREMENT columns — MySQL allows only one.`,
+    });
+  }
+}
+
+/**
  * DDL과 export 경고를 함께 반환하는 export 채널.
  * 실행 불가능한 항목은 SQL 주석으로 강등되고 `warnings`에 기록된다.
  */
@@ -196,6 +237,7 @@ export function generateDdlReport(doc: DiagramDocument): DdlReport {
       .map((idx) => indexDdl(idx, entity, dialect))
       .filter(Boolean);
 
+    checkAutoIncrement(entity, indexes, dialect, warnings);
     parts.push(table);
     if (comments) parts.push(comments);
     if (entityIndexes.length > 0) parts.push(entityIndexes.join("\n"));
