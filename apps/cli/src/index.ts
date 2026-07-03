@@ -6,7 +6,7 @@ import {
   addEntity,
   addRelationship,
   formatDiagram,
-  generateDdl,
+  generateDdlReport,
   generateSeedSql,
   generateSetupSql,
   removeColumn,
@@ -133,8 +133,13 @@ get
   .description("Generate DDL SQL for a diagram")
   .action(async (diagramId: string) => {
     const diagram = await client.getDiagram(diagramId).catch(handleError);
-    const ddl = generateDdl(diagram.content).trim() || "-- No tables defined";
-    console.log(ddl);
+    const { sql, warnings } = generateDdlReport(diagram.content);
+    console.log(sql.trim() || "-- No tables defined");
+    // 강등된 항목이 있으면 stderr로 경고를 알린다 (stdout DDL은 파이프 가능하게 유지)
+    if (warnings.length > 0) {
+      console.error(`\n⚠ erdify export 경고 ${warnings.length}건 (해당 항목은 주석으로 강등됨):`);
+      for (const w of warnings) console.error(`  [${w.code}] ${w.message}`);
+    }
   });
 
 get

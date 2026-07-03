@@ -2,9 +2,10 @@ import { createEmptyDiagram } from "../schema/create-empty-diagram.js";
 import { addEntity } from "../commands/entity-commands.js";
 import { addColumn } from "../commands/column-commands.js";
 import { addIndex } from "../commands/index-commands.js";
+import { addRelationship } from "../commands/relationship-commands.js";
 import { updateEntityComment } from "../commands/entity-commands.js";
-import { generateDdl } from "./ddl-generator.js";
-import type { DiagramColumn } from "../types/index.js";
+import { generateDdl, generateDdlReport } from "./ddl-generator.js";
+import type { DiagramColumn, DiagramRelationship } from "../types/index.js";
 
 const col = (overrides: Partial<DiagramColumn>): DiagramColumn => ({
   id: "c1", name: "id", type: "uuid", nullable: false,
@@ -129,5 +130,79 @@ describe("generateDdl — CREATE INDEX", () => {
     doc = addIndex(doc, { id: "i1", entityId: "e1", name: "empty", columnIds: [], unique: false });
     const ddl = generateDdl(doc);
     expect(ddl).not.toContain("CREATE INDEX");
+  });
+});
+
+const rel = (overrides: Partial<DiagramRelationship>): DiagramRelationship => ({
+  id: "r1", name: "fk_orders_users",
+  sourceEntityId: "orders", sourceColumnIds: ["o_uid"],
+  targetEntityId: "users", targetColumnIds: ["u_id"],
+  cardinality: "many-to-one", onDelete: "restrict", onUpdate: "restrict",
+  identifying: false,
+  ...overrides,
+});
+
+// orders(o_uid) → users(u_id) 두 테이블을 세팅한 mysql 다이어그램
+function docWithTwoTables() {
+  let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+  doc = addEntity(doc, { id: "users", name: "users" });
+  doc = addColumn(doc, "users", col({ id: "u_id", name: "id" }));
+  doc = addEntity(doc, { id: "orders", name: "orders" });
+  doc = addColumn(doc, "orders", col({ id: "o_uid", name: "user_id", primaryKey: false }));
+  return doc;
+}
+
+describe("generateDdlReport — 경고 채널 + FK 강등", () => {
+  it("정상 FK는 ALTER TABLE을 출력하고 경고가 없다", () => {
+    const doc = addRelationship(docWithTwoTables(), rel({}));
+    const { sql, warnings } = generateDdlReport(doc);
+    expect(sql).toContain("FOREIGN KEY (`user_id`)");
+    expect(sql).toContain("REFERENCES `users` (`id`)");
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("컬럼 매핑이 비면 빈 괄호 SQL 대신 주석으로 강등하고 경고를 남긴다", () => {
+    const doc = addRelationship(
+      docWithTwoTables(),
+      rel({ sourceColumnIds: [], targetColumnIds: [] })
+    );
+    const { sql, warnings } = generateDdlReport(doc);
+    expect(sql).not.toContain("FOREIGN KEY ()");
+    expect(sql).not.toContain("REFERENCES `users` ()");
+    expect(sql).toContain("-- [erdify] Skipped FK fk_orders_users");
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]!.code).toBe("fk_unresolved_columns");
+  });
+
+  it("해결되지 않는 컬럼 id는 그대로 출력하지 않고 강등한다", () => {
+    const doc = addRelationship(
+      docWithTwoTables(),
+      rel({ targetColumnIds: ["does_not_exist"] })
+    );
+    const { sql, warnings } = generateDdlReport(doc);
+    // 미해결 id는 진단용 주석 메시지에만 등장하고, 실행되는 FK 문에는 들어가지 않는다
+    expect(sql).not.toContain("FOREIGN KEY");
+    expect(sql).toContain("-- [erdify] Skipped FK");
+    expect(warnings[0]!.code).toBe("fk_unresolved_columns");
+  });
+
+  it("소스/타깃 컬럼 개수가 다르면 개수 불일치로 강등한다", () => {
+    let doc = docWithTwoTables();
+    doc = addColumn(doc, "orders", col({ id: "o_extra", name: "extra", primaryKey: false, ordinal: 1 }));
+    doc = addRelationship(doc, rel({ sourceColumnIds: ["o_uid", "o_extra"] }));
+    const { sql, warnings } = generateDdlReport(doc);
+    expect(sql).toContain("-- [erdify] Skipped FK");
+    expect(warnings[0]!.code).toBe("fk_column_count_mismatch");
+  });
+
+  it("존재하지 않는 엔티티를 참조하면 fk_missing_entity 경고", () => {
+    const doc = addRelationship(docWithTwoTables(), rel({ targetEntityId: "ghost" }));
+    const { warnings } = generateDdlReport(doc);
+    expect(warnings[0]!.code).toBe("fk_missing_entity");
+  });
+
+  it("generateDdl(문자열) 래퍼는 기존과 동일하게 SQL만 반환한다", () => {
+    const doc = addRelationship(docWithTwoTables(), rel({}));
+    expect(generateDdl(doc)).toBe(generateDdlReport(doc).sql);
   });
 });

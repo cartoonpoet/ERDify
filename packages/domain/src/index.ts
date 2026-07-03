@@ -20,13 +20,16 @@ export type {
   DiagramMetadata,
   DiagramRelationship,
   DiagramValidationResult,
+  DdlWarning,
+  DdlWarningCode,
+  DdlReport,
   EntityPosition,
   ReferentialAction,
   RelationshipCardinality,
   SeedRow,
 } from "./types/index.js";
 export { formatDiagram } from "./utils/format-diagram.js";
-export { generateDdl } from "./utils/ddl-generator.js";
+export { generateDdl, generateDdlReport } from "./utils/ddl-generator.js";
 export { generateSeedSql, generateSetupSql } from "./utils/seed-generator.js";
 export { generateOrm } from "./utils/orm-generator.js";
 export type { OrmType } from "./utils/orm-generator.js";

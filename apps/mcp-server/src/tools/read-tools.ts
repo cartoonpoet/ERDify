@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { generateDdl, formatDiagram } from "@erdify/domain";
+import { generateDdlReport, formatDiagram } from "@erdify/domain";
 import { client } from "../client.js";
 
 export const registerReadTools = (server: McpServer): void => {
@@ -110,10 +110,17 @@ export const registerReadTools = (server: McpServer): void => {
     { diagramId: z.string().describe("Diagram ID from list_diagrams") },
     async ({ diagramId }) => {
       const diagram = await client.getDiagram(diagramId);
-      const ddl = generateDdl(diagram.content);
-      const text = ddl.trim() || "-- No tables defined";
+      const { sql, warnings } = generateDdlReport(diagram.content);
+      const ddl = sql.trim() || "-- No tables defined";
+      // 강등된 항목(실행 불가 SQL 방지)이 있으면 DDL 상단에 경고 배너로 노출한다
+      const banner =
+        warnings.length > 0
+          ? `-- ⚠ erdify export 경고 ${warnings.length}건 (해당 항목은 주석으로 강등됨):\n` +
+            warnings.map((w) => `--   [${w.code}] ${w.message}`).join("\n") +
+            "\n\n"
+          : "";
       void client.recordToolCall(diagramId, "get_ddl", `"${diagram.name}" DDL 생성`).catch(() => {});
-      return { content: [{ type: "text", text }] };
+      return { content: [{ type: "text", text: banner + ddl }] };
     }
   );
 };

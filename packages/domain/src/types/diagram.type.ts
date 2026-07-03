@@ -84,3 +84,31 @@ export interface DiagramValidationResult {
   valid: boolean;
   errors: string[];
 }
+
+/**
+ * DDL export 경고 코드. export 엔진이 실행 불가능한 SQL을 출력하는 대신
+ * 해당 항목을 주석으로 강등하고 이 코드로 경고를 남긴다.
+ * 새 producer(식별자 검증, 참조 무결성, 민감정보 등)가 추가되면 코드를 확장한다.
+ */
+export type DdlWarningCode =
+  | "fk_missing_entity"
+  | "fk_unresolved_columns"
+  | "fk_column_count_mismatch";
+
+export interface DdlWarning {
+  code: DdlWarningCode;
+  /** 사람이 읽을 수 있는 경고 메시지 */
+  message: string;
+  /** 관련 엔티티(테이블) 이름 */
+  entity?: string;
+  /** 관련 컬럼 이름 */
+  column?: string;
+  /** 관련 관계(제약) 이름 또는 id */
+  relationship?: string;
+}
+
+/** generateDdlReport 결과: SQL과 경고 목록을 함께 반환하는 export 채널 */
+export interface DdlReport {
+  sql: string;
+  warnings: DdlWarning[];
+}
