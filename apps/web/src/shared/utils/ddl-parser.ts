@@ -1,4 +1,4 @@
-import type { DiagramDocument, DiagramDialect, DiagramEntity, DiagramColumn, DiagramRelationship, SeedRow } from "@erdify/domain";
+import type { DiagramDocument, DiagramDialect, DiagramEntity, DiagramColumn, DiagramIndex, DiagramRelationship, SeedRow } from "@erdify/domain";
 import { randomUUID as uuid } from "./uuid";
 
 function stripIdentifierQuotes(s: string): string {
@@ -66,6 +66,21 @@ function extractParenContent(s: string): string {
   const end = s.lastIndexOf(")");
   if (start === -1 || end === -1) return "";
   return s.slice(start + 1, end).trim();
+}
+
+function extractParenColumns(s: string): string[] {
+  const inner = extractParenContent(s);
+  if (!inner) return [];
+  return inner.split(",").map((c) => stripIdentifierQuotes(c.trim())).filter(Boolean);
+}
+
+// UNIQUE 절에서 (선택적) 제약 이름을 추출한다. 예: `UNIQUE KEY uq_name (a, b)` → "uq_name"
+function extractUniqueName(clauseAfterUnique: string): string | null {
+  // 선행 KEY/INDEX 키워드 제거 후, 여는 괄호 전의 토큰이 이름
+  const head = clauseAfterUnique.replace(/^(KEY|INDEX)\s*/i, "");
+  const parenIdx = head.indexOf("(");
+  const namePart = (parenIdx === -1 ? head : head.slice(0, parenIdx)).trim();
+  return namePart ? stripIdentifierQuotes(namePart) : null;
 }
 
 const CONSTRAINT_KEYWORDS = new Set([
@@ -141,12 +156,18 @@ function parseFkClause(line: string, constraintName: string): ParsedFK | null {
   return { constraintName, srcCols, tgtSchema, tgtTable, tgtCols, onDelete, onUpdate };
 }
 
+interface ParsedUniqueConstraint {
+  name: string | null;
+  columns: string[];
+}
+
 function parseCreateTable(stmt: string): {
   schema: string | null;
   tableName: string;
   tableComment: string | null;
   columns: Omit<DiagramColumn, "id">[];
   fks: ParsedFK[];
+  uniqueConstraints: ParsedUniqueConstraint[];
 } | null {
   const tableMatch = stmt.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([^\s(]+)\s*\(/i);
   if (!tableMatch) return null;
@@ -171,6 +192,13 @@ function parseCreateTable(stmt: string): {
   const fks: ParsedFK[] = [];
   const primaryKeyCols: string[] = [];
   const uniqueCols: string[] = [];
+  const uniqueConstraints: ParsedUniqueConstraint[] = [];
+
+  // 단일 컬럼 UNIQUE는 컬럼 boolean으로, 복합(≥2) UNIQUE는 테이블 레벨 제약으로 분류한다.
+  const recordUnique = (cols: string[], name: string | null): void => {
+    if (cols.length === 1) uniqueCols.push(cols[0]!);
+    else if (cols.length > 1) uniqueConstraints.push({ name, columns: cols });
+  };
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
@@ -184,9 +212,9 @@ function parseCreateTable(stmt: string): {
       continue;
     }
 
-    if (/^UNIQUE\s*\(/i.test(line) || /^UNIQUE\s+KEY\s/i.test(line) || /^UNIQUE\s+INDEX\s/i.test(line)) {
-      const inner = extractParenContent(line);
-      inner.split(",").forEach((c) => uniqueCols.push(stripIdentifierQuotes(c.trim())));
+    if (/^UNIQUE\s*\(/i.test(line) || /^UNIQUE\s+KEY\b/i.test(line) || /^UNIQUE\s+INDEX\b/i.test(line)) {
+      const afterUnique = line.replace(/^UNIQUE\s*/i, "");
+      recordUnique(extractParenColumns(line), extractUniqueName(afterUnique));
       continue;
     }
 
@@ -202,8 +230,8 @@ function parseCreateTable(stmt: string): {
         const inner = extractParenContent(rest);
         inner.split(",").forEach((c) => primaryKeyCols.push(stripIdentifierQuotes(c.trim())));
       } else if (/^UNIQUE/i.test(rest)) {
-        const inner = extractParenContent(rest);
-        inner.split(",").forEach((c) => uniqueCols.push(stripIdentifierQuotes(c.trim())));
+        // CONSTRAINT 이름을 복합 UNIQUE 인덱스 이름으로 사용
+        recordUnique(extractParenColumns(rest), cname || null);
       }
       continue;
     }
@@ -245,7 +273,7 @@ function parseCreateTable(stmt: string): {
     if (uniqueCols.includes(col.name)) col.unique = true;
   }
 
-  return { schema, tableName, tableComment, columns, fks };
+  return { schema, tableName, tableComment, columns, fks, uniqueConstraints };
 }
 
 function parseAlterTableFk(stmt: string): { schema: string | null; tableName: string; fk: ParsedFK } | null {
@@ -428,6 +456,7 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
   const entityMap = new Map<string, DiagramEntity>();
   const pendingFks: { sourceSchema: string | null; sourceTable: string; fk: ParsedFK }[] = [];
   const pendingInserts: string[] = [];
+  const indexes: DiagramIndex[] = [];
 
   const registerEntity = (entity: DiagramEntity, schema: string | null, tableName: string) => {
     if (schema) {
@@ -457,6 +486,21 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
         columns: result.columns.map((c) => ({ ...c, id: uuid() })),
       };
       registerEntity(entity, result.schema, result.tableName);
+
+      // 복합 UNIQUE → DiagramIndex로 보존 (컬럼명을 방금 부여된 컬럼 id로 해석)
+      for (const uc of result.uniqueConstraints) {
+        const columnIds = uc.columns
+          .map((name) => entity.columns.find((c) => c.name === name)?.id)
+          .filter((id): id is string => !!id);
+        if (columnIds.length < 2) continue; // 복합만 (단일은 컬럼 boolean으로 처리됨)
+        indexes.push({
+          id: uuid(),
+          entityId: entity.id,
+          name: uc.name ?? `ux_${result.tableName}_${uc.columns.join("_")}`,
+          columnIds,
+          unique: true,
+        });
+      }
 
       for (const fk of result.fks) {
         pendingFks.push({ sourceSchema: result.schema, sourceTable: result.tableName, fk });
@@ -579,7 +623,7 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
     dialect,
     entities,
     relationships,
-    indexes: [],
+    indexes,
     views: [],
     layout: { entityPositions },
     metadata: { revision: 1, stableObjectIds: true, createdAt: now, updatedAt: now },

@@ -1,3 +1,4 @@
+import { generateDdl } from "@erdify/domain";
 import { parseDdl, applySeedInserts } from "./ddl-parser";
 
 let uuidCounter = 0;
@@ -63,6 +64,50 @@ describe("parseDdl", () => {
     const doc = parseDdl(sql, "mysql");
 
     expect(doc.entities[0]!.columns[0]!.autoIncrement).toBe(false);
+  });
+
+  it("복합 UNIQUE → DiagramIndex로 보존하고 구성 컬럼엔 boolean unique를 찍지 않는다", () => {
+    const sql = `CREATE TABLE t (
+      a INT, b INT, c INT,
+      UNIQUE (a, b, c)
+    );`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.indexes).toHaveLength(1);
+    expect(doc.indexes[0]!.unique).toBe(true);
+    expect(doc.indexes[0]!.columnIds).toHaveLength(3);
+    // 복합 제약은 개별 컬럼 unique로 평탄화되지 않아야 한다
+    expect(doc.entities[0]!.columns.every((col) => col.unique === false)).toBe(true);
+  });
+
+  it("named UNIQUE KEY의 이름을 인덱스 이름으로 보존한다", () => {
+    const sql = `CREATE TABLE t (a INT, b INT, UNIQUE KEY uq_ab (a, b));`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.indexes[0]!.name).toBe("uq_ab");
+  });
+
+  it("CONSTRAINT ... UNIQUE 이름을 인덱스 이름으로 보존한다", () => {
+    const sql = `CREATE TABLE t (a INT, b INT, CONSTRAINT ux_t UNIQUE (a, b));`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.indexes[0]!.name).toBe("ux_t");
+  });
+
+  it("단일 컬럼 UNIQUE는 컬럼 boolean으로 유지하고 인덱스를 만들지 않는다", () => {
+    const sql = `CREATE TABLE t (email VARCHAR(255), UNIQUE (email));`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.indexes).toHaveLength(0);
+    expect(doc.entities[0]!.columns[0]!.unique).toBe(true);
+  });
+
+  it("복합 UNIQUE 라운드트립: parse → generateDdl에서 CREATE UNIQUE INDEX로 복원", () => {
+    const sql = `CREATE TABLE t (a INT, b INT, UNIQUE KEY uq_ab (a, b));`;
+    const doc = parseDdl(sql, "mysql");
+    const out = generateDdl(doc);
+
+    expect(out).toContain("CREATE UNIQUE INDEX `uq_ab` ON `t` (`a`, `b`)");
   });
 
   it("인라인 FOREIGN KEY REFERENCES → 올바른 source/target 엔티티 ID로 relationship 생성", () => {
