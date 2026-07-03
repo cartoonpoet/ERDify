@@ -13,8 +13,15 @@ import {
   removeEntity,
   removeRelationship,
   updateColumn,
+  updateRelationship,
 } from "@erdify/domain";
-import type { DiagramColumn, DiagramRelationship, RelationshipCardinality } from "@erdify/domain";
+import type {
+  DiagramColumn,
+  DiagramEntity,
+  DiagramRelationship,
+  ReferentialAction,
+  RelationshipCardinality,
+} from "@erdify/domain";
 import { client } from "./client.js";
 import { getApiKey, getApiUrl, readConfig, writeConfig } from "./config.js";
 
@@ -34,6 +41,33 @@ function parseBoolFlag(value: string | boolean | undefined): boolean | undefined
   if (value === undefined) return undefined;
   if (typeof value === "boolean") return value;
   return value !== "false" && value !== "0";
+}
+
+// 콤마 구분 컬럼 ID 목록("id1,id2")을 배열로 파싱. 미지정 시 빈 배열.
+function parseIdList(value: string | undefined): string[] {
+  if (value === undefined) return [];
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+// FK 컬럼 매핑 검증 — 존재하지 않는 컬럼을 참조하면 종료(MCP assertColumnsExist와 동일 규칙).
+function assertColumnsExist(entity: DiagramEntity, columnIds: string[], side: string): void {
+  const known = new Set(entity.columns.map((c) => c.id));
+  const missing = columnIds.filter((id) => !known.has(id));
+  if (missing.length > 0) {
+    console.error(`${side} table "${entity.name}" has no column(s): ${missing.join(", ")}`);
+    process.exit(1);
+  }
+}
+
+const REFERENTIAL_ACTIONS = ["cascade", "restrict", "set-null", "no-action"];
+function assertReferentialAction(value: string | undefined, flag: string): void {
+  if (value !== undefined && !REFERENTIAL_ACTIONS.includes(value)) {
+    console.error(`Invalid ${flag}. Use: ${REFERENTIAL_ACTIONS.join(" | ")}`);
+    process.exit(1);
+  }
 }
 
 function handleError(err: unknown): never {
@@ -227,34 +261,68 @@ add
 add
   .command("rel <diagramId> <srcTableId> <tgtTableId> <cardinality>")
   .description("Add a relationship (cardinality: one-to-one | one-to-many | many-to-one)")
-  .action(async (diagramId: string, srcTableId: string, tgtTableId: string, cardinality: string) => {
-    const validCardinalities = ["one-to-one", "one-to-many", "many-to-one"];
-    if (!validCardinalities.includes(cardinality)) {
-      console.error(`Invalid cardinality. Use: ${validCardinalities.join(" | ")}`);
-      process.exit(1);
-    }
-    const { content: doc } = await client.getDiagram(diagramId).catch(handleError);
-    const src = doc.entities.find((e) => e.id === srcTableId);
-    const tgt = doc.entities.find((e) => e.id === tgtTableId);
-    if (!src) { console.error(`Source table ID "${srcTableId}" not found`); process.exit(1); }
-    if (!tgt) { console.error(`Target table ID "${tgtTableId}" not found`); process.exit(1); }
+  .option("--source-cols <ids>", "Comma-separated FK column IDs on the source table")
+  .option("--target-cols <ids>", "Comma-separated referenced column IDs on the target table (usually PK)")
+  .option("--name <name>", "Constraint name")
+  .option("--on-delete <action>", "cascade | restrict | set-null | no-action")
+  .option("--on-update <action>", "cascade | restrict | set-null | no-action")
+  .option("--identifying", "Identifying relationship")
+  .action(
+    async (
+      diagramId: string,
+      srcTableId: string,
+      tgtTableId: string,
+      cardinality: string,
+      opts: {
+        sourceCols?: string;
+        targetCols?: string;
+        name?: string;
+        onDelete?: string;
+        onUpdate?: string;
+        identifying?: boolean;
+      }
+    ) => {
+      const validCardinalities = ["one-to-one", "one-to-many", "many-to-one"];
+      if (!validCardinalities.includes(cardinality)) {
+        console.error(`Invalid cardinality. Use: ${validCardinalities.join(" | ")}`);
+        process.exit(1);
+      }
+      assertReferentialAction(opts.onDelete, "--on-delete");
+      assertReferentialAction(opts.onUpdate, "--on-update");
+      const { content: doc } = await client.getDiagram(diagramId).catch(handleError);
+      const src = doc.entities.find((e) => e.id === srcTableId);
+      const tgt = doc.entities.find((e) => e.id === tgtTableId);
+      if (!src) { console.error(`Source table ID "${srcTableId}" not found`); process.exit(1); }
+      if (!tgt) { console.error(`Target table ID "${tgtTableId}" not found`); process.exit(1); }
 
-    const relationship: DiagramRelationship = {
-      id: randomUUID(),
-      name: "",
-      sourceEntityId: srcTableId,
-      sourceColumnIds: [],
-      targetEntityId: tgtTableId,
-      targetColumnIds: [],
-      cardinality: cardinality as RelationshipCardinality,
-      onDelete: "no-action",
-      onUpdate: "no-action",
-      identifying: false,
-    };
-    const updated = addRelationship(doc, relationship);
-    await client.updateDiagram(diagramId, updated).catch(handleError);
-    console.log(`Relationship added: "${src.name}" → "${tgt.name}" (${cardinality}). relationshipId=${relationship.id}`);
-  });
+      const sourceColumnIds = parseIdList(opts.sourceCols);
+      const targetColumnIds = parseIdList(opts.targetCols);
+      assertColumnsExist(src, sourceColumnIds, "Source");
+      assertColumnsExist(tgt, targetColumnIds, "Target");
+      if (sourceColumnIds.length !== targetColumnIds.length) {
+        console.error(
+          `--source-cols (${sourceColumnIds.length}) and --target-cols (${targetColumnIds.length}) must map the same number of columns`
+        );
+        process.exit(1);
+      }
+
+      const relationship: DiagramRelationship = {
+        id: randomUUID(),
+        name: opts.name ?? "",
+        sourceEntityId: srcTableId,
+        sourceColumnIds,
+        targetEntityId: tgtTableId,
+        targetColumnIds,
+        cardinality: cardinality as RelationshipCardinality,
+        onDelete: (opts.onDelete ?? "no-action") as ReferentialAction,
+        onUpdate: (opts.onUpdate ?? "no-action") as ReferentialAction,
+        identifying: opts.identifying ?? false,
+      };
+      const updated = addRelationship(doc, relationship);
+      await client.updateDiagram(diagramId, updated).catch(handleError);
+      console.log(`Relationship added: "${src.name}" → "${tgt.name}" (${cardinality}). relationshipId=${relationship.id}`);
+    }
+  );
 
 // ── update ────────────────────────────────────────────────────────────────────
 
@@ -269,6 +337,8 @@ update
   .option("--not-null [bool]", "NOT NULL: true or false")
   .option("--unique [bool]", "UNIQUE: true or false")
   .option("--default <value>", "Default value (use 'null' to remove)")
+  .option("--comment <value>", "Logical name / column comment (use 'null' to remove)")
+  .option("--auto-increment [bool]", "MySQL/MariaDB AUTO_INCREMENT: true or false")
   .action(
     async (
       diagramId: string,
@@ -281,6 +351,8 @@ update
         notNull?: string | boolean;
         unique?: string | boolean;
         default?: string;
+        comment?: string;
+        autoIncrement?: string | boolean;
       }
     ) => {
       const { content: doc } = await client.getDiagram(diagramId).catch(handleError);
@@ -299,10 +371,87 @@ update
       const unique = parseBoolFlag(opts.unique);
       if (unique !== undefined) changes.unique = unique;
       if (opts.default !== undefined) changes.defaultValue = opts.default === "null" ? null : opts.default;
+      if (opts.comment !== undefined) changes.comment = opts.comment === "null" ? null : opts.comment;
+      const autoIncrement = parseBoolFlag(opts.autoIncrement);
+      if (autoIncrement !== undefined) changes.autoIncrement = autoIncrement;
 
       const updated = updateColumn(doc, tableId, columnId, changes);
       await client.updateDiagram(diagramId, updated).catch(handleError);
       console.log(`Column "${col.name}" (${columnId}) updated.`);
+    }
+  );
+
+update
+  .command("rel <diagramId> <relationshipId>")
+  .description("Update relationship properties (FK column mapping, cardinality, etc.)")
+  .option("--source-cols <ids>", "Comma-separated FK column IDs on the source table")
+  .option("--target-cols <ids>", "Comma-separated referenced column IDs on the target table")
+  .option("--cardinality <value>", "one-to-one | one-to-many | many-to-one")
+  .option("--name <name>", "Constraint name")
+  .option("--on-delete <action>", "cascade | restrict | set-null | no-action")
+  .option("--on-update <action>", "cascade | restrict | set-null | no-action")
+  .option("--identifying [bool]", "Identifying relationship: true or false")
+  .action(
+    async (
+      diagramId: string,
+      relationshipId: string,
+      opts: {
+        sourceCols?: string;
+        targetCols?: string;
+        cardinality?: string;
+        name?: string;
+        onDelete?: string;
+        onUpdate?: string;
+        identifying?: string | boolean;
+      }
+    ) => {
+      const { content: doc } = await client.getDiagram(diagramId).catch(handleError);
+      const rel = doc.relationships.find((r) => r.id === relationshipId);
+      if (!rel) { console.error(`Relationship ID "${relationshipId}" not found`); process.exit(1); }
+
+      const validCardinalities = ["one-to-one", "one-to-many", "many-to-one"];
+      if (opts.cardinality !== undefined && !validCardinalities.includes(opts.cardinality)) {
+        console.error(`Invalid --cardinality. Use: ${validCardinalities.join(" | ")}`);
+        process.exit(1);
+      }
+      assertReferentialAction(opts.onDelete, "--on-delete");
+      assertReferentialAction(opts.onUpdate, "--on-update");
+
+      const src = doc.entities.find((e) => e.id === rel.sourceEntityId);
+      const tgt = doc.entities.find((e) => e.id === rel.targetEntityId);
+
+      const patch: Partial<Omit<DiagramRelationship, "id">> = {};
+      if (opts.sourceCols !== undefined) {
+        const ids = parseIdList(opts.sourceCols);
+        if (src) assertColumnsExist(src, ids, "Source");
+        patch.sourceColumnIds = ids;
+      }
+      if (opts.targetCols !== undefined) {
+        const ids = parseIdList(opts.targetCols);
+        if (tgt) assertColumnsExist(tgt, ids, "Target");
+        patch.targetColumnIds = ids;
+      }
+      // 부분 업데이트여도 최종 두 배열 길이가 맞아야 export FK가 유효하다.
+      const nextSrc = patch.sourceColumnIds ?? rel.sourceColumnIds;
+      const nextTgt = patch.targetColumnIds ?? rel.targetColumnIds;
+      if (nextSrc.length !== nextTgt.length) {
+        console.error(
+          `source (${nextSrc.length}) and target (${nextTgt.length}) FK columns must map the same number of columns`
+        );
+        process.exit(1);
+      }
+      if (opts.cardinality !== undefined) patch.cardinality = opts.cardinality as RelationshipCardinality;
+      if (opts.name !== undefined) patch.name = opts.name;
+      if (opts.onDelete !== undefined) patch.onDelete = opts.onDelete as ReferentialAction;
+      if (opts.onUpdate !== undefined) patch.onUpdate = opts.onUpdate as ReferentialAction;
+      const identifying = parseBoolFlag(opts.identifying);
+      if (identifying !== undefined) patch.identifying = identifying;
+
+      const updated = updateRelationship(doc, relationshipId, patch);
+      await client.updateDiagram(diagramId, updated).catch(handleError);
+      const srcName = src?.name ?? rel.sourceEntityId;
+      const tgtName = tgt?.name ?? rel.targetEntityId;
+      console.log(`Relationship "${srcName} → ${tgtName}" (${relationshipId}) updated.`);
     }
   );
 
