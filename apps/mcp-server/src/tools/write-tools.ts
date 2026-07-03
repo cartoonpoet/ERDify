@@ -10,9 +10,28 @@ import {
   removeColumn,
   addRelationship,
   removeRelationship,
+  updateRelationship,
 } from "@erdify/domain";
-import type { DiagramColumn, DiagramRelationship, RelationshipCardinality } from "@erdify/domain";
+import type {
+  DiagramColumn,
+  DiagramEntity,
+  DiagramRelationship,
+  ReferentialAction,
+  RelationshipCardinality,
+} from "@erdify/domain";
 import { client } from "../client.js";
+
+const referentialActionSchema = z.enum(["cascade", "restrict", "set-null", "no-action"]);
+const cardinalitySchema = z.enum(["one-to-one", "one-to-many", "many-to-one"]);
+
+/** 관계 컬럼 매핑에 쓰인 컬럼 id가 해당 테이블에 실제로 존재하는지 검증 (빈괄호/미해결 FK 예방) */
+export function assertColumnsExist(entity: DiagramEntity, columnIds: string[], side: string): void {
+  const known = new Set(entity.columns.map((c) => c.id));
+  const missing = columnIds.filter((id) => !known.has(id));
+  if (missing.length > 0) {
+    throw new Error(`${side} table "${entity.name}" has no column(s): ${missing.join(", ")}`);
+  }
+}
 
 const columnInputSchema = z.object({
   name: z.string().describe("Column name"),
@@ -181,7 +200,7 @@ export const registerWriteTools = (server: McpServer): void => {
 
   server.tool(
     "add_relationship",
-    "Add a foreign key relationship between two tables. Returns the new relationship ID.",
+    "Add a foreign key relationship between two tables. Provide sourceColumnIds/targetColumnIds so the FK columns are known — otherwise the DDL export downgrades the FK to a comment. Returns the new relationship ID.",
     {
       diagramId: z.string(),
       sourceTableId: z
@@ -190,28 +209,60 @@ export const registerWriteTools = (server: McpServer): void => {
       targetTableId: z
         .string()
         .describe("ID of the table being referenced (from get_diagram)"),
-      cardinality: z
-        .enum(["one-to-one", "one-to-many", "many-to-one"])
-        .describe("Relationship cardinality"),
+      cardinality: cardinalitySchema.describe("Relationship cardinality"),
+      sourceColumnIds: z
+        .array(z.string())
+        .optional()
+        .describe("FK column IDs on the source table, ordered to match targetColumnIds"),
+      targetColumnIds: z
+        .array(z.string())
+        .optional()
+        .describe("Referenced column IDs on the target table (usually its PK), same order/length as sourceColumnIds"),
+      name: z.string().optional().describe("Optional constraint name"),
+      onDelete: referentialActionSchema.optional().describe("Defaults to no-action"),
+      onUpdate: referentialActionSchema.optional().describe("Defaults to no-action"),
+      identifying: z.boolean().optional().describe("Defaults to false"),
     },
-    async ({ diagramId, sourceTableId, targetTableId, cardinality }) => {
+    async ({
+      diagramId,
+      sourceTableId,
+      targetTableId,
+      cardinality,
+      sourceColumnIds,
+      targetColumnIds,
+      name,
+      onDelete,
+      onUpdate,
+      identifying,
+    }) => {
       const { content: doc } = await client.getDiagram(diagramId);
       const entityById = new Map(doc.entities.map((e) => [e.id, e]));
       const srcEntity = entityById.get(sourceTableId);
       const tgtEntity = entityById.get(targetTableId);
       if (!srcEntity) throw new Error(`Source table ID "${sourceTableId}" not found`);
       if (!tgtEntity) throw new Error(`Target table ID "${targetTableId}" not found`);
+
+      const srcCols = sourceColumnIds ?? [];
+      const tgtCols = targetColumnIds ?? [];
+      assertColumnsExist(srcEntity, srcCols, "Source");
+      assertColumnsExist(tgtEntity, tgtCols, "Target");
+      if (srcCols.length !== tgtCols.length) {
+        throw new Error(
+          `sourceColumnIds (${srcCols.length}) and targetColumnIds (${tgtCols.length}) must have the same length`
+        );
+      }
+
       const relationship: DiagramRelationship = {
         id: randomUUID(),
-        name: "",
+        name: name ?? "",
         sourceEntityId: sourceTableId,
-        sourceColumnIds: [],
+        sourceColumnIds: srcCols,
         targetEntityId: targetTableId,
-        targetColumnIds: [],
+        targetColumnIds: tgtCols,
         cardinality: cardinality as RelationshipCardinality,
-        onDelete: "no-action",
-        onUpdate: "no-action",
-        identifying: false,
+        onDelete: (onDelete ?? "no-action") as ReferentialAction,
+        onUpdate: (onUpdate ?? "no-action") as ReferentialAction,
+        identifying: identifying ?? false,
       };
       const updated = addRelationship(doc, relationship);
       await client.updateDiagram(diagramId, updated);
@@ -223,6 +274,75 @@ export const registerWriteTools = (server: McpServer): void => {
             text: `Relationship added: ${sourceTableId} → ${targetTableId} (${cardinality}). relationshipId=${relationship.id}.`,
           },
         ],
+      };
+    }
+  );
+
+  server.tool(
+    "update_relationship",
+    "Update an existing relationship — set the FK column mapping (sourceColumnIds/targetColumnIds) or its attributes. Only provided fields change.",
+    {
+      diagramId: z.string(),
+      relationshipId: z.string().describe("ID of the relationship (from get_diagram)"),
+      sourceColumnIds: z
+        .array(z.string())
+        .optional()
+        .describe("FK column IDs on the source table, ordered to match targetColumnIds"),
+      targetColumnIds: z
+        .array(z.string())
+        .optional()
+        .describe("Referenced column IDs on the target table, same order/length as sourceColumnIds"),
+      cardinality: cardinalitySchema.optional(),
+      name: z.string().optional().describe("Constraint name"),
+      onDelete: referentialActionSchema.optional(),
+      onUpdate: referentialActionSchema.optional(),
+      identifying: z.boolean().optional(),
+    },
+    async ({
+      diagramId,
+      relationshipId,
+      sourceColumnIds,
+      targetColumnIds,
+      cardinality,
+      name,
+      onDelete,
+      onUpdate,
+      identifying,
+    }) => {
+      const { content: doc } = await client.getDiagram(diagramId);
+      const rel = doc.relationships.find((r) => r.id === relationshipId);
+      if (!rel) throw new Error(`Relationship ID "${relationshipId}" not found`);
+      const entityById = new Map(doc.entities.map((e) => [e.id, e]));
+      const srcEntity = entityById.get(rel.sourceEntityId);
+      const tgtEntity = entityById.get(rel.targetEntityId);
+
+      // 컬럼 매핑을 바꾸면 존재/개수 검증. 부분 업데이트 시에도 최종 두 배열의 길이가 맞아야 한다.
+      if (sourceColumnIds !== undefined && srcEntity) assertColumnsExist(srcEntity, sourceColumnIds, "Source");
+      if (targetColumnIds !== undefined && tgtEntity) assertColumnsExist(tgtEntity, targetColumnIds, "Target");
+      const nextSrc = sourceColumnIds ?? rel.sourceColumnIds;
+      const nextTgt = targetColumnIds ?? rel.targetColumnIds;
+      if (nextSrc.length !== nextTgt.length) {
+        throw new Error(
+          `sourceColumnIds (${nextSrc.length}) and targetColumnIds (${nextTgt.length}) must have the same length`
+        );
+      }
+
+      const patch: Partial<Omit<DiagramRelationship, "id">> = {};
+      if (sourceColumnIds !== undefined) patch.sourceColumnIds = sourceColumnIds;
+      if (targetColumnIds !== undefined) patch.targetColumnIds = targetColumnIds;
+      if (cardinality !== undefined) patch.cardinality = cardinality as RelationshipCardinality;
+      if (name !== undefined) patch.name = name;
+      if (onDelete !== undefined) patch.onDelete = onDelete as ReferentialAction;
+      if (onUpdate !== undefined) patch.onUpdate = onUpdate as ReferentialAction;
+      if (identifying !== undefined) patch.identifying = identifying;
+
+      const updated = updateRelationship(doc, relationshipId, patch);
+      await client.updateDiagram(diagramId, updated);
+      const srcName = srcEntity?.name ?? rel.sourceEntityId;
+      const tgtName = tgtEntity?.name ?? rel.targetEntityId;
+      void client.recordToolCall(diagramId, "update_relationship", `"${srcName}" → "${tgtName}" 관계 수정`).catch(() => {});
+      return {
+        content: [{ type: "text", text: `Relationship "${srcName} → ${tgtName}" (${relationshipId}) updated.` }],
       };
     }
   );
