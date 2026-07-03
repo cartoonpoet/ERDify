@@ -295,3 +295,44 @@ describe("generateDdlReport — 식별자/기본값/타입 검증 (T4)", () => {
     expect(warnings.map((w) => w.code)).toContain("type_sanitized");
   });
 });
+
+// users(id PK) ← orders(user_id) FK를 세팅한 mysql 다이어그램
+function docWithFk(targetColIsPk = true) {
+  let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+  doc = addEntity(doc, { id: "users", name: "users" });
+  doc = addColumn(doc, "users", col({ id: "u_id", name: "id", primaryKey: targetColIsPk }));
+  doc = addEntity(doc, { id: "orders", name: "orders" });
+  doc = addColumn(doc, "orders", col({ id: "o_uid", name: "user_id", primaryKey: false }));
+  return addRelationship(doc, rel({ targetColumnIds: ["u_id"] }));
+}
+
+describe("generateDdlReport — 참조 무결성 검증 (T6)", () => {
+  it("대상 컬럼이 PK면 경고가 없다", () => {
+    const { warnings } = generateDdlReport(docWithFk(true));
+    expect(warnings.filter((w) => w.code === "fk_target_not_keyed")).toHaveLength(0);
+  });
+
+  it("대상 컬럼이 키가 아니면 fk_target_not_keyed 경고 (ERROR 1822 방지)", () => {
+    const { sql, warnings } = generateDdlReport(docWithFk(false));
+    expect(warnings.map((w) => w.code)).toContain("fk_target_not_keyed");
+    expect(sql).toContain("FOREIGN KEY (`user_id`)"); // 경고만, SQL은 그대로 출력
+  });
+});
+
+describe("generateDdlReport — 민감정보 경고 (T7)", () => {
+  it("컬럼 comment의 사설 IP를 감지한다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "log" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "user", type: "varchar(50)", primaryKey: false, comment: "예: root@10.255.1.2" }));
+    const { warnings } = generateDdlReport(doc);
+    expect(warnings.map((w) => w.code)).toContain("sensitive_info");
+  });
+
+  it("일반 comment에는 경고하지 않는다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "log" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "user", type: "varchar(50)", primaryKey: false, comment: "접속 사용자" }));
+    const { warnings } = generateDdlReport(doc);
+    expect(warnings.filter((w) => w.code === "sensitive_info")).toHaveLength(0);
+  });
+});

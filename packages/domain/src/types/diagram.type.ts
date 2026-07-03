@@ -100,7 +100,9 @@ export type DdlWarningCode =
   | "autoincrement_multiple"
   | "identifier_whitespace"
   | "default_autoquoted"
-  | "type_sanitized";
+  | "type_sanitized"
+  | "fk_target_not_keyed"
+  | "sensitive_info";
 
 export interface DdlWarning {
   code: DdlWarningCode;

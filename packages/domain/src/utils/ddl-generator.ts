@@ -184,6 +184,24 @@ function resolveColumns(ids: string[], entity: DiagramEntity): ResolvedColumn[] 
   });
 }
 
+/** target이 key의 선두 prefix인지 (MySQL FK는 참조 컬럼이 어떤 인덱스의 leftmost 컬럼이어야 함) */
+function isLeadingPrefix(target: string[], key: string[]): boolean {
+  if (target.length === 0 || target.length > key.length) return false;
+  return target.every((id, i) => id === key[i]);
+}
+
+/** FK가 참조하는 대상 컬럼이 대상 테이블의 PK/인덱스로 커버되는지 (미커버 시 MySQL ERROR 1822) */
+function isTargetKeyed(entity: DiagramEntity, indexes: DiagramIndex[], targetColumnIds: string[]): boolean {
+  const pkIds = entity.columns
+    .filter((c) => c.primaryKey)
+    .sort((a, b) => a.ordinal - b.ordinal)
+    .map((c) => c.id);
+  if (isLeadingPrefix(targetColumnIds, pkIds)) return true;
+  return indexes
+    .filter((idx) => idx.entityId === entity.id)
+    .some((idx) => isLeadingPrefix(targetColumnIds, idx.columnIds));
+}
+
 /**
  * FK ALTER TABLE 문을 생성한다. 컬럼 매핑을 확정할 수 없으면(빈 컬럼/미해결 id/개수 불일치)
  * 문법 오류 SQL(`FOREIGN KEY () REFERENCES x ()`) 대신 SQL 주석으로 강등하고 경고를 남긴다.
@@ -192,6 +210,7 @@ function resolveColumns(ids: string[], entity: DiagramEntity): ResolvedColumn[] 
 function fkDdl(
   rel: DiagramRelationship,
   entities: DiagramEntity[],
+  indexes: DiagramIndex[],
   dialect: DiagramDocument["dialect"],
   warnings: DdlWarning[],
 ): string {
@@ -233,6 +252,19 @@ function fkDdl(
       message: `Skipped FK "${constraintName}" (${sourceEntity.name} -> ${targetEntity.name}): ${problems.join("; ")}.`,
     });
     return `-- [erdify] Skipped FK ${constraintName} (${sourceEntity.name} -> ${targetEntity.name}): ${problems.join("; ")}`;
+  }
+
+  // 대상 컬럼이 대상 테이블의 키로 커버되지 않으면 MySQL이 FK 생성을 거부한다(ERROR 1822).
+  if (
+    (dialect === "mysql" || dialect === "mariadb") &&
+    !isTargetKeyed(targetEntity, indexes, rel.targetColumnIds)
+  ) {
+    warnings.push({
+      code: "fk_target_not_keyed",
+      entity: sourceEntity.name,
+      relationship: constraintName,
+      message: `FK "${constraintName}" references ${targetEntity.name}(${tgt.map((r) => r.name).join(", ")}) which is not covered by a PK/unique key on "${targetEntity.name}" — MySQL will reject this (ERROR 1822).`,
+    });
   }
 
   const srcCols = src.map((r) => quote(r.name, dialect)).join(", ");
@@ -325,6 +357,33 @@ function collectIdentifierWarnings(doc: DiagramDocument, warnings: DdlWarning[])
   }
 }
 
+// 사설 IP(10.x, 172.16~31.x, 192.168.x) / 이메일 패턴 — export 산출물로 내부망 정보가 새는 것을 방지
+const PRIVATE_IP_RE = /\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b/;
+const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
+
+/** COMMENT/DEFAULT에 사설 IP·이메일이 있으면 경고 (SQL은 그대로 출력 — warn-only) */
+function checkSensitiveInfo(doc: DiagramDocument, warnings: DdlWarning[]): void {
+  const scan = (text: string | null, where: string, entityName: string, columnName?: string): void => {
+    if (!text) return;
+    const kind = PRIVATE_IP_RE.test(text) ? "private IP" : EMAIL_RE.test(text) ? "email" : null;
+    if (!kind) return;
+    warnings.push({
+      code: "sensitive_info",
+      entity: entityName,
+      ...(columnName ? { column: columnName } : {}),
+      message: `Possible ${kind} in ${where} of "${columnName ? `${entityName}.${columnName}` : entityName}" — review before sharing the exported DDL.`,
+    });
+  };
+  for (const entity of doc.entities) {
+    const entityName = entity.name.trim();
+    scan(entity.comment, "table comment", entityName);
+    for (const col of entity.columns) {
+      scan(col.comment, "column comment", entityName, col.name.trim());
+      scan(col.defaultValue, "default value", entityName, col.name.trim());
+    }
+  }
+}
+
 /**
  * DDL과 export 경고를 함께 반환하는 export 채널.
  * 실행 불가능한 항목은 SQL 주석으로 강등되고 `warnings`에 기록된다.
@@ -335,6 +394,7 @@ export function generateDdlReport(doc: DiagramDocument): DdlReport {
   const parts: string[] = [];
 
   collectIdentifierWarnings(doc, warnings);
+  checkSensitiveInfo(doc, warnings);
 
   for (const entity of entities) {
     const table = entityDdl(entity, dialect, warnings);
@@ -351,7 +411,7 @@ export function generateDdlReport(doc: DiagramDocument): DdlReport {
   }
 
   const fkParts = relationships
-    .map((r) => fkDdl(r, entities, dialect, warnings))
+    .map((r) => fkDdl(r, entities, indexes, dialect, warnings))
     .filter(Boolean);
 
   if (fkParts.length > 0) parts.push(fkParts.join("\n\n"));
