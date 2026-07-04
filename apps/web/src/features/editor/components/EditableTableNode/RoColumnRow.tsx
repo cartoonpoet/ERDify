@@ -1,5 +1,6 @@
 import type { DiagramColumn } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import { useColumnGlow } from "./useColumnGlow";
 import * as css from "./editable-table-node.css";
 
 interface RoColumnRowProps {
@@ -8,13 +9,12 @@ interface RoColumnRowProps {
 
 export const RoColumnRow = ({ col }: RoColumnRowProps) => {
   const fkColumnIds = useEditorStore((s) => s.fkColumnIds);
-  const isColFlashing = useEditorStore((s) => s.flashingColumnId === col.id);
-  const setFlashingColumnId = useEditorStore((s) => s.setFlashingColumnId);
+  const { glowClassName, onGlowAnimationEnd } = useColumnGlow(col.id);
 
   return (
     <li
-      className={[css.roColRow, isColFlashing ? css.columnRowGlow : ""].join(" ")}
-      onAnimationEnd={() => setFlashingColumnId(null)}
+      className={[css.roColRow, glowClassName].join(" ")}
+      onAnimationEnd={onGlowAnimationEnd}
     >
       <div className={css.roBadgeCell}>
         {col.primaryKey && <span className={css.roPkBadge}>PK</span>}

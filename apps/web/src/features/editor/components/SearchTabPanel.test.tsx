@@ -1,13 +1,15 @@
 import React from "react";
+import type * as XYFlowModule from "@xyflow/react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SearchTabPanel } from "./SearchTabPanel";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import type { EditorState } from "@/features/editor/store/editor-store.types";
 
 vi.mock("@/features/editor/store/useEditorStore");
 
 const mockFitView = vi.fn();
 vi.mock("@xyflow/react", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@xyflow/react")>();
+  const actual = await importOriginal<typeof XYFlowModule>();
   return {
     ...actual,
     useReactFlow: vi.fn(() => ({ fitView: mockFitView })),
@@ -68,13 +70,13 @@ const mockApplyNodeChanges = vi.fn();
 const mockSetFlashingColumnId = vi.fn();
 
 const setupStore = () => {
-  vi.mocked(useEditorStore).mockImplementation((selector: any) =>
+  vi.mocked(useEditorStore).mockImplementation((selector: (s: EditorState) => unknown) =>
     selector({
       document: { entities },
       nodes,
       applyNodeChanges: mockApplyNodeChanges,
       setFlashingColumnId: mockSetFlashingColumnId,
-    })
+    } as unknown as EditorState)
   );
 };
 
@@ -102,6 +104,8 @@ describe("SearchTabPanel", () => {
       maxZoom: 1.2,
       padding: 0.4,
     });
+    // 테이블 선택 시 이전 컬럼 글로우를 해제한다
+    expect(mockSetFlashingColumnId).toHaveBeenCalledWith(null);
   });
 
   it('컬럼명 부분일치·대소문자무시 시 "테이블 > 컬럼" 항목을 표시한다', () => {

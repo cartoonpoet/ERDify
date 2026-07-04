@@ -4,6 +4,7 @@ import { IMEInput } from "./IMEInput";
 import { TypeSelect } from "./TypeSelect";
 import { ColumnSuggestions } from "./ColumnSuggestions";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import { useColumnGlow } from "./useColumnGlow";
 import * as css from "./editable-table-node.css";
 import { removeColumn, updateColumn } from "@erdify/domain";
 
@@ -28,13 +29,12 @@ export const ColumnRow = ({
 }: ColumnRowProps) => {
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const fkColumnIds = useEditorStore((s) => s.fkColumnIds);
-  const isColFlashing = useEditorStore((s) => s.flashingColumnId === col.id);
-  const setFlashingColumnId = useEditorStore((s) => s.setFlashingColumnId);
+  const { glowClassName, onGlowAnimationEnd } = useColumnGlow(col.id);
 
   return (
     <div
-      className={[css.editColumnItem, isColFlashing ? css.columnRowGlow : ""].join(" ")}
-      onAnimationEnd={() => setFlashingColumnId(null)}
+      className={[css.editColumnItem, glowClassName].join(" ")}
+      onAnimationEnd={onGlowAnimationEnd}
     >
       {/* PK */}
       <div className={css.checkboxCell}>
