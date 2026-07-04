@@ -743,3 +743,14 @@ const glowFlash = keyframes({
 export const tableNodeGlow = style({
   animation: `${glowFlash} 1.4s ease-out forwards`,
 });
+
+// ─── 컬럼 검색 글로우 플래시 ──────────────────────────────
+const columnGlowFlash = keyframes({
+  "0%":   { backgroundColor: "rgba(99, 102, 241, 0.35)", boxShadow: "inset 0 0 0 1px rgba(99, 102, 241, 0.85)" },
+  "20%":  { backgroundColor: "rgba(99, 102, 241, 0.35)", boxShadow: "inset 0 0 0 1px rgba(99, 102, 241, 0.85)" },
+  "100%": { backgroundColor: "rgba(99, 102, 241, 0)",    boxShadow: "inset 0 0 0 1px rgba(99, 102, 241, 0)" },
+});
+
+export const columnRowGlow = style({
+  animation: `${columnGlowFlash} 1.4s ease-out forwards`,
+});

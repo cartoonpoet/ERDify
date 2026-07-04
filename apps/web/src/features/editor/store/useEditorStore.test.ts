@@ -60,7 +60,6 @@ describe("useEditorStore — 우측 사이드바 UI 슬라이스", () => {
     useEditorStore.setState({
       rightSidebarActiveTab: 0,
       rightSidebarPanelOpen: true,
-      searchOpen: false,
     });
   });
 
@@ -89,11 +88,6 @@ describe("useEditorStore — 우측 사이드바 UI 슬라이스", () => {
     useEditorStore.getState().openSearchTab();
     expect(useEditorStore.getState().rightSidebarActiveTab).toBe(1);
     expect(useEditorStore.getState().rightSidebarPanelOpen).toBe(true);
-  });
-
-  it("openSearchTab은 searchOpen(플로팅 패널)을 건드리지 않는다", () => {
-    useEditorStore.getState().openSearchTab();
-    expect(useEditorStore.getState().searchOpen).toBe(false);
   });
 });
 
