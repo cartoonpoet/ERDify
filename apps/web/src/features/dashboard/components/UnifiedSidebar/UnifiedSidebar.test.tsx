@@ -22,6 +22,20 @@ vi.mock("@/shared/api/diagrams.api", () => ({
   listDiagrams: vi.fn(),
 }));
 
+// 모달 열기는 전역 스토어로, 삭제는 useDashboardActions로 이동했다.
+// 리프 컴포넌트가 이들을 직접 구독/호출하므로 여기서 모킹한다.
+const mockOpenModal = vi.fn();
+vi.mock("@/features/dashboard/store/useDashboardStore", () => ({
+  useDashboardStore: (selector: (s: { openModal: typeof mockOpenModal }) => unknown) =>
+    selector({ openModal: mockOpenModal }),
+}));
+
+const mockDeleteOrg = vi.fn();
+const mockDeleteProject = vi.fn();
+vi.mock("@/features/dashboard/hooks/useDashboardActions", () => ({
+  useDashboardActions: () => ({ deleteOrg: mockDeleteOrg, deleteProject: mockDeleteProject }),
+}));
+
 import { listMyOrganizations } from "@/shared/api/organizations.api";
 import { listProjects } from "@/shared/api/projects.api";
 import { listDiagrams } from "@/shared/api/diagrams.api";
@@ -45,14 +59,6 @@ const diagrams: DiagramListItem[] = [
     shareToken: null, shareExpiresAt: null,
   },
 ];
-
-const defaultProps = {
-  onDeleteOrg: vi.fn(),
-  onCreateOrg: vi.fn(),
-  onDeleteProject: vi.fn(),
-  onCreateProject: vi.fn(),
-  onCreateDiagram: vi.fn(),
-};
 
 const makeQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -83,58 +89,60 @@ const wrap = (
 describe("UnifiedSidebar", () => {
   beforeEach(() => {
     mockNavigate.mockClear();
+    mockOpenModal.mockClear();
+    mockDeleteOrg.mockClear();
+    mockDeleteProject.mockClear();
     vi.mocked(listMyOrganizations).mockResolvedValue(orgs);
     vi.mocked(listProjects).mockResolvedValue(projects);
     vi.mocked(listDiagrams).mockResolvedValue(diagrams);
   });
 
   it("선택된 조직 이름을 렌더링한다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     expect(await screen.findByText("Acme Corp")).toBeInTheDocument();
   });
 
   it("조직이 선택되지 않으면 프로젝트 트리를 렌더링하지 않는다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/" });
+    wrap(<UnifiedSidebar />, { initialPath: "/" });
     expect(await screen.findByText("조직을 선택하세요")).toBeInTheDocument();
     expect(screen.queryByText("Backend API")).not.toBeInTheDocument();
   });
 
   it("조직 셀렉터 클릭 시 드롭다운이 열린다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     const selectorBtn = (await screen.findByText("Acme Corp")).closest("button")!;
     fireEvent.click(selectorBtn);
     expect(screen.getByText("My Team")).toBeInTheDocument();
   });
 
   it("드롭다운에서 조직 클릭 시 navigate가 호출된다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     fireEvent.click((await screen.findByText("Acme Corp")).closest("button")!);
     fireEvent.click(screen.getByText("My Team").closest("button")!);
     expect(mockNavigate).toHaveBeenCalledWith("/org-2");
   });
 
-  it("드롭다운 '+ 새 조직 만들기' 클릭 시 onCreateOrg가 호출된다", async () => {
-    const onCreateOrg = vi.fn();
-    wrap(<UnifiedSidebar {...defaultProps} onCreateOrg={onCreateOrg} />, { initialPath: "/org-1" });
+  it("드롭다운 '+ 새 조직 만들기' 클릭 시 org 모달이 열린다", async () => {
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     fireEvent.click((await screen.findByText("Acme Corp")).closest("button")!);
     fireEvent.click(screen.getByText("+ 새 조직 만들기"));
-    expect(onCreateOrg).toHaveBeenCalledTimes(1);
+    expect(mockOpenModal).toHaveBeenCalledWith("org");
   });
 
   it("조직이 선택되면 프로젝트 목록을 렌더링한다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     expect(await screen.findByText("Backend API")).toBeInTheDocument();
     expect(screen.getByText("Auth Service")).toBeInTheDocument();
   });
 
   it("프로젝트 클릭 시 navigate가 호출된다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     fireEvent.click((await screen.findByText("Backend API")).closest("button")!);
     expect(mockNavigate).toHaveBeenCalledWith("/org-1/p1");
   });
 
   it("선택된 프로젝트가 있으면 ERD 목록을 렌더링한다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, {
+    wrap(<UnifiedSidebar />, {
       initialPath: "/org-1/p1",
       routePattern: "/:orgId/:projectId",
     });
@@ -142,7 +150,7 @@ describe("UnifiedSidebar", () => {
   });
 
   it("ERD 항목 클릭 시 해당 다이어그램 경로로 navigate가 호출된다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, {
+    wrap(<UnifiedSidebar />, {
       initialPath: "/org-1/p1",
       routePattern: "/:orgId/:projectId",
     });
@@ -151,50 +159,46 @@ describe("UnifiedSidebar", () => {
   });
 
   it("펼쳐진 프로젝트에 '+ 새 ERD 만들기' 버튼이 표시된다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, {
+    wrap(<UnifiedSidebar />, {
       initialPath: "/org-1/p1",
       routePattern: "/:orgId/:projectId",
     });
     expect(await screen.findByText("+ 새 ERD 만들기")).toBeInTheDocument();
   });
 
-  it("'+ 새 ERD 만들기' 클릭 시 onCreateDiagram이 호출된다", async () => {
-    const onCreateDiagram = vi.fn();
-    wrap(<UnifiedSidebar {...defaultProps} onCreateDiagram={onCreateDiagram} />, {
+  it("'+ 새 ERD 만들기' 클릭 시 diagram 모달이 열린다", async () => {
+    wrap(<UnifiedSidebar />, {
       initialPath: "/org-1/p1",
       routePattern: "/:orgId/:projectId",
     });
     fireEvent.click(await screen.findByText("+ 새 ERD 만들기"));
-    expect(onCreateDiagram).toHaveBeenCalledTimes(1);
+    expect(mockOpenModal).toHaveBeenCalledWith("diagram");
   });
 
-  it("'+ 새 프로젝트' 클릭 시 onCreateProject가 호출된다", async () => {
-    const onCreateProject = vi.fn();
-    wrap(<UnifiedSidebar {...defaultProps} onCreateProject={onCreateProject} />, { initialPath: "/org-1" });
+  it("'+ 새 프로젝트' 클릭 시 project 모달이 열린다", async () => {
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     fireEvent.click(await screen.findByText("+ 새 프로젝트"));
-    expect(onCreateProject).toHaveBeenCalledTimes(1);
+    expect(mockOpenModal).toHaveBeenCalledWith("project");
   });
 
-  it("프로젝트 삭제 버튼 클릭 후 확인 시 onDeleteProject가 호출된다", async () => {
+  it("프로젝트 삭제 버튼 클릭 후 확인 시 deleteProject가 호출된다", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    const onDeleteProject = vi.fn();
-    wrap(<UnifiedSidebar {...defaultProps} onDeleteProject={onDeleteProject} />, { initialPath: "/org-1" });
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     fireEvent.click(await screen.findByRole("button", { name: "Backend API 삭제" }));
-    expect(onDeleteProject).toHaveBeenCalledWith("p1");
+    expect(mockDeleteProject).toHaveBeenCalledWith("p1");
     vi.restoreAllMocks();
   });
 
-  it("프로젝트 삭제 버튼 클릭 후 취소 시 onDeleteProject가 호출되지 않는다", async () => {
+  it("프로젝트 삭제 버튼 클릭 후 취소 시 deleteProject가 호출되지 않는다", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(false);
-    const onDeleteProject = vi.fn();
-    wrap(<UnifiedSidebar {...defaultProps} onDeleteProject={onDeleteProject} />, { initialPath: "/org-1" });
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     fireEvent.click(await screen.findByRole("button", { name: "Backend API 삭제" }));
-    expect(onDeleteProject).not.toHaveBeenCalled();
+    expect(mockDeleteProject).not.toHaveBeenCalled();
     vi.restoreAllMocks();
   });
 
   it("조직 선택 후 드롭다운이 닫힌다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     fireEvent.click((await screen.findByText("Acme Corp")).closest("button")!);
     expect(screen.getByText("My Team")).toBeInTheDocument();
     fireEvent.click(screen.getByText("My Team").closest("button")!);
@@ -202,32 +206,32 @@ describe("UnifiedSidebar", () => {
   });
 
   it("API 키 버튼은 조직 미선택 상태에서도 렌더링된다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/" });
+    wrap(<UnifiedSidebar />, { initialPath: "/" });
     expect(await screen.findByText("API 키")).toBeInTheDocument();
   });
 
   it("API 키 버튼 클릭 시 조직이 없으면 navigate가 호출되지 않는다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/" });
+    wrap(<UnifiedSidebar />, { initialPath: "/" });
     fireEvent.click((await screen.findByText("API 키")).closest("button")!);
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it("API 키 버튼 클릭 시 조직이 있으면 api-keys 경로로 navigate가 호출된다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     await screen.findByText("Acme Corp"); // wait for orgs to load
     fireEvent.click(screen.getByText("API 키").closest("button")!);
     expect(mockNavigate).toHaveBeenCalledWith("/org-1/api-keys");
   });
 
   it("멤버 관리 버튼 클릭 시 members 경로로 navigate가 호출된다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+    wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
     await screen.findByText("Acme Corp");
     fireEvent.click(screen.getByText("멤버 관리").closest("button")!);
     expect(mockNavigate).toHaveBeenCalledWith("/org-1/members");
   });
 
   it("선택된 프로젝트를 다시 클릭하면 프로젝트 목록 루트로 navigate가 호출된다", async () => {
-    wrap(<UnifiedSidebar {...defaultProps} />, {
+    wrap(<UnifiedSidebar />, {
       initialPath: "/org-1/p1",
       routePattern: "/:orgId/:projectId",
     });
@@ -238,20 +242,20 @@ describe("UnifiedSidebar", () => {
   describe("API 로드 실패 케이스", () => {
     it("organizations 로드 실패 시 빈 조직 목록으로 렌더링된다", async () => {
       vi.mocked(listMyOrganizations).mockRejectedValue(new Error("Network error"));
-      wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/" });
+      wrap(<UnifiedSidebar />, { initialPath: "/" });
       expect(await screen.findByText("조직을 선택하세요")).toBeInTheDocument();
     });
 
     it("projects 로드 실패 시 조직은 표시되고 프로젝트 목록은 비어 있다", async () => {
       vi.mocked(listProjects).mockRejectedValue(new Error("Network error"));
-      wrap(<UnifiedSidebar {...defaultProps} />, { initialPath: "/org-1" });
+      wrap(<UnifiedSidebar />, { initialPath: "/org-1" });
       expect(await screen.findByText("Acme Corp")).toBeInTheDocument();
       expect(screen.queryByText("Backend API")).not.toBeInTheDocument();
     });
 
     it("diagrams 로드 실패 시 프로젝트는 표시되고 ERD 목록은 비어 있다", async () => {
       vi.mocked(listDiagrams).mockRejectedValue(new Error("Network error"));
-      wrap(<UnifiedSidebar {...defaultProps} />, {
+      wrap(<UnifiedSidebar />, {
         initialPath: "/org-1/p1",
         routePattern: "/:orgId/:projectId",
       });

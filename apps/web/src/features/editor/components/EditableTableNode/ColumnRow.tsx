@@ -1,16 +1,15 @@
-import type { DiagramColumn, DiagramDocument } from "@erdify/domain";
+import type { DiagramColumn } from "@erdify/domain";
 import type { ColumnSuggestion } from "@erdify/contracts";
 import { IMEInput } from "./IMEInput";
 import { TypeSelect } from "./TypeSelect";
 import { ColumnSuggestions } from "./ColumnSuggestions";
+import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import * as css from "./editable-table-node.css";
 import { removeColumn, updateColumn } from "@erdify/domain";
 
 interface ColumnRowProps {
   col: DiagramColumn;
   entityId: string;
-  applyCommand: (fn: (doc: DiagramDocument) => DiagramDocument) => void;
-  fkColumnIds: Set<string>;
   activeSuggestionColId: string | null;
   suggestions: ColumnSuggestion[];
   onColumnNameInput: (columnId: string, value: string) => void;
@@ -21,14 +20,15 @@ interface ColumnRowProps {
 export const ColumnRow = ({
   col,
   entityId,
-  applyCommand,
-  fkColumnIds,
   activeSuggestionColId,
   suggestions,
   onColumnNameInput,
   onBlur,
   onSelectSuggestion,
 }: ColumnRowProps) => {
+  const applyCommand = useEditorStore((s) => s.applyCommand);
+  const fkColumnIds = useEditorStore((s) => s.fkColumnIds);
+
   return (
     <div className={css.editColumnItem}>
       {/* PK */}

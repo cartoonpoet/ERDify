@@ -10,19 +10,7 @@ import { SidebarDiagramList } from "./SidebarDiagramList";
 import { SidebarBottomBar } from "./SidebarBottomBar";
 import * as css from "./unified-sidebar.css";
 
-interface UnifiedSidebarProps {
-  onCreateOrg: () => void;
-  onDeleteOrg: (orgId: string) => void;
-  onCreateProject: () => void;
-  onDeleteProject: (projectId: string) => void;
-  onCreateDiagram: () => void;
-}
-
-export const UnifiedSidebar = ({
-  onCreateOrg, onDeleteOrg,
-  onCreateProject, onDeleteProject,
-  onCreateDiagram,
-}: UnifiedSidebarProps) => {
+export const UnifiedSidebar = () => {
   const { orgId, projectId } = useParams<{ orgId?: string; projectId?: string }>();
   const { pathname } = useLocation();
 
@@ -61,8 +49,6 @@ export const UnifiedSidebar = ({
         orgs={orgs}
         orgId={displayOrgId}
         projectCount={projects.length}
-        onDeleteOrg={onDeleteOrg}
-        onCreateOrg={onCreateOrg}
       />
       {displayOrgId && (
         <SidebarDiagramList
@@ -72,9 +58,6 @@ export const UnifiedSidebar = ({
           diagrams={diagrams}
           memberManagementActive={memberManagementActive}
           orgSettingsActive={orgSettingsActive}
-          onDeleteProject={onDeleteProject}
-          onCreateDiagram={onCreateDiagram}
-          onCreateProject={onCreateProject}
         />
       )}
       <SidebarBottomBar orgId={displayOrgId} apiKeysActive={apiKeysActive} />

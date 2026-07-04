@@ -2,20 +2,22 @@ import { useState } from "react";
 import type { FocusEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import type { OrgResponse } from "@/shared/api/organizations.api";
+import { useDashboardStore } from "@/features/dashboard/store/useDashboardStore";
+import { useDashboardActions } from "@/features/dashboard/hooks/useDashboardActions";
 import * as css from "./unified-sidebar.css";
 
 interface SidebarOrgSectionProps {
   orgs: OrgResponse[];
   orgId: string | undefined;
   projectCount: number;
-  onDeleteOrg: (id: string) => void;
-  onCreateOrg: () => void;
 }
 
 export const SidebarOrgSection = ({
-  orgs, orgId, projectCount, onDeleteOrg, onCreateOrg,
+  orgs, orgId, projectCount,
 }: SidebarOrgSectionProps) => {
   const navigate = useNavigate();
+  const openModal = useDashboardStore((s) => s.openModal);
+  const { deleteOrg } = useDashboardActions();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const selectedOrg = orgs.find((o) => o.id === orgId) ?? null;
 
@@ -81,7 +83,7 @@ export const SidebarOrgSection = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   if (window.confirm(`"${org.name}" 조직을 삭제하시겠습니까? 모든 프로젝트와 ERD가 함께 삭제됩니다.`)) {
-                    onDeleteOrg(org.id);
+                    deleteOrg(org.id);
                   }
                   setDropdownOpen(false);
                 }}
@@ -95,7 +97,7 @@ export const SidebarOrgSection = ({
             className={css.orgDropdownCreateBtn}
             onClick={(e) => {
               e.stopPropagation();
-              onCreateOrg();
+              openModal("org");
               setDropdownOpen(false);
             }}
           >
