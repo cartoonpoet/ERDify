@@ -39,7 +39,7 @@ export const DashboardPage = () => {
   const { data: me } = useQuery({ queryKey: queryKeys.me(), queryFn: getMe });
 
   const { activeModal, openModal, closeModal, searchQuery, searchProjectId, setSearch } = useDashboardStore();
-  const { deleteOrg, deleteProject, deleteDiagram, handleLogout, onOrgCreated, onProjectCreated, onDiagramCreated, onDiagramImported } = useDashboardActions();
+  const { deleteDiagram, handleLogout, onOrgCreated, onProjectCreated, onDiagramCreated, onDiagramImported } = useDashboardActions();
   const { menuOpen, toggleMenu, closeMenu, handleBlur } = useAvatarMenu();
   const { unread, markSeen, markAllSeen } = useAnnouncements();
 
@@ -106,13 +106,7 @@ export const DashboardPage = () => {
       </header>
 
       <div className={body}>
-        <UnifiedSidebar
-          onCreateOrg={() => openModal("org")}
-          onDeleteOrg={deleteOrg}
-          onCreateProject={() => openModal("project")}
-          onDeleteProject={deleteProject}
-          onCreateDiagram={() => openModal("diagram")}
-        />
+        <UnifiedSidebar />
         <QueryErrorBoundary variant="inline">
           <Outlet context={outletCtx} />
         </QueryErrorBoundary>

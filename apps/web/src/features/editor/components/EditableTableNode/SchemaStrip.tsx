@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { getSchemaColor } from "@/shared/utils/schema-colors";
+import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import * as css from "./schema-strip.css";
 
 type Props = {
   schema: string | null | undefined;
-  allSchemas: string[];
-  schemaColors?: Record<string, string>;
   onChange?: (s: string | null) => void;
 };
 
-export const SchemaStrip = ({ schema, allSchemas, schemaColors = {}, onChange }: Props) => {
+export const SchemaStrip = ({ schema, onChange }: Props) => {
+  const allSchemas = useEditorStore((s) => s.allSchemas);
+  const schemaColors = useEditorStore((s) => s.schemaColors);
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [inputVal, setInputVal] = useState("");

@@ -15,6 +15,7 @@ import { SchemaFilterSidebar } from "../components/SchemaFilterSidebar";
 import { ImportIntoEditorModal } from "../components/ImportIntoEditorModal";
 import { EditorPageSkeleton } from "./EditorPageSkeleton";
 import { useEditorPage } from "../hooks/useEditorPage";
+import { useEditorModals } from "../hooks/useEditorModals";
 import * as css from "./editor-page.css";
 
 export const EditorPage = () => {
@@ -22,19 +23,22 @@ export const EditorPage = () => {
     diagramId, data, isLoading,
     isDirty, isCollaborating,
     selectedRelationshipId, popoverPos,
+    isDuplicating,
+    saveVersion, isSavingVersion,
+    handleBack,
+    handleAddTable, handleSaveCopy,
+  } = useEditorPage();
+
+  const {
     showInvite, setShowInvite,
     showExport, setShowExport,
     showShare, setShowShare,
     showImport, setShowImport,
     showFileMenu,
     showSaveCopy, setShowSaveCopy,
-    isDuplicating,
-    saveVersion, isSavingVersion,
-    handleBack,
     handleFileMenuOpen, handleFileMenuClose,
     handleImportOpen, handleExportOpen, handleSaveCopyOpen,
-    handleAddTable, handleSaveCopy,
-  } = useEditorPage();
+  } = useEditorModals(diagramId);
 
   if (isLoading) {
     return <EditorPageSkeleton />;

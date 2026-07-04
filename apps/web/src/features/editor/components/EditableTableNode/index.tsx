@@ -65,7 +65,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
         {collaboratorColor && (
           <div className={css.collaboratorDot} style={{ background: collaboratorColor }} />
         )}
-        {entity.schema && <SchemaStrip schema={entity.schema} allSchemas={allSchemas} schemaColors={schemaColors} />}
+        {entity.schema && <SchemaStrip schema={entity.schema} />}
         <div
           className={css.tableNodeHeader}
           style={{
@@ -158,8 +158,6 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
       <Handle type="target" position={Position.Left} />
       <SchemaStrip
         schema={entity.schema ?? null}
-        allSchemas={allSchemas}
-        schemaColors={schemaColors}
         onChange={(s) => applyCommand((doc) => setEntitySchema(doc, entity.id, s))}
       />
 
@@ -211,8 +209,6 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
           key={col.id}
           col={col}
           entityId={entity.id}
-          applyCommand={applyCommand}
-          fkColumnIds={fkColumnIds}
           activeSuggestionColId={activeSuggestionColId}
           suggestions={suggestions}
           onColumnNameInput={handleColumnNameInput}
@@ -246,7 +242,6 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
         entityName={entity.name}
         entityColumns={entity.columns}
         entityIndexes={entityIndexes}
-        applyCommand={applyCommand}
       />
 
       {/* 시드 데이터 섹션 */}

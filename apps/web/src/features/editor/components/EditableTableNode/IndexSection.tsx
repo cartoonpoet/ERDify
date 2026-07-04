@@ -1,7 +1,8 @@
-import type { DiagramColumn, DiagramDocument, DiagramIndex } from "@erdify/domain";
+import type { DiagramColumn, DiagramIndex } from "@erdify/domain";
 import { addIndex, removeIndex, updateIndex } from "@erdify/domain";
 import { IMEInput } from "./IMEInput";
 import { IndexColumnSelect } from "./IndexColumnSelect";
+import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import * as css from "./editable-table-node.css";
 import { makeIndex } from "./constants";
 
@@ -10,7 +11,6 @@ interface IndexSectionProps {
   entityName: string;
   entityColumns: DiagramColumn[];
   entityIndexes: DiagramIndex[];
-  applyCommand: (fn: (doc: DiagramDocument) => DiagramDocument) => void;
 }
 
 export const IndexSection = ({
@@ -18,8 +18,9 @@ export const IndexSection = ({
   entityName,
   entityColumns,
   entityIndexes,
-  applyCommand,
 }: IndexSectionProps) => {
+  const applyCommand = useEditorStore((s) => s.applyCommand);
+
   return (
     <div className={css.indexSection}>
       <div className={css.indexSectionHeader}>

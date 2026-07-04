@@ -15,12 +15,6 @@ export const useEditorPage = () => {
   const { diagramId } = useParams<{ diagramId: string }>();
   const navigate = useNavigate();
 
-  const [showInvite, setShowInvite] = useState(false);
-  const [showExport, setShowExport] = useState(false);
-  const [showShare, setShowShare] = useState(false);
-  const [showImport, setShowImport] = useState(false);
-  const [showFileMenu, setShowFileMenu] = useState(false);
-  const [showSaveCopy, setShowSaveCopy] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
 
   const {
@@ -102,11 +96,6 @@ export const useEditorPage = () => {
   };
 
   const handleBack = () => navigate(-1);
-  const handleFileMenuOpen = () => setShowFileMenu(true);
-  const handleFileMenuClose = () => setShowFileMenu(false);
-  const handleImportOpen = () => { setShowFileMenu(false); setShowImport(true); };
-  const handleExportOpen = () => { setShowFileMenu(false); setShowExport(true); };
-  const handleSaveCopyOpen = () => { if (!diagramId) return; setShowFileMenu(false); setShowSaveCopy(true); };
 
   return {
     diagramId,
@@ -116,22 +105,10 @@ export const useEditorPage = () => {
     isCollaborating,
     selectedRelationshipId,
     popoverPos,
-    canEdit,
-    showInvite, setShowInvite,
-    showExport, setShowExport,
-    showShare, setShowShare,
-    showImport, setShowImport,
-    showFileMenu,
-    showSaveCopy, setShowSaveCopy,
     isDuplicating,
     saveVersion,
     isSavingVersion,
     handleBack,
-    handleFileMenuOpen,
-    handleFileMenuClose,
-    handleImportOpen,
-    handleExportOpen,
-    handleSaveCopyOpen,
     handleAddTable,
     handleSaveCopy,
   };

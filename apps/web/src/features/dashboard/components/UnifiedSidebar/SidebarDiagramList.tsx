@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import type { DiagramDialect } from "@erdify/domain";
 import type { ProjectResponse } from "@/shared/api/projects.api";
 import type { DiagramListItem } from "@/shared/api/diagrams.api";
+import { useDashboardStore } from "@/features/dashboard/store/useDashboardStore";
+import { useDashboardActions } from "@/features/dashboard/hooks/useDashboardActions";
 import * as css from "./unified-sidebar.css";
 
 const dialectLabel: Record<DiagramDialect, string> = {
@@ -18,20 +20,18 @@ interface SidebarDiagramListProps {
   diagrams: DiagramListItem[];
   memberManagementActive: boolean;
   orgSettingsActive: boolean;
-  onDeleteProject: (id: string) => void;
-  onCreateDiagram: () => void;
-  onCreateProject: () => void;
 }
 
 export const SidebarDiagramList = ({
   orgId, projectId, projects, diagrams, memberManagementActive, orgSettingsActive,
-  onDeleteProject, onCreateDiagram, onCreateProject,
 }: SidebarDiagramListProps) => {
   const navigate = useNavigate();
+  const openModal = useDashboardStore((s) => s.openModal);
+  const { deleteProject } = useDashboardActions();
 
   const handleDeleteProject = (project: ProjectResponse) => () => {
     if (window.confirm(`"${project.name}" 프로젝트를 삭제하시겠습니까? 모든 ERD가 함께 삭제됩니다.`)) {
-      onDeleteProject(project.id);
+      deleteProject(project.id);
     }
   };
 
@@ -84,7 +84,7 @@ export const SidebarDiagramList = ({
                       </span>
                     </button>
                   ))}
-                  <button className={css.erdNewBtn} onClick={onCreateDiagram}>
+                  <button className={css.erdNewBtn} onClick={() => openModal("diagram")}>
                     + 새 ERD 만들기
                   </button>
                 </>
@@ -113,7 +113,7 @@ export const SidebarDiagramList = ({
         <span className={css.projName}>조직 설정</span>
       </button>
       <div className={css.sidebarFooter}>
-        <button className={css.addProjectBtn} onClick={onCreateProject}>
+        <button className={css.addProjectBtn} onClick={() => openModal("project")}>
           + 새 프로젝트
         </button>
       </div>
