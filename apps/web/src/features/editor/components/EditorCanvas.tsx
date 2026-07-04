@@ -13,7 +13,6 @@ import type { EditableTableNodeType, UnmatchedPkInput } from "@/features/editor/
 import { getSchemaColor } from "@/shared/utils/schema-colors";
 import { EditableTableNode } from "./EditableTableNode";
 import { CardinalityEdge } from "./CardinalityEdge";
-import { SearchPanel } from "./SearchPanel";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import * as css from "./editor-canvas.css";
 
@@ -165,8 +164,6 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   const schemaColors = useEditorStore((s) => s.schemaColors);
   const nodes = useEditorStore((s) => s.nodes);
   const edges = useEditorStore((s) => s.edges);
-  const searchOpen = useEditorStore((s) => s.searchOpen);
-  const setSearchOpen = useEditorStore((s) => s.setSearchOpen);
   const canEdit = useEditorStore((s) => s.canEdit);
   const openChat = useAIChatStore((s) => s.openChat);
   const applyNodeChanges = useEditorStore((s) => s.applyNodeChanges);
@@ -387,7 +384,6 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
         <Background />
         <Controls />
         {!hideMinimap && <ClickableMiniMap containerRef={containerRef} allSchemas={allSchemas} schemaColors={schemaColors} />}
-        {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
         {contextMenu && (
           <CanvasContextMenu
             menuX={contextMenu.menuX}

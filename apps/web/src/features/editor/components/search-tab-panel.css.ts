@@ -64,6 +64,22 @@ export const resultItemActive = style({
   },
 });
 
+export const resultTypeIcon = style({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+  color: vars.color.textSecondary,
+});
+
+export const resultTextBox = style({
+  display: "flex",
+  flexDirection: "column",
+  flex: 1,
+  minWidth: 0,
+  gap: 2,
+});
+
 export const resultName = style({
   fontSize: 13,
   fontWeight: 600,
@@ -73,6 +89,14 @@ export const resultName = style({
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
   flex: 1,
+});
+
+export const resultSub = style({
+  fontSize: 11,
+  color: vars.color.textSecondary,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
 });
 
 export const resultMeta = style({

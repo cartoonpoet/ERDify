@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import { useReactFlow } from "@xyflow/react";
+import { Table2, Columns3 } from "lucide-react";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import { searchEntities, type SearchResult } from "@/features/editor/utils/search-entities";
 import * as css from "./search-tab-panel.css";
 
 export const SearchTabPanel = () => {
@@ -11,22 +13,20 @@ export const SearchTabPanel = () => {
   const document = useEditorStore((s) => s.document);
   const nodes = useEditorStore((s) => s.nodes);
   const applyNodeChanges = useEditorStore((s) => s.applyNodeChanges);
+  const setFlashingColumnId = useEditorStore((s) => s.setFlashingColumnId);
   const { fitView } = useReactFlow();
 
   const allEntities = document?.entities ?? [];
-  const results = query.trim()
-    ? allEntities.filter(
-        (e) =>
-          e.name.toLowerCase().includes(query.toLowerCase()) ||
-          (e.comment ?? "").toLowerCase().includes(query.toLowerCase())
-      )
-    : allEntities;
+  const results = searchEntities(allEntities, query);
 
-  const navigateTo = (entityId: string) => {
+  const navigateTo = (result: SearchResult) => {
     applyNodeChanges(
-      nodes.map((n) => ({ type: "select" as const, id: n.id, selected: n.id === entityId }))
+      nodes.map((n) => ({ type: "select" as const, id: n.id, selected: n.id === result.entityId }))
     );
-    fitView({ nodes: [{ id: entityId }], duration: 400, maxZoom: 1.2, padding: 0.4 });
+    fitView({ nodes: [{ id: result.entityId }], duration: 400, maxZoom: 1.2, padding: 0.4 });
+
+    // 컬럼 결과면 해당 컬럼을 글로우, 테이블 결과면 남아있던 컬럼 글로우를 해제한다.
+    setFlashingColumnId(result.type === "column" ? result.columnId : null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -38,10 +38,13 @@ export const SearchTabPanel = () => {
       e.preventDefault();
       setActiveIdx((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
-      const entity = results[activeIdx];
-      if (entity) navigateTo(entity.id);
+      const result = results[activeIdx];
+      if (result) navigateTo(result);
     }
   };
+
+  const resultKey = (result: SearchResult) =>
+    result.type === "table" ? `t:${result.entityId}` : `c:${result.columnId}`;
 
   return (
     <div className={css.container}>
@@ -51,7 +54,7 @@ export const SearchTabPanel = () => {
           ref={inputRef}
           autoFocus
           className={css.input}
-          placeholder="테이블 검색... (↑↓ 탐색, Enter 이동)"
+          placeholder="테이블·컬럼 검색... (↑↓ 탐색, Enter 이동)"
           value={query}
           onChange={(e) => { setQuery(e.target.value); setActiveIdx(0); }}
           onKeyDown={handleKeyDown}
@@ -60,16 +63,35 @@ export const SearchTabPanel = () => {
 
       {results.length > 0 ? (
         <div className={css.resultList}>
-          {results.map((entity, i) => (
+          {results.map((result, i) => (
             <button
-              key={entity.id}
+              key={resultKey(result)}
               type="button"
               className={[css.resultItem, i === activeIdx ? css.resultItemActive : ""].join(" ")}
-              onClick={() => navigateTo(entity.id)}
+              onClick={() => navigateTo(result)}
               onMouseEnter={() => setActiveIdx(i)}
             >
-              <span className={css.resultName}>{entity.name}</span>
-              <span className={css.resultMeta}>{entity.columns.length}개 컬럼</span>
+              {result.type === "table" ? (
+                <>
+                  <span className={css.resultTypeIcon}>
+                    <Table2 size={14} />
+                  </span>
+                  <span className={css.resultTextBox}>
+                    <span className={css.resultName}>{result.entityName}</span>
+                  </span>
+                  <span className={css.resultMeta}>{result.columnCount}개 컬럼</span>
+                </>
+              ) : (
+                <>
+                  <span className={css.resultTypeIcon}>
+                    <Columns3 size={14} />
+                  </span>
+                  <span className={css.resultTextBox}>
+                    <span className={css.resultName}>{result.columnName}</span>
+                    <span className={css.resultSub}>{result.entityName} &gt; {result.columnName}</span>
+                  </span>
+                </>
+              )}
             </button>
           ))}
         </div>
@@ -78,7 +100,7 @@ export const SearchTabPanel = () => {
       )}
 
       <div className={css.footer}>
-        <span>{results.length}/{allEntities.length} 테이블</span>
+        <span>{results.length}건</span>
       </div>
     </div>
   );

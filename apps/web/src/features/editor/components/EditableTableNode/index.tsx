@@ -19,6 +19,7 @@ import { DEFAULT_HEADER_COLOR, makeColumn } from "./constants";
 import { SchemaStrip } from "./SchemaStrip";
 import { SeedLens } from "./SeedLens";
 import { ColumnRow } from "./ColumnRow";
+import { RoColumnRow } from "./RoColumnRow";
 import { IndexSection } from "./IndexSection";
 import { useColumnNameSuggestions } from "@/features/editor/hooks/useColumnNameSuggestions";
 import * as css from "./editable-table-node.css";
@@ -31,7 +32,6 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
   const setSelectedEntity = useEditorStore((s) => s.setSelectedEntity);
   const canEdit = useEditorStore((s) => s.canEdit);
   const schemaColors = useEditorStore((s) => s.schemaColors);
-  const fkColumnIds = useEditorStore((s) => s.fkColumnIds);
   const entityIndexes = useEditorStore((s) => s.indexesByEntityId.get(entity.id) ?? EMPTY_INDEXES);
   const allSchemas = useEditorStore((s) => s.allSchemas);
   const isFlashing = useEditorStore((s) => s.flashingEntityId === entity.id);
@@ -93,28 +93,7 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
         </div>
         <ul className={css.roColList}>
           {entity.columns.map((col) => (
-            <li key={col.id} className={css.roColRow}>
-              <div className={css.roBadgeCell}>
-                {col.primaryKey && <span className={css.roPkBadge}>PK</span>}
-              </div>
-              <div className={css.roFkCell}>
-                {fkColumnIds.has(col.id) && (
-                  <span className={css.fkDot} aria-label="FK" title="Foreign Key" />
-                )}
-              </div>
-              <div className={css.roNullableCell}>
-                {col.nullable && <span className={css.roNullableText}>?</span>}
-              </div>
-              <div className={css.roBadgeCell}>
-                {col.unique && !col.primaryKey && <span className={css.roUqBadge}>UQ</span>}
-              </div>
-              <div className={css.roBadgeCell}>
-                {col.autoIncrement && <span className={css.roAiBadge}>AI</span>}
-              </div>
-              <div className={css.roLogicalNameCell}>{col.comment ?? ""}</div>
-              <div className={css.roColumnNameCell}>{col.name}</div>
-              <div className={css.roTypeCell}>{col.type}</div>
-            </li>
+            <RoColumnRow key={col.id} col={col} />
           ))}
           {entity.columns.length === 0 && (
             <li className={css.roEmptyColumns}>컬럼 없음</li>

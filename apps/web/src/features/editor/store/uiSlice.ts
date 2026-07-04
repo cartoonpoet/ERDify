@@ -11,7 +11,6 @@ export interface UISlice {
   selectedEntityId: string | null;
   selectedRelationshipId: string | null;
   popoverPos: { x: number; y: number } | null;
-  searchOpen: boolean;
   rightSidebarActiveTab: number;
   rightSidebarPanelOpen: boolean;
   rightSidebarWidth: number;
@@ -21,10 +20,10 @@ export interface UISlice {
   schemaColors: Record<string, string>;
   viewport: Viewport;
   flashingEntityId: string | null;
+  flashingColumnId: string | null;
   setSelectedEntity: (id: string | null) => void;
   setSelectedRelationship: (id: string | null) => void;
   setPopoverPos: (pos: { x: number; y: number } | null) => void;
-  setSearchOpen: (open: boolean) => void;
   setRightSidebarActiveTab: (tab: number) => void;
   setRightSidebarPanelOpen: (open: boolean) => void;
   setRightSidebarWidth: (width: number) => void;
@@ -35,13 +34,13 @@ export interface UISlice {
   setSchemaColor: (schema: string, color: string) => void;
   setViewport: (v: Viewport) => void;
   setFlashingEntityId: (id: string | null) => void;
+  setFlashingColumnId: (id: string | null) => void;
 }
 
 export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) => ({
   selectedEntityId: null,
   selectedRelationshipId: null,
   popoverPos: null,
-  searchOpen: false,
   rightSidebarActiveTab: 0,
   rightSidebarPanelOpen: false,
   rightSidebarWidth: RIGHT_SIDEBAR_DEFAULT_WIDTH,
@@ -51,11 +50,11 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
   schemaColors: {},
   viewport: { x: 0, y: 0, zoom: 1 },
   flashingEntityId: null,
+  flashingColumnId: null,
 
   setSelectedEntity: (id) => set({ selectedEntityId: id, selectedRelationshipId: null, popoverPos: null }),
   setSelectedRelationship: (id) => set({ selectedRelationshipId: id, selectedEntityId: null }),
   setPopoverPos: (pos) => set({ popoverPos: pos }),
-  setSearchOpen: (open) => set({ searchOpen: open }),
   setRightSidebarActiveTab: (tab) => set({ rightSidebarActiveTab: tab }),
   setRightSidebarPanelOpen: (open) => set({ rightSidebarPanelOpen: open }),
   setRightSidebarWidth: (width) =>
@@ -79,4 +78,5 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
     set((state) => ({ schemaColors: { ...state.schemaColors, [schema]: color } })),
   setViewport: (v) => set({ viewport: v }),
   setFlashingEntityId: (id) => set({ flashingEntityId: id }),
+  setFlashingColumnId: (id) => set({ flashingColumnId: id }),
 });

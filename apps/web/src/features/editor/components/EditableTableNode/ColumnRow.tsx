@@ -28,9 +28,14 @@ export const ColumnRow = ({
 }: ColumnRowProps) => {
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const fkColumnIds = useEditorStore((s) => s.fkColumnIds);
+  const isColFlashing = useEditorStore((s) => s.flashingColumnId === col.id);
+  const setFlashingColumnId = useEditorStore((s) => s.setFlashingColumnId);
 
   return (
-    <div className={css.editColumnItem}>
+    <div
+      className={[css.editColumnItem, isColFlashing ? css.columnRowGlow : ""].join(" ")}
+      onAnimationEnd={() => setFlashingColumnId(null)}
+    >
       {/* PK */}
       <div className={css.checkboxCell}>
         <input
