@@ -1,0 +1,57 @@
+name: CodeRabbit Auto-fix
+
+# CodeRabbit(GitHub App)가 PR 리뷰를 제출하면, Claude Code가 그 지적을
+# 읽고 타당한 것만 코드로 반영해 PR 브랜치에 커밋/push 한다.
+# 머지 결정은 사람이 한다(사람이 최종 게이트).
+on:
+  pull_request_review:
+    types: [submitted]
+
+# 같은 PR에 대해 동시에 여러 번 돌지 않도록 (CodeRabbit 재리뷰 ↔ Claude 수정 핑퐁 완화)
+concurrency:
+  group: coderabbit-autofix-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  autofix:
+    # CodeRabbit 봇의 리뷰이고, approved(반영할 것 없음)가 아닐 때만 실행
+    if: >-
+      github.event.review.user.login == 'coderabbitai[bot]' &&
+      github.event.review.state != 'approved' &&
+      github.event.review.state != 'dismissed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write          # 수정 커밋 & push
+      pull-requests: write      # PR 리뷰/코멘트 읽기·쓰기
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Address CodeRabbit review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # CodeRabbit 봇 리뷰가 트리거하도록 허용 (기본은 사람 멘션만 반응)
+          allowed_bots: "coderabbitai[bot]"
+          track_progress: true
+          prompt: |
+            CodeRabbit 리뷰 봇이 이 PR에 리뷰 코멘트를 남겼습니다.
+            인라인 리뷰 코멘트를 모두 읽고, 다음 원칙으로 대응하세요.
+
+            - 명백히 타당한 버그/타입/스타일 지적은 코드로 수정합니다.
+            - 애매하거나 설계 의도상 의도적인 부분은 수정하지 말고, 그 이유를
+              해당 스레드에 한국어로 짧게 답글로 남깁니다.
+            - 이 저장소 규칙을 반드시 지킵니다: React 컴포넌트는 const 화살표 함수,
+              불필요한 useEffect/useMemo/memo/useCallback 금지, 전역 스토어 값·액션은
+              props 드릴링하지 말고 리프에서 직접 구독.
+            - 수정 후 반드시 `pnpm --filter @erdify/web typecheck`가 통과하는지
+              확인하고, 깨지면 고칩니다.
+            - 실제로 코드를 바꾼 경우에만 커밋하세요. 바꿀 게 없으면 커밋하지
+              말고 그 사실만 남깁니다(빈 커밋·핑퐁 방지).
+            - 커밋 메시지는 한국어로, 어떤 CodeRabbit 지적을 반영했는지 요약하고
+              끝에 `[coderabbit-autofix]` 마커를 붙입니다.
+          claude_args: |
+            --allowedTools Read,Write,Edit,Bash
