@@ -36,6 +36,16 @@ export interface DiagramResponse {
   shareExpiresAt: string | null;
 }
 
+export interface MoveDiagramRequest {
+  targetProjectId: string;
+}
+
+export interface DuplicateDiagramRequest {
+  name?: string;
+  dialect?: DiagramDialect;
+  targetProjectId?: string;
+}
+
 export interface DiagramVersionResponse {
   id: string;
   diagramId: string;

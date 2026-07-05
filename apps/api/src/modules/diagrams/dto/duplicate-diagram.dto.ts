@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
 
 export class DuplicateDiagramDto {
   @IsOptional()
@@ -11,4 +11,9 @@ export class DuplicateDiagramDto {
   @IsString()
   @IsIn(["postgresql", "mysql", "mariadb", "mssql"])
   dialect?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsUUID()
+  targetProjectId?: string;
 }

@@ -6,6 +6,8 @@ import type {
   PublicDiagramResponse,
   SharePreset,
   ActiveUsersResponse,
+  DuplicateDiagramRequest,
+  MoveDiagramRequest,
 } from "@erdify/contracts";
 import { httpClient } from "./httpClient";
 
@@ -60,9 +62,14 @@ export function getPublicDiagram(shareToken: string): Promise<PublicDiagramRespo
 
 export function duplicateDiagram(
   diagramId: string,
-  body?: { name?: string; dialect?: string }
+  body?: DuplicateDiagramRequest
 ): Promise<DiagramResponse> {
   return httpClient.post<DiagramResponse>(`/diagrams/${diagramId}/duplicate`, body ?? {}).then((r) => r.data);
+}
+
+export function moveDiagram(diagramId: string, targetProjectId: string): Promise<DiagramResponse> {
+  const body: MoveDiagramRequest = { targetProjectId };
+  return httpClient.patch<DiagramResponse>(`/diagrams/${diagramId}/move`, body).then((r) => r.data);
 }
 
 export function getActiveDiagramUsers(diagramIds: string[]): Promise<ActiveUsersResponse> {

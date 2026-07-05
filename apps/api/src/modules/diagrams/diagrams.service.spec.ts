@@ -864,6 +864,142 @@ describe("DiagramsService", () => {
       expect(result.projectName).toBe("Test Project");
       expect(result.myRole).toBe("editor");
     });
+
+    it("saves to target project and returns target projectName when targetProjectId given", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockImplementation(({ where: { id } }: { where: { id: string } }) =>
+        Promise.resolve(
+          id === "proj-2"
+            ? makeProject({ id: "proj-2", organizationId: "org-1", name: "Target Project" })
+            : makeProject()
+        )
+      );
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.create.mockImplementation((d: Partial<Diagram>) => d as Diagram);
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.duplicate("diag-1", "user-1", { targetProjectId: "proj-2" });
+
+      expect(diagramRepo.create).toHaveBeenCalledWith(expect.objectContaining({ projectId: "proj-2" }));
+      expect(result.projectId).toBe("proj-2");
+      expect(result.projectName).toBe("Target Project");
+    });
+
+    it("throws NotFoundException when target project does not exist", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockImplementation(({ where: { id } }: { where: { id: string } }) =>
+        Promise.resolve(id === "proj-2" ? null : makeProject())
+      );
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(
+        service.duplicate("diag-1", "user-1", { targetProjectId: "proj-2" })
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("throws ForbiddenException when target project is in another org (cross-org)", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockImplementation(({ where: { id } }: { where: { id: string } }) =>
+        Promise.resolve(
+          id === "proj-2"
+            ? makeProject({ id: "proj-2", organizationId: "org-2", name: "Other Org Project" })
+            : makeProject()
+        )
+      );
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(
+        service.duplicate("diag-1", "user-1", { targetProjectId: "proj-2" })
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("throws ForbiddenException for viewer when duplicating to a target project", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram({ content: makeSourceDoc() as unknown as object }));
+      projectRepo.findOne.mockImplementation(({ where: { id } }: { where: { id: string } }) =>
+        Promise.resolve(
+          id === "proj-2"
+            ? makeProject({ id: "proj-2", organizationId: "org-1", name: "Target Project" })
+            : makeProject()
+        )
+      );
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+
+      await expect(
+        service.duplicate("diag-1", "user-1", { targetProjectId: "proj-2" })
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe("move", () => {
+    it("updates projectId to target project and keeps content unchanged", async () => {
+      const content = { format: "erdify.schema.v1", entities: [{ id: "e1" }] } as unknown as object;
+      const diagram = makeDiagram({ content });
+      diagramRepo.findOne.mockResolvedValue(diagram);
+      projectRepo.findOne.mockImplementation(({ where: { id } }: { where: { id: string } }) =>
+        Promise.resolve(
+          id === "proj-2"
+            ? makeProject({ id: "proj-2", organizationId: "org-1", name: "Target Project" })
+            : makeProject()
+        )
+      );
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+      diagramRepo.save.mockImplementation(async (d: Diagram) => d);
+
+      const result = await service.move("diag-1", "user-1", { targetProjectId: "proj-2" });
+
+      expect(diagramRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ projectId: "proj-2", content })
+      );
+      expect(result.projectId).toBe("proj-2");
+      expect(result.projectName).toBe("Target Project");
+      expect(result.content).toEqual(content);
+    });
+
+    it("throws NotFoundException when target project does not exist", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram());
+      projectRepo.findOne.mockImplementation(({ where: { id } }: { where: { id: string } }) =>
+        Promise.resolve(id === "proj-2" ? null : makeProject())
+      );
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(
+        service.move("diag-1", "user-1", { targetProjectId: "proj-2" })
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("throws ForbiddenException when target project is in another org (cross-org)", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram());
+      projectRepo.findOne.mockImplementation(({ where: { id } }: { where: { id: string } }) =>
+        Promise.resolve(
+          id === "proj-2"
+            ? makeProject({ id: "proj-2", organizationId: "org-2" })
+            : makeProject()
+        )
+      );
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("editor"));
+
+      await expect(
+        service.move("diag-1", "user-1", { targetProjectId: "proj-2" })
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("throws ForbiddenException for viewer", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram());
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      orgRepo.findOne.mockResolvedValue({ id: "org-1", name: "Test Org" });
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+
+      await expect(
+        service.move("diag-1", "user-1", { targetProjectId: "proj-2" })
+      ).rejects.toThrow(ForbiddenException);
+    });
   });
 
   describe("getActiveUsers", () => {
