@@ -2,7 +2,7 @@ import type { FocusEvent } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
-import { MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Share2, FolderInput, Copy, Trash2 } from "lucide-react";
 import type { DiagramListItem } from "@/shared/api/diagrams.api";
 import { Button, Skeleton } from "@/components";
 import {
@@ -18,6 +18,7 @@ import type { ActiveUser } from "@erdify/contracts";
 import { ERROR_CONTENT } from "@/shared/utils/queryErrorContent";
 import { ShareDiagramModal } from "@/shared/components/ShareDiagramModal";
 import { EditDiagramModal } from "@/features/dashboard/components/EditDiagramModal";
+import { MoveOrCopyDiagramModal } from "./MoveOrCopyDiagramModal";
 import { useDiagramGrid } from "../hooks/useDiagramGrid";
 
 const DiagramCardPreview = ({ diagram }: { diagram: DiagramListItem }) => {
@@ -74,6 +75,7 @@ export const DiagramGrid = () => {
     menuOpenId,
     shareDiagramItem, setShareDiagramItem,
     editDiagramItem, setEditDiagramItem,
+    moveOrCopyItem, setMoveOrCopyItem,
     filtered,
     errorStatus,
     isPermissionError,
@@ -82,6 +84,8 @@ export const DiagramGrid = () => {
     handleMenuClose,
     handleEditDiagram,
     handleShareDiagram,
+    handleMoveDiagram,
+    handleCopyDiagram,
     handleDeleteDiagram,
     handleMenuToggle,
   } = useDiagramGrid();
@@ -183,6 +187,12 @@ export const DiagramGrid = () => {
                   <button className={ctxItem} onClick={handleShareDiagram(diagram)}>
                     <Share2 size={13} aria-hidden="true" /> 공유하기
                   </button>
+                  <button className={ctxItem} onClick={handleMoveDiagram(diagram)}>
+                    <FolderInput size={13} aria-hidden="true" /> 다른 프로젝트로 이동
+                  </button>
+                  <button className={ctxItem} onClick={handleCopyDiagram(diagram)}>
+                    <Copy size={13} aria-hidden="true" /> 다른 프로젝트로 복사
+                  </button>
                   <div className={ctxDivider} />
                   <button className={ctxItemDanger} onClick={handleDeleteDiagram(diagram)}>
                     <Trash2 size={13} aria-hidden="true" /> 삭제
@@ -213,6 +223,14 @@ export const DiagramGrid = () => {
           open={!!editDiagramItem}
           diagram={editDiagramItem}
           onClose={() => setEditDiagramItem(null)}
+        />
+      )}
+      {moveOrCopyItem && (
+        <MoveOrCopyDiagramModal
+          open
+          mode={moveOrCopyItem.mode}
+          diagram={moveOrCopyItem.diagram}
+          onClose={() => setMoveOrCopyItem(null)}
         />
       )}
     </div>

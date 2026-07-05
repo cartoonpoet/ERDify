@@ -60,6 +60,9 @@ export const useDiagramGrid = () => {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [shareDiagramItem, setShareDiagramItem] = useState<DiagramListItem | null>(null);
   const [editDiagramItem, setEditDiagramItem] = useState<DiagramListItem | null>(null);
+  const [moveOrCopyItem, setMoveOrCopyItem] = useState<{ diagram: DiagramListItem; mode: "move" | "copy" } | null>(
+    null,
+  );
 
   const filtered = applyFilter(diagrams, activeFilter, currentUserId, searchQuery || undefined);
   const errorStatus = isError ? getErrorStatus(error) : null;
@@ -68,6 +71,14 @@ export const useDiagramGrid = () => {
   const handleMenuClose = () => setMenuOpenId(null);
   const handleEditDiagram = (diagram: DiagramListItem) => () => { setEditDiagramItem(diagram); setMenuOpenId(null); };
   const handleShareDiagram = (diagram: DiagramListItem) => () => { setShareDiagramItem(diagram); setMenuOpenId(null); };
+  const handleMoveDiagram = (diagram: DiagramListItem) => () => {
+    setMoveOrCopyItem({ diagram, mode: "move" });
+    setMenuOpenId(null);
+  };
+  const handleCopyDiagram = (diagram: DiagramListItem) => () => {
+    setMoveOrCopyItem({ diagram, mode: "copy" });
+    setMenuOpenId(null);
+  };
   const handleDeleteDiagram = (diagram: DiagramListItem) => () => {
     if (window.confirm(`"${diagram.name}" ERD를 삭제하시겠습니까?`)) onDeleteDiagram(diagram.id);
     setMenuOpenId(null);
@@ -103,6 +114,8 @@ export const useDiagramGrid = () => {
     setShareDiagramItem,
     editDiagramItem,
     setEditDiagramItem,
+    moveOrCopyItem,
+    setMoveOrCopyItem,
     filtered,
     errorStatus,
     isPermissionError,
@@ -112,6 +125,8 @@ export const useDiagramGrid = () => {
     handleMenuClose,
     handleEditDiagram,
     handleShareDiagram,
+    handleMoveDiagram,
+    handleCopyDiagram,
     handleDeleteDiagram,
     handleMenuToggle,
   };

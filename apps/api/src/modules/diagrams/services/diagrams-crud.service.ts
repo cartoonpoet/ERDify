@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Diagram, Organization, Project } from "@erdify/db";
 import type { Repository } from "typeorm";
@@ -8,6 +8,7 @@ import type { DiagramDocument } from "@erdify/domain";
 import type { CreateDiagramDto } from "../dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "../dto/update-diagram.dto";
 import type { DuplicateDiagramDto } from "../dto/duplicate-diagram.dto";
+import type { MoveDiagramDto } from "../dto/move-diagram.dto";
 
 @Injectable()
 export class DiagramsCrudService {
@@ -188,10 +189,39 @@ export class DiagramsCrudService {
       },
     };
 
+    let targetProjectId = diagram.projectId;
+    let targetProjectName = projectName;
+    if (dto?.targetProjectId) {
+      const targetProject = await this.projectRepo.findOne({ where: { id: dto.targetProjectId } });
+      if (!targetProject) throw new NotFoundException("Project not found");
+      if (targetProject.organizationId !== orgId) throw new ForbiddenException();
+      await this.authorizationService.requireEditorOrOwner(targetProject.organizationId, userId);
+      targetProjectId = targetProject.id;
+      targetProjectName = targetProject.name;
+    }
+
     const saved = await this.diagramRepo.save(
-      this.diagramRepo.create({ id: newId, projectId: diagram.projectId, name: newName, content: newContent, createdBy: userId })
+      this.diagramRepo.create({ id: newId, projectId: targetProjectId, name: newName, content: newContent, createdBy: userId })
     );
-    return { ...saved, organizationId: orgId, organizationName: orgName, projectName, myRole: member.role };
+    return { ...saved, organizationId: orgId, organizationName: orgName, projectName: targetProjectName, myRole: member.role };
+  }
+
+  async move(
+    diagramId: string,
+    userId: string,
+    dto: MoveDiagramDto
+  ): Promise<Diagram & { organizationId: string; organizationName: string; projectName: string; myRole: string }> {
+    const { diagram, orgId, orgName } = await this.getDiagramWithOrg(diagramId);
+    await this.authorizationService.requireEditorOrOwner(orgId, userId);
+
+    const targetProject = await this.projectRepo.findOne({ where: { id: dto.targetProjectId } });
+    if (!targetProject) throw new NotFoundException("Project not found");
+    if (targetProject.organizationId !== orgId) throw new ForbiddenException();
+    const member = await this.authorizationService.requireEditorOrOwner(targetProject.organizationId, userId);
+
+    diagram.projectId = targetProject.id;
+    const saved = await this.diagramRepo.save(diagram);
+    return { ...saved, organizationId: orgId, organizationName: orgName, projectName: targetProject.name, myRole: member.role };
   }
 
   async canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {

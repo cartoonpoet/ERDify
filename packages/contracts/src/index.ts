@@ -21,6 +21,8 @@ export type {
   SharePreset,
   ActiveUser,
   ActiveUsersResponse,
+  MoveDiagramRequest,
+  DuplicateDiagramRequest,
 } from "./diagrams/diagram.types.js";
 export type { OrgResponse } from "./organizations/organization.types.js";
 export type {
