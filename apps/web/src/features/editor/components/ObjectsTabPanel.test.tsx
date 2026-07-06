@@ -1,9 +1,9 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { ObjectsTabPanel } from "./ObjectsTabPanel";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import type { EditorState } from "@/features/editor/store/editor-store.types";
-import type { DiagramObject } from "@erdify/domain";
+import type { DiagramObject, DiagramObjectKind } from "@erdify/domain";
 
 vi.mock("@/features/editor/store/useEditorStore");
 
@@ -29,13 +29,21 @@ vi.mock("./objects-tab-panel.css", () => ({
   addBtn: "",
 }));
 
+interface MockModalProps {
+  object: DiagramObject;
+  mode: "add" | "edit";
+  onClose: () => void;
+  onSaved?: (kind: DiagramObjectKind) => void;
+}
 const mockModal = vi.fn();
 vi.mock("./ObjectEditModal", () => ({
-  ObjectEditModal: (props: { object: DiagramObject; mode: "add" | "edit"; onClose: () => void }) => {
+  ObjectEditModal: (props: MockModalProps) => {
     mockModal(props);
     return <div data-testid="object-edit-modal">{props.mode}</div>;
   },
 }));
+
+const lastModalProps = (): MockModalProps => mockModal.mock.calls.at(-1)![0] as MockModalProps;
 
 const makeObj = (o: Partial<DiagramObject> = {}): DiagramObject => ({
   id: "o1",
@@ -121,6 +129,21 @@ describe("ObjectsTabPanel", () => {
     expect(mockModal).toHaveBeenCalledWith(
       expect.objectContaining({ mode: "edit", object: target })
     );
+  });
+
+  it("필터가 꺼진 종류로 저장하면 onSaved가 해당 종류 필터를 다시 켜 목록에 보이게 한다", () => {
+    setupStore([makeObj({ id: "o1", kind: "trigger", name: "trg_b" })]);
+    render(<ObjectsTabPanel diagramId="d1" />);
+
+    // 트리거 필터를 끄면 trg_b가 사라진다
+    fireEvent.click(screen.getByRole("button", { name: "트리거" }));
+    expect(screen.queryByText("trg_b")).not.toBeInTheDocument();
+
+    // 편집 모달을 열고(add) 트리거 종류로 저장됐다고 알리면 필터가 자동으로 켜진다
+    fireEvent.click(screen.getByText("＋ 객체 추가"));
+    act(() => lastModalProps().onSaved?.("trigger"));
+
+    expect(screen.getByText("trg_b")).toBeInTheDocument();
   });
 
   it("canEdit이 false면 ＋ 객체 추가 버튼이 비활성화된다", () => {

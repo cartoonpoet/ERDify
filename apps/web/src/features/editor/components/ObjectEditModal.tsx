@@ -3,15 +3,9 @@ import type { DiagramObject, DiagramObjectKind } from "@erdify/domain";
 import { addObject, updateObject, removeObject } from "@erdify/domain";
 import { Modal, Button, Input } from "@/components";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import { OBJECT_KINDS, OBJECT_KIND_LABELS } from "@/features/editor/constants/object-kind";
 import { DarkCodeEditor } from "./DarkCodeEditor";
 import * as css from "./object-edit-modal.css";
-
-const KIND_TABS: { label: string; value: DiagramObjectKind }[] = [
-  { label: "프로시저", value: "procedure" },
-  { label: "함수", value: "function" },
-  { label: "트리거", value: "trigger" },
-  { label: "뷰", value: "view" },
-];
 
 const MODE_TITLES: Record<"add" | "edit", string> = {
   add: "객체 추가",
@@ -22,9 +16,11 @@ interface ObjectEditModalProps {
   object: DiagramObject;
   mode: "add" | "edit";
   onClose: () => void;
+  /** 저장 성공 시 저장된 종류를 알려 목록 필터가 해당 종류를 켜도록 한다. */
+  onSaved?: (kind: DiagramObjectKind) => void;
 }
 
-export const ObjectEditModal = ({ object, mode, onClose }: ObjectEditModalProps) => {
+export const ObjectEditModal = ({ object, mode, onClose, onSaved }: ObjectEditModalProps) => {
   const [kind, setKind] = useState<DiagramObjectKind>(object.kind);
   const [name, setName] = useState(object.name);
   const [sql, setSql] = useState(object.sql);
@@ -44,6 +40,7 @@ export const ObjectEditModal = ({ object, mode, onClose }: ObjectEditModalProps)
     } else {
       applyCommand((doc) => updateObject(doc, object.id, { kind, name: trimmedName, sql }));
     }
+    onSaved?.(kind);
     onClose();
   };
 
@@ -57,14 +54,14 @@ export const ObjectEditModal = ({ object, mode, onClose }: ObjectEditModalProps)
   return (
     <Modal open onClose={onClose} title={MODE_TITLES[mode]} maxWidth="660px">
       <div className={css.kindTabsRow}>
-        {KIND_TABS.map((t) => (
+        {OBJECT_KINDS.map((value) => (
           <button
-            key={t.value}
+            key={value}
             type="button"
-            onClick={() => setKind(t.value)}
-            className={css.kindTabVariants[kind === t.value ? "active" : "inactive"]}
+            onClick={() => setKind(value)}
+            className={css.kindTabVariants[kind === value ? "active" : "inactive"]}
           >
-            {t.label}
+            {OBJECT_KIND_LABELS[value]}
           </button>
         ))}
       </div>
