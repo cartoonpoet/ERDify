@@ -10,6 +10,7 @@ export { addColumn, addColumns, updateColumn, removeColumn } from "./commands/co
 export { addRelationship, removeRelationship, updateRelationship } from "./commands/relationship-commands.js";
 export { updateEntityPosition } from "./commands/layout-commands.js";
 export { addIndex, removeIndex, updateIndex } from "./commands/index-commands.js";
+export { addObject, removeObject, updateObject } from "./commands/object-commands.js";
 export type {
   DiagramColumn,
   DiagramDialect,
@@ -18,6 +19,8 @@ export type {
   DiagramIndex,
   DiagramLayout,
   DiagramMetadata,
+  DiagramObject,
+  DiagramObjectKind,
   DiagramRelationship,
   DiagramValidationResult,
   DdlWarning,

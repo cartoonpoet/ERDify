@@ -6,6 +6,8 @@ export type {
   DiagramIndex,
   DiagramLayout,
   DiagramMetadata,
+  DiagramObject,
+  DiagramObjectKind,
   DiagramRelationship,
   DiagramValidationResult,
   DdlWarning,
