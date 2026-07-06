@@ -1,12 +1,13 @@
 import { type MouseEvent as ReactMouseEvent, useCallback, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Database, Search } from "lucide-react";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { AIChatTabPanel } from "./AIChatTabPanel";
 import { HistoryTabPanel } from "./HistoryTabPanel";
+import { ObjectsTabPanel } from "./ObjectsTabPanel";
 import { SearchTabPanel } from "./SearchTabPanel";
 import * as css from "./right-sidebar.css";
 
-type TabId = 0 | 1 | 2;
+type TabId = 0 | 1 | 2 | 3;
 
 interface RightSidebarProps {
   diagramId: string;
@@ -70,6 +71,8 @@ export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
         return <SearchTabPanel />;
       case 2:
         return <HistoryTabPanel diagramId={diagramId} />;
+      case 3:
+        return <ObjectsTabPanel diagramId={diagramId} />;
     }
   };
 
@@ -125,6 +128,15 @@ export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
         >
           <span className={css.tabIcon}>⏱</span>
           <span className={css.tabLabel}>기록</span>
+        </button>
+        <button
+          className={css.tabBtn[panelOpen && activeTab === 3 ? "active" : "default"]}
+          onClick={() => handleTabClick(3)}
+          aria-label="객체"
+          title="SQL 객체"
+        >
+          <Database size={14} className={css.tabIcon} />
+          <span className={css.tabLabel}>객체</span>
         </button>
       </div>
     </div>

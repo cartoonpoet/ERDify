@@ -53,6 +53,15 @@ export interface DiagramIndex {
   unique: boolean;
 }
 
+export type DiagramObjectKind = "procedure" | "function" | "trigger" | "view";
+
+export interface DiagramObject {
+  id: string;
+  kind: DiagramObjectKind;
+  name: string;
+  sql: string;
+}
+
 export interface DiagramMetadata {
   revision: number;
   stableObjectIds: true;
@@ -78,6 +87,8 @@ export interface DiagramDocument {
   relationships: DiagramRelationship[];
   indexes: DiagramIndex[];
   views: [];
+  /** SQL 객체(프로시저·함수·트리거·뷰). 기존 저장 데이터 호환을 위해 optional(undefined=없음). */
+  objects?: DiagramObject[];
   layout: DiagramLayout;
   metadata: DiagramMetadata;
 }
