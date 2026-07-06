@@ -10,7 +10,7 @@ import {
   grid, diagramCardWrapper, diagramCard, cardPreview,
   miniTable, miniTableHeader, miniField, cardBody, cardName, cardMeta,
   dialectBadge, newCard, newCardIcon,
-  ctxBtn, ctxMenu, ctxItem, ctxItemDanger, ctxDivider,
+  ctxBtn, ctxMenu, ctxItem, ctxItemPrimary, ctxItemDanger, ctxDivider,
   filterRowDisabled, sectionError, sectionErrorIcon, sectionErrorTitle, sectionErrorDesc, sectionErrorBtn, sectionErrorGuide,
   activeUsersRow, avatarStack, avatar, avatarOverflow, activeUsersBadge, activeDot, activeUsersCount,
 } from "./DiagramGrid.css";
@@ -181,7 +181,7 @@ export const DiagramGrid = () => {
               </button>
               {menuOpenId === diagram.id && (
                 <div className={ctxMenu}>
-                  <button className={ctxItem} onClick={handleEditDiagram(diagram)}>
+                  <button className={ctxItemPrimary} onClick={handleEditDiagram(diagram)}>
                     <Pencil size={13} aria-hidden="true" /> 수정
                   </button>
                   <button className={ctxItem} onClick={handleShareDiagram(diagram)}>

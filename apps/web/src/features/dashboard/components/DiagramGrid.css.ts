@@ -61,7 +61,10 @@ export const grid = style({
   gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
   gap: vars.space["3"],
   overflowY: "auto",
-  // flex: 1,
+  // 남는 세로 공간을 채워야(내용 높이로 줄어들지 않아야) 카드 메뉴(absolute)가
+  // 펼쳐질 때 scrollHeight가 커지며 스크롤바가 생기는 문제를 막는다.
+  flex: 1,
+  minHeight: 0,
 });
 
 export const diagramCardWrapper = style({
@@ -125,14 +128,15 @@ export const ctxMenu = style({
   minWidth: "130px",
 });
 
+// 부가 액션(공유·이동·복사) — 중립(secondary) 색.
 export const ctxItem = style({
   display: "flex",
   alignItems: "center",
   gap: "8px",
   padding: `9px 14px`,
   fontSize: "12px",
-  color: vars.color.primary,
-  fontWeight: "600",
+  color: vars.color.textPrimary,
+  fontWeight: "500",
   cursor: "pointer",
   background: "none",
   border: "none",
@@ -143,6 +147,18 @@ export const ctxItem = style({
     "&:hover": { background: vars.color.surfaceSecondary },
   },
 });
+
+// 메인 액션(수정) — primary 강조.
+export const ctxItemPrimary = style([
+  ctxItem,
+  {
+    color: vars.color.primary,
+    fontWeight: "600",
+    selectors: {
+      "&:hover": { background: vars.color.selectedBg },
+    },
+  },
+]);
 
 export const ctxItemDanger = style({
   display: "flex",
