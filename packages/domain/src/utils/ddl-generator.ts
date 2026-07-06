@@ -5,6 +5,7 @@ import type {
   DiagramDocument,
   DiagramEntity,
   DiagramIndex,
+  DiagramObject,
   DiagramRelationship,
 } from "../types/index.js";
 
@@ -388,6 +389,24 @@ function checkSensitiveInfo(doc: DiagramDocument, warnings: DdlWarning[]): void 
  * DDL과 export 경고를 함께 반환하는 export 채널.
  * 실행 불가능한 항목은 SQL 주석으로 강등되고 `warnings`에 기록된다.
  */
+/**
+ * 객체(프로시저·함수·트리거·뷰)의 SQL 원문을 DDL 끝에 append한다.
+ * sql은 사용자 원문 텍스트라 dialect 검증 대상이 아니므로 객체당 object_raw_sql 경고를 남긴다.
+ */
+function objectsDdl(objects: DiagramObject[], warnings: DdlWarning[]): string {
+  if (objects.length === 0) return "";
+  const blocks: string[] = ["-- Objects"];
+  for (const obj of objects) {
+    blocks.push(`-- ${obj.kind}: ${obj.name}\n${obj.sql.trim()}`);
+    warnings.push({
+      code: "object_raw_sql",
+      message: `객체 "${obj.name}"(${obj.kind})의 SQL은 원문 텍스트로 내보내지며 dialect 검증 대상이 아닙니다.`,
+      entity: obj.name,
+    });
+  }
+  return blocks.join("\n\n");
+}
+
 export function generateDdlReport(doc: DiagramDocument): DdlReport {
   const { dialect, entities, relationships, indexes } = doc;
   const warnings: DdlWarning[] = [];
@@ -415,6 +434,9 @@ export function generateDdlReport(doc: DiagramDocument): DdlReport {
     .filter(Boolean);
 
   if (fkParts.length > 0) parts.push(fkParts.join("\n\n"));
+
+  const objectsSql = objectsDdl(doc.objects ?? [], warnings);
+  if (objectsSql) parts.push(objectsSql);
 
   return { sql: parts.join("\n\n"), warnings };
 }

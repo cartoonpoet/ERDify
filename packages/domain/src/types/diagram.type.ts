@@ -113,7 +113,8 @@ export type DdlWarningCode =
   | "default_autoquoted"
   | "type_sanitized"
   | "fk_target_not_keyed"
-  | "sensitive_info";
+  | "sensitive_info"
+  | "object_raw_sql";
 
 export interface DdlWarning {
   code: DdlWarningCode;
