@@ -4,8 +4,9 @@ import { addColumn } from "../commands/column-commands.js";
 import { addIndex } from "../commands/index-commands.js";
 import { addRelationship } from "../commands/relationship-commands.js";
 import { updateEntityComment } from "../commands/entity-commands.js";
+import { addObject } from "../commands/object-commands.js";
 import { generateDdl, generateDdlReport } from "./ddl-generator.js";
-import type { DiagramColumn, DiagramRelationship } from "../types/index.js";
+import type { DiagramColumn, DiagramObject, DiagramRelationship } from "../types/index.js";
 
 const col = (overrides: Partial<DiagramColumn>): DiagramColumn => ({
   id: "c1", name: "id", type: "uuid", nullable: false,
@@ -334,5 +335,54 @@ describe("generateDdlReport — 민감정보 경고 (T7)", () => {
     doc = addColumn(doc, "e1", col({ id: "c1", name: "user", type: "varchar(50)", primaryKey: false, comment: "접속 사용자" }));
     const { warnings } = generateDdlReport(doc);
     expect(warnings.filter((w) => w.code === "sensitive_info")).toHaveLength(0);
+  });
+});
+
+describe("generateDdlReport — objects", () => {
+  const withObject = (overrides: Partial<DiagramObject> = {}) => {
+    const base = addEntity(
+      createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" }),
+      { id: "e1", name: "users" }
+    );
+    return addObject(base, {
+      id: "o1",
+      kind: "procedure",
+      name: "sp_active_users",
+      sql: "CREATE PROCEDURE sp_active_users() AS $$ SELECT 1 $$;",
+      ...overrides,
+    });
+  };
+
+  it("appends object sql under an -- Objects section with a kind header", () => {
+    const { sql } = generateDdlReport(withObject());
+    expect(sql).toContain("-- Objects");
+    expect(sql).toContain("-- procedure: sp_active_users");
+    expect(sql).toContain("CREATE PROCEDURE sp_active_users() AS $$ SELECT 1 $$;");
+  });
+
+  it("emits an object_raw_sql warning per object", () => {
+    const { warnings } = generateDdlReport(withObject());
+    const raw = warnings.filter((w) => w.code === "object_raw_sql");
+    expect(raw).toHaveLength(1);
+    expect(raw[0].entity).toBe("sp_active_users");
+  });
+
+  it("does not add an Objects section when there are no objects", () => {
+    const doc = addEntity(
+      createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" }),
+      { id: "e1", name: "users" }
+    );
+    const { sql, warnings } = generateDdlReport(doc);
+    expect(sql).not.toContain("-- Objects");
+    expect(warnings.some((w) => w.code === "object_raw_sql")).toBe(false);
+  });
+
+  it("keeps the header on one line when the object name contains newlines", () => {
+    const { sql } = generateDdlReport(
+      withObject({ name: "sp_a\nDROP TABLE users;", sql: "CREATE PROCEDURE sp_a() AS $$ SELECT 1 $$;" })
+    );
+    // 이름의 개행이 헤더를 끊어 다음 줄이 실행 SQL로 새어나가면 안 된다
+    expect(sql).toContain("-- procedure: sp_a DROP TABLE users;");
+    expect(sql).not.toContain("-- procedure: sp_a\nDROP TABLE users;");
   });
 });

@@ -1,10 +1,15 @@
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { Command } from "commander";
 import {
   addColumn,
   addEntity,
   addRelationship,
+  addObject,
+  updateObject,
+  removeObject,
+  DIAGRAM_OBJECT_KINDS,
   formatDiagram,
   generateDdlReport,
   generateSeedSql,
@@ -18,6 +23,7 @@ import {
 import type {
   DiagramColumn,
   DiagramEntity,
+  DiagramObjectKind,
   DiagramRelationship,
   ReferentialAction,
   RelationshipCardinality,
@@ -62,6 +68,22 @@ function assertColumnsExist(entity: DiagramEntity, columnIds: string[], side: st
   }
 }
 
+function parseObjectKind(value: string): DiagramObjectKind {
+  if (!(DIAGRAM_OBJECT_KINDS as readonly string[]).includes(value)) {
+    console.error(`--kind must be one of: ${DIAGRAM_OBJECT_KINDS.join(", ")}`);
+    process.exit(1);
+  }
+  return value as DiagramObjectKind;
+}
+
+// --sql 또는 --sql-file 중 하나에서 SQL 원문을 읽는다. 둘 다 없으면 종료.
+function resolveSql(opts: { sql?: string; sqlFile?: string }): string {
+  if (opts.sql !== undefined) return opts.sql;
+  if (opts.sqlFile !== undefined) return readFileSync(opts.sqlFile, "utf8");
+  console.error("Provide --sql <text> or --sql-file <path>");
+  process.exit(1);
+}
+
 const REFERENTIAL_ACTIONS = ["cascade", "restrict", "set-null", "no-action"];
 function assertReferentialAction(value: string | undefined, flag: string): void {
   if (value !== undefined && !REFERENTIAL_ACTIONS.includes(value)) {
@@ -78,7 +100,7 @@ function handleError(err: unknown): never {
 // ── program ───────────────────────────────────────────────────────────────────
 
 const program = new Command();
-program.name("erdify").description("ERDify CLI").version("0.0.0");
+program.name("erdify").description("ERDify CLI").version("0.1.9");
 
 // ── login / whoami ────────────────────────────────────────────────────────────
 
@@ -326,6 +348,28 @@ add
 
 // ── update ────────────────────────────────────────────────────────────────────
 
+add
+  .command("object <diagramId>")
+  .description("Add a SQL object (procedure/function/trigger/view)")
+  .requiredOption("--kind <kind>", "procedure | function | trigger | view")
+  .requiredOption("--name <name>", "Object name")
+  .option("--sql <sql>", "CREATE statement (raw text)")
+  .option("--sql-file <path>", "Read the CREATE statement from a file")
+  .action(
+    async (
+      diagramId: string,
+      opts: { kind: string; name: string; sql?: string; sqlFile?: string }
+    ) => {
+      const { content: doc } = await client.getDiagram(diagramId).catch(handleError);
+      const kind = parseObjectKind(opts.kind);
+      const sql = resolveSql(opts);
+      const id = randomUUID();
+      const updated = addObject(doc, { id, kind, name: opts.name, sql });
+      await client.updateDiagram(diagramId, updated).catch(handleError);
+      console.log(`Object "${opts.name}" (${kind}) added. objectId=${id}`);
+    }
+  );
+
 const update = program.command("update").description("Update resources");
 
 update
@@ -457,6 +501,37 @@ update
 
 // ── remove ────────────────────────────────────────────────────────────────────
 
+update
+  .command("object <diagramId> <objectId>")
+  .description("Update a SQL object's kind, name, or sql")
+  .option("--kind <kind>", "procedure | function | trigger | view")
+  .option("--name <name>", "New object name")
+  .option("--sql <sql>", "Replacement CREATE statement (raw text)")
+  .option("--sql-file <path>", "Read the replacement statement from a file")
+  .action(
+    async (
+      diagramId: string,
+      objectId: string,
+      opts: { kind?: string; name?: string; sql?: string; sqlFile?: string }
+    ) => {
+      const { content: doc } = await client.getDiagram(diagramId).catch(handleError);
+      const target = (doc.objects ?? []).find((o) => o.id === objectId);
+      if (!target) {
+        console.error(`Object ID "${objectId}" not found`);
+        process.exit(1);
+      }
+      const changes: { kind?: DiagramObjectKind; name?: string; sql?: string } = {};
+      if (opts.kind !== undefined) changes.kind = parseObjectKind(opts.kind);
+      if (opts.name !== undefined) changes.name = opts.name;
+      if (opts.sql !== undefined || opts.sqlFile !== undefined) {
+        changes.sql = resolveSql(opts);
+      }
+      const updated = updateObject(doc, objectId, changes);
+      await client.updateDiagram(diagramId, updated).catch(handleError);
+      console.log(`Object "${target.name}" (${objectId}) updated.`);
+    }
+  );
+
 const remove = program.command("remove").alias("rm").description("Remove resources");
 
 remove
@@ -500,5 +575,20 @@ remove
   });
 
 // ── run ───────────────────────────────────────────────────────────────────────
+
+remove
+  .command("object <diagramId> <objectId>")
+  .description("Remove a SQL object by its ID")
+  .action(async (diagramId: string, objectId: string) => {
+    const { content: doc } = await client.getDiagram(diagramId).catch(handleError);
+    const target = (doc.objects ?? []).find((o) => o.id === objectId);
+    if (!target) {
+      console.error(`Object ID "${objectId}" not found`);
+      process.exit(1);
+    }
+    const updated = removeObject(doc, objectId);
+    await client.updateDiagram(diagramId, updated).catch(handleError);
+    console.log(`Object "${target.name}" (${objectId}) removed.`);
+  });
 
 program.parseAsync(process.argv).catch(handleError);

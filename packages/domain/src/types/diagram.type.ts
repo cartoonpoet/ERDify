@@ -53,7 +53,10 @@ export interface DiagramIndex {
   unique: boolean;
 }
 
-export type DiagramObjectKind = "procedure" | "function" | "trigger" | "view";
+/** SQL 객체 종류 목록(표시 순서). domain·MCP·CLI·web가 이 배열 하나만 참조해 drift를 막는다. */
+export const DIAGRAM_OBJECT_KINDS = ["procedure", "function", "trigger", "view"] as const;
+
+export type DiagramObjectKind = (typeof DIAGRAM_OBJECT_KINDS)[number];
 
 export interface DiagramObject {
   id: string;
@@ -113,7 +116,8 @@ export type DdlWarningCode =
   | "default_autoquoted"
   | "type_sanitized"
   | "fk_target_not_keyed"
-  | "sensitive_info";
+  | "sensitive_info"
+  | "object_raw_sql";
 
 export interface DdlWarning {
   code: DdlWarningCode;

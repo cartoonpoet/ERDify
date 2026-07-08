@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEmptyDiagram, validateDiagram } from "../index.js";
+import { addObject, createEmptyDiagram, validateDiagram } from "../index.js";
 import type { DiagramDocument } from "../index.js";
 
 describe("canonical ERD document", () => {
@@ -194,5 +194,29 @@ describe("validateDiagram — additional cases", () => {
     );
 
     expect(validateDiagram(diagram)).toEqual({ valid: true, errors: [] });
+  });
+});
+
+describe("validateDiagram — objects", () => {
+  const base = () => createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });
+
+  it("flags an object with empty sql", () => {
+    const doc = addObject(base(), { id: "o1", kind: "function", name: "f1", sql: "   " });
+    const result = validateDiagram(doc);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("f1"))).toBe(true);
+  });
+
+  it("flags duplicate object names", () => {
+    let doc = addObject(base(), { id: "o1", kind: "view", name: "dup", sql: "CREATE VIEW dup AS SELECT 1;" });
+    doc = addObject(doc, { id: "o2", kind: "procedure", name: "dup", sql: "CREATE PROCEDURE dup() AS $$ $$;" });
+    const result = validateDiagram(doc);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes("dup"))).toBe(true);
+  });
+
+  it("accepts well-formed objects", () => {
+    const doc = addObject(base(), { id: "o1", kind: "view", name: "ok", sql: "CREATE VIEW ok AS SELECT 1;" });
+    expect(validateDiagram(doc).valid).toBe(true);
   });
 });

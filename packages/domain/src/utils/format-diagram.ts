@@ -29,5 +29,12 @@ export function formatDiagram(name: string, doc: DiagramDocument): string {
       lines.push(`  ${src} → ${tgt} (${rel.cardinality}) [relationshipId: ${rel.id}]`);
     }
   }
+  const objects = doc.objects ?? [];
+  if (objects.length > 0) {
+    lines.push("", `Objects (${objects.length}):`);
+    for (const obj of objects) {
+      lines.push(`  ${obj.kind} ${obj.name} [objectId: ${obj.id}]`);
+    }
+  }
   return lines.join("\n");
 }

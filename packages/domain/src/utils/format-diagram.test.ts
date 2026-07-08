@@ -2,6 +2,7 @@ import { createEmptyDiagram } from "../schema/create-empty-diagram.js";
 import { addEntity } from "../commands/entity-commands.js";
 import { addColumn } from "../commands/column-commands.js";
 import { addRelationship } from "../commands/relationship-commands.js";
+import { addObject } from "../commands/object-commands.js";
 import { formatDiagram } from "./format-diagram.js";
 import type { DiagramColumn, DiagramRelationship } from "../types/index.js";
 
@@ -35,5 +36,25 @@ describe("formatDiagram", () => {
     let doc = createEmptyDiagram({ id: "d1", name: "Empty", dialect: "postgresql" });
     doc = addEntity(doc, { id: "e1", name: "users" });
     expect(formatDiagram("Empty", doc)).not.toContain("Relationships");
+  });
+});
+
+describe("formatDiagram — objects", () => {
+  it("lists objects with kind, name, and objectId", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });
+    doc = addObject(doc, {
+      id: "o1",
+      kind: "view",
+      name: "v_active",
+      sql: "CREATE VIEW v_active AS SELECT 1;",
+    });
+    const out = formatDiagram("T", doc);
+    expect(out).toContain("Objects (1):");
+    expect(out).toContain("view v_active [objectId: o1]");
+  });
+
+  it("omits the Objects section when there are none", () => {
+    const doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });
+    expect(formatDiagram("T", doc)).not.toContain("Objects (");
   });
 });

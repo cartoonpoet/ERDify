@@ -22,6 +22,18 @@ export function validateDiagram(diagram: DiagramDocument): DiagramValidationResu
     }
   }
 
+  const objects = diagram.objects ?? [];
+  const seenNames = new Set<string>();
+  for (const obj of objects) {
+    if (obj.sql.trim().length === 0) {
+      errors.push(`Object "${obj.name}" (${obj.kind}) has empty SQL.`);
+    }
+    if (seenNames.has(obj.name)) {
+      errors.push(`Duplicate object name "${obj.name}".`);
+    }
+    seenNames.add(obj.name);
+  }
+
   return {
     valid: errors.length === 0,
     errors

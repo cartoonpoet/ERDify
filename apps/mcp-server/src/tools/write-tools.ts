@@ -11,10 +11,15 @@ import {
   addRelationship,
   removeRelationship,
   updateRelationship,
+  addObject,
+  updateObject,
+  removeObject,
+  DIAGRAM_OBJECT_KINDS,
 } from "@erdify/domain";
 import type {
   DiagramColumn,
   DiagramEntity,
+  DiagramObjectKind,
   DiagramRelationship,
   ReferentialAction,
   RelationshipCardinality,
@@ -32,6 +37,14 @@ export function assertColumnsExist(entity: DiagramEntity, columnIds: string[], s
     throw new Error(`${side} table "${entity.name}" has no column(s): ${missing.join(", ")}`);
   }
 }
+
+const objectKindSchema = z.enum(DIAGRAM_OBJECT_KINDS);
+
+const objectInputSchema = {
+  kind: objectKindSchema.describe("Object kind: procedure | function | trigger | view"),
+  name: z.string().describe("Object name"),
+  sql: z.string().describe("CREATE ... statement, stored verbatim as raw text (not parsed/validated)"),
+};
 
 const columnInputSchema = z.object({
   name: z.string().describe("Column name"),
@@ -376,6 +389,70 @@ export const registerWriteTools = (server: McpServer): void => {
       return {
         content: [{ type: "text", text: `Relationship "${srcName} → ${tgtName}" (${relationshipId}) removed.` }],
       };
+    }
+  );
+
+  server.tool(
+    "add_object",
+    "Add a SQL object (procedure/function/trigger/view) to a diagram. Stores the CREATE statement as raw text. Returns the new object's ID.",
+    {
+      diagramId: z.string(),
+      ...objectInputSchema,
+    },
+    async ({ diagramId, kind, name, sql }) => {
+      const { content: doc } = await client.getDiagram(diagramId);
+      const objectId = randomUUID();
+      const updated = addObject(doc, { id: objectId, kind, name, sql });
+      await client.updateDiagram(diagramId, updated);
+      void client.recordToolCall(diagramId, "add_object", `"${name}" ${kind} 추가`).catch(() => {});
+      return { content: [{ type: "text", text: `Object "${name}" (${kind}) added. objectId=${objectId}` }] };
+    }
+  );
+
+  server.tool(
+    "update_object",
+    "Update a SQL object's kind, name, or sql by its ID. Only provided fields change.",
+    {
+      diagramId: z.string(),
+      objectId: z.string().describe("ID of the object to update (from get_diagram)"),
+      kind: objectKindSchema.optional(),
+      name: z.string().optional(),
+      sql: z.string().optional().describe("Replacement CREATE statement (raw text)"),
+    },
+    async ({ diagramId, objectId, kind, name, sql }) => {
+      const { content: doc } = await client.getDiagram(diagramId);
+      const target = (doc.objects ?? []).find((o) => o.id === objectId);
+      if (!target) {
+        throw new Error(`Object ID "${objectId}" not found in diagram`);
+      }
+      const changes: { kind?: DiagramObjectKind; name?: string; sql?: string } = {};
+      if (kind !== undefined) changes.kind = kind;
+      if (name !== undefined) changes.name = name;
+      if (sql !== undefined) changes.sql = sql;
+      const updated = updateObject(doc, objectId, changes);
+      await client.updateDiagram(diagramId, updated);
+      void client.recordToolCall(diagramId, "update_object", `"${target.name}" 객체 수정`).catch(() => {});
+      return { content: [{ type: "text", text: `Object "${target.name}" (${objectId}) updated.` }] };
+    }
+  );
+
+  server.tool(
+    "remove_object",
+    "Remove a SQL object from a diagram by its ID",
+    {
+      diagramId: z.string(),
+      objectId: z.string().describe("ID of the object to remove (from get_diagram)"),
+    },
+    async ({ diagramId, objectId }) => {
+      const { content: doc } = await client.getDiagram(diagramId);
+      const target = (doc.objects ?? []).find((o) => o.id === objectId);
+      if (!target) {
+        throw new Error(`Object ID "${objectId}" not found in diagram`);
+      }
+      const updated = removeObject(doc, objectId);
+      await client.updateDiagram(diagramId, updated);
+      void client.recordToolCall(diagramId, "remove_object", `"${target.name}" 객체 삭제`).catch(() => {});
+      return { content: [{ type: "text", text: `Object "${target.name}" (${objectId}) removed.` }] };
     }
   );
 };
