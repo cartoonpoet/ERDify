@@ -376,4 +376,13 @@ describe("generateDdlReport — objects", () => {
     expect(sql).not.toContain("-- Objects");
     expect(warnings.some((w) => w.code === "object_raw_sql")).toBe(false);
   });
+
+  it("keeps the header on one line when the object name contains newlines", () => {
+    const { sql } = generateDdlReport(
+      withObject({ name: "sp_a\nDROP TABLE users;", sql: "CREATE PROCEDURE sp_a() AS $$ SELECT 1 $$;" })
+    );
+    // 이름의 개행이 헤더를 끊어 다음 줄이 실행 SQL로 새어나가면 안 된다
+    expect(sql).toContain("-- procedure: sp_a DROP TABLE users;");
+    expect(sql).not.toContain("-- procedure: sp_a\nDROP TABLE users;");
+  });
 });

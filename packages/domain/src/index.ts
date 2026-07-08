@@ -11,6 +11,7 @@ export { addRelationship, removeRelationship, updateRelationship } from "./comma
 export { updateEntityPosition } from "./commands/layout-commands.js";
 export { addIndex, removeIndex, updateIndex } from "./commands/index-commands.js";
 export { addObject, removeObject, updateObject } from "./commands/object-commands.js";
+export { DIAGRAM_OBJECT_KINDS } from "./types/index.js";
 export type {
   DiagramColumn,
   DiagramDialect,

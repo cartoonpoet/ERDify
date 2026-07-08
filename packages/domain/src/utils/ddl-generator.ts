@@ -397,7 +397,9 @@ function objectsDdl(objects: DiagramObject[], warnings: DdlWarning[]): string {
   if (objects.length === 0) return "";
   const blocks: string[] = ["-- Objects"];
   for (const obj of objects) {
-    blocks.push(`-- ${obj.kind}: ${obj.name}\n${obj.sql.trim()}`);
+    // 헤더는 한 줄 주석이어야 한다 — 이름에 개행이 있으면 다음 줄이 실행 SQL로 새어나가므로 공백으로 정규화한다.
+    const headerName = obj.name.replace(/[\r\n]+/g, " ");
+    blocks.push(`-- ${obj.kind}: ${headerName}\n${obj.sql.trim()}`);
     warnings.push({
       code: "object_raw_sql",
       message: `객체 "${obj.name}"(${obj.kind})의 SQL은 원문 텍스트로 내보내지며 dialect 검증 대상이 아닙니다.`,

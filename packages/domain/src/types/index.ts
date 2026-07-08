@@ -18,3 +18,5 @@ export type {
   RelationshipCardinality,
   SeedRow,
 } from "./diagram.type.js";
+
+export { DIAGRAM_OBJECT_KINDS } from "./diagram.type.js";

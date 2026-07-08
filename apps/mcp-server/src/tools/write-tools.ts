@@ -14,6 +14,7 @@ import {
   addObject,
   updateObject,
   removeObject,
+  DIAGRAM_OBJECT_KINDS,
 } from "@erdify/domain";
 import type {
   DiagramColumn,
@@ -37,7 +38,7 @@ export function assertColumnsExist(entity: DiagramEntity, columnIds: string[], s
   }
 }
 
-const objectKindSchema = z.enum(["procedure", "function", "trigger", "view"]);
+const objectKindSchema = z.enum(DIAGRAM_OBJECT_KINDS);
 
 const objectInputSchema = {
   kind: objectKindSchema.describe("Object kind: procedure | function | trigger | view"),

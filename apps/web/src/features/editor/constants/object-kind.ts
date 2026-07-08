@@ -1,7 +1,8 @@
+import { DIAGRAM_OBJECT_KINDS } from "@erdify/domain";
 import type { DiagramObjectKind } from "@erdify/domain";
 
-/** SQL 객체 종류 목록 (표시 순서). 종류를 추가하면 아래 Record들이 타입 레벨에서 누락을 강제한다. */
-export const OBJECT_KINDS: DiagramObjectKind[] = ["procedure", "function", "trigger", "view"];
+/** SQL 객체 종류 목록 (표시 순서). domain의 단일 소스에서 파생해 drift를 막는다. 종류를 추가하면 아래 Record들이 타입 레벨에서 누락을 강제한다. */
+export const OBJECT_KINDS: DiagramObjectKind[] = [...DIAGRAM_OBJECT_KINDS];
 
 /** 종류 → 한글 라벨. ObjectsTabPanel 목록·필터칩과 ObjectEditModal 종류 탭이 공유한다. */
 export const OBJECT_KIND_LABELS: Record<DiagramObjectKind, string> = {

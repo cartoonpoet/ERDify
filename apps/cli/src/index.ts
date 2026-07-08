@@ -9,6 +9,7 @@ import {
   addObject,
   updateObject,
   removeObject,
+  DIAGRAM_OBJECT_KINDS,
   formatDiagram,
   generateDdlReport,
   generateSeedSql,
@@ -67,11 +68,9 @@ function assertColumnsExist(entity: DiagramEntity, columnIds: string[], side: st
   }
 }
 
-const OBJECT_KINDS = ["procedure", "function", "trigger", "view"] as const;
-
 function parseObjectKind(value: string): DiagramObjectKind {
-  if (!(OBJECT_KINDS as readonly string[]).includes(value)) {
-    console.error(`--kind must be one of: ${OBJECT_KINDS.join(", ")}`);
+  if (!(DIAGRAM_OBJECT_KINDS as readonly string[]).includes(value)) {
+    console.error(`--kind must be one of: ${DIAGRAM_OBJECT_KINDS.join(", ")}`);
     process.exit(1);
   }
   return value as DiagramObjectKind;
@@ -524,8 +523,9 @@ update
       const changes: { kind?: DiagramObjectKind; name?: string; sql?: string } = {};
       if (opts.kind !== undefined) changes.kind = parseObjectKind(opts.kind);
       if (opts.name !== undefined) changes.name = opts.name;
-      if (opts.sql !== undefined) changes.sql = opts.sql;
-      else if (opts.sqlFile !== undefined) changes.sql = readFileSync(opts.sqlFile, "utf8");
+      if (opts.sql !== undefined || opts.sqlFile !== undefined) {
+        changes.sql = resolveSql(opts);
+      }
       const updated = updateObject(doc, objectId, changes);
       await client.updateDiagram(diagramId, updated).catch(handleError);
       console.log(`Object "${target.name}" (${objectId}) updated.`);

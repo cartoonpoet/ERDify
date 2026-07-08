@@ -62,7 +62,7 @@
 ### `validation/validate-diagram.ts`
 - objects 순회하며:
   - 빈 `sql`(trim 후 공백) → error.
-  - 이름 중복(`kind`+`name` 조합 기준) → error.
+  - 이름 중복(`name` 단일 키 기준, kind 무관) → error.
 - `objects ?? []` 가드.
 
 ### `commands/object-commands.ts` — 이미 존재 (재사용)
