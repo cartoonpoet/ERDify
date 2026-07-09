@@ -8,8 +8,10 @@ export interface AiModelOption {
 
 /** 단일 소스: 백엔드(provider 역추론·검증)와 프론트(목록 표시)가 공유한다. */
 export const AI_MODELS: AiModelOption[] = [
-  { provider: "anthropic", value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6 (권장)" },
-  { provider: "anthropic", value: "claude-opus-4-6", label: "Claude Opus 4.6 (고성능)" },
+  { provider: "anthropic", value: "claude-sonnet-5", label: "Claude Sonnet 5 (권장)" },
+  { provider: "anthropic", value: "claude-opus-4-8", label: "Claude Opus 4.8 (고성능)" },
+  { provider: "anthropic", value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
+  { provider: "anthropic", value: "claude-opus-4-6", label: "Claude Opus 4.6" },
   { provider: "anthropic", value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 (저비용)" },
   { provider: "openai", value: "gpt-4o", label: "GPT-4o (권장)" },
   { provider: "openai", value: "gpt-4o-mini", label: "GPT-4o mini (저비용)" },
