@@ -10,7 +10,6 @@ export interface AiModelOption {
 export const AI_MODELS: AiModelOption[] = [
   { provider: "anthropic", value: "claude-sonnet-5", label: "Claude Sonnet 5 (권장)" },
   { provider: "anthropic", value: "claude-opus-4-8", label: "Claude Opus 4.8 (고성능)" },
-  { provider: "anthropic", value: "claude-opus-4-7", label: "Claude Opus 4.7" },
   { provider: "anthropic", value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
   { provider: "anthropic", value: "claude-opus-4-6", label: "Claude Opus 4.6" },
   { provider: "anthropic", value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 (저비용)" },
