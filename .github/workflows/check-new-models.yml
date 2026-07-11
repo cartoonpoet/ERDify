@@ -1,0 +1,46 @@
+name: Check new AI models
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # 매주 월요일 09:00 KST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Detect new models and update models.ts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node scripts/check-new-models.mjs --write | tee .model-check.log
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/new-ai-models
+          base: master
+          commit-message: "feat(contracts): 신규 AI 모델 자동 감지 반영"
+          title: "feat(contracts): 신규 AI 모델 추가 (자동 감지)"
+          add-paths: packages/contracts/src/ai/models.ts
+          body: |
+            주간 모델 목록 점검(#35)에서 provider API에 새 모델이 발견되어 자동 생성된 PR입니다.
+
+            **리뷰에서 확인할 것:**
+            - 라벨 정리 — "(권장)" / "(고성능)" / "(저비용)" 태그와 한국어 라벨은 자동 생성되지 않습니다
+            - 순서 — 신규 항목은 각 provider 그룹 **끝**에 삽입됩니다. 기본 선택 모델은 목록 첫 항목이므로, 권장 모델이면 위로 올려주세요
+            - 추가하지 않을 모델은 이 PR에서 지우고 `scripts/model-ignore-list.json`에 ID를 추가해 주세요 (다음 주에 다시 감지되지 않도록)
+
+            자세한 실행 로그는 Actions 탭에서 확인하세요.
