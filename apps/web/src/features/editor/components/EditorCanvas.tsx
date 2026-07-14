@@ -1,7 +1,7 @@
 import { randomUUID } from "@/shared/utils/uuid";
 import { useRef, useState, useMemo, memo } from "react";
 import { useShallow } from "zustand/react/shallow";
-import type { MouseEvent } from "react";
+import type { MouseEvent, PointerEvent as ReactPointerEvent, RefObject } from "react";
 import { ReactFlow, Background, Controls, MiniMap, useReactFlow } from "@xyflow/react";
 import type { Node, Edge, EdgeChange, NodeChange, NodeSelectionChange, NodeRemoveChange, Connection } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -102,17 +102,55 @@ const ClickableMiniMap = memo(({
   allSchemas,
   schemaColors,
 }: {
-  containerRef: React.RefObject<HTMLDivElement | null>;
+  containerRef: RefObject<HTMLDivElement | null>;
   allSchemas: string[];
   schemaColors: Record<string, string>;
 }) => {
   const { setViewport, getViewport } = useReactFlow();
+  const [isDragging, setIsDragging] = useState(false);
+  // 드래그 시작 시점의 미니맵 좌표계(클라이언트 px → 플로우 좌표)를 고정.
+  // 드래그 중 뷰포트가 움직이면 미니맵 viewBox도 바뀌어 매 프레임 재계산 시 커서가 떨리기 때문.
+  const dragInverseRef = useRef<DOMMatrix | null>(null);
 
   const nodeColor = (node: Node) => {
     const data = node.data as { entity: { color?: string | null; schema?: string | null } };
     if (data.entity?.color) return data.entity.color;
     if (data.entity?.schema) return getSchemaColor(data.entity.schema, allSchemas, schemaColors);
     return "#60a5fa";
+  };
+
+  const centerViewportAt = (flowX: number, flowY: number) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const { zoom } = getViewport();
+    setViewport({ x: rect.width / 2 - flowX * zoom, y: rect.height / 2 - flowY * zoom, zoom });
+  };
+
+  const toFlowPoint = (event: ReactPointerEvent<HTMLDivElement>) =>
+    dragInverseRef.current
+      ? new DOMPoint(event.clientX, event.clientY).matrixTransform(dragInverseRef.current)
+      : null;
+
+  const onFollowPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const ctm = event.currentTarget.querySelector("svg")?.getScreenCTM();
+    if (!ctm) return;
+    event.preventDefault();
+    dragInverseRef.current = ctm.inverse();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsDragging(true);
+    const point = toFlowPoint(event);
+    if (point) centerViewportAt(point.x, point.y);
+  };
+
+  const onFollowPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragInverseRef.current) return;
+    const point = toFlowPoint(event);
+    if (point) centerViewportAt(point.x, point.y);
+  };
+
+  const onFollowPointerEnd = () => {
+    dragInverseRef.current = null;
+    setIsDragging(false);
   };
 
   return (
@@ -134,24 +172,23 @@ const ClickableMiniMap = memo(({
         </div>
       )}
       {/* 미니맵 */}
-      <MiniMap
-        nodeColor={nodeColor}
-        maskColor="rgba(240,244,248,0.7)"
-        style={{ position: "static", margin: 0, borderRadius: allSchemas.length > 0 ? "0 0 6px 6px" : 6 }}
-        onClick={(_event, position) => {
-          const { zoom } = getViewport();
-          const rect = containerRef.current?.getBoundingClientRect();
-          if (!rect) return;
-          setViewport(
-            {
-              x: rect.width / 2 - position.x * zoom,
-              y: rect.height / 2 - position.y * zoom,
-              zoom,
-            },
-            { duration: 300 }
-          );
-        }}
-      />
+      <div
+        className={css.minimapDragArea}
+        data-dragging={isDragging || undefined}
+        data-with-legend={allSchemas.length > 0 || undefined}
+        onPointerDown={onFollowPointerDown}
+        onPointerMove={onFollowPointerMove}
+        onPointerUp={onFollowPointerEnd}
+        onPointerCancel={onFollowPointerEnd}
+      >
+        <MiniMap
+          nodeColor={nodeColor}
+          maskColor="rgba(148,163,184,0.25)"
+          maskStrokeColor="#3b82f6"
+          maskStrokeWidth={1.5}
+          nodeBorderRadius={2}
+        />
+      </div>
     </div>
   );
 });
