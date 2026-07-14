@@ -132,6 +132,7 @@ const ClickableMiniMap = memo(({
       : null;
 
   const onFollowPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
     const ctm = event.currentTarget.querySelector("svg")?.getScreenCTM();
     if (!ctm) return;
     event.preventDefault();
