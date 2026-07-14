@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { style, globalStyle } from "@vanilla-extract/css";
 import { vars } from "@/style/tokens.css";
 
 export const root = style({
@@ -43,6 +43,30 @@ export const minimapWrapper = style({
   flexDirection: "column",
   gap: 0,
   zIndex: 5,
+});
+
+export const minimapDragArea = style({
+  cursor: "pointer",
+  selectors: {
+    "&[data-dragging]": {
+      cursor: "grabbing",
+    },
+  },
+});
+
+globalStyle(`${minimapDragArea} .react-flow__minimap-svg`, {
+  cursor: "inherit",
+});
+
+// react-flow__panel 기본 스타일(absolute + margin)을 덮어써 minimapWrapper 흐름에 배치
+globalStyle(`${minimapDragArea} .react-flow__minimap`, {
+  position: "static",
+  margin: 0,
+  borderRadius: 6,
+});
+
+globalStyle(`${minimapDragArea}[data-with-legend] .react-flow__minimap`, {
+  borderRadius: "0 0 6px 6px",
 });
 
 export const schemaLegend = style({
