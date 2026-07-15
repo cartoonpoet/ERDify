@@ -1,0 +1,37 @@
+# CodeRabbit 설정 — https://docs.coderabbit.ai/reference/yaml-template
+# 역할 분담: SonarCloud가 규칙 기반 정적분석·Quality Gate(머지 차단)를 담당하고,
+# CodeRabbit은 로직·설계·엣지케이스 중심의 advisory 리뷰를 담당한다.
+language: "ko-KR"
+
+reviews:
+  profile: "chill"
+  # 게이트는 SonarCloud Quality Gate가 담당하므로 CodeRabbit은 머지를 차단하지 않는다
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!**/dist/**"
+    - "!**/node_modules/**"
+    - "!pnpm-lock.yaml"
+    - "!**/.astro/**"
+    - "!**/*.min.js"
+  path_instructions:
+    - path: "**/*.{ts,tsx}"
+      instructions: >
+        인지 복잡도, 코드 중복, 문자열 리터럴 중복, 시크릿 검출 같은 정적분석
+        수준의 지적은 SonarCloud가 담당하므로 반복하지 말 것. 로직 오류, 설계,
+        동시성/경계 조건, 놓친 엣지케이스, API 계약 위반에 집중할 것.
+    - path: "packages/db/src/migrations/**"
+      instructions: >
+        마이그레이션은 스키마 정합성, up/down 대칭성, 롤백 안전성 위주로만
+        리뷰하고 SQL 문자열 리터럴 스타일은 지적하지 말 것.
+    - path: "**/*.test.{ts,tsx}"
+      instructions: >
+        테스트는 검증 누락(assertion 없는 케이스), 잘못된 mock, 깨지기 쉬운
+        테스트 패턴 위주로 리뷰할 것.
+
+chat:
+  auto_reply: true
