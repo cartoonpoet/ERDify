@@ -81,7 +81,7 @@ export function filterGemini(models) {
   return models.filter(
     (m) =>
       (m.supportedGenerationMethods ?? []).includes("generateContent") &&
-      /^models\/gemini-/.test(m.name ?? "") &&
+      (m.name ?? "").startsWith("models/gemini-") &&
       !/(exp|preview|embedding|aqa|tts|live|image|thinking)/.test(m.name),
   );
 }
