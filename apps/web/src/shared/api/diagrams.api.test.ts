@@ -12,6 +12,7 @@ import {
   getPublicDiagram,
 } from "./diagrams.api";
 import { httpClient } from "./httpClient";
+import type { DiagramDocument } from "@erdify/domain";
 
 vi.mock("./httpClient", () => ({
   httpClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
@@ -22,7 +23,7 @@ const mockDiagram = {
   projectId: "p1",
   organizationId: "o1",
   name: "Test Diagram",
-  content: { tables: [], relations: [] } as any,
+  content: { tables: [], relations: [] } as unknown as DiagramDocument,
   createdBy: "u1",
   createdAt: "",
   updatedAt: "",
@@ -34,7 +35,7 @@ const mockDiagram = {
 const mockVersion = {
   id: "v1",
   diagramId: "d1",
-  content: { tables: [], relations: [] } as any,
+  content: { tables: [], relations: [] } as unknown as DiagramDocument,
   revision: 1,
   createdBy: "u1",
   createdAt: "",
@@ -114,7 +115,7 @@ describe("diagrams.api", () => {
   });
 
   it("getPublicDiagram은 GET /diagrams/public/:token을 호출하고 r.data를 반환한다", async () => {
-    const pub = { id: "d1", name: "Test Diagram", content: { tables: [], relations: [] } as any };
+    const pub = { id: "d1", name: "Test Diagram", content: { tables: [], relations: [] } as unknown as DiagramDocument };
     vi.mocked(httpClient.get).mockResolvedValue({ data: pub });
     const result = await getPublicDiagram("tok");
     expect(httpClient.get).toHaveBeenCalledWith("/diagrams/public/tok");

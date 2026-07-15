@@ -3,7 +3,6 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ShareDiagramModal } from "./ShareDiagramModal";
 import { shareDiagram, revokeDiagramShare } from "@/shared/api/diagrams.api";
-import { copyToClipboard } from "@/shared/utils/clipboard";
 
 vi.mock("@/shared/api/diagrams.api", () => ({
   shareDiagram: vi.fn(),

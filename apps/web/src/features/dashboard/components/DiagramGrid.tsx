@@ -68,7 +68,6 @@ export const DiagramGrid = () => {
     projectName,
     isLoading,
     isError,
-    error,
     refetch,
     activeUsers,
     activeFilter, setActiveFilter,

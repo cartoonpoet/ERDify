@@ -34,8 +34,7 @@ interface AISettingsPanelProps {
 
 export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
   const {
-    data,
-    editingProvider, setEditingProvider,
+    editingProvider,
     apiKey, setApiKey,
     enabled, setEnabled,
     providers, registered, enabledModels,

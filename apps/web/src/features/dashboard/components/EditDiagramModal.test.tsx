@@ -28,8 +28,7 @@ vi.mock("../../../design-system", () => ({
     children,
     disabled,
     onClick,
-    type,
-    ...props
+    type
   }: {
     children: React.ReactNode;
     disabled?: boolean;
@@ -54,8 +53,7 @@ vi.mock("../../../design-system", () => ({
     error,
     required,
     autoFocus,
-    id,
-    ...props
+    id
   }: {
     label?: string;
     type?: string;
@@ -169,7 +167,7 @@ describe("EditDiagramModal", () => {
   });
 
   it("이름이 변경되면 submit 시 updateDiagram이 올바른 인수로 호출된다", async () => {
-    vi.mocked(updateDiagram).mockResolvedValue({} as any);
+    vi.mocked(updateDiagram).mockResolvedValue({} as Awaited<ReturnType<typeof updateDiagram>>);
     const onClose = vi.fn();
     wrap(<EditDiagramModal open={true} onClose={onClose} diagram={sampleDiagram} />);
     const input = screen.getByDisplayValue("My ERD");
@@ -185,7 +183,7 @@ describe("EditDiagramModal", () => {
   });
 
   it("dialect가 변경되면 submit 시 updateDiagram이 새 dialect와 함께 호출된다", async () => {
-    vi.mocked(updateDiagram).mockResolvedValue({} as any);
+    vi.mocked(updateDiagram).mockResolvedValue({} as Awaited<ReturnType<typeof updateDiagram>>);
     const onClose = vi.fn();
     wrap(<EditDiagramModal open={true} onClose={onClose} diagram={sampleDiagram} />);
     const select = screen.getByRole("combobox");

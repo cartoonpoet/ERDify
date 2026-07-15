@@ -59,7 +59,6 @@ export const useEditorPage = () => {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openSearchTab, undo]);
 
   useRealtimeCollaboration(diagramId ?? "");
