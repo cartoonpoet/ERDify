@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@erdify/contracts": "workspace:*",
+    "dotenv": "^17.4.2",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.22"
   },
