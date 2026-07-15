@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { RelationshipPopover } from "./RelationshipPopover";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import type { EditorState } from "@/features/editor/store/useEditorStore";
 
 vi.mock("@/features/editor/store/useEditorStore");
 vi.mock("@erdify/domain", () => ({
@@ -63,15 +64,15 @@ const mockSetPopoverPos = vi.fn();
 const mockSetPendingRelDelete = vi.fn();
 
 const setupStoreMock = (doc: typeof sampleDoc | null = sampleDoc) => {
-  vi.mocked(useEditorStore).mockImplementation((selector: any) =>
+  // zustand 훅의 오버로드 시그니처를 만족시키기 위해 구현 함수를 훅 타입으로 캐스팅한다
+  vi.mocked(useEditorStore).mockImplementation(((selector: (s: EditorState) => unknown) =>
     selector({
       document: doc,
       applyCommand: mockApplyCommand,
       setSelectedRelationship: mockSetSelectedRelationship,
       setPopoverPos: mockSetPopoverPos,
       setPendingRelDelete: mockSetPendingRelDelete,
-    })
-  );
+    } as unknown as EditorState)) as unknown as typeof useEditorStore);
 };
 
 describe("RelationshipPopover", () => {

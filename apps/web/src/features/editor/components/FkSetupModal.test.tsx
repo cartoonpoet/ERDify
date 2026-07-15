@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { FkSetupModal } from "./FkSetupModal";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import type { EditorState } from "@/features/editor/store/useEditorStore";
 import type { PendingConnection } from "@/features/editor/store/useEditorStore";
 
 vi.mock("@/features/editor/store/useEditorStore");
@@ -102,14 +103,14 @@ const setupStoreMock = (
   pendingConnection: PendingConnection | null,
   document: typeof sampleDocument | null = sampleDocument
 ) => {
-  vi.mocked(useEditorStore).mockImplementation((selector: any) =>
+  // zustand 훅의 오버로드 시그니처를 만족시키기 위해 구현 함수를 훅 타입으로 캐스팅한다
+  vi.mocked(useEditorStore).mockImplementation(((selector: (s: EditorState) => unknown) =>
     selector({
       pendingConnection,
       setPendingConnection: mockSetPendingConnection,
       document,
       applyCommand: mockApplyCommand,
-    })
-  );
+    } as unknown as EditorState)) as unknown as typeof useEditorStore);
 };
 
 describe("FkSetupModal", () => {

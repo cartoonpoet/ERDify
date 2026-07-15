@@ -164,11 +164,6 @@ describe("RegisterPage", () => {
     renderRegisterPage();
     const passwordInput = screen.getByPlaceholderText("8자 이상");
 
-    // No strength bars initially
-    const getBars = () => screen.queryAllByRole("generic").filter(
-      (el) => el.tagName === "DIV" && el.className === ""
-    );
-
     // Before typing: strength bars container should not exist
     // The strengthBars div only renders when password.length > 0
     // We'll check by changing value and observing the document

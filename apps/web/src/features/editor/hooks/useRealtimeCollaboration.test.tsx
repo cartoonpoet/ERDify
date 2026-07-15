@@ -23,7 +23,7 @@ vi.mock("@/shared/store/useAuthStore", () => ({
 // vi.mock is hoisted to the top of the file, so variables referenced in the
 // factory must also be hoisted via vi.hoisted() to avoid "Cannot access before
 // initialization" errors.
-const { mockSetDocument, mockSetCollaborators, mockSetCollaborating, mockSubscribeUnsub, mockSubscribe, storeHook } =
+const { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, storeHook } =
   vi.hoisted(() => {
     const mockSetDocument = vi.fn();
     const mockSetCollaborators = vi.fn();

@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ExportModal } from "./ExportModal";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import type { EditorState } from "@/features/editor/store/useEditorStore";
 import { generateDdl, generateOrm } from "@erdify/domain";
 import { copyToClipboard } from "@/shared/utils/clipboard";
 
@@ -53,7 +54,14 @@ vi.mock("@/shared/components/Modal", () => ({
     ) : null,
 }));
 
-const mockDocument = { entities: [], relationships: [], layout: {} } as any;
+const mockDocument = { entities: [], relationships: [], layout: {} } as unknown as EditorState["document"];
+
+// zustand 훅의 오버로드 시그니처를 만족시키기 위해 구현 함수를 훅 타입으로 캐스팅한다
+const makeStoreImpl = (document: EditorState["document"]) =>
+  ((selector: (s: EditorState) => unknown) =>
+    selector({ document } as EditorState)) as unknown as typeof useEditorStore;
+
+const mockStoreImpl = makeStoreImpl(mockDocument);
 
 describe("ExportModal", () => {
   beforeEach(() => {
@@ -61,9 +69,7 @@ describe("ExportModal", () => {
   });
 
   it("open={false} — nothing rendered", () => {
-    vi.mocked(useEditorStore).mockImplementation((selector: any) =>
-      selector({ document: mockDocument })
-    );
+    vi.mocked(useEditorStore).mockImplementation(mockStoreImpl);
     vi.mocked(generateDdl).mockReturnValue("CREATE TABLE users (id INT);");
 
     const { container } = render(
@@ -74,9 +80,7 @@ describe("ExportModal", () => {
   });
 
   it("default tab is SQL — filename shown as '{diagramName}.sql'", () => {
-    vi.mocked(useEditorStore).mockImplementation((selector: any) =>
-      selector({ document: mockDocument })
-    );
+    vi.mocked(useEditorStore).mockImplementation(mockStoreImpl);
     vi.mocked(generateDdl).mockReturnValue("CREATE TABLE users (id INT);");
 
     render(<ExportModal open={true} diagramName="MyDiagram" onClose={vi.fn()} />);
@@ -86,9 +90,7 @@ describe("ExportModal", () => {
   });
 
   it("SQL filename normalizes special characters: 'My ERD' → 'My_ERD.sql'", () => {
-    vi.mocked(useEditorStore).mockImplementation((selector: any) =>
-      selector({ document: mockDocument })
-    );
+    vi.mocked(useEditorStore).mockImplementation(mockStoreImpl);
     vi.mocked(generateDdl).mockReturnValue("CREATE TABLE t (id INT);");
 
     render(<ExportModal open={true} diagramName="My ERD" onClose={vi.fn()} />);
@@ -97,9 +99,7 @@ describe("ExportModal", () => {
   });
 
   it("clicking TypeORM tab → filename changes to 'schema.ts', generateOrm called with 'typeorm'", async () => {
-    vi.mocked(useEditorStore).mockImplementation((selector: any) =>
-      selector({ document: mockDocument })
-    );
+    vi.mocked(useEditorStore).mockImplementation(mockStoreImpl);
     vi.mocked(generateDdl).mockReturnValue("CREATE TABLE t (id INT);");
     vi.mocked(generateOrm).mockReturnValue("// TypeORM code");
 
@@ -114,9 +114,7 @@ describe("ExportModal", () => {
   });
 
   it("clicking Prisma tab → filename changes to 'schema.prisma'", async () => {
-    vi.mocked(useEditorStore).mockImplementation((selector: any) =>
-      selector({ document: mockDocument })
-    );
+    vi.mocked(useEditorStore).mockImplementation(mockStoreImpl);
     vi.mocked(generateOrm).mockReturnValue("// Prisma schema");
 
     render(<ExportModal open={true} diagramName="MyDiagram" onClose={vi.fn()} />);
@@ -129,9 +127,7 @@ describe("ExportModal", () => {
   });
 
   it("clicking SQLAlchemy tab → filename changes to 'schema.py'", async () => {
-    vi.mocked(useEditorStore).mockImplementation((selector: any) =>
-      selector({ document: mockDocument })
-    );
+    vi.mocked(useEditorStore).mockImplementation(mockStoreImpl);
     vi.mocked(generateOrm).mockReturnValue("# SQLAlchemy code");
 
     render(<ExportModal open={true} diagramName="MyDiagram" onClose={vi.fn()} />);
@@ -145,9 +141,7 @@ describe("ExportModal", () => {
 
   it("copy button calls copyToClipboard with current code", async () => {
     const ddl = "CREATE TABLE orders (id INT);";
-    vi.mocked(useEditorStore).mockImplementation((selector: any) =>
-      selector({ document: mockDocument })
-    );
+    vi.mocked(useEditorStore).mockImplementation(mockStoreImpl);
     vi.mocked(generateDdl).mockReturnValue(ddl);
 
     render(<ExportModal open={true} diagramName="Orders" onClose={vi.fn()} />);
@@ -160,9 +154,7 @@ describe("ExportModal", () => {
   });
 
   it("no document — shows empty message", () => {
-    vi.mocked(useEditorStore).mockImplementation((selector: any) =>
-      selector({ document: null })
-    );
+    vi.mocked(useEditorStore).mockImplementation(makeStoreImpl(null));
     vi.mocked(generateDdl).mockReturnValue("");
 
     render(<ExportModal open={true} diagramName="Empty" onClose={vi.fn()} />);

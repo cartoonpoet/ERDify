@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useAIChatStore } from "./useAIChatStore";
 import { DEFAULT_SESSION_ID } from "./aiChatSlice";
+import type { DiagramDocument } from "@erdify/domain";
 
 vi.mock("@/shared/utils/uuid", () => ({
   randomUUID: vi.fn(),
@@ -87,7 +88,7 @@ describe("useAIChatStore — addAssistantMessage", () => {
       messageId: "server-msg-id",
       content: "테이블을 추가했습니다",
       diff: [{ type: "addTable" as const, tableId: "tbl-1", tableName: "users" }],
-      pendingDocument: { tables: [], relations: [] } as any,
+      pendingDocument: { tables: [], relations: [] } as unknown as DiagramDocument,
     };
 
     useAIChatStore.getState().addAssistantMessage(mockResponse);
@@ -129,7 +130,7 @@ describe("useAIChatStore — acceptDiff / rejectDiff", () => {
       messageId: "assistant-msg-1",
       content: "응답",
       diff: [{ type: "addTable" as const, tableId: "tbl-1", tableName: "users" }],
-      pendingDocument: { tables: [], relations: [] } as any,
+      pendingDocument: { tables: [], relations: [] } as unknown as DiagramDocument,
     });
   });
 
