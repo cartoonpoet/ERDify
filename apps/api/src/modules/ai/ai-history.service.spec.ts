@@ -2,7 +2,7 @@ import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AiConversation } from "@erdify/db";
-import { AiHistoryService } from "./ai-history.service";
+import { AiHistoryService, rowsToConvMessages } from "./ai-history.service";
 
 const makeRepo = (overrides: Record<string, unknown> = {}) => ({
   findOne: vi.fn(),
@@ -11,7 +11,46 @@ const makeRepo = (overrides: Record<string, unknown> = {}) => ({
   create: vi.fn((v: unknown) => v),
   update: vi.fn(),
   delete: vi.fn(),
+  createQueryBuilder: vi.fn(),
   ...overrides,
+});
+
+describe("rowsToConvMessages()", () => {
+  it("user 행은 content 그대로 user 메시지로 복원한다", () => {
+    const rows = [{ role: "user", content: "users 테이블 만들어줘" }] as AiConversation[];
+    expect(rowsToConvMessages(rows)).toEqual([{ role: "user", content: "users 테이블 만들어줘" }]);
+  });
+
+  it("assistant 행의 diff를 종류별 라벨로 요약하고, 알 수 없는 형태는 걸러낸다", () => {
+    const rows = [
+      {
+        role: "assistant",
+        content: "변경했어요",
+        diff: [
+          { type: "addTable", tableId: "e1", tableName: "users" }, // tableName 계열
+          { type: "updateTable", tableId: "e1", oldName: "user", newName: "users" }, // oldName->newName
+          { type: "addRelation", relationId: "r1", fromTable: "orders", toTable: "users" }, // fromTable->toTable
+          { type: "mystery" }, // 알 수 없는 형태 → "" → 필터링
+        ],
+      },
+    ] as unknown as AiConversation[];
+
+    expect(rowsToConvMessages(rows)).toEqual([
+      { role: "assistant", text: "변경했어요\n[적용한 변경: users, user->users, orders->users]", toolCalls: [] },
+    ]);
+  });
+
+  it("diff가 null이거나 비어 있으면 요약 없이 본문만 복원한다", () => {
+    const rows = [
+      { role: "assistant", content: "안녕하세요", diff: null },
+      { role: "assistant", content: null, diff: [] },
+    ] as unknown as AiConversation[];
+
+    expect(rowsToConvMessages(rows)).toEqual([
+      { role: "assistant", text: "안녕하세요", toolCalls: [] },
+      { role: "assistant", text: "", toolCalls: [] },
+    ]);
+  });
 });
 
 describe("AiHistoryService", () => {
@@ -134,6 +173,77 @@ describe("AiHistoryService", () => {
           where: { userId: "user-1" },
         }),
       );
+    });
+
+    it("sessionId가 있으면 세션 기준으로 조회하고 역순으로 반환한다", async () => {
+      repo.find.mockResolvedValue([
+        { id: "2", createdAt: new Date("2026-01-02") },
+        { id: "1", createdAt: new Date("2026-01-01") },
+      ]);
+
+      const result = await service.findRecent("user-1", "diag-1", "sess-1");
+
+      expect(repo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: "user-1", sessionId: "sess-1" },
+          order: { createdAt: "DESC" },
+          take: 6,
+        }),
+      );
+      expect(result.map((r) => r.id)).toEqual(["1", "2"]);
+    });
+  });
+
+  describe("findRecentTurns()", () => {
+    it("최근 대화 행을 ConvMessage 턴으로 복원한다", async () => {
+      repo.find.mockResolvedValue([
+        { id: "2", role: "assistant", content: "응답", diff: null, createdAt: new Date("2026-01-02") },
+        { id: "1", role: "user", content: "질문", createdAt: new Date("2026-01-01") },
+      ]);
+
+      const turns = await service.findRecentTurns("user-1", "diag-1", "sess-1");
+
+      expect(turns).toEqual([
+        { role: "user", content: "질문" },
+        { role: "assistant", text: "응답", toolCalls: [] },
+      ]);
+    });
+  });
+
+  describe("findSessions()", () => {
+    it("세션별 첫 user 메시지를 이름(30자 제한)으로, 없으면 '새 세션'으로 반환한다", async () => {
+      const longFirst = "가".repeat(40);
+      const qb = {
+        select: vi.fn().mockReturnThis(),
+        addSelect: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        groupBy: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        setParameter: vi.fn().mockReturnThis(),
+        getRawMany: vi.fn().mockResolvedValue([
+          { sessionId: "s1", createdAt: new Date("2026-01-02T00:00:00.000Z"), firstName: longFirst },
+          { sessionId: "s2", createdAt: "2026-01-01 00:00:00", firstName: null },
+        ]),
+      };
+      repo.createQueryBuilder.mockReturnValue(qb);
+
+      const sessions = await service.findSessions("user-1", "diag-1");
+
+      expect(sessions).toEqual([
+        { id: "s1", diagramId: "diag-1", name: longFirst.slice(0, 30), createdAt: "2026-01-02T00:00:00.000Z" },
+        { id: "s2", diagramId: "diag-1", name: "새 세션", createdAt: "2026-01-01 00:00:00" },
+      ]);
+    });
+  });
+
+  describe("createSession()", () => {
+    it("호출마다 새 UUID를 반환한다 (DB 저장은 첫 메시지 때)", async () => {
+      const a = await service.createSession("user-1", "diag-1");
+      const b = await service.createSession("user-1", "diag-1");
+      expect(a).toMatch(/^[0-9a-f-]{36}$/);
+      expect(b).not.toBe(a);
+      expect(repo.save).not.toHaveBeenCalled();
     });
   });
 

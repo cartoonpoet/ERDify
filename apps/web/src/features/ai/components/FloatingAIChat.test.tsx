@@ -35,8 +35,9 @@ vi.mock("./MessageBubble", () => ({
   ),
 }));
 
-import { sendAiChatStream, acceptAiDiff, rejectAiDiff, createSession } from "../api/ai.api";
+import { sendAiChatStream, acceptAiDiff, rejectAiDiff, createSession, getAiChatConfig } from "../api/ai.api";
 import { randomUUID } from "@/shared/utils/uuid";
+import * as floatingCss from "./FloatingAIChat.css";
 
 const makeEmptyDoc = (id = "doc-1"): DiagramDocument => ({
   format: "erdify.schema.v1",
@@ -62,11 +63,14 @@ const initialAiChatState = {
 
 beforeEach(() => {
   useAIChatStore.setState(initialAiChatState);
+  localStorage.clear();
   vi.mocked(randomUUID).mockReset();
   vi.mocked(sendAiChatStream).mockReset();
   vi.mocked(acceptAiDiff).mockReset();
   vi.mocked(rejectAiDiff).mockReset();
   vi.mocked(createSession).mockReset();
+  vi.mocked(getAiChatConfig).mockReset();
+  vi.mocked(getAiChatConfig).mockResolvedValue({ models: [] });
   Element.prototype.scrollIntoView = vi.fn();
 });
 
@@ -277,5 +281,127 @@ describe("FloatingAIChat", () => {
     const rejectedMsg = allMessages.find((m) => m.id === reviewMsgId);
     expect(rejectedMsg?.accepted).toBe(false);
     expect(state.reviewingMessageId).toBeNull();
+  });
+});
+
+describe("FloatingAIChat — FAB 키보드 접근성", () => {
+  it("닫힘 상태에서 FAB에 Enter 키 입력 시 채팅이 열린다", () => {
+    render(<FloatingAIChat diagramId="diagram-1" />);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "AI 채팅 열기" }), { key: "Enter" });
+
+    expect(useAIChatStore.getState().isOpen).toBe(true);
+  });
+
+  it("닫힘 상태에서 FAB에 Space 키 입력 시 채팅이 열린다", () => {
+    render(<FloatingAIChat diagramId="diagram-1" />);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "AI 채팅 열기" }), { key: " " });
+
+    expect(useAIChatStore.getState().isOpen).toBe(true);
+  });
+
+  it("Enter/Space 이외의 키 입력으로는 채팅이 열리지 않는다", () => {
+    render(<FloatingAIChat diagramId="diagram-1" />);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "AI 채팅 열기" }), { key: "Escape" });
+
+    expect(useAIChatStore.getState().isOpen).toBe(false);
+  });
+});
+
+describe("FloatingAIChat — 모델 드롭다운", () => {
+  const TEST_MODELS = [
+    { provider: "anthropic" as const, value: "claude-sonnet-5", label: "Claude Sonnet 5 (권장)" },
+    { provider: "openai" as const, value: "gpt-4o", label: "GPT-4o (권장)" },
+  ];
+
+  /** 채팅을 연 상태로 렌더링하고 모델 버튼이 나타날 때까지 기다린다. */
+  const renderWithModels = async () => {
+    vi.mocked(getAiChatConfig).mockResolvedValue({ models: TEST_MODELS });
+    useAIChatStore.setState({ ...initialAiChatState, isOpen: true });
+    render(<FloatingAIChat diagramId="diagram-1" />);
+    return await screen.findByRole("button", { name: /Claude Sonnet 5/ });
+  };
+
+  it("모델 버튼 클릭 시 드롭다운이 열리고 aria-expanded가 갱신된다", async () => {
+    const modelBtn = await renderWithModels();
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(modelBtn);
+
+    expect(modelBtn).toHaveAttribute("aria-expanded", "true");
+    // 프로바이더 그룹 라벨과 모델 항목이 표시된다
+    expect(screen.getByText("Anthropic")).toBeInTheDocument();
+    expect(screen.getByText("OpenAI")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "GPT-4o 권장" })).toBeInTheDocument();
+  });
+
+  it("모델 버튼에서 Enter/Space 키로 드롭다운을 토글하고 다른 키는 무시한다", async () => {
+    const modelBtn = await renderWithModels();
+
+    fireEvent.keyDown(modelBtn, { key: "Enter" });
+    expect(modelBtn).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.keyDown(modelBtn, { key: " " });
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.keyDown(modelBtn, { key: "Escape" });
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("드롭다운 항목 클릭 시 모델이 선택되고 드롭다운이 닫힌다", async () => {
+    const modelBtn = await renderWithModels();
+    fireEvent.click(modelBtn);
+
+    fireEvent.click(screen.getByRole("button", { name: "GPT-4o 권장" }));
+
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+    expect(modelBtn).toHaveTextContent("GPT-4o");
+    expect(localStorage.getItem("erdify.ai.model")).toBe("gpt-4o");
+  });
+
+  it("드롭다운 항목에서 Enter 키로 모델을 선택하면 전파가 막혀 드롭다운이 다시 열리지 않는다", async () => {
+    const modelBtn = await renderWithModels();
+    fireEvent.click(modelBtn);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "GPT-4o 권장" }), { key: "Enter" });
+
+    // stopPropagation이 없다면 모델 버튼 keydown 핸들러가 다시 토글해 열린 상태가 된다
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+    expect(localStorage.getItem("erdify.ai.model")).toBe("gpt-4o");
+  });
+
+  it("드롭다운 항목에서 Space 키로도 모델을 선택할 수 있고 다른 키는 무시된다", async () => {
+    const modelBtn = await renderWithModels();
+    fireEvent.click(modelBtn);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "GPT-4o 권장" }), { key: "Tab" });
+    expect(modelBtn).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "GPT-4o 권장" }), { key: " " });
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+    expect(localStorage.getItem("erdify.ai.model")).toBe("gpt-4o");
+  });
+
+  it("드롭다운 내부(프로바이더 라벨) 클릭은 토글로 전파되지 않아 드롭다운이 유지된다", async () => {
+    const modelBtn = await renderWithModels();
+    fireEvent.click(modelBtn);
+
+    fireEvent.click(screen.getByText("Anthropic"));
+
+    expect(modelBtn).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("백드롭 클릭 시 드롭다운이 닫힌다", async () => {
+    const modelBtn = await renderWithModels();
+    fireEvent.click(modelBtn);
+
+    const backdrop = document.querySelector(`.${floatingCss.modelDropdownBackdrop}`);
+    expect(backdrop).not.toBeNull();
+    fireEvent.click(backdrop!);
+
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+    expect(document.querySelector(`.${floatingCss.modelDropdownBackdrop}`)).toBeNull();
   });
 });

@@ -251,4 +251,97 @@ describe("AiChatService.runChat", () => {
     const allUserContents = captured.flat().filter((m) => m.role === "user").map((m) => (m as { content: string }).content);
     expect(allUserContents.some((c) => c.includes("INVALID_BAD_TABLE"))).toBe(true);
   });
+
+  // 첫 단계(다이어그램 조회)에서 실패하는 서비스를 만든다 — catch 경로 검증용
+  function makeFailingService(thrown: unknown): Svc {
+    const provider: AiProvider = { streamTurn: vi.fn() };
+    const aiService = {
+      getDiagramAndOrgId: vi.fn(async () => { throw thrown; }),
+      resolveChatCredentials: vi.fn(),
+    };
+    const history = { findRecentTurns: vi.fn(), saveUserMessage: vi.fn(), saveAssistantMessage: vi.fn() };
+    const usage = { log: vi.fn() };
+    const userRepo = { findOne: vi.fn() };
+    const orgRepo = { findOne: vi.fn() };
+    return new AiChatService(aiService as never, history as never, new ToolExecutor(loader), usage as never, provider as never, provider as never, provider as never, userRepo as never, orgRepo as never, loader);
+  }
+
+  it("처리 중 Error가 던져지면 그 메시지로 error 이벤트를 emit한다", async () => {
+    const svc = makeFailingService(new Error("다이어그램 조회 실패"));
+
+    const events: StreamEvent[] = [];
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "hi", sessionId: "s1" }, (e) => events.push(e));
+
+    expect(events).toEqual([{ event: "error", message: "다이어그램 조회 실패" }]);
+  });
+
+  it("Error가 아닌 값이 던져지면 기본 오류 메시지로 error 이벤트를 emit한다", async () => {
+    const svc = makeFailingService("boom");
+
+    const events: StreamEvent[] = [];
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "hi", sessionId: "s1" }, (e) => events.push(e));
+
+    expect(events).toEqual([{ event: "error", message: "AI 처리 중 오류가 발생했습니다." }]);
+  });
+
+  it("원본 문서에 이미 있던 참조 무결성 오류(유령 컬럼/테이블)는 AI 변경 검증에서 제외한다", async () => {
+    // 관계가 없는 소스/타깃 컬럼·없는 테이블을 참조하고, 인덱스도 없는 테이블·컬럼을 참조하는 원본 문서.
+    // 이 오류들은 baseline이므로 AI가 diff를 만들어도 재시도 없이 정상 종료해야 한다.
+    const brokenDoc: DiagramDocument = {
+      ...doc,
+      entities: [
+        {
+          id: "e1", name: "users", schema: null, logicalName: null, comment: null, color: null,
+          columns: [
+            { id: "c1", name: "id", type: "uuid", nullable: false, primaryKey: true, unique: false, defaultValue: null, comment: null, ordinal: 0 },
+          ],
+        },
+      ],
+      relationships: [
+        {
+          id: "r1", name: "", sourceEntityId: "e1", sourceColumnIds: ["ghost-src"],
+          targetEntityId: "e1", targetColumnIds: ["ghost-tgt"], cardinality: "many-to-one",
+          onDelete: "no-action", onUpdate: "no-action", identifying: false,
+        },
+        {
+          id: "r2", name: "", sourceEntityId: "missing-table", sourceColumnIds: ["x"],
+          targetEntityId: "missing-table", targetColumnIds: [], cardinality: "one-to-one",
+          onDelete: "no-action", onUpdate: "no-action", identifying: false,
+        },
+      ],
+      indexes: [
+        { id: "i1", entityId: "missing-table", name: "idx_ghost_table", columnIds: [], unique: false },
+        { id: "i2", entityId: "e1", name: "idx_ghost_col", columnIds: ["ghost-col"], unique: false },
+      ],
+    };
+    const turns: ProviderTurn[] = [
+      { text: "", toolCalls: [{ id: "t1", name: "addTable", input: { name: "roles" } }], truncated: false },
+      { text: "완료", toolCalls: [], truncated: false },
+    ];
+    let i = 0;
+    const provider: AiProvider = {
+      streamTurn: vi.fn(async (a) => {
+        a.onText("…");
+        return turns[i++]!;
+      }),
+    };
+    const aiService = {
+      getDiagramAndOrgId: vi.fn(async () => ({ doc: brokenDoc, orgId: "o1", diagramName: "shop" })),
+      resolveChatCredentials: vi.fn(async () => ({ apiKey: "k", provider: "anthropic", model: "m" })),
+    };
+    const history = { findRecentTurns: vi.fn(async () => []), saveUserMessage: vi.fn(async () => undefined), saveAssistantMessage: vi.fn(async () => ({ id: "m" })) };
+    const usage = { log: vi.fn(async () => undefined) };
+    const userRepo = { findOne: vi.fn(async () => ({ name: "u", email: "e" })) };
+    const orgRepo = { findOne: vi.fn(async () => ({ name: "o" })) };
+    const svc = new AiChatService(aiService as never, history as never, new ToolExecutor(loader), usage as never, provider as never, provider as never, provider as never, userRepo as never, orgRepo as never, loader);
+
+    const events: StreamEvent[] = [];
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "roles 추가해줘", sessionId: "s1" }, (e) => events.push(e));
+
+    // 기존 오류는 baseline으로 제외되어 검증 재시도 없이 2회 turn으로 종료
+    expect(provider.streamTurn).toHaveBeenCalledTimes(2);
+    const done = events.find((e) => e.event === "done") as Extract<StreamEvent, { event: "done" }>;
+    expect(done.diff).toHaveLength(1);
+    expect(done.pendingDocument?.entities.some((e) => e.name === "roles")).toBe(true);
+  });
 });
