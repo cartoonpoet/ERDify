@@ -232,6 +232,24 @@ describe("parseDdl", () => {
     expect(entity.seedData).toHaveLength(2);
     expect(Object.values(entity.seedData![0]!)).toContain("GRP1");
   });
+
+  it("MSSQL GO 배치 구분자로 나뉜 여러 CREATE TABLE을 각각 파싱한다", () => {
+    const sql = `
+      CREATE TABLE a (id INT);
+      GO
+      CREATE TABLE b (id INT);
+    `;
+    const doc = parseDdl(sql, "mssql");
+
+    expect(doc.entities.map((e) => e.name).sort()).toEqual(["a", "b"]);
+  });
+
+  it("공백만 있는 줄이 섞여 있어도 세미콜론과 GO로 정상 분리된다", () => {
+    const sql = "CREATE TABLE a (id INT);\n   \n\nGO\n\n   \nCREATE TABLE b (id INT);";
+    const doc = parseDdl(sql, "mssql");
+
+    expect(doc.entities.map((e) => e.name).sort()).toEqual(["a", "b"]);
+  });
 });
 
 describe("applySeedInserts", () => {

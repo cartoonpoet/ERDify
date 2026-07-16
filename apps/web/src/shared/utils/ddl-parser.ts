@@ -89,11 +89,50 @@ const CONSTRAINT_KEYWORDS = new Set([
   "CONSTRAINT", "KEY", "INDEX",
 ]);
 
+/**
+ * Removes occurrences of `\s+<keyword><tailRe>` from `s` (case-insensitive keyword match),
+ * e.g. `\s+CHARACTER\s+SET\s+\S+`. Locates `keyword` via a plain (non-backtracking) substring
+ * search first, then absorbs the mandatory preceding whitespace run manually — this avoids the
+ * catastrophic-backtracking shape of a leading unbounded `\s+`/`\s*` quantifier with no anchor,
+ * which a naive regex would retry at every position of a long non-matching whitespace run
+ * (O(n²) on adversarial input). `tailRe` must match starting exactly where `keyword` ends.
+ */
+function stripWhitespacePrefixedClause(s: string, keyword: string, tailRe: RegExp, global: boolean): string {
+  const lower = s.toLowerCase();
+  const kw = keyword.toLowerCase();
+  const sticky = new RegExp(tailRe.source, tailRe.flags.includes("y") ? tailRe.flags : `${tailRe.flags}y`);
+  let out = "";
+  let cursor = 0;
+  let searchFrom = 0;
+  for (;;) {
+    const idx = lower.indexOf(kw, searchFrom);
+    if (idx === -1) break;
+    const afterKeyword = idx + keyword.length;
+    if (idx === 0 || !/\s/.test(s[idx - 1]!)) {
+      searchFrom = idx + 1;
+      continue;
+    }
+    sticky.lastIndex = afterKeyword;
+    const tailMatch = sticky.exec(s);
+    if (!tailMatch) {
+      searchFrom = idx + 1;
+      continue;
+    }
+    let wsStart = idx;
+    while (wsStart > cursor && /\s/.test(s[wsStart - 1]!)) wsStart--;
+    out += s.slice(cursor, wsStart);
+    cursor = afterKeyword + tailMatch[0].length;
+    searchFrom = cursor;
+    if (!global) break;
+  }
+  out += s.slice(cursor);
+  return out;
+}
+
 function cleanMySqlType(type: string): string {
-  return type
-    .replace(/\s+CHARACTER\s+SET\s+\S+/gi, "")
-    .replace(/\s+COLLATE\s+\S+/gi, "")
-    .trim();
+  let v = stripWhitespacePrefixedClause(type, "CHARACTER", /\s+SET\s+\S+/i, true);
+  v = stripWhitespacePrefixedClause(v, "COLLATE", /\s+\S+/i, true);
+  return v.trim();
 }
 
 function parseColumnType(tokens: string[]): string {
@@ -114,6 +153,24 @@ function parseColumnType(tokens: string[]): string {
     }
   }
   return typeParts.join(" ");
+}
+
+// DEFAULT 값은 quote 문자별로 종료 조건이 다르므로(따옴표 종류마다 이스케이프 규칙이 같음) 하나의
+// 거대한 교차 정규식 대신 quote별 소규모 정규식 + 일반 토큰 폴백으로 나눠 복잡도를 낮춘다.
+const QUOTED_DEFAULT_RE: Record<string, RegExp> = {
+  "'": /^'(?:[^']|\\')*'/,
+  '"': /^"(?:[^"]|\\")*"/,
+  "`": /^`(?:[^`]|\\`)*`/,
+};
+
+/** `DEFAULT\s+` 뒤에 오는 값 하나(quote 문자열 또는 공백 없는 토큰)를 추출한다. */
+function matchDefaultValue(afterDefault: string): string | null {
+  const first = afterDefault[0];
+  const quoteRe = first ? QUOTED_DEFAULT_RE[first] : undefined;
+  const quoted = quoteRe?.exec(afterDefault);
+  if (quoted) return quoted[0];
+  const bare = /^\S+/.exec(afterDefault);
+  return bare ? bare[0] : null;
 }
 
 interface ParsedFK {
@@ -183,9 +240,15 @@ function parseCreateTable(stmt: string): {
 
   const afterBody = stmt.slice(bodyEnd + 1);
   let tableComment: string | null = null;
-  const tableCommentMatch = afterBody.match(/COMMENT\s*=?\s*('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
+  // `(?=(\s*))\1` emulates an atomic group for each `\s*`: the two whitespace quantifiers were
+  // directly adjacent (only separated by an optional, non-consuming `=?`), which let the engine
+  // explore O(n) equivalent ways to split a whitespace run between them before failing — this
+  // avoids that ambiguity (capture groups 1/2 are the lookaheads' own, so the value is group 3).
+  const tableCommentMatch = afterBody.match(
+    /COMMENT(?=(\s*))\1=?(?=(\s*))\2('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i,
+  );
   if (tableCommentMatch) {
-    tableComment = (tableCommentMatch[1] ?? "").replace(/^['"]|['"]$/g, "");
+    tableComment = (tableCommentMatch[3] ?? "").replace(/^['"]|['"]$/g, "");
   }
 
   const columns: Omit<DiagramColumn, "id">[] = [];
@@ -256,8 +319,10 @@ function parseCreateTable(stmt: string): {
     const unique = /\bUNIQUE\b/i.test(upperLine) && !primaryKey;
 
     let defaultValue: string | null = null;
-    const defMatch = line.match(/DEFAULT\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*"|`(?:[^`]|\\`)*`|\S+)/i);
-    if (defMatch) defaultValue = defMatch[1] ?? null;
+    const defPrefixMatch = /DEFAULT\s+/i.exec(line);
+    if (defPrefixMatch) {
+      defaultValue = matchDefaultValue(line.slice(defPrefixMatch.index + defPrefixMatch[0].length));
+    }
 
     let comment: string | null = null;
     const colCommentMatch = line.match(/COMMENT\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
@@ -385,13 +450,44 @@ function parseInsertValuesList(valuesStr: string): string[][] {
 }
 
 /**
+ * Splits DDL text into statements on ";" characters or a line containing only (optional
+ * whitespace +) "GO" (+ optional whitespace) — the T-SQL batch separator. Implemented as a
+ * line-by-line scan instead of a single `/;|^\s*GO\s*$/im` regex: that pattern's leading `\s*`
+ * (before "GO", anchored per-line via the `m` flag) gets retried at every line-start position of
+ * a long run of whitespace-only lines, causing O(n²) backtracking on such (plausible, e.g. blank
+ * padding lines in a pasted DDL file) adversarial input. Splitting on "\n" first means each
+ * line's `^...$` check is a single anchored, non-repeating attempt.
+ */
+function splitDdlStatements(sql: string): string[] {
+  const goLineRe = /^\s*GO\s*$/i;
+  const statements: string[] = [];
+  let current = "";
+  for (const line of sql.split("\n")) {
+    if (goLineRe.test(line)) {
+      statements.push(current);
+      current = "";
+      continue;
+    }
+    const parts = line.split(";");
+    current += parts[0] ?? "";
+    for (let i = 1; i < parts.length; i++) {
+      statements.push(current);
+      current = parts[i] ?? "";
+    }
+    current += "\n";
+  }
+  statements.push(current);
+  return statements.map((s) => s.trim()).filter(Boolean);
+}
+
+/**
  * Applies INSERT INTO seed data from SQL to an existing set of entities (in-place by name match).
  * Use this when importing seed-only SQL files (no CREATE TABLE) to populate existing diagram entities.
  * Returns a new array; unaffected entities are returned as-is (reference-equal).
  */
 export function applySeedInserts(sql: string, existingEntities: DiagramEntity[]): DiagramEntity[] {
   const cleaned = removeComments(sql);
-  const statements = cleaned.split(/;|^\s*GO\s*$/im).map((s) => s.trim()).filter(Boolean);
+  const statements = splitDdlStatements(cleaned);
 
   // Build a name → entity lookup (same logic as parseDdl's registerEntity/lookupEntity)
   const entityMap = new Map<string, DiagramEntity>();
@@ -450,7 +546,7 @@ export function applySeedInserts(sql: string, existingEntities: DiagramEntity[])
 
 export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument {
   const cleaned = removeComments(sql);
-  const statements = cleaned.split(/;|^\s*GO\s*$/im).map((s) => s.trim()).filter(Boolean);
+  const statements = splitDdlStatements(cleaned);
 
   // entityMap keyed by both "schema.table" (if schema) and "table" (fallback)
   const entityMap = new Map<string, DiagramEntity>();

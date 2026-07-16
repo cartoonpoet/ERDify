@@ -4,8 +4,12 @@ import { AI_PROVIDERS, PROVIDER_LABELS, modelsForProvider } from "@/features/ai/
 import * as css from "./ai-settings-panel.css";
 
 const parseModelLabel = (label: string) => {
-  const m = label.match(/^(.*?)\s*\((.+)\)$/);
-  return m ? { name: m[1], badge: m[2] } : { name: label, badge: null };
+  // `(.*?)\s*\(` (lazy dot-star, `.` also matches "(") combined with a trailing `(.+)\)$` lets the
+  // engine explore many equivalent ways to place the split point when the string has repeated "("
+  // characters, causing catastrophic backtracking. `[^(]*` deterministically stops at the first
+  // "(" instead, and `trimEnd()` drops the separating space that regex used to consume via `\s*`.
+  const m = /^([^(]*)\((.+)\)$/.exec(label);
+  return m ? { name: (m[1] ?? "").trimEnd(), badge: m[2] } : { name: label, badge: null };
 };
 
 const getBadgeVariant = (badge: string | null): keyof typeof css.checkboxBadge => {

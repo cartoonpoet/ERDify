@@ -20,6 +20,22 @@ export interface SchemaFinding {
 
 const MAX_FINDINGS = 40;
 
+/**
+ * 컬럼명 끝의 "(선택적 `_`) + 숫자" 접미사를 떼어 base 이름을 구한다(addr1→addr, phone_2→phone).
+ * 예전에는 `/^(.*?)_?(\d+)$/` 하나로 처리했지만, 앵커 없는 `.*?` 뒤에 `$`로 고정된 `\d+`가 오는
+ * 조합은 끝에 숫자가 없는 긴 문자열에서 O(n²) 백트래킹을 유발한다(각 시도 지점마다 `\d+`가
+ * 최대로 먹었다가 되돌리는 동작이 반복됨). 끝에서부터 숫자를 직접 스캔하면 동일한 결과를
+ * O(n)에 얻을 수 있다.
+ */
+function stripTrailingNumberSuffix(name: string): string | null {
+  let i = name.length;
+  while (i > 0 && name.charCodeAt(i - 1) >= 48 && name.charCodeAt(i - 1) <= 57) i--;
+  if (i === name.length) return null; // 끝에 숫자가 없음
+  let base = name.slice(0, i);
+  if (base.endsWith("_")) base = base.slice(0, -1);
+  return base;
+}
+
 /** snake/camel을 모호하지 않게 구분한다. 한 단어 소문자(id, email)는 어느 쪽도 아니다. */
 function caseStyle(name: string): "snake" | "camel" | "ambiguous" {
   const hasUpper = /[A-Z]/.test(name);
@@ -98,8 +114,8 @@ export function analyzeSchema(doc: DiagramDocument): SchemaFinding[] {
   for (const entity of entities) {
     const groups = new Map<string, number>();
     for (const col of entity.columns) {
-      const m = col.name.match(/^(.*?)_?(\d+)$/);
-      if (m && m[1]) groups.set(m[1], (groups.get(m[1]) ?? 0) + 1);
+      const base = stripTrailingNumberSuffix(col.name);
+      if (base) groups.set(base, (groups.get(base) ?? 0) + 1);
     }
     for (const [base, count] of groups) {
       if (count >= 2) {
