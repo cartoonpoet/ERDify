@@ -47,7 +47,7 @@ export const AIChatSessionSelector = ({
         />
       )}
 
-      <button type="button" className={css.dropdownBtn} onClick={handleToggle}>
+      <button type="button" className={css.dropdownBtn} onClick={handleToggle} aria-expanded={isOpen}>
         <span className={css.dropdownBtnLabel}>{currentLabel}</span>
         <span className={arrowClass}>▾</span>
       </button>

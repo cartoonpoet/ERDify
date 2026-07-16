@@ -13,6 +13,7 @@ const TTL_DAYS = 90;
 
 function diffLabel(d: DiffChange): string {
   if ("tableName" in d) return d.tableName;
+  if ("newName" in d) return `${d.oldName}->${d.newName}`;
   if ("fromTable" in d) return `${d.fromTable}->${d.toTable}`;
   return "";
 }

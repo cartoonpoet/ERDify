@@ -14,8 +14,9 @@ export function sanitizeSqlFilePath(input: string): string {
   let isFile: boolean;
   try {
     isFile = statSync(resolved).isFile();
-  } catch {
-    console.error(`--sql-file: file not found: ${resolved}`);
+  } catch (err) {
+    const cause = err instanceof Error ? err.message : String(err);
+    console.error(`--sql-file: cannot access file: ${resolved}\n${cause}`);
     process.exit(1);
   }
   if (!isFile) {
@@ -25,8 +26,12 @@ export function sanitizeSqlFilePath(input: string): string {
   return resolved;
 }
 
-// --sql 또는 --sql-file 중 하나에서 SQL 원문을 읽는다. 둘 다 없으면 종료.
+// --sql 또는 --sql-file 중 하나에서 SQL 원문을 읽는다. 둘 다 주거나 둘 다 없으면 종료.
 export function resolveSql(opts: { sql?: string; sqlFile?: string }): string {
+  if (opts.sql !== undefined && opts.sqlFile !== undefined) {
+    console.error("Provide either --sql or --sql-file, not both");
+    process.exit(1);
+  }
   if (opts.sql !== undefined) return opts.sql;
   if (opts.sqlFile !== undefined) return readFileSync(sanitizeSqlFilePath(opts.sqlFile), "utf8");
   console.error("Provide --sql <text> or --sql-file <path>");

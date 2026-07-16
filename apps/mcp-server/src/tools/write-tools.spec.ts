@@ -76,7 +76,10 @@ type ToolHandler = (args: Record<string, unknown>) => Promise<{
 function collectTools(): Map<string, ToolHandler> {
   const handlers = new Map<string, ToolHandler>();
   const fakeServer = {
-    registerTool: (name: string, _config: unknown, handler: ToolHandler) => {
+    registerTool: (name: string, config: { description?: string; inputSchema?: unknown }, handler: ToolHandler) => {
+      if (!config.inputSchema || typeof config.inputSchema !== "object") {
+        throw new Error(`tool "${name}" registered without inputSchema`);
+      }
       handlers.set(name, handler);
     },
   } as unknown as McpServer;

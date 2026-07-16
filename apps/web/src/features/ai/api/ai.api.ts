@@ -63,16 +63,18 @@ interface SseEvent {
 /** SSE 이벤트 블록에서 event 타입과 JSON data를 파싱한다. data가 없거나 JSON이 아니면 null. */
 const parseSseEventBlock = (eventBlock: string): SseEvent | null => {
   let eventType = "";
-  let dataLine = "";
+  // SSE 규격상 data: 필드는 여러 줄로 나뉘어 올 수 있다 — 줄바꿈으로 이어 붙인다.
+  const dataLines: string[] = [];
 
   for (const line of eventBlock.split("\n")) {
     if (line.startsWith("event:")) {
       eventType = line.slice("event:".length).trim();
     } else if (line.startsWith("data:")) {
-      dataLine = line.slice("data:".length).trim();
+      dataLines.push(line.slice("data:".length).trim());
     }
   }
 
+  const dataLine = dataLines.join("\n");
   if (!dataLine) return null;
 
   try {
