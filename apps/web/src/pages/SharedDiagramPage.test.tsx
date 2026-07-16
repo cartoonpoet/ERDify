@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SharedDiagramPage } from "./SharedDiagramPage";
 import { getPublicDiagram } from "@/shared/api/diagrams.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
+import type { EditorState } from "@/features/editor/store/useEditorStore";
 
 vi.mock("@/shared/api/diagrams.api", () => ({
   getPublicDiagram: vi.fn(),
@@ -34,7 +35,7 @@ const mockSetCanEdit = vi.fn();
 vi.mocked(useEditorStore).mockReturnValue({
   setDocument: mockSetDocument,
   setCanEdit: mockSetCanEdit,
-} as any);
+} as unknown as EditorState);
 
 const createQc = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -65,7 +66,7 @@ describe("SharedDiagramPage", () => {
     vi.mocked(useEditorStore).mockReturnValue({
       setDocument: mockSetDocument,
       setCanEdit: mockSetCanEdit,
-    } as any);
+    } as unknown as EditorState);
   });
 
   it("loading state — skeleton elements visible", () => {
@@ -84,7 +85,7 @@ describe("SharedDiagramPage", () => {
       id: "d-1",
       name: "My ERD",
       content,
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof getPublicDiagram>>);
     wrap("tok123");
     await waitFor(() =>
       expect(screen.getByText("My ERD")).toBeInTheDocument()

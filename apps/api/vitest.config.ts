@@ -12,6 +12,13 @@ export default defineConfig({
   ],
   test: {
     globals: true,
-    environment: "node"
+    environment: "node",
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      reportsDirectory: "coverage",
+      include: ["src/**/*.ts"],
+      exclude: ["src/**/*.spec.ts", "src/**/*.d.ts", "src/main.ts"],
+    },
   }
 });

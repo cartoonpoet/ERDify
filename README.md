@@ -154,8 +154,11 @@ docker compose up
 pnpm lint           # 전체 패키지 ESLint
 pnpm typecheck      # 전체 패키지 tsc --noEmit
 pnpm test           # 전체 패키지 Vitest
+pnpm test:coverage  # 전체 패키지 Vitest + 커버리지 (SonarCloud 연동용)
 pnpm build          # 프로덕션 빌드
 ```
+
+이슈-브랜치-PR 흐름, CI/SonarCloud/CodeRabbit 체크 역할, 배포 파이프라인은 [CONTRIBUTING.md](./CONTRIBUTING.md) 참고.
 
 ---
 

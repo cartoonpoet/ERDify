@@ -1,5 +1,13 @@
 import "reflect-metadata";
+import { resolve } from "node:path";
+import { config } from "dotenv";
 import { DataSource } from "typeorm";
+import { getDatabaseUrl } from "./get-database-url";
+
+// typeorm CLI(dist/data-source.js)로 실행될 때 패키지 디렉토리와 저장소 루트의 .env를 순서대로 읽는다.
+// dotenv는 이미 설정된 환경변수를 덮어쓰지 않으므로 두 번 호출해도 안전하다.
+config();
+config({ path: resolve(__dirname, "../../../.env") });
 import { AiConversation } from "./entities/ai-conversation.entity";
 import { ApiKey } from "./entities/api-key.entity";
 import { OauthAccount } from "./entities/oauth-account.entity";
@@ -45,7 +53,7 @@ import { MultiProviderAiKeys1746000000026 } from "./migrations/1746000000026-Mul
 
 export const AppDataSource = new DataSource({
   type: "postgres",
-  url: process.env["DATABASE_URL"] ?? "postgres://erdify:erdify@localhost:5432/erdify",
+  url: getDatabaseUrl(),
   synchronize: false,
   migrationsRun: false,
   entities: [User, Organization, OrganizationAiSettings, OrganizationMember, Project, Diagram, DiagramVersion, Invite, ApiKey, McpSession, ErrorReport, AiConversation, UsageLog, Announcement, OauthAccount],

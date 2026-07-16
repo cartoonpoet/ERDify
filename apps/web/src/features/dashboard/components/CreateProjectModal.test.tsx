@@ -9,9 +9,9 @@ vi.mock("./modal-form.css", () => ({ form: "", footer: "" }));
 vi.mock("../../../design-system", () => ({
   Modal: ({ open, children, title }: { open: boolean; children: React.ReactNode; title?: string }) =>
     open ? <div role="dialog">{title && <div>{title}</div>}{children}</div> : null,
-  Button: ({ children, disabled, onClick, type, ...props }: { children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: string; [k: string]: unknown }) =>
+  Button: ({ children, disabled, onClick, type }: { children: React.ReactNode; disabled?: boolean; onClick?: () => void; type?: string; [k: string]: unknown }) =>
     <button type={type as "button" | "submit" | undefined} disabled={disabled} onClick={onClick}>{children}</button>,
-  Input: ({ label, type, placeholder, value, onChange, error, required, autoFocus, id, ...props }: { label?: string; type?: string; placeholder?: string; value?: string; onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; error?: string; required?: boolean; autoFocus?: boolean; id?: string; [k: string]: unknown }) => (
+  Input: ({ label, type, placeholder, value, onChange, error, required, autoFocus, id }: { label?: string; type?: string; placeholder?: string; value?: string; onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; error?: string; required?: boolean; autoFocus?: boolean; id?: string; [k: string]: unknown }) => (
     <div>
       {label && <label htmlFor={id}>{label}</label>}
       <input id={id} type={type ?? "text"} placeholder={placeholder} value={value} onChange={onChange} required={required} autoFocus={autoFocus} />
