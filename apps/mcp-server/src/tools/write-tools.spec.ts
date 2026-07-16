@@ -76,7 +76,7 @@ type ToolHandler = (args: Record<string, unknown>) => Promise<{
 function collectTools(): Map<string, ToolHandler> {
   const handlers = new Map<string, ToolHandler>();
   const fakeServer = {
-    tool: (name: string, _desc: string, _schema: unknown, handler: ToolHandler) => {
+    registerTool: (name: string, _config: unknown, handler: ToolHandler) => {
       handlers.set(name, handler);
     },
   } as unknown as McpServer;
