@@ -5,12 +5,20 @@ const ALGORITHM = "aes-256-cbc";
 function getKey(): Buffer {
   // Read at call time, not module-load time: when the key comes from a .env file
   // loaded by ConfigModule at bootstrap, process.env is not yet populated when this
-  // module is first imported. Capturing it in a module-level const would fall back to
-  // the dev key and fail to decrypt values written with the real key.
+  // module is first imported. Capturing it in a module-level const would miss the
+  // real key once it's loaded.
   const keyHex = process.env["FIELD_ENCRYPTION_KEY"] ?? "";
-  if (keyHex.length === 64) return Buffer.from(keyHex, "hex");
-  // fallback for dev — deterministic but not secure
-  return Buffer.alloc(32, "dev-key-not-for-production");
+  if (!keyHex) {
+    throw new Error(
+      "FIELD_ENCRYPTION_KEY 환경변수가 설정되지 않았습니다. apps/api/.env.example을 참고해 .env를 작성하세요."
+    );
+  }
+  if (keyHex.length !== 64) {
+    throw new Error(
+      "FIELD_ENCRYPTION_KEY는 64자리 hex 문자열이어야 합니다 (openssl rand -hex 32로 생성)."
+    );
+  }
+  return Buffer.from(keyHex, "hex");
 }
 
 export function encrypt(plaintext: string): string {
