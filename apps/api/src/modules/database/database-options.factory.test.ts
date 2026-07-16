@@ -3,7 +3,9 @@ import type { ConfigService } from "@nestjs/config";
 import { createDatabaseModuleOptions } from "./database-options.factory";
 
 const makeConfigService = (databaseUrl: string | undefined) =>
-  ({ get: vi.fn().mockReturnValue(databaseUrl) }) as unknown as ConfigService;
+  ({
+    get: vi.fn().mockImplementation((key: string) => (key === "DATABASE_URL" ? databaseUrl : undefined))
+  }) as unknown as ConfigService;
 
 describe("createDatabaseModuleOptions", () => {
   it("DATABASE_URL이 없으면 에러를 던진다", () => {
@@ -22,7 +24,9 @@ describe("createDatabaseModuleOptions", () => {
     expect(options).toMatchObject({
       type: "postgres",
       url: "postgres://erdify:erdify@localhost:5432/erdify",
-      autoLoadEntities: true
+      autoLoadEntities: true,
+      maxQueryExecutionTime: 1000,
+      logging: ["warn", "error"]
     });
   });
 });
