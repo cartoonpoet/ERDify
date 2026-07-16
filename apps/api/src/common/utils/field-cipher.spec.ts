@@ -36,4 +36,16 @@ describe("field-cipher", () => {
     // 그 키로 암호화된 값이 정상 복호화되어야 한다 (모듈 로드시 캡처했다면 dev 키로 bad decrypt)
     expect(decrypt(ciphertextFor("hello-world"))).toBe("hello-world");
   });
+
+  it("throws when FIELD_ENCRYPTION_KEY is not set", async () => {
+    delete process.env["FIELD_ENCRYPTION_KEY"];
+    const { encrypt } = await import("./field-cipher");
+    expect(() => encrypt("x")).toThrow("FIELD_ENCRYPTION_KEY 환경변수가 설정되지 않았습니다");
+  });
+
+  it("throws when FIELD_ENCRYPTION_KEY length is not 64 hex chars", async () => {
+    process.env["FIELD_ENCRYPTION_KEY"] = "abc123"; // 64자 아님
+    const { encrypt } = await import("./field-cipher");
+    expect(() => encrypt("x")).toThrow("FIELD_ENCRYPTION_KEY는 64자리 hex 문자열이어야 합니다");
+  });
 });
