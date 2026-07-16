@@ -60,11 +60,13 @@ describe("usePresence", () => {
 
     renderHook(() => usePresence(socketRef));
 
-    act(() => {
-      useEditorStore.setState({ selectedEntityId: "entity-3" });
-    });
-
-    // null이므로 에러 없이 emit 미호출 — 테스트가 에러 없이 통과하면 성공
+    // null socket이어도 에러 없이 상태 변경이 반영되어야 한다
+    expect(() => {
+      act(() => {
+        useEditorStore.setState({ selectedEntityId: "entity-3" });
+      });
+    }).not.toThrow();
+    expect(useEditorStore.getState().selectedEntityId).toBe("entity-3");
   });
 
   it("selectedEntityId가 동일한 값으로 변경되면 emit을 호출하지 않는다", () => {
