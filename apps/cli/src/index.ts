@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { Command } from "commander";
 import {
@@ -30,6 +29,7 @@ import type {
 } from "@erdify/domain";
 import { client } from "./client.js";
 import { getApiKey, getApiUrl, readConfig, writeConfig } from "./config.js";
+import { resolveSql } from "./sql-file.js";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -74,14 +74,6 @@ function parseObjectKind(value: string): DiagramObjectKind {
     process.exit(1);
   }
   return value as DiagramObjectKind;
-}
-
-// --sql 또는 --sql-file 중 하나에서 SQL 원문을 읽는다. 둘 다 없으면 종료.
-function resolveSql(opts: { sql?: string; sqlFile?: string }): string {
-  if (opts.sql !== undefined) return opts.sql;
-  if (opts.sqlFile !== undefined) return readFileSync(opts.sqlFile, "utf8");
-  console.error("Provide --sql <text> or --sql-file <path>");
-  process.exit(1);
 }
 
 const REFERENTIAL_ACTIONS = ["cascade", "restrict", "set-null", "no-action"];
@@ -591,4 +583,9 @@ remove
     console.log(`Object "${target.name}" (${objectId}) removed.`);
   });
 
-program.parseAsync(process.argv).catch(handleError);
+// ESM 패키지("type": "module")이므로 최상위 await 사용 가능 — 프로미스 체인 대신 사용(S7785).
+try {
+  await program.parseAsync(process.argv);
+} catch (err) {
+  handleError(err);
+}
