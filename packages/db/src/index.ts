@@ -1,4 +1,3 @@
-export { AppDataSource } from "./data-source";
 export { ApiKey } from "./entities/api-key.entity";
 export { Diagram } from "./entities/diagram.entity";
 export { DiagramVersion } from "./entities/diagram-version.entity";
