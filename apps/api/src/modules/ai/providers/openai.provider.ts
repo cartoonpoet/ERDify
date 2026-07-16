@@ -32,11 +32,24 @@ export function toOpenAiTools(tools: Tool[]): OpenAI.ChatCompletionTool[] {
   }));
 }
 
+type ToolCallAcc = Map<number, { id: string; name: string; args: string }>;
+
+/** 스트림 델타로 조각나 도착하는 tool_call을 index별로 누적한다. */
+function accumulateToolCallDeltas(acc: ToolCallAcc, deltas: OpenAI.ChatCompletionChunk.Choice.Delta["tool_calls"]): void {
+  for (const tc of deltas ?? []) {
+    const cur = acc.get(tc.index) ?? { id: "", name: "", args: "" };
+    if (tc.id) cur.id = tc.id;
+    if (tc.function?.name) cur.name = tc.function.name;
+    if (tc.function?.arguments) cur.args += tc.function.arguments;
+    acc.set(tc.index, cur);
+  }
+}
+
 @Injectable()
 export class OpenAiProvider implements AiProvider {
   async streamTurn(args: StreamTurnArgs): Promise<ProviderTurn> {
     const client = new OpenAI({ apiKey: args.apiKey });
-    const isNewModel = /^gpt-5/.test(args.model);
+    const isNewModel = args.model.startsWith("gpt-5");
     const stream = await client.chat.completions.create({
       model: args.model,
       ...(isNewModel ? { max_completion_tokens: args.maxTokens } : { max_tokens: args.maxTokens }),
@@ -47,7 +60,7 @@ export class OpenAiProvider implements AiProvider {
 
     let text = "";
     let truncated = false;
-    const acc = new Map<number, { id: string; name: string; args: string }>();
+    const acc: ToolCallAcc = new Map();
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta;
       if (chunk.choices[0]?.finish_reason === "length") truncated = true;
@@ -55,13 +68,7 @@ export class OpenAiProvider implements AiProvider {
         text += delta.content;
         args.onText(delta.content);
       }
-      for (const tc of delta?.tool_calls ?? []) {
-        const cur = acc.get(tc.index) ?? { id: "", name: "", args: "" };
-        if (tc.id) cur.id = tc.id;
-        if (tc.function?.name) cur.name = tc.function.name;
-        if (tc.function?.arguments) cur.args += tc.function.arguments;
-        acc.set(tc.index, cur);
-      }
+      accumulateToolCallDeltas(acc, delta?.tool_calls);
     }
     const toolCalls = [...acc.values()].map((t) => ({ id: t.id, name: t.name, input: JSON.parse(t.args || "{}") as Record<string, unknown> }));
     return { text, toolCalls, truncated };

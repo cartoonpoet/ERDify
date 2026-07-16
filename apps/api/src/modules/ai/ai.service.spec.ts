@@ -144,6 +144,16 @@ describe("AiService", () => {
       expect(result).toEqual(suggestions);
     });
 
+    it("설명 텍스트에 둘러싸인 JSON 배열도 추출해 파싱한다", async () => {
+      setup();
+      const suggestions = [{ name: "id", type: "uuid", nullable: false, pk: true }];
+      anthropicCreateMock.mockResolvedValue({
+        content: [{ type: "text", text: `다음 컬럼을 추천합니다:\n${JSON.stringify(suggestions)}\n참고하세요.` }],
+      });
+      const result = await service.suggestColumns("user-1", "users", []);
+      expect(result).toEqual(suggestions);
+    });
+
     it("유효하지 않은 JSON이면 빈 배열", async () => {
       setup();
       anthropicCreateMock.mockResolvedValue({ content: [{ type: "text", text: "설명만 있음" }] });

@@ -22,8 +22,8 @@ interface ChatCredentials {
 function availableModels(settings: OrganizationAiSettings | null): AiModelOption[] {
   if (!settings) return [];
   const keys = settings.providerKeys ?? {};
-  const registered = AI_PROVIDERS.filter((p) => !!keys[p]);
-  let models = AI_MODELS.filter((m) => registered.includes(m.provider));
+  const registered = new Set(AI_PROVIDERS.filter((p) => !!keys[p]));
+  let models = AI_MODELS.filter((m) => registered.has(m.provider));
   const enabled = settings.enabledModels ?? [];
   if (enabled.length > 0) models = models.filter((m) => enabled.includes(m.value));
   return models;
@@ -61,7 +61,7 @@ export class AiService {
     await this.requireOrgOwner(orgId, userId);
     if (!AI_PROVIDERS.includes(provider)) throw new BadRequestException("알 수 없는 provider입니다.");
     const settings = await this.getOrCreateSettings(orgId);
-    settings.providerKeys = { ...(settings.providerKeys ?? {}), [provider]: encrypt(apiKey) };
+    settings.providerKeys = { ...settings.providerKeys, [provider]: encrypt(apiKey) };
     await this.settingsRepo.save(settings);
   }
 
@@ -70,7 +70,7 @@ export class AiService {
     await this.requireOrgOwner(orgId, userId);
     const settings = await this.settingsRepo.findOne({ where: { organizationId: orgId } });
     if (!settings) return;
-    const next = { ...(settings.providerKeys ?? {}) };
+    const next = { ...settings.providerKeys };
     delete next[provider];
     settings.providerKeys = next;
     await this.settingsRepo.save(settings);
@@ -115,9 +115,12 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
       .catch((e) => this.logger.error(e));
 
     try {
-      const match = text.match(/\[[\s\S]*\]/);
-      if (!match) return [];
-      return JSON.parse(match[0]) as ColumnSuggestion[];
+      // 첫 "["부터 마지막 "]"까지를 JSON 배열 후보로 추출한다.
+      // (기존 /\[[\s\S]*\]/ 정규식과 동일한 의미 — 백트래킹 없이 선형 시간으로 동작)
+      const start = text.indexOf("[");
+      const end = text.lastIndexOf("]");
+      if (start === -1 || end <= start) return [];
+      return JSON.parse(text.slice(start, end + 1)) as ColumnSuggestion[];
     } catch {
       return [];
     }
@@ -129,7 +132,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
   private async oneShot(provider: AiProviderId, apiKey: string, model: string, prompt: string, maxTokens: number): Promise<string> {
     if (provider === "openai") {
       const client = new OpenAI({ apiKey });
-      const isNewModel = /^gpt-5/.test(model);
+      const isNewModel = model.startsWith("gpt-5");
       const res = await client.chat.completions.create({
         model,
         ...(isNewModel ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
@@ -192,7 +195,7 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
       ? requestedModel
       : available[0]!.value;
     const provider = providerOfModel(chosen)!;
-    const enc = (settings.providerKeys ?? {})[provider];
+    const enc = settings.providerKeys?.[provider];
     if (!enc) throw new ForbiddenException("선택한 모델의 provider에 API 키가 없습니다.");
     return { apiKey: decrypt(enc), provider, model: chosen };
   }
@@ -218,6 +221,6 @@ Use SQL types like uuid, varchar, integer, bigint, boolean, timestamptz, text, j
 
   private async requireOrgOwner(orgId: string, userId: string): Promise<void> {
     const member = await this.memberRepo.findOne({ where: { organizationId: orgId, userId } });
-    if (!member || member.role !== "owner") throw new ForbiddenException("조직 소유자만 API 키를 설정할 수 있습니다.");
+    if (member?.role !== "owner") throw new ForbiddenException("조직 소유자만 API 키를 설정할 수 있습니다.");
   }
 }

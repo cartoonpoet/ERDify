@@ -246,7 +246,7 @@ describe("AiChatService.runChat", () => {
     await svc.runChat({ userId: "u1", diagramId: "d1", message: "테이블 추가", sessionId: "s1" }, (e) => events.push(e));
 
     // 검증 실패로 최소 2번의 추가 수정 요구가 발생 (총 4회 turn)
-    expect((provider.streamTurn as ReturnType<typeof vi.fn>).mock.calls.length).toBe(4);
+    expect(provider.streamTurn).toHaveBeenCalledTimes(4);
     // 수정 요구 메시지에 검증 오류 문자열이 포함된다
     const allUserContents = captured.flat().filter((m) => m.role === "user").map((m) => (m as { content: string }).content);
     expect(allUserContents.some((c) => c.includes("INVALID_BAD_TABLE"))).toBe(true);
