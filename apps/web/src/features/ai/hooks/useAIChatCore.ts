@@ -4,6 +4,7 @@ import type React from "react";
 import { useAIChatStore } from "../store/useAIChatStore";
 import { DEFAULT_SESSION_ID } from "../store/aiChatSlice";
 import { acceptAiDiff, rejectAiDiff, sendAiChatStream, createSession, getSessionMessages } from "../api/ai.api";
+import type { AiChatStreamDoneResult } from "../api/ai.api";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import type { AiMessage } from "../store/aiChatSlice";
 import { mapToAiMessages } from "../ai-chat-utils";
@@ -48,7 +49,7 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
   const currentMessages = sessionMessages[currentSessionId ?? DEFAULT_SESSION_ID] ?? [];
 
   useEffect(() => {
-    const lastId = currentMessages[currentMessages.length - 1]?.id ?? null;
+    const lastId = currentMessages.at(-1)?.id ?? null;
     if (lastId && lastId !== lastMessageIdRef.current) {
       lastMessageIdRef.current = lastId;
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,7 +58,7 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
 
   const buildStreamingCallbacks = (sessionId: string, tempId: string) => ({
     onText: (delta: string) => appendStreamingDelta(sessionId, tempId, delta),
-    onDone: (result: { messageId: string; diff: unknown[] | null; pendingDocument: unknown | null }) =>
+    onDone: (result: AiChatStreamDoneResult) =>
       finalizeStreamingMessage(sessionId, tempId, result),
     onError: (errorMsg: string) =>
       finalizeStreamingMessage(sessionId, tempId, {
@@ -96,7 +97,16 @@ export const useAIChatCore = (diagramId: string, selectedModel: string): UseAICh
     const { onText, onDone, onError } = buildStreamingCallbacks(sessionId, tempId);
 
     try {
-      await sendAiChatStream(diagramId, message, sessionId, selectedModel, onText, onDone, onError, setStreamingStatus);
+      await sendAiChatStream({
+        diagramId,
+        message,
+        sessionId,
+        model: selectedModel,
+        onText,
+        onDone,
+        onError,
+        onStatus: setStreamingStatus,
+      });
     } catch {
       finalizeStreamingMessage(sessionId, tempId, {
         messageId: randomUUID(),

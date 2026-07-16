@@ -38,6 +38,30 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
   const handleModelBackdropClick = (e: React.MouseEvent) => { e.stopPropagation(); setIsModelOpen(false); };
   const handleSelectModel = (value: string) => () => { handleModelSelect(value); setIsModelOpen(false); };
 
+  const handleFabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openChat();
+    }
+  };
+
+  const handleModelToggleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsModelOpen((v) => !v);
+    }
+  };
+
+  const handleSelectModelKeyDown = (value: string) => (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      handleModelSelect(value);
+      setIsModelOpen(false);
+    }
+  };
+
   const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (e.currentTarget.scrollTop === 0 && canLoadMore && !isLoadingHistory) {
       const container = messagesContainerRef.current;
@@ -64,9 +88,14 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
         />
       )}
 
+      {/* 닫힘 상태에서는 컨테이너 전체가 채팅 열기 버튼 역할을 한다. */}
       <div
         className={isOpen ? s.floatContainerOpen : s.floatContainerClosed}
+        role={isOpen ? undefined : "button"}
+        tabIndex={isOpen ? undefined : 0}
+        aria-label={isOpen ? undefined : "AI 채팅 열기"}
         onClick={!isOpen ? () => openChat() : undefined}
+        onKeyDown={isOpen ? undefined : handleFabKeyDown}
       >
         <div className={isOpen ? s.fabContentOpen : s.fabContentClosed}>
           <div className={s.fabIcon}>✦</div>
@@ -82,14 +111,20 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
                 {models.length > 0 ? (
                   <>
                     {isModelOpen && (
+                      // 배경 클릭 dismiss 전용 오버레이 — 키보드 사용자는 모델 버튼으로 토글한다.
                       <div
                         className={s.modelDropdownBackdrop}
+                        role="presentation"
                         onClick={handleModelBackdropClick}
                       />
                     )}
                     <div
                       className={s.modelBtn}
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={isModelOpen}
                       onClick={handleModelToggle}
+                      onKeyDown={handleModelToggleKeyDown}
                     >
                       <span className={s.modelBtnDot} />
                       <span className={s.modelBtnName}>
@@ -101,7 +136,8 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
                       })()}
                       <span className={s.modelBtnChevron}>{isModelOpen ? "▴" : "▾"}</span>
                       {isModelOpen && (
-                        <div className={s.modelDropdown} onClick={(e) => e.stopPropagation()}>
+                        // 내부 클릭이 모델 버튼 토글로 전파되지 않도록 막는 래퍼.
+                        <div className={s.modelDropdown} role="presentation" onClick={(e) => e.stopPropagation()}>
                           {AI_PROVIDERS.filter((p) => models.some((m) => m.provider === p)).map((p, i) => (
                             <React.Fragment key={p}>
                               {i > 0 && <hr className={s.modelDropdownDivider} />}
@@ -113,7 +149,10 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
                                   <div
                                     key={m.value}
                                     className={[s.modelDropdownItem, isActive ? s.modelDropdownItemActive : ""].filter(Boolean).join(" ")}
+                                    role="button"
+                                    tabIndex={0}
                                     onClick={handleSelectModel(m.value)}
+                                    onKeyDown={handleSelectModelKeyDown(m.value)}
                                   >
                                     <span className={s.modelDropdownItemName}>{name}</span>
                                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>

@@ -84,7 +84,13 @@ export const dropdownList = style({
 export const dropdownItem = style({
   display: "flex",
   alignItems: "center",
+  width: "100%",
   padding: `8px ${vars.space["3"]}`,
+  // button 기본 스타일 리셋 (div → button 전환에도 시각적 변화 없음)
+  background: "none",
+  border: "none",
+  fontFamily: "inherit",
+  textAlign: "left",
   fontSize: vars.font.size.sm,
   color: vars.color.textPrimary,
   cursor: "pointer",

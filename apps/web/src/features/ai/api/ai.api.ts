@@ -37,16 +37,69 @@ export const setEnabledModels = (orgId: string, enabledModels: string[]): Promis
 export const getAiChatConfig = (diagramId: string): Promise<AiChatConfig> =>
   httpClient.get<AiChatConfig>(`/ai/chat/config/${diagramId}`).then((r) => r.data);
 
-export const sendAiChatStream = async (
-  diagramId: string,
-  message: string,
-  sessionId: string | null,
-  model: string,
-  onText: (delta: string) => void,
-  onDone: (result: { messageId: string; content?: string; diff: unknown[] | null; pendingDocument: unknown | null }) => void,
-  onError: (message: string) => void,
-  onStatus?: (label: string) => void,
-): Promise<void> => {
+export type AiChatStreamDoneResult = {
+  messageId: string;
+  content?: string;
+  diff: unknown[] | null;
+  pendingDocument: unknown;
+};
+
+export interface AiChatStreamOptions {
+  diagramId: string;
+  message: string;
+  sessionId: string | null;
+  model: string;
+  onText: (delta: string) => void;
+  onDone: (result: AiChatStreamDoneResult) => void;
+  onError: (message: string) => void;
+  onStatus?: (label: string) => void;
+}
+
+interface SseEvent {
+  eventType: string;
+  data: Record<string, unknown>;
+}
+
+/** SSE 이벤트 블록에서 event 타입과 JSON data를 파싱한다. data가 없거나 JSON이 아니면 null. */
+const parseSseEventBlock = (eventBlock: string): SseEvent | null => {
+  let eventType = "";
+  let dataLine = "";
+
+  for (const line of eventBlock.split("\n")) {
+    if (line.startsWith("event:")) {
+      eventType = line.slice("event:".length).trim();
+    } else if (line.startsWith("data:")) {
+      dataLine = line.slice("data:".length).trim();
+    }
+  }
+
+  if (!dataLine) return null;
+
+  try {
+    return { eventType, data: JSON.parse(dataLine) as Record<string, unknown> };
+  } catch {
+    return null;
+  }
+};
+
+const dispatchSseEvent = (
+  { eventType, data }: SseEvent,
+  { onText, onDone, onError, onStatus }: AiChatStreamOptions,
+): void => {
+  if (eventType === "text") {
+    onText(data.delta as string);
+  } else if (eventType === "status") {
+    onStatus?.(data.label as string);
+  } else if (eventType === "done") {
+    onDone(data as AiChatStreamDoneResult);
+  } else if (eventType === "error") {
+    onError(data.message as string);
+  }
+};
+
+export const sendAiChatStream = async (options: AiChatStreamOptions): Promise<void> => {
+  const { diagramId, message, sessionId, model, onError } = options;
+
   const response = await fetch(`${API_BASE_URL}/ai/chat/stream`, {
     method: "POST",
     credentials: "include",
@@ -75,37 +128,8 @@ export const sendAiChatStream = async (
     buffer = events.pop() ?? "";
 
     for (const eventBlock of events) {
-      if (!eventBlock.trim()) continue;
-
-      let eventType = "";
-      let dataLine = "";
-
-      for (const line of eventBlock.split("\n")) {
-        if (line.startsWith("event:")) {
-          eventType = line.slice("event:".length).trim();
-        } else if (line.startsWith("data:")) {
-          dataLine = line.slice("data:".length).trim();
-        }
-      }
-
-      if (!dataLine) continue;
-
-      let parsed: Record<string, unknown>;
-      try {
-        parsed = JSON.parse(dataLine) as Record<string, unknown>;
-      } catch {
-        continue;
-      }
-
-      if (eventType === "text") {
-        onText(parsed.delta as string);
-      } else if (eventType === "status") {
-        onStatus?.(parsed.label as string);
-      } else if (eventType === "done") {
-        onDone(parsed as { messageId: string; content?: string; diff: unknown[] | null; pendingDocument: unknown | null });
-      } else if (eventType === "error") {
-        onError(parsed.message as string);
-      }
+      const event = parseSseEventBlock(eventBlock);
+      if (event) dispatchSseEvent(event, options);
     }
   }
 };
