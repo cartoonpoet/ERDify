@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { completeOnboarding } from "@/shared/api/auth.api";
 import { useAuthStore } from "@/shared/store/useAuthStore";
@@ -23,7 +23,7 @@ export const SocialOnboardingPage = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);

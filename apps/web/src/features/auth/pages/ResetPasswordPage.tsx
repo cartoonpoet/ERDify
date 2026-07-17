@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { resetPassword } from "@/shared/api/auth.api";
 import { Button, Input } from "@/components";
@@ -27,7 +27,7 @@ export const ResetPasswordPage = () => {
 
   const strength = getStrength(password);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (password !== confirmPassword) { setError("비밀번호가 일치하지 않습니다."); return; }
     setError(null);

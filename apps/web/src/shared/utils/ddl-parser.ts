@@ -89,11 +89,56 @@ const CONSTRAINT_KEYWORDS = new Set([
   "CONSTRAINT", "KEY", "INDEX",
 ]);
 
+/**
+ * Removes occurrences of `\s+<keyword><tailRe>` from `s` (case-insensitive keyword match),
+ * e.g. `\s+CHARACTER\s+SET\s+\S+`. Locates `keyword` via a plain (non-backtracking) substring
+ * search first, then absorbs the mandatory preceding whitespace run manually — this avoids the
+ * catastrophic-backtracking shape of a leading unbounded `\s+`/`\s*` quantifier with no anchor,
+ * which a naive regex would retry at every position of a long non-matching whitespace run
+ * (O(n²) on adversarial input). `tailRe` must match starting exactly where `keyword` ends.
+ */
+function stripWhitespacePrefixedClause(s: string, keyword: string, tailRe: RegExp, global: boolean): string {
+  if (!tailRe.sticky) {
+    // `tailRe`는 항상 sticky(`y`)로 선언되어야 한다 — 그래야 이 함수 밖에서 실수로
+    // (non-sticky로) 직접 호출되더라도 여러 시작 위치를 재시도하는 O(n²) 백트래킹으로
+    // 이어지지 않고, 정규식 리터럴 자체가 구조적으로 안전하다.
+    throw new Error("stripWhitespacePrefixedClause: tailRe must be declared with the sticky (y) flag");
+  }
+  const lower = s.toLowerCase();
+  const kw = keyword.toLowerCase();
+  const sticky = tailRe;
+  let out = "";
+  let cursor = 0;
+  let searchFrom = 0;
+  for (;;) {
+    const idx = lower.indexOf(kw, searchFrom);
+    if (idx === -1) break;
+    const afterKeyword = idx + keyword.length;
+    if (idx === 0 || !/\s/.test(s[idx - 1]!)) {
+      searchFrom = idx + 1;
+      continue;
+    }
+    sticky.lastIndex = afterKeyword;
+    const tailMatch = sticky.exec(s);
+    if (!tailMatch) {
+      searchFrom = idx + 1;
+      continue;
+    }
+    let wsStart = idx;
+    while (wsStart > cursor && /\s/.test(s[wsStart - 1]!)) wsStart--;
+    out += s.slice(cursor, wsStart);
+    cursor = afterKeyword + tailMatch[0].length;
+    searchFrom = cursor;
+    if (!global) break;
+  }
+  out += s.slice(cursor);
+  return out;
+}
+
 function cleanMySqlType(type: string): string {
-  return type
-    .replace(/\s+CHARACTER\s+SET\s+\S+/gi, "")
-    .replace(/\s+COLLATE\s+\S+/gi, "")
-    .trim();
+  let v = stripWhitespacePrefixedClause(type, "CHARACTER", /\s+SET\s+\S+/iy, true);
+  v = stripWhitespacePrefixedClause(v, "COLLATE", /\s+\S+/iy, true);
+  return v.trim();
 }
 
 function parseColumnType(tokens: string[]): string {
@@ -114,6 +159,82 @@ function parseColumnType(tokens: string[]): string {
     }
   }
   return typeParts.join(" ");
+}
+
+/**
+ * `s`에서 `keyword`가 (작은/큰/백틱 따옴표 문자열 내부가 아닌) 독립된 단어로 처음 등장하는
+ * 위치를 찾는다. 예: `COMMENT 'DEFAULT hello'`에서 "DEFAULT"를 찾으면, 그 문자열 리터럴
+ * 내부에 있으므로 건너뛰고 -1을 반환한다(실제 DEFAULT 절이 그 뒤에 없다면). 정규식이 아니라
+ * 문자 단위 순회라 백트래킹 위험이 없다.
+ */
+function findKeywordOutsideQuotes(s: string, keyword: string): number {
+  const lower = s.toLowerCase();
+  const kw = keyword.toLowerCase();
+  const isWordChar = (c: string | undefined) => !!c && /[A-Za-z0-9_]/.test(c);
+  let quoteChar: string | null = null;
+  let i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (quoteChar) {
+      if (ch === "\\") {
+        i += 2;
+        continue;
+      }
+      if (ch === quoteChar) quoteChar = null;
+      i++;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === "`") {
+      quoteChar = ch;
+      i++;
+      continue;
+    }
+    if (lower.startsWith(kw, i) && !isWordChar(s[i - 1]) && !isWordChar(s[i + keyword.length])) {
+      return i;
+    }
+    i++;
+  }
+  return -1;
+}
+
+// DEFAULT 값은 quote 문자별로 종료 조건이 다르므로(따옴표 종류마다 이스케이프 규칙이 같음) 하나의
+// 거대한 교차 정규식 대신 quote별 소규모 정규식 + 일반 토큰 폴백으로 나눠 복잡도를 낮춘다.
+const QUOTED_DEFAULT_RE: Record<string, RegExp> = {
+  "'": /^'(?:[^']|\\')*'/,
+  '"': /^"(?:[^"]|\\")*"/,
+  "`": /^`(?:[^`]|\\`)*`/,
+};
+
+/** `DEFAULT\s+` 뒤에 오는 값 하나(quote 문자열 또는 공백 없는 토큰)를 추출한다. */
+function matchDefaultValue(afterDefault: string): string | null {
+  const first = afterDefault[0];
+  const quoteRe = first ? QUOTED_DEFAULT_RE[first] : undefined;
+  const quoted = quoteRe?.exec(afterDefault);
+  if (quoted) return quoted[0];
+  const bare = /^\S+/.exec(afterDefault);
+  return bare ? bare[0] : null;
+}
+
+const COMMENT_VALUE_RE = /'(?:[^']|\\')*'|"(?:[^"]|\\")*"/y;
+
+/**
+ * `afterBody` 안에서 `COMMENT [=] '값'` 또는 `COMMENT [=] "값"` 형태의 테이블 레벨 COMMENT
+ * 절을 찾아 따옴표 포함 원문을 반환한다. lookahead로 두 `\s*`를 atomic-group처럼 흉내내는
+ * 대신, "COMMENT" 위치를 찾은 뒤 공백/`=`/공백을 직접 건너뛰고 그 지점에 sticky 정규식을
+ * 앵커하는 방식이라 정규식 자체의 복잡도가 낮고 백트래킹 모호성이 없다. `findKeywordOutsideQuotes`로
+ * 찾으므로 다른 따옴표 문자열(예: 앞선 DEFAULT 값) 내부에 우연히 등장한 "comment"는 무시한다.
+ */
+function extractQuotedCommentValue(afterBody: string): string | null {
+  const idx = findKeywordOutsideQuotes(afterBody, "comment");
+  if (idx === -1) return null;
+  let i = idx + "comment".length;
+  while (i < afterBody.length && /\s/.test(afterBody[i]!)) i++;
+  if (afterBody[i] === "=") {
+    i++;
+    while (i < afterBody.length && /\s/.test(afterBody[i]!)) i++;
+  }
+  COMMENT_VALUE_RE.lastIndex = i;
+  return COMMENT_VALUE_RE.exec(afterBody)?.[0] ?? null;
 }
 
 interface ParsedFK {
@@ -182,11 +303,8 @@ function parseCreateTable(stmt: string): {
   const lines = splitTopLevelCommas(body);
 
   const afterBody = stmt.slice(bodyEnd + 1);
-  let tableComment: string | null = null;
-  const tableCommentMatch = afterBody.match(/COMMENT\s*=?\s*('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
-  if (tableCommentMatch) {
-    tableComment = (tableCommentMatch[1] ?? "").replace(/^['"]|['"]$/g, "");
-  }
+  const tableCommentValue = extractQuotedCommentValue(afterBody);
+  const tableComment = tableCommentValue?.replace(/^['"]|['"]$/g, "") ?? null;
 
   const columns: Omit<DiagramColumn, "id">[] = [];
   const fks: ParsedFK[] = [];
@@ -255,13 +373,25 @@ function parseCreateTable(stmt: string): {
     const primaryKey = /\bPRIMARY\s+KEY\b/i.test(upperLine);
     const unique = /\bUNIQUE\b/i.test(upperLine) && !primaryKey;
 
+    // DEFAULT/COMMENT 모두 findKeywordOutsideQuotes로 찾아, 서로의 따옴표 값 안에 우연히
+    // 등장한 키워드(예: `COMMENT 'DEFAULT hello'`)를 절로 오인하지 않도록 한다.
     let defaultValue: string | null = null;
-    const defMatch = line.match(/DEFAULT\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*"|`(?:[^`]|\\`)*`|\S+)/i);
-    if (defMatch) defaultValue = defMatch[1] ?? null;
+    const defIdx = findKeywordOutsideQuotes(line, "DEFAULT");
+    if (defIdx !== -1) {
+      let j = defIdx + "DEFAULT".length;
+      while (j < line.length && /\s/.test(line[j]!)) j++;
+      defaultValue = matchDefaultValue(line.slice(j));
+    }
 
     let comment: string | null = null;
-    const colCommentMatch = line.match(/COMMENT\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
-    if (colCommentMatch) comment = (colCommentMatch[1] ?? "").replace(/^['"]|['"]$/g, "");
+    const commentIdx = findKeywordOutsideQuotes(line, "COMMENT");
+    if (commentIdx !== -1) {
+      let j = commentIdx + "COMMENT".length;
+      while (j < line.length && /\s/.test(line[j]!)) j++;
+      COMMENT_VALUE_RE.lastIndex = j;
+      const commentMatch = COMMENT_VALUE_RE.exec(line);
+      if (commentMatch) comment = commentMatch[0].replace(/^['"]|['"]$/g, "");
+    }
 
     const autoIncrement = /\bAUTO_?INCREMENT\b/i.test(upperLine);
 
@@ -385,13 +515,44 @@ function parseInsertValuesList(valuesStr: string): string[][] {
 }
 
 /**
+ * Splits DDL text into statements on ";" characters or a line containing only (optional
+ * whitespace +) "GO" (+ optional whitespace) — the T-SQL batch separator. Implemented as a
+ * line-by-line scan instead of a single `/;|^\s*GO\s*$/im` regex: that pattern's leading `\s*`
+ * (before "GO", anchored per-line via the `m` flag) gets retried at every line-start position of
+ * a long run of whitespace-only lines, causing O(n²) backtracking on such (plausible, e.g. blank
+ * padding lines in a pasted DDL file) adversarial input. Splitting on "\n" first means each
+ * line's `^...$` check is a single anchored, non-repeating attempt.
+ */
+function splitDdlStatements(sql: string): string[] {
+  const goLineRe = /^\s*GO\s*$/i;
+  const statements: string[] = [];
+  let current = "";
+  for (const line of sql.split("\n")) {
+    if (goLineRe.test(line)) {
+      statements.push(current);
+      current = "";
+      continue;
+    }
+    const parts = line.split(";");
+    current += parts[0] ?? "";
+    for (let i = 1; i < parts.length; i++) {
+      statements.push(current);
+      current = parts[i] ?? "";
+    }
+    current += "\n";
+  }
+  statements.push(current);
+  return statements.map((s) => s.trim()).filter(Boolean);
+}
+
+/**
  * Applies INSERT INTO seed data from SQL to an existing set of entities (in-place by name match).
  * Use this when importing seed-only SQL files (no CREATE TABLE) to populate existing diagram entities.
  * Returns a new array; unaffected entities are returned as-is (reference-equal).
  */
 export function applySeedInserts(sql: string, existingEntities: DiagramEntity[]): DiagramEntity[] {
   const cleaned = removeComments(sql);
-  const statements = cleaned.split(/;|^\s*GO\s*$/im).map((s) => s.trim()).filter(Boolean);
+  const statements = splitDdlStatements(cleaned);
 
   // Build a name → entity lookup (same logic as parseDdl's registerEntity/lookupEntity)
   const entityMap = new Map<string, DiagramEntity>();
@@ -450,7 +611,7 @@ export function applySeedInserts(sql: string, existingEntities: DiagramEntity[])
 
 export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument {
   const cleaned = removeComments(sql);
-  const statements = cleaned.split(/;|^\s*GO\s*$/im).map((s) => s.trim()).filter(Boolean);
+  const statements = splitDdlStatements(cleaned);
 
   // entityMap keyed by both "schema.table" (if schema) and "table" (fallback)
   const entityMap = new Map<string, DiagramEntity>();

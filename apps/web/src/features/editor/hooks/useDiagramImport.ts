@@ -8,9 +8,23 @@ import type { DiagramDialect } from "@erdify/domain";
 
 export type TabType = DiagramDialect | "exerd";
 
+// 하나의 거대한 정규식으로 "CREATE TABLE (IF NOT EXISTS)? (스키마.)?이름 (" 전체를 매칭하면
+// 복잡도 상한을 넘기므로, 접두어("CREATE TABLE ...")와 식별자 패턴을 분리해 각각의 정규식
+// 복잡도를 낮춘다(매칭 대상 문자열은 동일하게 유지).
+const CREATE_TABLE_PREFIX_RE = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?/gi;
+const TABLE_NAME_RE = /^(?:\[?[\w.]+\]?\.)?[["`]?(\w+)[\]"`]?\s*\(/;
+
 const extractFirstTableName = (sql: string): string | null => {
-  const m = sql.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:\[?[\w.]+\]?\.)?[["`]?([\w]+)[\]"`]?\s*\(/i);
-  return m ? (m[1] ?? null) : null;
+  const prefixRe = new RegExp(CREATE_TABLE_PREFIX_RE.source, CREATE_TABLE_PREFIX_RE.flags);
+  let prefixMatch: RegExpExecArray | null;
+  while ((prefixMatch = prefixRe.exec(sql)) !== null) {
+    const rest = sql.slice(prefixMatch.index + prefixMatch[0].length);
+    const nameMatch = TABLE_NAME_RE.exec(rest);
+    if (nameMatch) return nameMatch[1] ?? null;
+    // CREATE_TABLE_PREFIX_RE는 "CREATE"+"TABLE" 리터럴을 포함해 항상 폭이 0보다 커서
+    // lastIndex가 매 반복 진행하므로 별도의 무한루프 방지 가드가 필요 없다.
+  }
+  return null;
 };
 
 interface UseDiagramImportOptions {
