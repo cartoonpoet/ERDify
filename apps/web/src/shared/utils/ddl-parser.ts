@@ -161,6 +161,42 @@ function parseColumnType(tokens: string[]): string {
   return typeParts.join(" ");
 }
 
+/**
+ * `s`에서 `keyword`가 (작은/큰/백틱 따옴표 문자열 내부가 아닌) 독립된 단어로 처음 등장하는
+ * 위치를 찾는다. 예: `COMMENT 'DEFAULT hello'`에서 "DEFAULT"를 찾으면, 그 문자열 리터럴
+ * 내부에 있으므로 건너뛰고 -1을 반환한다(실제 DEFAULT 절이 그 뒤에 없다면). 정규식이 아니라
+ * 문자 단위 순회라 백트래킹 위험이 없다.
+ */
+function findKeywordOutsideQuotes(s: string, keyword: string): number {
+  const lower = s.toLowerCase();
+  const kw = keyword.toLowerCase();
+  const isWordChar = (c: string | undefined) => !!c && /[A-Za-z0-9_]/.test(c);
+  let quoteChar: string | null = null;
+  let i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (quoteChar) {
+      if (ch === "\\") {
+        i += 2;
+        continue;
+      }
+      if (ch === quoteChar) quoteChar = null;
+      i++;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === "`") {
+      quoteChar = ch;
+      i++;
+      continue;
+    }
+    if (lower.startsWith(kw, i) && !isWordChar(s[i - 1]) && !isWordChar(s[i + keyword.length])) {
+      return i;
+    }
+    i++;
+  }
+  return -1;
+}
+
 // DEFAULT 값은 quote 문자별로 종료 조건이 다르므로(따옴표 종류마다 이스케이프 규칙이 같음) 하나의
 // 거대한 교차 정규식 대신 quote별 소규모 정규식 + 일반 토큰 폴백으로 나눠 복잡도를 낮춘다.
 const QUOTED_DEFAULT_RE: Record<string, RegExp> = {
@@ -185,10 +221,11 @@ const COMMENT_VALUE_RE = /'(?:[^']|\\')*'|"(?:[^"]|\\")*"/y;
  * `afterBody` 안에서 `COMMENT [=] '값'` 또는 `COMMENT [=] "값"` 형태의 테이블 레벨 COMMENT
  * 절을 찾아 따옴표 포함 원문을 반환한다. lookahead로 두 `\s*`를 atomic-group처럼 흉내내는
  * 대신, "COMMENT" 위치를 찾은 뒤 공백/`=`/공백을 직접 건너뛰고 그 지점에 sticky 정규식을
- * 앵커하는 방식이라 정규식 자체의 복잡도가 낮고 백트래킹 모호성이 없다.
+ * 앵커하는 방식이라 정규식 자체의 복잡도가 낮고 백트래킹 모호성이 없다. `findKeywordOutsideQuotes`로
+ * 찾으므로 다른 따옴표 문자열(예: 앞선 DEFAULT 값) 내부에 우연히 등장한 "comment"는 무시한다.
  */
 function extractQuotedCommentValue(afterBody: string): string | null {
-  const idx = afterBody.toLowerCase().indexOf("comment");
+  const idx = findKeywordOutsideQuotes(afterBody, "comment");
   if (idx === -1) return null;
   let i = idx + "comment".length;
   while (i < afterBody.length && /\s/.test(afterBody[i]!)) i++;
@@ -336,15 +373,25 @@ function parseCreateTable(stmt: string): {
     const primaryKey = /\bPRIMARY\s+KEY\b/i.test(upperLine);
     const unique = /\bUNIQUE\b/i.test(upperLine) && !primaryKey;
 
+    // DEFAULT/COMMENT 모두 findKeywordOutsideQuotes로 찾아, 서로의 따옴표 값 안에 우연히
+    // 등장한 키워드(예: `COMMENT 'DEFAULT hello'`)를 절로 오인하지 않도록 한다.
     let defaultValue: string | null = null;
-    const defPrefixMatch = /DEFAULT\s+/i.exec(line);
-    if (defPrefixMatch) {
-      defaultValue = matchDefaultValue(line.slice(defPrefixMatch.index + defPrefixMatch[0].length));
+    const defIdx = findKeywordOutsideQuotes(line, "DEFAULT");
+    if (defIdx !== -1) {
+      let j = defIdx + "DEFAULT".length;
+      while (j < line.length && /\s/.test(line[j]!)) j++;
+      defaultValue = matchDefaultValue(line.slice(j));
     }
 
     let comment: string | null = null;
-    const colCommentMatch = line.match(/COMMENT\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
-    if (colCommentMatch) comment = (colCommentMatch[1] ?? "").replace(/^['"]|['"]$/g, "");
+    const commentIdx = findKeywordOutsideQuotes(line, "COMMENT");
+    if (commentIdx !== -1) {
+      let j = commentIdx + "COMMENT".length;
+      while (j < line.length && /\s/.test(line[j]!)) j++;
+      COMMENT_VALUE_RE.lastIndex = j;
+      const commentMatch = COMMENT_VALUE_RE.exec(line);
+      if (commentMatch) comment = commentMatch[0].replace(/^['"]|['"]$/g, "");
+    }
 
     const autoIncrement = /\bAUTO_?INCREMENT\b/i.test(upperLine);
 

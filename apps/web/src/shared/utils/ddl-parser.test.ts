@@ -74,6 +74,22 @@ describe("parseDdl", () => {
     expect(doc.entities[0]!.comment).toBe("사용자 테이블");
   });
 
+  it("COMMENT 값 안에 DEFAULT라는 단어가 있어도 컬럼 defaultValue로 오인하지 않는다", () => {
+    const sql = `CREATE TABLE t (name VARCHAR(50) COMMENT 'DEFAULT hello');`;
+    const doc = parseDdl(sql, "mysql");
+
+    const col = doc.entities[0]!.columns[0]!;
+    expect(col.defaultValue).toBeNull();
+    expect(col.comment).toBe("DEFAULT hello");
+  });
+
+  it("MY_COMMENT처럼 COMMENT가 다른 식별자 일부로 등장해도 그 뒤의 진짜 테이블 COMMENT를 찾는다", () => {
+    const sql = `CREATE TABLE t (id INT) ENGINE=MY_COMMENT COMMENT='real comment';`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.entities[0]!.comment).toBe("real comment");
+  });
+
   it("타입명 자체가 CHARACTER로 시작하는 경우(CHARACTER VARYING) 절 제거로 오인해 지우지 않는다", () => {
     const sql = `CREATE TABLE t (name CHARACTER VARYING(255));`;
     const doc = parseDdl(sql, "mysql");
@@ -263,8 +279,10 @@ describe("parseDdl", () => {
   });
 
   it("MSSQL GO 배치 구분자로 나뉜 여러 CREATE TABLE을 각각 파싱한다", () => {
+    // 세미콜론 없이 GO만으로 구분 — 세미콜론이 있으면 GO 처리가 깨져도 이 테스트가
+    // 통과해버려서 실제로는 아무것도 검증하지 못하게 된다.
     const sql = `
-      CREATE TABLE a (id INT);
+      CREATE TABLE a (id INT)
       GO
       CREATE TABLE b (id INT);
     `;
