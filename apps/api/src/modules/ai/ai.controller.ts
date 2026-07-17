@@ -96,7 +96,8 @@ export class AiController {
     @Query("limit") limitStr?: string,
     @Query("before") before?: string,
   ): Promise<SessionMessagesResponse> {
-    const limit = limitStr ? Math.min(parseInt(limitStr, 10) || 50, 100) : 50;
+    const parsedLimit = limitStr === undefined ? 50 : Number(limitStr);
+    const limit = Number.isInteger(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 100) : 50;
     const { messages, hasMore } = await this.aiHistoryService.findSessionMessages(
       user.sub,
       sessionId,

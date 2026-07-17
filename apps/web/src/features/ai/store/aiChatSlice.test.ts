@@ -154,6 +154,22 @@ describe("useAIChatStore — acceptDiff / rejectDiff", () => {
     const userMsg = getDefaultMessages().find((m) => m.id === "msg-accept-test");
     expect(userMsg?.accepted).toBeNull();
   });
+
+  it("존재하지 않는 messageId면 sessionMessages 객체 참조가 그대로 유지된다", () => {
+    const before = useAIChatStore.getState().sessionMessages;
+
+    useAIChatStore.getState().acceptDiff("no-such-message");
+
+    expect(useAIChatStore.getState().sessionMessages).toBe(before);
+  });
+
+  it("rejectDiff도 존재하지 않는 messageId면 sessionMessages 참조를 유지한다", () => {
+    const before = useAIChatStore.getState().sessionMessages;
+
+    useAIChatStore.getState().rejectDiff("no-such-message");
+
+    expect(useAIChatStore.getState().sessionMessages).toBe(before);
+  });
 });
 
 describe("useAIChatStore — setLoading", () => {

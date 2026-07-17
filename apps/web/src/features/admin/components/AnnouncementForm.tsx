@@ -39,7 +39,7 @@ export const AnnouncementForm = ({ open, initial, onClose, onSubmit }: Announcem
     setContent(result.content);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) { setError("제목과 내용을 입력해주세요."); return; }
     setLoading(true);

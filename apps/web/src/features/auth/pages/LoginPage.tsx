@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { login } from "@/shared/api/auth.api";
 import { useAuthStore } from "@/shared/store/useAuthStore";
@@ -25,7 +25,7 @@ export const LoginPage = () => {
 
   const { socialLoading, handleSocialLogin } = useSocialLogin(setError);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);

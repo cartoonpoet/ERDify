@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import OpenAI from "openai";
 import type { Tool } from "@anthropic-ai/sdk/resources";
-import type { AiProvider, StreamTurnArgs, ProviderTurn, ConvMessage } from "./provider.types";
+import type { AiProvider, StreamTurnArgs, ProviderTurn, ConvMessage, NormalizedToolCall } from "./provider.types";
 
 function toOpenAiMessages(system: string, messages: ConvMessage[]): OpenAI.ChatCompletionMessageParam[] {
   const out: OpenAI.ChatCompletionMessageParam[] = [{ role: "system", content: system }];
@@ -32,11 +32,24 @@ export function toOpenAiTools(tools: Tool[]): OpenAI.ChatCompletionTool[] {
   }));
 }
 
+type ToolCallAcc = Map<number, { id: string; name: string; args: string }>;
+
+/** 스트림 델타로 조각나 도착하는 tool_call을 index별로 누적한다. */
+function accumulateToolCallDeltas(acc: ToolCallAcc, deltas: OpenAI.ChatCompletionChunk.Choice.Delta["tool_calls"]): void {
+  for (const tc of deltas ?? []) {
+    const cur = acc.get(tc.index) ?? { id: "", name: "", args: "" };
+    if (tc.id) cur.id = tc.id;
+    if (tc.function?.name) cur.name = tc.function.name;
+    if (tc.function?.arguments) cur.args += tc.function.arguments;
+    acc.set(tc.index, cur);
+  }
+}
+
 @Injectable()
 export class OpenAiProvider implements AiProvider {
   async streamTurn(args: StreamTurnArgs): Promise<ProviderTurn> {
     const client = new OpenAI({ apiKey: args.apiKey });
-    const isNewModel = /^gpt-5/.test(args.model);
+    const isNewModel = args.model.startsWith("gpt-5");
     const stream = await client.chat.completions.create({
       model: args.model,
       ...(isNewModel ? { max_completion_tokens: args.maxTokens } : { max_tokens: args.maxTokens }),
@@ -47,7 +60,7 @@ export class OpenAiProvider implements AiProvider {
 
     let text = "";
     let truncated = false;
-    const acc = new Map<number, { id: string; name: string; args: string }>();
+    const acc: ToolCallAcc = new Map();
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta;
       if (chunk.choices[0]?.finish_reason === "length") truncated = true;
@@ -55,15 +68,18 @@ export class OpenAiProvider implements AiProvider {
         text += delta.content;
         args.onText(delta.content);
       }
-      for (const tc of delta?.tool_calls ?? []) {
-        const cur = acc.get(tc.index) ?? { id: "", name: "", args: "" };
-        if (tc.id) cur.id = tc.id;
-        if (tc.function?.name) cur.name = tc.function.name;
-        if (tc.function?.arguments) cur.args += tc.function.arguments;
-        acc.set(tc.index, cur);
+      accumulateToolCallDeltas(acc, delta?.tool_calls);
+    }
+    const toolCalls: NormalizedToolCall[] = [];
+    for (const t of acc.values()) {
+      try {
+        toolCalls.push({ id: t.id, name: t.name, input: JSON.parse(t.args || "{}") as Record<string, unknown> });
+      } catch {
+        // 스트림이 중간에 끊겨(max token 등) tool_call 인자 JSON이 불완전한 경우:
+        // 해당 호출은 버리고 truncated로 표시해 에이전트 루프의 이어가기 로직에 맡긴다
+        truncated = true;
       }
     }
-    const toolCalls = [...acc.values()].map((t) => ({ id: t.id, name: t.name, input: JSON.parse(t.args || "{}") as Record<string, unknown> }));
     return { text, toolCalls, truncated };
   }
 }
