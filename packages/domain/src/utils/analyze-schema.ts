@@ -29,7 +29,7 @@ const MAX_FINDINGS = 40;
  */
 function stripTrailingNumberSuffix(name: string): string | null {
   let i = name.length;
-  while (i > 0 && name.charCodeAt(i - 1) >= 48 && name.charCodeAt(i - 1) <= 57) i--;
+  while (i > 0 && name.codePointAt(i - 1)! >= 48 && name.codePointAt(i - 1)! <= 57) i--;
   if (i === name.length) return null; // 끝에 숫자가 없음
   let base = name.slice(0, i);
   if (base.endsWith("_")) base = base.slice(0, -1);

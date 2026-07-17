@@ -47,9 +47,15 @@ function defaultNeedsQuoting(defaultValue: string): boolean {
  * must match starting exactly where `keyword` ends.
  */
 function stripWhitespacePrefixedClause(s: string, keyword: string, tailRe: RegExp): string {
+  if (!tailRe.sticky) {
+    // `tailRe`는 항상 sticky(`y`)로 선언되어야 한다 — 그래야 이 함수 밖에서 실수로
+    // (non-sticky로) 직접 호출되더라도 여러 시작 위치를 재시도하는 O(n²) 백트래킹으로
+    // 이어지지 않고, 정규식 리터럴 자체가 구조적으로 안전하다.
+    throw new Error("stripWhitespacePrefixedClause: tailRe must be declared with the sticky (y) flag");
+  }
   const lower = s.toLowerCase();
   const kw = keyword.toLowerCase();
-  const sticky = new RegExp(tailRe.source, tailRe.flags.includes("y") ? tailRe.flags : `${tailRe.flags}y`);
+  const sticky = tailRe;
   let searchFrom = 0;
   for (;;) {
     const idx = lower.indexOf(kw, searchFrom);
@@ -74,8 +80,8 @@ function stripWhitespacePrefixedClause(s: string, keyword: string, tailRe: RegEx
 /** 타입 필드에 잘못 섞여 들어간 절(DEFAULT/CHARSET=/세미콜론 이후)을 제거한다. */
 function sanitizeType(type: string): { value: string; changed: boolean } {
   let v = type.split(";")[0] ?? type; // 세미콜론 이후 제거
-  v = stripWhitespacePrefixedClause(v, "DEFAULT", /\s+.*/i); // 타입 필드엔 DEFAULT 절이 올 수 없음
-  v = stripWhitespacePrefixedClause(v, "CHARSET", /\s*=\s*\S+/i); // `CHARSET=utf8mb4` 형태 제거
+  v = stripWhitespacePrefixedClause(v, "DEFAULT", /\s+.*/iy); // 타입 필드엔 DEFAULT 절이 올 수 없음
+  v = stripWhitespacePrefixedClause(v, "CHARSET", /\s*=\s*\S+/iy); // `CHARSET=utf8mb4` 형태 제거
   v = v.trim();
   return { value: v, changed: v !== type.trim() };
 }
@@ -404,7 +410,9 @@ const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
 function checkSensitiveInfo(doc: DiagramDocument, warnings: DdlWarning[]): void {
   const scan = (text: string | null, where: string, entityName: string, columnName?: string): void => {
     if (!text) return;
-    const kind = isPrivateIp(text) ? "private IP" : EMAIL_RE.test(text) ? "email" : null;
+    let kind: "private IP" | "email" | null = null;
+    if (isPrivateIp(text)) kind = "private IP";
+    else if (EMAIL_RE.test(text)) kind = "email";
     if (!kind) return;
     warnings.push({
       code: "sensitive_info",

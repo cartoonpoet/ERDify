@@ -98,9 +98,15 @@ const CONSTRAINT_KEYWORDS = new Set([
  * (O(n²) on adversarial input). `tailRe` must match starting exactly where `keyword` ends.
  */
 function stripWhitespacePrefixedClause(s: string, keyword: string, tailRe: RegExp, global: boolean): string {
+  if (!tailRe.sticky) {
+    // `tailRe`는 항상 sticky(`y`)로 선언되어야 한다 — 그래야 이 함수 밖에서 실수로
+    // (non-sticky로) 직접 호출되더라도 여러 시작 위치를 재시도하는 O(n²) 백트래킹으로
+    // 이어지지 않고, 정규식 리터럴 자체가 구조적으로 안전하다.
+    throw new Error("stripWhitespacePrefixedClause: tailRe must be declared with the sticky (y) flag");
+  }
   const lower = s.toLowerCase();
   const kw = keyword.toLowerCase();
-  const sticky = new RegExp(tailRe.source, tailRe.flags.includes("y") ? tailRe.flags : `${tailRe.flags}y`);
+  const sticky = tailRe;
   let out = "";
   let cursor = 0;
   let searchFrom = 0;
@@ -130,8 +136,8 @@ function stripWhitespacePrefixedClause(s: string, keyword: string, tailRe: RegEx
 }
 
 function cleanMySqlType(type: string): string {
-  let v = stripWhitespacePrefixedClause(type, "CHARACTER", /\s+SET\s+\S+/i, true);
-  v = stripWhitespacePrefixedClause(v, "COLLATE", /\s+\S+/i, true);
+  let v = stripWhitespacePrefixedClause(type, "CHARACTER", /\s+SET\s+\S+/iy, true);
+  v = stripWhitespacePrefixedClause(v, "COLLATE", /\s+\S+/iy, true);
   return v.trim();
 }
 
@@ -171,6 +177,27 @@ function matchDefaultValue(afterDefault: string): string | null {
   if (quoted) return quoted[0];
   const bare = /^\S+/.exec(afterDefault);
   return bare ? bare[0] : null;
+}
+
+const COMMENT_VALUE_RE = /'(?:[^']|\\')*'|"(?:[^"]|\\")*"/y;
+
+/**
+ * `afterBody` 안에서 `COMMENT [=] '값'` 또는 `COMMENT [=] "값"` 형태의 테이블 레벨 COMMENT
+ * 절을 찾아 따옴표 포함 원문을 반환한다. lookahead로 두 `\s*`를 atomic-group처럼 흉내내는
+ * 대신, "COMMENT" 위치를 찾은 뒤 공백/`=`/공백을 직접 건너뛰고 그 지점에 sticky 정규식을
+ * 앵커하는 방식이라 정규식 자체의 복잡도가 낮고 백트래킹 모호성이 없다.
+ */
+function extractQuotedCommentValue(afterBody: string): string | null {
+  const idx = afterBody.toLowerCase().indexOf("comment");
+  if (idx === -1) return null;
+  let i = idx + "comment".length;
+  while (i < afterBody.length && /\s/.test(afterBody[i]!)) i++;
+  if (afterBody[i] === "=") {
+    i++;
+    while (i < afterBody.length && /\s/.test(afterBody[i]!)) i++;
+  }
+  COMMENT_VALUE_RE.lastIndex = i;
+  return COMMENT_VALUE_RE.exec(afterBody)?.[0] ?? null;
 }
 
 interface ParsedFK {
@@ -239,17 +266,8 @@ function parseCreateTable(stmt: string): {
   const lines = splitTopLevelCommas(body);
 
   const afterBody = stmt.slice(bodyEnd + 1);
-  let tableComment: string | null = null;
-  // `(?=(\s*))\1` emulates an atomic group for each `\s*`: the two whitespace quantifiers were
-  // directly adjacent (only separated by an optional, non-consuming `=?`), which let the engine
-  // explore O(n) equivalent ways to split a whitespace run between them before failing — this
-  // avoids that ambiguity (capture groups 1/2 are the lookaheads' own, so the value is group 3).
-  const tableCommentMatch = afterBody.match(
-    /COMMENT(?=(\s*))\1=?(?=(\s*))\2('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i,
-  );
-  if (tableCommentMatch) {
-    tableComment = (tableCommentMatch[3] ?? "").replace(/^['"]|['"]$/g, "");
-  }
+  const tableCommentValue = extractQuotedCommentValue(afterBody);
+  const tableComment = tableCommentValue?.replace(/^['"]|['"]$/g, "") ?? null;
 
   const columns: Omit<DiagramColumn, "id">[] = [];
   const fks: ParsedFK[] = [];
