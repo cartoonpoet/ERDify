@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal, Button } from "@/components";
@@ -55,7 +55,7 @@ export const MoveOrCopyDiagramModal = ({ open, mode, diagram, onClose }: MoveOrC
   const selectedTargetProjectId = targetProjectId || firstCandidateId;
   const hasCandidates = candidates.length > 0;
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedTargetProjectId) return;
 

@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from "crypto";
+import { createHash, randomBytes, randomInt, randomUUID } from "crypto";
 import { extname, join } from "path";
 import { writeFile, unlink } from "fs/promises";
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
@@ -75,7 +75,8 @@ export class AuthService {
   async sendVerificationCode(email: string): Promise<void> {
     const existing = await this.userRepo.findOne({ where: { email } });
     if (existing) throw new ConflictException("이미 가입된 이메일입니다.");
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    // crypto.randomInt는 CSPRNG 기반이라 Math.random()과 달리 인증 코드를 예측할 수 없다.
+    const code = String(randomInt(100000, 1000000));
     this.verificationCodes.set(email, { code, expiresAt: Date.now() + 5 * 60 * 1000 });
     await this.emailService.sendVerificationEmail({ to: email, code });
   }

@@ -101,6 +101,17 @@ describe("useDiagramImport", () => {
     expect(result.current.name).toBe("users");
   });
 
+  // 3b. handleDdlChange with no CREATE TABLE statement leaves name empty
+  it("handleDdlChange does not set name when no CREATE TABLE is found", () => {
+    const { result } = renderHook(() => useDiagramImport(defaultOptions));
+
+    act(() => {
+      result.current.handleDdlChange("SELECT 1;");
+    });
+
+    expect(result.current.name).toBe("");
+  });
+
   // 4. handleDdlChange does NOT overwrite a manually set name
   it("handleDdlChange does not overwrite a manually set name", () => {
     const { result } = renderHook(() => useDiagramImport(defaultOptions));
