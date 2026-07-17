@@ -295,6 +295,24 @@ describe("generateDdlReport — 식별자/기본값/타입 검증 (T4)", () => {
     expect(sql).not.toContain("CHARSET=utf8mb4");
     expect(warnings.map((w) => w.code)).toContain("type_sanitized");
   });
+
+  it("타입 필드 맨 앞에 온 DEFAULT는 절 제거 대상으로 오인하지 않는다(공백 선행 없음)", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "t" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "weird", type: "DEFAULT", primaryKey: false }));
+    const { sql, warnings } = generateDdlReport(doc);
+    expect(sql).toContain("`weird` DEFAULT");
+    expect(warnings.map((w) => w.code)).not.toContain("type_sanitized");
+  });
+
+  it("CHARSET 뒤에 =가 없으면 절로 인식하지 않고 그대로 둔다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "t" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "body", type: "text CHARSET utf8mb4", primaryKey: false }));
+    const { sql, warnings } = generateDdlReport(doc);
+    expect(sql).toContain("`body` text CHARSET utf8mb4");
+    expect(warnings.map((w) => w.code)).not.toContain("type_sanitized");
+  });
 });
 
 // users(id PK) ← orders(user_id) FK를 세팅한 mysql 다이어그램

@@ -34,18 +34,22 @@ export const AIChatSessionSelector = ({
 
   const handleBackdropClick = () => setIsOpen(false);
 
+  const arrowClass = isOpen ? `${css.dropdownArrow} ${css.dropdownArrowOpen}` : css.dropdownArrow;
+
   return (
     <div className={css.container}>
       {isOpen && (
+        // 배경 클릭 dismiss 전용 오버레이 — 키보드 사용자는 드롭다운 토글 버튼을 사용한다.
         <div
           style={{ position: "fixed", inset: 0, zIndex: 99 }}
+          role="presentation"
           onClick={handleBackdropClick}
         />
       )}
 
-      <button type="button" className={css.dropdownBtn} onClick={handleToggle}>
+      <button type="button" className={css.dropdownBtn} onClick={handleToggle} aria-expanded={isOpen}>
         <span className={css.dropdownBtnLabel}>{currentLabel}</span>
-        <span className={`${css.dropdownArrow}${isOpen ? ` ${css.dropdownArrowOpen}` : ""}`}>▾</span>
+        <span className={arrowClass}>▾</span>
       </button>
 
       <button type="button" className={css.newSessionBtn} onClick={handleNewSession}>
@@ -58,13 +62,19 @@ export const AIChatSessionSelector = ({
             <div className={css.dropdownEmpty}>이전 세션이 없습니다</div>
           ) : (
             sessions.map((session) => (
-              <div
+              <button
+                type="button"
                 key={session.id}
-                className={`${css.dropdownItem}${session.id === currentSessionId ? ` ${css.dropdownItemActive}` : ""}`}
+                aria-current={session.id === currentSessionId ? "true" : undefined}
+                className={
+                  session.id === currentSessionId
+                    ? `${css.dropdownItem} ${css.dropdownItemActive}`
+                    : css.dropdownItem
+                }
                 onClick={() => handleSelect(session.id)}
               >
                 <span className={css.dropdownItemName}>{session.name}</span>
-              </div>
+              </button>
             ))
           )}
         </div>

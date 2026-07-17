@@ -16,8 +16,9 @@ export const mapToAiMessages = (items: SessionMessageItem[]): AiMessage[] =>
 export type ModelBadgeVariant = "blue" | "purple" | "green" | "gray";
 
 export const parseModelLabel = (label: string): { name: string; badge: string | null } => {
-  const m = label.match(/^(.*?)\s*\((.+)\)$/);
-  return m ? { name: m[1] ?? label, badge: m[2] ?? null } : { name: label, badge: null };
+  // `[^(]*`는 첫 번째 "("까지 결정적으로 매칭되어 백트래킹이 발생하지 않는다.
+  const m = /^([^(]*)\((.+)\)$/.exec(label);
+  return m ? { name: (m[1] ?? label).trimEnd(), badge: m[2] ?? null } : { name: label, badge: null };
 };
 
 export const getBadgeVariant = (badge: string | null): ModelBadgeVariant => {

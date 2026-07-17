@@ -108,38 +108,58 @@ ${lines}
  * 그러면 시스템 프롬프트의 "Database design defaults" 섹션이 그대로 적용된다.
  * 원본 문서에서 계산되므로 "Current diagram"이 요약돼도 이 규칙은 항상 유효하다.
  */
+const CASE_STYLE_LABELS: Record<string, string> = { snake: "snake_case", camel: "camelCase" };
+const TABLE_NUMBER_LABELS: Record<string, string> = { plural: "복수형", singular: "단수형" };
+const COMMENT_LANGUAGE_LABELS: Record<string, string> = { korean: "한국어", english: "영어" };
+
+function caseStyleLine(p: ConventionProfile): string | null {
+  if (p.caseStyle === "unknown") return null;
+  const label = CASE_STYLE_LABELS[p.caseStyle] ?? "혼용(mixed) — 기존 컬럼과 일치시킬 것";
+  return `- 케이스: ${label}`;
+}
+
+function tableNamingLine(p: ConventionProfile): string | null {
+  if (p.tableNaming.number === "unknown" && p.tableNaming.commonPrefixes.length === 0) return null;
+  const parts: string[] = [];
+  if (p.tableNaming.number !== "unknown") {
+    parts.push(TABLE_NUMBER_LABELS[p.tableNaming.number] ?? "단/복수 혼용");
+  }
+  if (p.tableNaming.commonPrefixes.length > 0) parts.push(`공통 접두사 [${p.tableNaming.commonPrefixes.join(", ")}]`);
+  return `- 테이블명: ${parts.join(", ")}`;
+}
+
+function primaryKeyLine(p: ConventionProfile): string | null {
+  if (!p.primaryKey.pattern) return null;
+  const typeSuffix = p.primaryKey.typicalType ? ` (${p.primaryKey.typicalType})` : "";
+  return `- PK: ${p.primaryKey.pattern}${typeSuffix}`;
+}
+
+function indexNamingLine(p: ConventionProfile): string | null {
+  if (!p.indexNaming.indexPrefix && !p.indexNaming.uniquePrefix) return null;
+  const parts: string[] = [];
+  if (p.indexNaming.template) parts.push(`인덱스 ${p.indexNaming.template}`);
+  else if (p.indexNaming.indexPrefix) parts.push(`인덱스 ${p.indexNaming.indexPrefix}…`);
+  if (p.indexNaming.uniquePrefix) parts.push(`유니크 ${p.indexNaming.uniquePrefix}<table>_<col>`);
+  return `- 인덱스: ${parts.join(" / ")}`;
+}
+
+function commentsLine(p: ConventionProfile): string | null {
+  if (p.comments.language === "unknown") return null;
+  const lang = COMMENT_LANGUAGE_LABELS[p.comments.language] ?? "혼용";
+  return `- 코멘트: ${lang}, ${p.comments.coveragePct}% 컬럼에 존재`;
+}
+
 function buildConventionsBlock(p?: ConventionProfile): string {
   if (!p) return "";
-  const lines: string[] = [];
-
-  if (p.caseStyle !== "unknown") {
-    const label = p.caseStyle === "snake" ? "snake_case" : p.caseStyle === "camel" ? "camelCase" : "혼용(mixed) — 기존 컬럼과 일치시킬 것";
-    lines.push(`- 케이스: ${label}`);
-  }
-  if (p.tableNaming.number !== "unknown" || p.tableNaming.commonPrefixes.length > 0) {
-    const parts: string[] = [];
-    if (p.tableNaming.number !== "unknown") {
-      parts.push(p.tableNaming.number === "plural" ? "복수형" : p.tableNaming.number === "singular" ? "단수형" : "단/복수 혼용");
-    }
-    if (p.tableNaming.commonPrefixes.length > 0) parts.push(`공통 접두사 [${p.tableNaming.commonPrefixes.join(", ")}]`);
-    lines.push(`- 테이블명: ${parts.join(", ")}`);
-  }
-  if (p.primaryKey.pattern) {
-    lines.push(`- PK: ${p.primaryKey.pattern}${p.primaryKey.typicalType ? ` (${p.primaryKey.typicalType})` : ""}`);
-  }
-  if (p.foreignKey.pattern) lines.push(`- FK: ${p.foreignKey.pattern}`);
-  if (p.timestamps.length > 0) lines.push(`- 타임스탬프: ${p.timestamps.join(", ")}`);
-  if (p.indexNaming.indexPrefix || p.indexNaming.uniquePrefix) {
-    const parts: string[] = [];
-    if (p.indexNaming.template) parts.push(`인덱스 ${p.indexNaming.template}`);
-    else if (p.indexNaming.indexPrefix) parts.push(`인덱스 ${p.indexNaming.indexPrefix}…`);
-    if (p.indexNaming.uniquePrefix) parts.push(`유니크 ${p.indexNaming.uniquePrefix}<table>_<col>`);
-    lines.push(`- 인덱스: ${parts.join(" / ")}`);
-  }
-  if (p.comments.language !== "unknown") {
-    const lang = p.comments.language === "korean" ? "한국어" : p.comments.language === "english" ? "영어" : "혼용";
-    lines.push(`- 코멘트: ${lang}, ${p.comments.coveragePct}% 컬럼에 존재`);
-  }
+  const lines = [
+    caseStyleLine(p),
+    tableNamingLine(p),
+    primaryKeyLine(p),
+    p.foreignKey.pattern ? `- FK: ${p.foreignKey.pattern}` : null,
+    p.timestamps.length > 0 ? `- 타임스탬프: ${p.timestamps.join(", ")}` : null,
+    indexNamingLine(p),
+    commentsLine(p),
+  ].filter((line): line is string => line !== null);
 
   if (lines.length === 0) return "";
   return `
@@ -147,6 +167,18 @@ function buildConventionsBlock(p?: ConventionProfile): string {
 ${lines.join("\n")}
 규칙: 새 테이블/컬럼/인덱스는 위 규칙을 **그대로** 따르세요. 아래 "Current diagram"이 요약돼 있어도 위 규칙은 전체 스키마에서 계산된 것이라 항상 유효합니다.
 `;
+}
+
+/** 토큰 예산 안이면 전체 컨텍스트, 넘으면 포커스 테이블 유무에 따라 focused/전체 요약을 선택한다. */
+function selectDiagramContext(
+  doc: DiagramDocument,
+  full: ReturnType<typeof buildDiagramContext>,
+  oversized: boolean,
+  focusIds: string[],
+): unknown {
+  if (!oversized) return full;
+  if (focusIds.length > 0) return summarizeFocused(doc, focusIds);
+  return summarize(doc);
 }
 
 export interface PromptOptions {
@@ -167,9 +199,7 @@ export function buildSystemPrompt(
   const full = buildDiagramContext(doc);
   const oversized = JSON.stringify(full).length > TOKEN_BUDGET_CHARS;
   const focusIds = options.focusTableIds ?? [];
-  const diagramJson = JSON.stringify(
-    !oversized ? full : focusIds.length > 0 ? summarizeFocused(doc, focusIds) : summarize(doc),
-  );
+  const diagramJson = JSON.stringify(selectDiagramContext(doc, full, oversized, focusIds));
   const verifiedFactsBlock = buildVerifiedFactsBlock(facts);
   const intentBlock = buildIntentBlock(options.intent ?? "general");
   const conventionsBlock = buildConventionsBlock(options.conventions);

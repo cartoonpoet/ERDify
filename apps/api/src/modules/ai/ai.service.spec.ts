@@ -1,17 +1,35 @@
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ForbiddenException } from "@nestjs/common";
 import { OrganizationAiSettings, Diagram, OrganizationMember } from "@erdify/db";
 import { AiService } from "./ai.service";
 import { UsageService } from "../usage/usage.service";
 import { encrypt } from "../../common/utils/field-cipher";
 
+// field-cipher.ts의 encrypt/decrypt는 FIELD_ENCRYPTION_KEY(64자리 hex)가 설정되어 있어야
+// 동작한다(미설정 시 에러 throw). 이 스펙은 실제 암복호화 경로를 태우므로 테스트 전용 키를 채운다.
+const TEST_FIELD_ENCRYPTION_KEY = "1".repeat(64);
+
 let anthropicCreateMock: ReturnType<typeof vi.fn>;
+let openaiCreateMock: ReturnType<typeof vi.fn>;
+let geminiGenerateMock: ReturnType<typeof vi.fn>;
 
 vi.mock("@anthropic-ai/sdk", () => ({
   default: vi.fn().mockImplementation(() => ({
     messages: { create: (...args: unknown[]) => anthropicCreateMock(...args) },
+  })),
+}));
+
+vi.mock("openai", () => ({
+  default: vi.fn().mockImplementation(() => ({
+    chat: { completions: { create: (...args: unknown[]) => openaiCreateMock(...args) } },
+  })),
+}));
+
+vi.mock("@google/generative-ai", () => ({
+  GoogleGenerativeAI: vi.fn().mockImplementation(() => ({
+    getGenerativeModel: vi.fn(() => ({ generateContent: (...args: unknown[]) => geminiGenerateMock(...args) })),
   })),
 }));
 
@@ -32,8 +50,13 @@ describe("AiService", () => {
   let diagramRepo: ReturnType<typeof makeRepo>;
   let memberRepo: ReturnType<typeof makeRepo>;
 
+  const originalFieldEncryptionKey = process.env["FIELD_ENCRYPTION_KEY"];
+
   beforeEach(async () => {
+    process.env["FIELD_ENCRYPTION_KEY"] = TEST_FIELD_ENCRYPTION_KEY;
     anthropicCreateMock = vi.fn();
+    openaiCreateMock = vi.fn();
+    geminiGenerateMock = vi.fn();
     settingsRepo = makeRepo();
     diagramRepo = makeRepo();
     memberRepo = makeRepo();
@@ -49,6 +72,11 @@ describe("AiService", () => {
     }).compile();
 
     service = module.get(AiService);
+  });
+
+  afterEach(() => {
+    if (originalFieldEncryptionKey === undefined) delete process.env["FIELD_ENCRYPTION_KEY"];
+    else process.env["FIELD_ENCRYPTION_KEY"] = originalFieldEncryptionKey;
   });
 
   describe("getOrgAiSettings", () => {
@@ -144,6 +172,16 @@ describe("AiService", () => {
       expect(result).toEqual(suggestions);
     });
 
+    it("설명 텍스트에 둘러싸인 JSON 배열도 추출해 파싱한다", async () => {
+      setup();
+      const suggestions = [{ name: "id", type: "uuid", nullable: false, pk: true }];
+      anthropicCreateMock.mockResolvedValue({
+        content: [{ type: "text", text: `다음 컬럼을 추천합니다:\n${JSON.stringify(suggestions)}\n참고하세요.` }],
+      });
+      const result = await service.suggestColumns("user-1", "users", []);
+      expect(result).toEqual(suggestions);
+    });
+
     it("유효하지 않은 JSON이면 빈 배열", async () => {
       setup();
       anthropicCreateMock.mockResolvedValue({ content: [{ type: "text", text: "설명만 있음" }] });
@@ -159,6 +197,114 @@ describe("AiService", () => {
       memberRepo.findOne.mockResolvedValue({ userId: "user-1", organizationId: "org-1", role: "editor" });
       settingsRepo.findOne.mockResolvedValue({ providerKeys: {}, enabledModels: [] });
       await expect(service.suggestColumns("user-1", "users", [])).rejects.toThrow(ForbiddenException);
+    });
+
+    it("대괄호는 있지만 JSON이 아니면 빈 배열", async () => {
+      setup();
+      anthropicCreateMock.mockResolvedValue({ content: [{ type: "text", text: "[유효한 JSON이 아닌 텍스트]" }] });
+      expect(await service.suggestColumns("user-1", "users", [])).toEqual([]);
+    });
+
+    it("OpenAI 키만 있으면 OpenAI SDK(chat.completions)로 호출한다", async () => {
+      memberRepo.findOne.mockResolvedValue({ userId: "user-1", organizationId: "org-1", role: "editor" });
+      settingsRepo.findOne.mockResolvedValue({ providerKeys: { openai: encrypt("sk-openai") }, enabledModels: [] });
+      const suggestions = [{ name: "id", type: "uuid", nullable: false, pk: true }];
+      openaiCreateMock.mockResolvedValue({ choices: [{ message: { content: JSON.stringify(suggestions) } }] });
+
+      const result = await service.suggestColumns("user-1", "users", []);
+
+      expect(result).toEqual(suggestions);
+      const req = openaiCreateMock.mock.calls[0]![0] as Record<string, unknown>;
+      expect(req["model"]).toBe("gpt-4o"); // 첫 허용 OpenAI 모델
+      expect(req["max_tokens"]).toBe(512);
+    });
+
+    it("gpt-5 계열 모델이면 max_completion_tokens로 호출한다", async () => {
+      memberRepo.findOne.mockResolvedValue({ userId: "user-1", organizationId: "org-1", role: "editor" });
+      settingsRepo.findOne.mockResolvedValue({ providerKeys: { openai: encrypt("sk-openai") }, enabledModels: ["gpt-5.5"] });
+      openaiCreateMock.mockResolvedValue({ choices: [] }); // content 없음 → "" → 빈 배열
+
+      const result = await service.suggestColumns("user-1", "users", []);
+
+      expect(result).toEqual([]);
+      const req = openaiCreateMock.mock.calls[0]![0] as Record<string, unknown>;
+      expect(req["model"]).toBe("gpt-5.5");
+      expect(req["max_completion_tokens"]).toBe(512);
+      expect(req).not.toHaveProperty("max_tokens");
+    });
+
+    it("Gemini 키만 있으면 Gemini SDK(generateContent)로 호출한다", async () => {
+      memberRepo.findOne.mockResolvedValue({ userId: "user-1", organizationId: "org-1", role: "editor" });
+      settingsRepo.findOne.mockResolvedValue({ providerKeys: { gemini: encrypt("gm-key") }, enabledModels: [] });
+      const suggestions = [{ name: "created_at", type: "timestamptz", nullable: false, pk: false }];
+      geminiGenerateMock.mockResolvedValue({ response: { text: () => JSON.stringify(suggestions) } });
+
+      const result = await service.suggestColumns("user-1", "users", []);
+
+      expect(result).toEqual(suggestions);
+      const req = geminiGenerateMock.mock.calls[0]![0] as { generationConfig: { maxOutputTokens: number } };
+      expect(req.generationConfig.maxOutputTokens).toBe(512);
+    });
+  });
+
+  describe("completeForUser()", () => {
+    it("조직 멤버십이 없으면 ForbiddenException", async () => {
+      memberRepo.findOne.mockResolvedValue(null);
+      await expect(service.completeForUser("user-1", "요약해줘", 256)).rejects.toThrow(ForbiddenException);
+    });
+
+    it("조직 키로 단발성 완성을 수행해 텍스트를 반환한다", async () => {
+      memberRepo.findOne.mockResolvedValue({ userId: "user-1", organizationId: "org-1", role: "editor" });
+      settingsRepo.findOne.mockResolvedValue({ providerKeys: { anthropic: encrypt("sk-ant") }, enabledModels: [] });
+      anthropicCreateMock.mockResolvedValue({ content: [{ type: "text", text: "요약 " }, { type: "text", text: "결과" }] });
+
+      const text = await service.completeForUser("user-1", "요약해줘", 256);
+
+      expect(text).toBe("요약 결과");
+      const req = anthropicCreateMock.mock.calls[0]![0] as Record<string, unknown>;
+      expect(req["max_tokens"]).toBe(256);
+    });
+  });
+
+  describe("resolveChatCredentials()", () => {
+    it("요청 모델이 허용 목록에 있으면 그 모델의 provider 키를 반환한다", async () => {
+      memberRepo.findOne.mockResolvedValue({ role: "editor" });
+      settingsRepo.findOne.mockResolvedValue({
+        providerKeys: { anthropic: encrypt("sk-ant"), openai: encrypt("sk-openai") },
+        enabledModels: [],
+      });
+
+      const creds = await service.resolveChatCredentials("org-1", "user-1", "gpt-4o");
+
+      expect(creds.provider).toBe("openai");
+      expect(creds.model).toBe("gpt-4o");
+      expect(creds.apiKey).toBe("sk-openai");
+    });
+
+    it("요청 모델이 허용 목록에 없으면 첫 허용 모델로 대체한다", async () => {
+      memberRepo.findOne.mockResolvedValue({ role: "editor" });
+      settingsRepo.findOne.mockResolvedValue({ providerKeys: { anthropic: encrypt("sk-ant") }, enabledModels: [] });
+
+      const creds = await service.resolveChatCredentials("org-1", "user-1", "gpt-4o"); // openai 키 없음
+
+      expect(creds.provider).toBe("anthropic");
+      expect(creds.model).toBe("claude-sonnet-5");
+    });
+  });
+
+  describe("getOrCreateSettings (via setOrgProviderKey)", () => {
+    it("설정 행이 없으면 새로 만들어 키를 저장한다", async () => {
+      memberRepo.findOne.mockResolvedValue({ role: "owner" });
+      settingsRepo.findOne.mockResolvedValue(null);
+
+      await service.setOrgProviderKey("org-1", "user-1", "anthropic", "sk-new");
+
+      expect(settingsRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: "org-1", enabledModels: [] }),
+      );
+      const saved = settingsRepo.save.mock.calls[0]![0] as { providerKeys: Record<string, string> };
+      expect(saved.providerKeys["anthropic"]).toBeDefined();
+      expect(saved.providerKeys["anthropic"]).not.toBe("sk-new"); // 암호화됨
     });
   });
 });

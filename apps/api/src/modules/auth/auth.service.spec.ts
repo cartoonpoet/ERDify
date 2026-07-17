@@ -58,6 +58,28 @@ describe("AuthService", () => {
     );
   });
 
+  describe("sendVerificationCode", () => {
+    it("6자리 숫자 인증 코드를 생성해 이메일로 보낸다", async () => {
+      vi.mocked(userRepo.findOne).mockResolvedValue(null);
+
+      await service.sendVerificationCode("new@example.com");
+
+      expect(emailService.sendVerificationEmail).toHaveBeenCalledTimes(1);
+      const { to, code } = vi.mocked(emailService.sendVerificationEmail).mock.calls[0]![0];
+      expect(to).toBe("new@example.com");
+      expect(code).toMatch(/^\d{6}$/);
+      expect(Number(code)).toBeGreaterThanOrEqual(100000);
+      expect(Number(code)).toBeLessThanOrEqual(999999);
+    });
+
+    it("이미 가입된 이메일이면 ConflictException을 던진다", async () => {
+      vi.mocked(userRepo.findOne).mockResolvedValue({ id: "1" } as User);
+
+      await expect(service.sendVerificationCode("existing@example.com")).rejects.toThrow(ConflictException);
+      expect(emailService.sendVerificationEmail).not.toHaveBeenCalled();
+    });
+  });
+
   describe("register", () => {
     it("throws ConflictException if email already exists", async () => {
       vi.mocked(jwtService.verify).mockReturnValue({ purpose: "email-verification", email: "a@b.com" });

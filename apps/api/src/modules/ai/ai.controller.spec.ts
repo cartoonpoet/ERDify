@@ -22,7 +22,12 @@ describe("AiController", () => {
     getDiagramAiConfig: ReturnType<typeof vi.fn>;
   };
   let aiChatServiceMock: { runChat: ReturnType<typeof vi.fn> };
-  let aiHistoryServiceMock: { markAccepted: ReturnType<typeof vi.fn>; findSessions: ReturnType<typeof vi.fn>; createSession: ReturnType<typeof vi.fn> };
+  let aiHistoryServiceMock: {
+    markAccepted: ReturnType<typeof vi.fn>;
+    findSessions: ReturnType<typeof vi.fn>;
+    createSession: ReturnType<typeof vi.fn>;
+    findSessionMessages: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     aiServiceMock = {
@@ -34,7 +39,7 @@ describe("AiController", () => {
       getDiagramAiConfig: vi.fn(),
     };
     aiChatServiceMock = { runChat: vi.fn() };
-    aiHistoryServiceMock = { markAccepted: vi.fn(), findSessions: vi.fn(), createSession: vi.fn() };
+    aiHistoryServiceMock = { markAccepted: vi.fn(), findSessions: vi.fn(), createSession: vi.fn(), findSessionMessages: vi.fn() };
 
     controller = new AiController(aiServiceMock as never, aiChatServiceMock as never, aiHistoryServiceMock as never);
   });
@@ -66,6 +71,85 @@ describe("AiController", () => {
       expect(writes[0]).toContain("event: text");
       expect(writes[1]).toContain("event: done");
       expect(res.end).toHaveBeenCalled();
+    });
+
+    it("status와 error 이벤트도 각각의 SSE 라인으로 write한다", async () => {
+      const writes: string[] = [];
+      const res = {
+        setHeader: vi.fn(),
+        flushHeaders: vi.fn(),
+        on: vi.fn(),
+        write: vi.fn((s: string) => { writes.push(s); }),
+        end: vi.fn(),
+      };
+      aiChatServiceMock.runChat.mockImplementation(async (_params, emit: (e: StreamEvent) => void) => {
+        emit({ event: "status", label: "users 테이블 생성 중" });
+        emit({ event: "error", message: "AI 처리 중 오류가 발생했습니다." });
+      });
+
+      await controller.chatStream(makeUser(), { diagramId: "d1", message: "hello", sessionId: "s1" }, res as never);
+
+      expect(writes[0]).toContain("event: status");
+      expect(writes[0]).toContain("users 테이블 생성 중");
+      expect(writes[1]).toContain("event: error");
+      expect(writes[1]).toContain("AI 처리 중 오류가 발생했습니다.");
+      expect(res.end).toHaveBeenCalled();
+    });
+  });
+
+  describe("getSessionMessages()", () => {
+    const row = {
+      id: "m1",
+      role: "assistant",
+      content: "응답",
+      diff: undefined,
+      accepted: null,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    };
+
+    it("limit 미지정 시 50으로 조회하고 메시지를 응답 형태로 매핑한다", async () => {
+      aiHistoryServiceMock.findSessionMessages.mockResolvedValue({ messages: [row], hasMore: false });
+
+      const result = await controller.getSessionMessages(makeUser(), "sess-1");
+
+      expect(aiHistoryServiceMock.findSessionMessages).toHaveBeenCalledWith("user-1", "sess-1", 50, undefined);
+      expect(result).toEqual({
+        messages: [{ id: "m1", role: "assistant", content: "응답", diff: null, accepted: null, createdAt: "2026-01-01T00:00:00.000Z" }],
+        hasMore: false,
+      });
+    });
+
+    it("limit이 100을 넘으면 100으로 제한한다", async () => {
+      aiHistoryServiceMock.findSessionMessages.mockResolvedValue({ messages: [], hasMore: false });
+
+      await controller.getSessionMessages(makeUser(), "sess-1", "500", "m9");
+
+      expect(aiHistoryServiceMock.findSessionMessages).toHaveBeenCalledWith("user-1", "sess-1", 100, "m9");
+    });
+
+    it("정수가 아니거나 0 이하인 limit은 50으로 대체한다", async () => {
+      aiHistoryServiceMock.findSessionMessages.mockResolvedValue({ messages: [], hasMore: false });
+
+      await controller.getSessionMessages(makeUser(), "sess-1", "abc");
+      await controller.getSessionMessages(makeUser(), "sess-1", "-3");
+      await controller.getSessionMessages(makeUser(), "sess-1", "1.5");
+
+      for (const call of aiHistoryServiceMock.findSessionMessages.mock.calls) {
+        expect(call[2]).toBe(50);
+      }
+    });
+
+    it("createdAt이 Date가 아니면 문자열로 변환하고 diff는 그대로 전달한다", async () => {
+      const diff = [{ type: "addTable", tableName: "users" }];
+      aiHistoryServiceMock.findSessionMessages.mockResolvedValue({
+        messages: [{ ...row, diff, createdAt: "2026-01-01 09:00:00" }],
+        hasMore: true,
+      });
+
+      const result = await controller.getSessionMessages(makeUser(), "sess-1", "10");
+
+      expect(result.hasMore).toBe(true);
+      expect(result.messages[0]).toMatchObject({ diff, createdAt: "2026-01-01 09:00:00" });
     });
   });
 

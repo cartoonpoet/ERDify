@@ -54,9 +54,25 @@ export interface AiChatSlice {
   finalizeStreamingMessage: (
     sessionId: string,
     tempId: string,
-    payload: { messageId: string; content?: string; diff: unknown[] | null; pendingDocument: unknown | null },
+    payload: { messageId: string; content?: string; diff: unknown[] | null; pendingDocument: unknown },
   ) => void;
 }
+
+/** 해당 메시지가 속한 세션만 새 배열로 교체해 accepted 값을 갱신한다 (나머지 세션은 참조 유지). */
+const withMessageAccepted = (
+  sessionMessages: Record<string, AiMessage[]>,
+  messageId: string,
+  accepted: boolean,
+): Record<string, AiMessage[]> => {
+  for (const [sid, msgs] of Object.entries(sessionMessages)) {
+    if (!msgs.some((m) => m.id === messageId)) continue;
+    return {
+      ...sessionMessages,
+      [sid]: msgs.map((m) => (m.id === messageId ? { ...m, accepted } : m)),
+    };
+  }
+  return sessionMessages;
+};
 
 export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
   isOpen: false,
@@ -137,22 +153,12 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
 
   acceptDiff: (messageId) =>
     set((state) => ({
-      sessionMessages: Object.fromEntries(
-        Object.entries(state.sessionMessages).map(([sid, msgs]) => [
-          sid,
-          msgs.map((m) => (m.id === messageId ? { ...m, accepted: true } : m)),
-        ]),
-      ),
+      sessionMessages: withMessageAccepted(state.sessionMessages, messageId, true),
     })),
 
   rejectDiff: (messageId) =>
     set((state) => ({
-      sessionMessages: Object.fromEntries(
-        Object.entries(state.sessionMessages).map(([sid, msgs]) => [
-          sid,
-          msgs.map((m) => (m.id === messageId ? { ...m, accepted: false } : m)),
-        ]),
-      ),
+      sessionMessages: withMessageAccepted(state.sessionMessages, messageId, false),
     })),
 
   setLoading: (loading) => set({ isLoading: loading }),

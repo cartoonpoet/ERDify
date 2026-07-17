@@ -38,11 +38,50 @@ function defaultNeedsQuoting(defaultValue: string): boolean {
   return true;
 }
 
+/**
+ * Removes a single occurrence of `\s+<keyword><tailRe>` from `s` (case-insensitive keyword),
+ * e.g. `\s+DEFAULT\s+.*`. Locates `keyword` via a plain substring search first, then absorbs the
+ * mandatory preceding whitespace run manually — this avoids the catastrophic-backtracking shape
+ * of a leading unbounded `\s+` quantifier with no anchor, which a naive regex would retry at
+ * every position of a long non-matching whitespace run (O(n²) on adversarial input). `tailRe`
+ * must match starting exactly where `keyword` ends.
+ */
+function stripWhitespacePrefixedClause(s: string, keyword: string, tailRe: RegExp): string {
+  if (!tailRe.sticky) {
+    // `tailRe`는 항상 sticky(`y`)로 선언되어야 한다 — 그래야 이 함수 밖에서 실수로
+    // (non-sticky로) 직접 호출되더라도 여러 시작 위치를 재시도하는 O(n²) 백트래킹으로
+    // 이어지지 않고, 정규식 리터럴 자체가 구조적으로 안전하다.
+    throw new Error("stripWhitespacePrefixedClause: tailRe must be declared with the sticky (y) flag");
+  }
+  const lower = s.toLowerCase();
+  const kw = keyword.toLowerCase();
+  const sticky = tailRe;
+  let searchFrom = 0;
+  for (;;) {
+    const idx = lower.indexOf(kw, searchFrom);
+    if (idx === -1) return s;
+    const afterKeyword = idx + keyword.length;
+    if (idx === 0 || !/\s/.test(s[idx - 1]!)) {
+      searchFrom = idx + 1;
+      continue;
+    }
+    sticky.lastIndex = afterKeyword;
+    const tailMatch = sticky.exec(s);
+    if (!tailMatch) {
+      searchFrom = idx + 1;
+      continue;
+    }
+    let wsStart = idx;
+    while (wsStart > 0 && /\s/.test(s[wsStart - 1]!)) wsStart--;
+    return s.slice(0, wsStart) + s.slice(afterKeyword + tailMatch[0].length);
+  }
+}
+
 /** 타입 필드에 잘못 섞여 들어간 절(DEFAULT/CHARSET=/세미콜론 이후)을 제거한다. */
 function sanitizeType(type: string): { value: string; changed: boolean } {
   let v = type.split(";")[0] ?? type; // 세미콜론 이후 제거
-  v = v.replace(/\s+DEFAULT\s+.*/i, ""); // 타입 필드엔 DEFAULT 절이 올 수 없음
-  v = v.replace(/\s+CHARSET\s*=\s*\S+/i, ""); // `CHARSET=utf8mb4` 형태 제거
+  v = stripWhitespacePrefixedClause(v, "DEFAULT", /\s+.*/iy); // 타입 필드엔 DEFAULT 절이 올 수 없음
+  v = stripWhitespacePrefixedClause(v, "CHARSET", /\s*=\s*\S+/iy); // `CHARSET=utf8mb4` 형태 제거
   v = v.trim();
   return { value: v, changed: v !== type.trim() };
 }
@@ -359,14 +398,21 @@ function collectIdentifierWarnings(doc: DiagramDocument, warnings: DdlWarning[])
 }
 
 // 사설 IP(10.x, 172.16~31.x, 192.168.x) / 이메일 패턴 — export 산출물로 내부망 정보가 새는 것을 방지
-const PRIVATE_IP_RE = /\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b/;
+// (3개 대역을 하나의 교차 정규식으로 묶으면 정규식 복잡도 상한을 넘기므로 대역별로 나눠 OR로 결합한다.)
+const PRIVATE_IP_10_RE = /\b10\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/;
+const PRIVATE_IP_172_RE = /\b172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}\b/;
+const PRIVATE_IP_192_RE = /\b192\.168\.\d{1,3}\.\d{1,3}\b/;
+const isPrivateIp = (text: string): boolean =>
+  PRIVATE_IP_10_RE.test(text) || PRIVATE_IP_172_RE.test(text) || PRIVATE_IP_192_RE.test(text);
 const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
 
 /** COMMENT/DEFAULT에 사설 IP·이메일이 있으면 경고 (SQL은 그대로 출력 — warn-only) */
 function checkSensitiveInfo(doc: DiagramDocument, warnings: DdlWarning[]): void {
   const scan = (text: string | null, where: string, entityName: string, columnName?: string): void => {
     if (!text) return;
-    const kind = PRIVATE_IP_RE.test(text) ? "private IP" : EMAIL_RE.test(text) ? "email" : null;
+    let kind: "private IP" | "email" | null = null;
+    if (isPrivateIp(text)) kind = "private IP";
+    else if (EMAIL_RE.test(text)) kind = "email";
     if (!kind) return;
     warnings.push({
       code: "sensitive_info",
