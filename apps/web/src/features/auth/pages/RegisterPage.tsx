@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, type SubmitEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { sendVerification, verifyCode, getInvite, register } from "@/shared/api/auth.api";
 import { useAuthStore } from "@/shared/store/useAuthStore";
@@ -94,7 +94,7 @@ export const RegisterPage = () => {
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!verifiedToken) { setError("이메일 인증을 완료해주세요."); return; }
     if (password !== confirmPassword) { setError("비밀번호가 일치하지 않습니다."); return; }

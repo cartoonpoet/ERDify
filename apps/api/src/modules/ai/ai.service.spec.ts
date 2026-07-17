@@ -1,11 +1,15 @@
 import { Test } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ForbiddenException } from "@nestjs/common";
 import { OrganizationAiSettings, Diagram, OrganizationMember } from "@erdify/db";
 import { AiService } from "./ai.service";
 import { UsageService } from "../usage/usage.service";
 import { encrypt } from "../../common/utils/field-cipher";
+
+// field-cipher.ts의 encrypt/decrypt는 FIELD_ENCRYPTION_KEY(64자리 hex)가 설정되어 있어야
+// 동작한다(미설정 시 에러 throw). 이 스펙은 실제 암복호화 경로를 태우므로 테스트 전용 키를 채운다.
+const TEST_FIELD_ENCRYPTION_KEY = "1".repeat(64);
 
 let anthropicCreateMock: ReturnType<typeof vi.fn>;
 let openaiCreateMock: ReturnType<typeof vi.fn>;
@@ -46,7 +50,10 @@ describe("AiService", () => {
   let diagramRepo: ReturnType<typeof makeRepo>;
   let memberRepo: ReturnType<typeof makeRepo>;
 
+  const originalFieldEncryptionKey = process.env["FIELD_ENCRYPTION_KEY"];
+
   beforeEach(async () => {
+    process.env["FIELD_ENCRYPTION_KEY"] = TEST_FIELD_ENCRYPTION_KEY;
     anthropicCreateMock = vi.fn();
     openaiCreateMock = vi.fn();
     geminiGenerateMock = vi.fn();
@@ -65,6 +72,11 @@ describe("AiService", () => {
     }).compile();
 
     service = module.get(AiService);
+  });
+
+  afterEach(() => {
+    if (originalFieldEncryptionKey === undefined) delete process.env["FIELD_ENCRYPTION_KEY"];
+    else process.env["FIELD_ENCRYPTION_KEY"] = originalFieldEncryptionKey;
   });
 
   describe("getOrgAiSettings", () => {

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Modal, Button, Input } from "@/components";
 import { createProject } from "@/shared/api/projects.api";
 import { form, footer } from "./modal-form.css";
@@ -15,7 +15,7 @@ export const CreateProjectModal = ({ open, onClose, onCreated, orgId }: CreatePr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!name.trim()) return;
     setLoading(true);

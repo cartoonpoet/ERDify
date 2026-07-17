@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent, type ChangeEvent, type DragEvent } from "react";
+import { useRef, useState, type SubmitEvent, type ChangeEvent, type DragEvent } from "react";
 import { Button, Input } from "@/components";
 import { getMe, updateProfile, uploadAvatar } from "@/shared/api/auth.api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -58,7 +58,7 @@ export const ProfileTab = ({ onClose }: ProfileTabProps) => {
     if (file) pickFile(file);
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);

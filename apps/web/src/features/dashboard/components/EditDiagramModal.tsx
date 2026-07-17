@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Modal, Button, Input } from "@/components";
 import { updateDiagram } from "@/shared/api/diagrams.api";
@@ -20,7 +20,7 @@ export const EditDiagramModal = ({ open, onClose, diagram }: EditDiagramModalPro
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) return;

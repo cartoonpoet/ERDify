@@ -47,9 +47,13 @@ export class AnnouncementsAiService {
   private async callAndParse(prompt: string, fallbackLabel: string, userId: string): Promise<AiAnnouncementResult> {
     try {
       const text = await this.aiService.completeForUser(userId, prompt, 512);
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match) {
-        const parsed = JSON.parse(match[0]) as { title?: string; content?: string };
+      // `/\{[\s\S]*\}/` greedily matches to the last "}" then backtracks looking for one if it's
+      // missing; unmatched "{" characters in AI output make that O(n²). indexOf/lastIndexOf finds
+      // the same span (first "{" to last "}") in O(n) with no backtracking.
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      if (start !== -1 && end > start) {
+        const parsed = JSON.parse(text.slice(start, end + 1)) as { title?: string; content?: string };
         if (parsed.title && parsed.content) {
           return { title: parsed.title, content: parsed.content };
         }
