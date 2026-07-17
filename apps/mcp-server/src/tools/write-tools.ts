@@ -86,13 +86,15 @@ export function buildColumn(input: ColumnInput, ordinal: number): DiagramColumn 
 }
 
 export const registerWriteTools = (server: McpServer): void => {
-  server.tool(
+  server.registerTool(
     "add_table",
-    "Add a new table to a diagram. Returns the new table's ID — save it to use in add_column and other calls.",
     {
-      diagramId: z.string(),
-      name: z.string().describe("Table name"),
-      columns: z.array(columnInputSchema).optional().describe("Initial columns"),
+      description: "Add a new table to a diagram. Returns the new table's ID — save it to use in add_column and other calls.",
+      inputSchema: {
+        diagramId: z.string(),
+        name: z.string().describe("Table name"),
+        columns: z.array(columnInputSchema).optional().describe("Initial columns"),
+      },
     },
     async ({ diagramId, name, columns }) => {
       const { content: doc } = await client.getDiagram(diagramId);
@@ -116,12 +118,14 @@ export const registerWriteTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "remove_table",
-    "Remove a table from a diagram by its ID",
     {
-      diagramId: z.string(),
-      tableId: z.string().describe("ID of the table to remove (from get_diagram)"),
+      description: "Remove a table from a diagram by its ID",
+      inputSchema: {
+        diagramId: z.string(),
+        tableId: z.string().describe("ID of the table to remove (from get_diagram)"),
+      },
     },
     async ({ diagramId, tableId }) => {
       const { content: doc } = await client.getDiagram(diagramId);
@@ -136,13 +140,15 @@ export const registerWriteTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "add_column",
-    "Add a column to an existing table. Returns the new column's ID.",
     {
-      diagramId: z.string(),
-      tableId: z.string().describe("ID of the table (from get_diagram or add_table)"),
-      column: columnInputSchema,
+      description: "Add a column to an existing table. Returns the new column's ID.",
+      inputSchema: {
+        diagramId: z.string(),
+        tableId: z.string().describe("ID of the table (from get_diagram or add_table)"),
+        column: columnInputSchema,
+      },
     },
     async ({ diagramId, tableId, column }) => {
       const { content: doc } = await client.getDiagram(diagramId);
@@ -163,14 +169,16 @@ export const registerWriteTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "update_column",
-    "Update properties of an existing column",
     {
-      diagramId: z.string(),
-      tableId: z.string().describe("ID of the table (from get_diagram)"),
-      columnId: z.string().describe("ID of the column (from get_diagram)"),
-      updates: columnInputSchema.partial(),
+      description: "Update properties of an existing column",
+      inputSchema: {
+        diagramId: z.string(),
+        tableId: z.string().describe("ID of the table (from get_diagram)"),
+        columnId: z.string().describe("ID of the column (from get_diagram)"),
+        updates: columnInputSchema.partial(),
+      },
     },
     async ({ diagramId, tableId, columnId, updates }) => {
       const { content: doc } = await client.getDiagram(diagramId);
@@ -186,6 +194,7 @@ export const registerWriteTools = (server: McpServer): void => {
       if (updates.unique !== undefined) changes.unique = updates.unique;
       if (updates.defaultValue !== undefined) changes.defaultValue = updates.defaultValue;
       if (updates.comment !== undefined) changes.comment = updates.comment;
+      if (updates.autoIncrement !== undefined) changes.autoIncrement = updates.autoIncrement;
       const updated = updateColumn(doc, tableId, columnId, changes);
       await client.updateDiagram(diagramId, updated);
       void client.recordToolCall(diagramId, "update_column", `"${entity.name}.${col.name}" 컬럼 수정`).catch(() => {});
@@ -193,13 +202,15 @@ export const registerWriteTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "remove_column",
-    "Remove a column from a table",
     {
-      diagramId: z.string(),
-      tableId: z.string().describe("ID of the table (from get_diagram)"),
-      columnId: z.string().describe("ID of the column (from get_diagram)"),
+      description: "Remove a column from a table",
+      inputSchema: {
+        diagramId: z.string(),
+        tableId: z.string().describe("ID of the table (from get_diagram)"),
+        columnId: z.string().describe("ID of the column (from get_diagram)"),
+      },
     },
     async ({ diagramId, tableId, columnId }) => {
       const { content: doc } = await client.getDiagram(diagramId);
@@ -216,30 +227,32 @@ export const registerWriteTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "add_relationship",
-    "Add a foreign key relationship between two tables. Provide sourceColumnIds/targetColumnIds so the FK columns are known — otherwise the DDL export downgrades the FK to a comment. Returns the new relationship ID.",
     {
-      diagramId: z.string(),
-      sourceTableId: z
-        .string()
-        .describe("ID of the table that holds the foreign key (from get_diagram)"),
-      targetTableId: z
-        .string()
-        .describe("ID of the table being referenced (from get_diagram)"),
-      cardinality: cardinalitySchema.describe("Relationship cardinality"),
-      sourceColumnIds: z
-        .array(z.string())
-        .optional()
-        .describe("FK column IDs on the source table, ordered to match targetColumnIds"),
-      targetColumnIds: z
-        .array(z.string())
-        .optional()
-        .describe("Referenced column IDs on the target table (usually its PK), same order/length as sourceColumnIds"),
-      name: z.string().optional().describe("Optional constraint name"),
-      onDelete: referentialActionSchema.optional().describe("Defaults to no-action"),
-      onUpdate: referentialActionSchema.optional().describe("Defaults to no-action"),
-      identifying: z.boolean().optional().describe("Defaults to false"),
+      description: "Add a foreign key relationship between two tables. Provide sourceColumnIds/targetColumnIds so the FK columns are known — otherwise the DDL export downgrades the FK to a comment. Returns the new relationship ID.",
+      inputSchema: {
+        diagramId: z.string(),
+        sourceTableId: z
+          .string()
+          .describe("ID of the table that holds the foreign key (from get_diagram)"),
+        targetTableId: z
+          .string()
+          .describe("ID of the table being referenced (from get_diagram)"),
+        cardinality: cardinalitySchema.describe("Relationship cardinality"),
+        sourceColumnIds: z
+          .array(z.string())
+          .optional()
+          .describe("FK column IDs on the source table, ordered to match targetColumnIds"),
+        targetColumnIds: z
+          .array(z.string())
+          .optional()
+          .describe("Referenced column IDs on the target table (usually its PK), same order/length as sourceColumnIds"),
+        name: z.string().optional().describe("Optional constraint name"),
+        onDelete: referentialActionSchema.optional().describe("Defaults to no-action"),
+        onUpdate: referentialActionSchema.optional().describe("Defaults to no-action"),
+        identifying: z.boolean().optional().describe("Defaults to false"),
+      },
     },
     async ({
       diagramId,
@@ -296,25 +309,27 @@ export const registerWriteTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "update_relationship",
-    "Update an existing relationship — set the FK column mapping (sourceColumnIds/targetColumnIds) or its attributes. Only provided fields change.",
     {
-      diagramId: z.string(),
-      relationshipId: z.string().describe("ID of the relationship (from get_diagram)"),
-      sourceColumnIds: z
-        .array(z.string())
-        .optional()
-        .describe("FK column IDs on the source table, ordered to match targetColumnIds"),
-      targetColumnIds: z
-        .array(z.string())
-        .optional()
-        .describe("Referenced column IDs on the target table, same order/length as sourceColumnIds"),
-      cardinality: cardinalitySchema.optional(),
-      name: z.string().optional().describe("Constraint name"),
-      onDelete: referentialActionSchema.optional(),
-      onUpdate: referentialActionSchema.optional(),
-      identifying: z.boolean().optional(),
+      description: "Update an existing relationship — set the FK column mapping (sourceColumnIds/targetColumnIds) or its attributes. Only provided fields change.",
+      inputSchema: {
+        diagramId: z.string(),
+        relationshipId: z.string().describe("ID of the relationship (from get_diagram)"),
+        sourceColumnIds: z
+          .array(z.string())
+          .optional()
+          .describe("FK column IDs on the source table, ordered to match targetColumnIds"),
+        targetColumnIds: z
+          .array(z.string())
+          .optional()
+          .describe("Referenced column IDs on the target table, same order/length as sourceColumnIds"),
+        cardinality: cardinalitySchema.optional(),
+        name: z.string().optional().describe("Constraint name"),
+        onDelete: referentialActionSchema.optional(),
+        onUpdate: referentialActionSchema.optional(),
+        identifying: z.boolean().optional(),
+      },
     },
     async ({
       diagramId,
@@ -365,14 +380,16 @@ export const registerWriteTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "remove_relationship",
-    "Remove a relationship by its ID",
     {
-      diagramId: z.string(),
-      relationshipId: z
-        .string()
-        .describe("ID of the relationship to remove (from get_diagram)"),
+      description: "Remove a relationship by its ID",
+      inputSchema: {
+        diagramId: z.string(),
+        relationshipId: z
+          .string()
+          .describe("ID of the relationship to remove (from get_diagram)"),
+      },
     },
     async ({ diagramId, relationshipId }) => {
       const { content: doc } = await client.getDiagram(diagramId);
@@ -392,12 +409,14 @@ export const registerWriteTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "add_object",
-    "Add a SQL object (procedure/function/trigger/view) to a diagram. Stores the CREATE statement as raw text. Returns the new object's ID.",
     {
-      diagramId: z.string(),
-      ...objectInputSchema,
+      description: "Add a SQL object (procedure/function/trigger/view) to a diagram. Stores the CREATE statement as raw text. Returns the new object's ID.",
+      inputSchema: {
+        diagramId: z.string(),
+        ...objectInputSchema,
+      },
     },
     async ({ diagramId, kind, name, sql }) => {
       const { content: doc } = await client.getDiagram(diagramId);
@@ -409,15 +428,17 @@ export const registerWriteTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "update_object",
-    "Update a SQL object's kind, name, or sql by its ID. Only provided fields change.",
     {
-      diagramId: z.string(),
-      objectId: z.string().describe("ID of the object to update (from get_diagram)"),
-      kind: objectKindSchema.optional(),
-      name: z.string().optional(),
-      sql: z.string().optional().describe("Replacement CREATE statement (raw text)"),
+      description: "Update a SQL object's kind, name, or sql by its ID. Only provided fields change.",
+      inputSchema: {
+        diagramId: z.string(),
+        objectId: z.string().describe("ID of the object to update (from get_diagram)"),
+        kind: objectKindSchema.optional(),
+        name: z.string().optional(),
+        sql: z.string().optional().describe("Replacement CREATE statement (raw text)"),
+      },
     },
     async ({ diagramId, objectId, kind, name, sql }) => {
       const { content: doc } = await client.getDiagram(diagramId);
@@ -436,12 +457,14 @@ export const registerWriteTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "remove_object",
-    "Remove a SQL object from a diagram by its ID",
     {
-      diagramId: z.string(),
-      objectId: z.string().describe("ID of the object to remove (from get_diagram)"),
+      description: "Remove a SQL object from a diagram by its ID",
+      inputSchema: {
+        diagramId: z.string(),
+        objectId: z.string().describe("ID of the object to remove (from get_diagram)"),
+      },
     },
     async ({ diagramId, objectId }) => {
       const { content: doc } = await client.getDiagram(diagramId);

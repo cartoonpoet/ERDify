@@ -42,83 +42,100 @@ interface RelationReview {
   changeType: "added" | "removed";
 }
 
-const buildReview = (
-  diff: DiffChange[],
+type TableMap = Map<string, TableReview>;
+type ChangeOf<T extends DiffChange["type"]> = Extract<DiffChange, { type: T }>;
+
+const getTableReview = (tableMap: TableMap, tableId: string, tableName: string, changeType: TableReview["changeType"]): TableReview => {
+  if (!tableMap.has(tableId)) {
+    tableMap.set(tableId, { tableId, tableName, changeType, columns: [] });
+  }
+  return tableMap.get(tableId)!;
+};
+
+const applyUpdateTable = (tableMap: TableMap, change: ChangeOf<"updateTable">): void => {
+  const review = getTableReview(tableMap, change.tableId, change.newName, "modified");
+  review.tableName = change.newName;
+  review.renamedFrom = change.oldName;
+};
+
+const applyAddTable = (tableMap: TableMap, change: ChangeOf<"addTable">, pendingDoc: DiagramDocument): void => {
+  const entity = pendingDoc.entities.find((e) => e.id === change.tableId);
+  const review = getTableReview(tableMap, change.tableId, change.tableName, "added");
+  review.columns = (entity?.columns ?? []).map((c) => ({
+    id: c.id, name: c.name, type: c.type, isPk: c.primaryKey, changeType: "added" as const,
+    ...(c.comment ? { comment: c.comment } : {}),
+  }));
+};
+
+const applyRemoveTable = (tableMap: TableMap, change: ChangeOf<"removeTable">, currentDoc: DiagramDocument | null): void => {
+  const entity = currentDoc?.entities.find((e) => e.id === change.tableId);
+  const review = getTableReview(tableMap, change.tableId, change.tableName, "removed");
+  review.columns = (entity?.columns ?? []).map((c) => ({
+    id: c.id, name: c.name, type: c.type, isPk: c.primaryKey, changeType: "removed",
+  }));
+};
+
+const applyAddColumn = (tableMap: TableMap, change: ChangeOf<"addColumn">): void => {
+  const review = getTableReview(tableMap, change.tableId, change.tableName, "modified");
+  if (!review.columns.some((c) => c.id === change.columnId)) {
+    review.columns.push({ id: change.columnId, name: change.columnName, type: change.columnType, isPk: false, changeType: "added", ...(change.comment ? { comment: change.comment } : {}) });
+  }
+};
+
+const applyRemoveColumn = (tableMap: TableMap, change: ChangeOf<"removeColumn">): void => {
+  const review = getTableReview(tableMap, change.tableId, change.tableName, "modified");
+  if (!review.columns.some((c) => c.id === change.columnId)) {
+    review.columns.push({ id: change.columnId, name: change.columnName, type: "", isPk: false, changeType: "removed" });
+  }
+};
+
+const applyUpdateColumn = (tableMap: TableMap, change: ChangeOf<"updateColumn">, pendingDoc: DiagramDocument): void => {
+  const review = getTableReview(tableMap, change.tableId, change.tableName, "modified");
+  const entity = pendingDoc.entities.find((e) => e.id === change.tableId);
+  const col = entity?.columns.find((c) => c.id === change.columnId);
+  if (col && !review.columns.some((c) => c.id === change.columnId)) {
+    review.columns.push({ id: col.id, name: col.name, type: col.type, isPk: col.primaryKey, changeType: "modified" });
+  }
+};
+
+const applyDiffChange = (
+  tableMap: TableMap,
+  others: OtherChange[],
+  change: DiffChange,
+  index: number,
   currentDoc: DiagramDocument | null,
   pendingDoc: DiagramDocument,
-): { tables: TableReview[]; relations: RelationReview[]; indexes: IndexReview[]; others: OtherChange[] } => {
-  const tableMap = new Map<string, TableReview>();
-  const others: OtherChange[] = [];
-
-  const getTableReview = (tableId: string, tableName: string, changeType: TableReview["changeType"]): TableReview => {
-    if (!tableMap.has(tableId)) {
-      tableMap.set(tableId, { tableId, tableName, changeType, columns: [] });
-    }
-    return tableMap.get(tableId)!;
-  };
-
-  for (const [i, change] of diff.entries()) {
-    switch (change.type) {
-      case "updateTable": {
-        const review = getTableReview(change.tableId, change.newName, "modified");
-        review.tableName = change.newName;
-        review.renamedFrom = change.oldName;
-        break;
-      }
-      case "addTable": {
-        const entity = pendingDoc.entities.find((e) => e.id === change.tableId);
-        const review = getTableReview(change.tableId, change.tableName, "added");
-        review.columns = (entity?.columns ?? []).map((c) => ({
-          id: c.id, name: c.name, type: c.type, isPk: c.primaryKey, changeType: "added" as const,
-          ...(c.comment ? { comment: c.comment } : {}),
-        }));
-        break;
-      }
-      case "removeTable": {
-        const entity = currentDoc?.entities.find((e) => e.id === change.tableId);
-        const review = getTableReview(change.tableId, change.tableName, "removed");
-        review.columns = (entity?.columns ?? []).map((c) => ({
-          id: c.id, name: c.name, type: c.type, isPk: c.primaryKey, changeType: "removed",
-        }));
-        break;
-      }
-      case "addColumn": {
-        const review = getTableReview(change.tableId, change.tableName, "modified");
-        if (!review.columns.some((c) => c.id === change.columnId)) {
-          review.columns.push({ id: change.columnId, name: change.columnName, type: change.columnType, isPk: false, changeType: "added", ...(change.comment ? { comment: change.comment } : {}) });
-        }
-        break;
-      }
-      case "removeColumn": {
-        const review = getTableReview(change.tableId, change.tableName, "modified");
-        if (!review.columns.some((c) => c.id === change.columnId)) {
-          review.columns.push({ id: change.columnId, name: change.columnName, type: "", isPk: false, changeType: "removed" });
-        }
-        break;
-      }
-      case "updateColumn": {
-        const review = getTableReview(change.tableId, change.tableName, "modified");
-        const entity = pendingDoc.entities.find((e) => e.id === change.tableId);
-        const col = entity?.columns.find((c) => c.id === change.columnId);
-        if (col && !review.columns.some((c) => c.id === change.columnId)) {
-          review.columns.push({ id: col.id, name: col.name, type: col.type, isPk: col.primaryKey, changeType: "modified" });
-        }
-        break;
-      }
-      // 관계/인덱스는 아래에서 따로 모으므로 여기서는 통과시킨다.
-      case "addRelation":
-      case "removeRelation":
-      case "addIndex":
-        break;
-      // 시각화 케이스가 없는 변경(향후 추가될 타입 등)은 절대 조용히 버리지 않고 '기타 변경'에 노출한다.
-      default: {
-        const unknown = change as { type?: string };
-        others.push({ id: `other-${i}`, label: unknown.type ?? "알 수 없는 변경" });
-      }
+): void => {
+  switch (change.type) {
+    case "updateTable": applyUpdateTable(tableMap, change); break;
+    case "addTable": applyAddTable(tableMap, change, pendingDoc); break;
+    case "removeTable": applyRemoveTable(tableMap, change, currentDoc); break;
+    case "addColumn": applyAddColumn(tableMap, change); break;
+    case "removeColumn": applyRemoveColumn(tableMap, change); break;
+    case "updateColumn": applyUpdateColumn(tableMap, change, pendingDoc); break;
+    // 관계/인덱스는 buildReview에서 따로 모으므로 여기서는 통과시킨다.
+    case "addRelation":
+    case "removeRelation":
+    case "addIndex":
+      break;
+    // 시각화 케이스가 없는 변경(향후 추가될 타입 등)은 절대 조용히 버리지 않고 '기타 변경'에 노출한다.
+    default: {
+      const unknown = change as { type?: string };
+      others.push({ id: `other-${index}`, label: unknown.type ?? "알 수 없는 변경" });
     }
   }
+};
 
-  // modified 테이블은 변경되지 않은 컬럼도 함께 표시
+// 정렬: PK 먼저, 변경된 것 위로
+const COLUMN_SORT_ORDER: Record<ColumnReview["changeType"], number> = { added: 0, removed: 1, modified: 2, unchanged: 3 };
+
+const compareColumns = (a: ColumnReview, b: ColumnReview): number => {
+  if (a.isPk !== b.isPk) return a.isPk ? -1 : 1;
+  return COLUMN_SORT_ORDER[a.changeType] - COLUMN_SORT_ORDER[b.changeType];
+};
+
+// modified 테이블은 변경되지 않은 컬럼도 함께 표시
+const fillUnchangedColumns = (tableMap: TableMap, pendingDoc: DiagramDocument): void => {
   for (const review of tableMap.values()) {
     if (review.changeType !== "modified") continue;
     const entity = pendingDoc.entities.find((e) => e.id === review.tableId);
@@ -128,16 +145,13 @@ const buildReview = (
         review.columns.push({ id: col.id, name: col.name, type: col.type, isPk: col.primaryKey, changeType: "unchanged", ...(col.comment ? { comment: col.comment } : {}) });
       }
     }
-    // 정렬: PK 먼저, 변경된 것 위로
-    review.columns.sort((a, b) => {
-      if (a.isPk !== b.isPk) return a.isPk ? -1 : 1;
-      const order = { added: 0, removed: 1, modified: 2, unchanged: 3 };
-      return order[a.changeType] - order[b.changeType];
-    });
+    review.columns.sort(compareColumns);
   }
+};
 
-  const relations: RelationReview[] = diff
-    .filter((c): c is Extract<DiffChange, { type: "addRelation" | "removeRelation" }> =>
+const collectRelations = (diff: DiffChange[]): RelationReview[] =>
+  diff
+    .filter((c): c is ChangeOf<"addRelation" | "removeRelation"> =>
       c.type === "addRelation" || c.type === "removeRelation"
     )
     .map((c) =>
@@ -146,11 +160,26 @@ const buildReview = (
         : { relationId: c.relationId, fromTable: c.fromTable, toTable: c.toTable, cardinality: "", changeType: "removed" as const }
     );
 
-  const indexes: IndexReview[] = diff
-    .filter((c): c is Extract<DiffChange, { type: "addIndex" }> => c.type === "addIndex")
+const collectIndexes = (diff: DiffChange[]): IndexReview[] =>
+  diff
+    .filter((c): c is ChangeOf<"addIndex"> => c.type === "addIndex")
     .map((c) => ({ indexId: c.indexId, tableName: c.tableName, indexName: c.indexName, columnNames: c.columnNames, unique: c.unique }));
 
-  return { tables: Array.from(tableMap.values()), relations, indexes, others };
+const buildReview = (
+  diff: DiffChange[],
+  currentDoc: DiagramDocument | null,
+  pendingDoc: DiagramDocument,
+): { tables: TableReview[]; relations: RelationReview[]; indexes: IndexReview[]; others: OtherChange[] } => {
+  const tableMap: TableMap = new Map();
+  const others: OtherChange[] = [];
+
+  for (const [i, change] of diff.entries()) {
+    applyDiffChange(tableMap, others, change, i, currentDoc, pendingDoc);
+  }
+
+  fillUnchangedColumns(tableMap, pendingDoc);
+
+  return { tables: Array.from(tableMap.values()), relations: collectRelations(diff), indexes: collectIndexes(diff), others };
 };
 
 const hasColumnChanges = (table: TableReview): boolean =>
@@ -204,7 +233,8 @@ export const AIDiffReviewPanel = ({ diff, pendingDocument, currentDocument, onAc
   const { tables, relations, indexes, others } = buildReview(diff, currentDocument, pendingDocument);
 
   return (
-    <div className={css.overlay} onClick={(e) => { if (e.target === e.currentTarget) onReject(); }}>
+    // 배경 클릭 dismiss 전용 오버레이 — 키보드 사용자는 헤더의 거절/수락 버튼을 사용한다.
+    <div className={css.overlay} role="presentation" onClick={(e) => { if (e.target === e.currentTarget) onReject(); }}>
       <div className={css.panel}>
         <div className={css.header}>
           <span className={css.headerTitle}>AI 제안 검토</span>

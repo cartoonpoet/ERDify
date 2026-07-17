@@ -11,14 +11,19 @@ import type { ConvMessage } from "./providers/provider.types";
 const HISTORY_LIMIT = 6;
 const TTL_DAYS = 90;
 
+function diffLabel(d: DiffChange): string {
+  if ("tableName" in d) return d.tableName;
+  if ("newName" in d) return `${d.oldName}->${d.newName}`;
+  if ("fromTable" in d) return `${d.fromTable}->${d.toTable}`;
+  return "";
+}
+
 /** 저장된 대화 행을 에이전트 루프용 ConvMessage[]로 복원. 과거 diff는 텍스트 요약으로(짝 없는 tool_use 방지). */
 export function rowsToConvMessages(rows: AiConversation[]): ConvMessage[] {
   return rows.map((r): ConvMessage => {
     if (r.role === "user") return { role: "user", content: r.content };
     const diff = (r.diff as unknown as DiffChange[] | null) ?? [];
-    const labels = diff
-      .map((d) => ("tableName" in d ? d.tableName : "fromTable" in d ? `${d.fromTable}->${d.toTable}` : ""))
-      .filter(Boolean);
+    const labels = diff.map(diffLabel).filter(Boolean);
     const summary = labels.length ? `\n[적용한 변경: ${labels.join(", ")}]` : "";
     return { role: "assistant", text: (r.content ?? "") + summary, toolCalls: [] };
   });
@@ -72,8 +77,9 @@ export class AiHistoryService {
 
   async findRecent(userId: string, diagramId: string | null, sessionId?: string | null): Promise<AiConversation[]> {
     if (sessionId) {
+      // diagramId 조건 필수: 다른 다이어그램에서 재사용된 sessionId로 그 대화가 현재 다이어그램 컨텍스트에 섞이는 것을 방지
       const rows = await this.repo.find({
-        where: { userId, sessionId },
+        where: { userId, sessionId, ...(diagramId !== null ? { diagramId } : {}) },
         order: { createdAt: "DESC" },
         take: HISTORY_LIMIT,
       });
@@ -124,10 +130,8 @@ export class AiHistoryService {
     }));
   }
 
-  async createSession(userId: string, diagramId: string): Promise<string> {
+  async createSession(_userId: string, _diagramId: string): Promise<string> {
     // 실제 DB 저장은 첫 메시지 저장 시 자동으로 이뤄진다
-    void userId;
-    void diagramId;
     return randomUUID();
   }
 
