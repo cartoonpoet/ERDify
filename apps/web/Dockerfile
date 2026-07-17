@@ -2,7 +2,7 @@ FROM node:22-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
 WORKDIR /app
 COPY . .
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
 ARG VITE_API_BASE_URL=""
 ARG VITE_GA4_MEASUREMENT_ID=""
 ARG VITE_CLARITY_PROJECT_ID=""
@@ -11,7 +11,7 @@ ENV VITE_GA4_MEASUREMENT_ID=$VITE_GA4_MEASUREMENT_ID
 ENV VITE_CLARITY_PROJECT_ID=$VITE_CLARITY_PROJECT_ID
 RUN pnpm turbo run build --filter=@erdify/web...
 
-FROM nginx:alpine AS runner
+FROM nginxinc/nginx-unprivileged:alpine AS runner
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
+EXPOSE 8080
