@@ -21,6 +21,9 @@ const columnNotFound = (doc: DiagramDocument, entityName: string, tableId: strin
   changes: [],
   resultText: `Error: table "${entityName}" (id ${tableId}) has no column with id "${colId}". Call getTableDetails("${tableId}") to get the valid column ids, then retry. Do not invent ids.`,
 });
+/** 웹 에디터(EditorCanvas)의 FK 이름 파생과 동일한 snake_case 변환. */
+const toSnake = (s: string): string =>
+  s.replace(/\s+/g, "_").replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
 /** 변경이 적용된 문서를 사람이 읽을 수 있는 요약과 함께 ToolResult로 포장한다. */
 const applied = (doc: DiagramDocument, changes: DiffChange[]): ToolResult => ({
   doc,
@@ -201,33 +204,34 @@ export class ToolExecutor {
 
     let updatedDoc = doc;
     const changes: DiffChange[] = [];
-    const fkColumnName = input["fkColumnName"] as string | undefined;
-    let fkColId: string | undefined;
-    if (fkColumnName) {
-      const alreadyExists = src.columns.find((c) => c.name === fkColumnName);
-      if (!alreadyExists) {
-        fkColId = randomUUID();
-        const fkColumn: DiagramColumn = {
-          id: fkColId, name: fkColumnName, type: pk.type,
-          nullable: (input["fkNullable"] as boolean | undefined) ?? false,
-          primaryKey: false, unique: false, defaultValue: null, comment: null,
-          ordinal: src.columns.length,
-        };
-        updatedDoc = domain.addColumn(updatedDoc, src.id, fkColumn);
-        changes.push({ type: "addColumn", tableId: src.id, tableName: src.name, columnId: fkColId, columnName: fkColumnName, columnType: pk.type });
-      } else {
-        // 타입이 다른 컬럼을 조용히 FK로 연결하면 잘못된 DDL이 나온다 → 명시적 오류로 self-correction 유도.
-        if (alreadyExists.type.trim().toLowerCase() !== pk.type.trim().toLowerCase()) {
-          return { doc, changes: [], resultText: `Error: 기존 컬럼 "${src.name}.${alreadyExists.name}"의 타입(${alreadyExists.type})이 대상 PK "${tgt.name}.${pk.name}"의 타입(${pk.type})과 달라 FK로 연결할 수 없습니다. updateColumn으로 타입을 "${pk.type}"으로 맞춘 뒤 addRelation을 다시 시도하세요.` };
-        }
-        fkColId = alreadyExists.id;
+    // fkColumnName이 생략되면 웹 에디터(EditorCanvas.analyzeFkMatch)와 같은 규칙으로 기본 이름을 파생한다:
+    // <snake_case 대상 테이블명>_<PK 이름> (예: users + id → "users_id"). FK 컬럼을 항상 확보해
+    // sourceColumnIds가 비지 않게 하고, DDL 생성기가 관계를 주석으로 강등하는 경로를 막는다.
+    const fkColumnName = (input["fkColumnName"] as string | undefined) || `${toSnake(tgt.name)}_${pk.name}`;
+    let fkColId: string;
+    const alreadyExists = src.columns.find((c) => c.name === fkColumnName);
+    if (!alreadyExists) {
+      fkColId = randomUUID();
+      const fkColumn: DiagramColumn = {
+        id: fkColId, name: fkColumnName, type: pk.type,
+        nullable: (input["fkNullable"] as boolean | undefined) ?? false,
+        primaryKey: false, unique: false, defaultValue: null, comment: null,
+        ordinal: src.columns.length,
+      };
+      updatedDoc = domain.addColumn(updatedDoc, src.id, fkColumn);
+      changes.push({ type: "addColumn", tableId: src.id, tableName: src.name, columnId: fkColId, columnName: fkColumnName, columnType: pk.type });
+    } else {
+      // 타입이 다른 컬럼을 조용히 FK로 연결하면 잘못된 DDL이 나온다 → 명시적 오류로 self-correction 유도.
+      if (alreadyExists.type.trim().toLowerCase() !== pk.type.trim().toLowerCase()) {
+        return { doc, changes: [], resultText: `Error: 기존 컬럼 "${src.name}.${alreadyExists.name}"의 타입(${alreadyExists.type})이 대상 PK "${tgt.name}.${pk.name}"의 타입(${pk.type})과 달라 FK로 연결할 수 없습니다. updateColumn으로 타입을 "${pk.type}"으로 맞추거나 fkColumnName에 다른 이름을 지정한 뒤 addRelation을 다시 시도하세요.` };
       }
+      fkColId = alreadyExists.id;
     }
 
     const rel: DiagramRelationship = {
       id: relId, name: "",
       sourceEntityId: input["sourceTableId"] as string,
-      sourceColumnIds: fkColId ? [fkColId] : [],
+      sourceColumnIds: [fkColId],
       targetEntityId: input["targetTableId"] as string,
       targetColumnIds: [pk.id],
       cardinality: input["cardinality"] as RelationshipCardinality,

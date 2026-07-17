@@ -229,14 +229,63 @@ describe("ToolExecutor", () => {
       expect(res.resultText).toContain("id, tenant_id");
     });
 
-    it("fkColumnName이 없으면 FK 컬럼 생성 없이 관계만 추가하고 타깃 PK는 연결한다", async () => {
+    it("fkColumnName이 없으면 '<대상테이블>_<PK>' 이름으로 FK 컬럼을 파생 생성하고 양쪽 컬럼을 연결한다", async () => {
       const res = await executor.execute("addRelation", { sourceTableId: "e2", targetTableId: "e1", cardinality: "many-to-one" }, twoTableDoc);
-      expect(res.changes).toHaveLength(1);
-      expect(res.changes[0]).toMatchObject({ type: "addRelation", fromTable: "orders", toTable: "users", cardinality: "many-to-one" });
+      expect(res.changes).toHaveLength(2);
+      expect(res.changes[0]).toMatchObject({ type: "addColumn", tableId: "e2", tableName: "orders", columnName: "users_id", columnType: "uuid" });
+      expect(res.changes[1]).toMatchObject({ type: "addRelation", fromTable: "orders", toTable: "users", cardinality: "many-to-one" });
+      const fkCol = res.doc.entities.find((e) => e.id === "e2")!.columns.find((c) => c.name === "users_id")!;
+      expect(fkCol.type).toBe("uuid"); // 타깃 PK 타입을 따른다
       expect(res.doc.relationships).toHaveLength(1);
-      expect(res.doc.relationships[0]!.sourceColumnIds).toEqual([]);
+      expect(res.doc.relationships[0]!.sourceColumnIds).toEqual([fkCol.id]); // 파생 컬럼으로 항상 비지 않는다
       expect(res.doc.relationships[0]!.targetColumnIds).toEqual(["c1"]);
       expect(res.resultText).toContain("added relation orders->users");
+    });
+
+    it("fkColumnName이 없고 파생 이름이 호환 타입 컬럼과 겹치면 새 컬럼 없이 재사용한다", async () => {
+      const withDerivedCol: DiagramDocument = {
+        ...twoTableDoc,
+        entities: twoTableDoc.entities.map((e) =>
+          e.id === "e2"
+            ? {
+                ...e,
+                columns: [
+                  ...e.columns,
+                  { id: "c4", name: "users_id", type: "uuid", nullable: false, primaryKey: false, unique: false, defaultValue: null, comment: null, ordinal: 2 },
+                ],
+              }
+            : e,
+        ),
+      };
+      const res = await executor.execute("addRelation", { sourceTableId: "e2", targetTableId: "e1", cardinality: "many-to-one" }, withDerivedCol);
+      expect(res.changes).toHaveLength(1); // addColumn 없이 addRelation만
+      expect(res.doc.entities.find((e) => e.id === "e2")!.columns.filter((c) => c.name === "users_id")).toHaveLength(1);
+      expect(res.doc.relationships[0]!.sourceColumnIds).toEqual(["c4"]);
+      expect(res.doc.relationships[0]!.targetColumnIds).toEqual(["c1"]);
+    });
+
+    it("fkColumnName이 없고 파생 이름이 타입이 다른 컬럼과 겹치면 두 타입을 명시한 오류를 반환한다", async () => {
+      const withClashingCol: DiagramDocument = {
+        ...twoTableDoc,
+        entities: twoTableDoc.entities.map((e) =>
+          e.id === "e2"
+            ? {
+                ...e,
+                columns: [
+                  ...e.columns,
+                  { id: "c4", name: "users_id", type: "bigint", nullable: false, primaryKey: false, unique: false, defaultValue: null, comment: null, ordinal: 2 },
+                ],
+              }
+            : e,
+        ),
+      };
+      const res = await executor.execute("addRelation", { sourceTableId: "e2", targetTableId: "e1", cardinality: "many-to-one" }, withClashingCol);
+      expect(res.changes).toHaveLength(0);
+      expect(res.doc).toBe(withClashingCol);
+      expect(res.doc.relationships).toHaveLength(0);
+      expect(res.resultText).toContain("bigint");
+      expect(res.resultText).toContain("uuid");
+      expect(res.resultText).toContain("updateColumn");
     });
 
     it("fkColumnName이 새 이름이면 타깃 PK 타입으로 FK 컬럼을 만들고 양쪽 컬럼을 관계에 연결한다", async () => {
