@@ -39,7 +39,9 @@ jobs:
           # CLAUDE_CODE_OAUTH_TOKEN 레포 시크릿으로 등록한다.
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          claude_args: '--allowedTools "Bash(gh:*),Read,Grep,Glob" --max-turns 30'
+          # gh는 리뷰에 필요한 서브커맨드만 허용 — PR 본문/디프에 섞인 프롬프트 인젝션이
+          # merge/close 등 쓰기 동작으로 번지지 않게 blast radius를 좁힌다.
+          claude_args: '--allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api repos/cartoonpoet/ERDify/issues/*),Read,Grep,Glob" --max-turns 30'
           prompt: |
             ${{ github.repository }} 저장소의 PR #${{ github.event.pull_request.number }}을 리뷰하라.
 
@@ -77,7 +79,7 @@ jobs:
                - CLI/MCP: 하드코딩 버전 ↔ package.json 정합, 의도치 않은 버전 범프(= npm 배포)
                - 테스트: 새 로직에 테스트가 따라오는지 (SonarCloud 신규 코드 커버리지 80% 게이트)
             3. 리뷰 코멘트는 PR당 하나만 유지한다. 마커로 기존 코멘트를 찾아서:
-               `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --jq '[.[] | select(.body | startswith("<!-- ai-pr-review -->"))][0].id'`
+               `gh api --paginate repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --jq '[.[] | select(.body | startswith("<!-- ai-pr-review -->"))][0].id'`
                - 있으면 갱신: `gh api repos/${{ github.repository }}/issues/comments/<id> -X PATCH -f body="<리뷰>"`
                - 없으면 생성: `gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "<리뷰>"`
             4. 코멘트 형식 (한국어, 간결하게):
