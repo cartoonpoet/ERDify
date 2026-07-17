@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Modal, Button, Input } from "@/components";
 import { useInvites } from "@/features/dashboard/hooks/useInvites";
 import { form, footer, selectInput } from "./modal-form.css";
@@ -17,7 +17,7 @@ export const InviteOrgModal = ({ open, onClose, orgId }: InviteOrgModalProps) =>
   const [error, setError] = useState<string | null>(null);
   const { invite, isInviting } = useInvites(orgId);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email.trim()) return;
     setError(null);

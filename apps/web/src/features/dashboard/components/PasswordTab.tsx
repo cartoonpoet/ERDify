@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Button, Input } from "@/components";
 import { changePassword } from "@/shared/api/auth.api";
 import { useMutation } from "@tanstack/react-query";
@@ -31,7 +31,7 @@ export const PasswordTab = ({ onClose }: PasswordTabProps) => {
     },
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     if (next !== confirm) { setError("새 비밀번호가 일치하지 않습니다."); return; }

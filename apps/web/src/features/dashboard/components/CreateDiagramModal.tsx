@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Modal, Button, Input } from "@/components";
 import { createDiagram } from "@/shared/api/diagrams.api";
 import { form, footer, selectInput } from "./modal-form.css";
@@ -16,7 +16,7 @@ export const CreateDiagramModal = ({ open, onClose, onCreated, projectId }: Crea
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
