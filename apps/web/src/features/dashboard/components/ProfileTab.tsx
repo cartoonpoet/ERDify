@@ -51,7 +51,7 @@ export const ProfileTab = ({ onClose }: ProfileTabProps) => {
     e.target.value = "";
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
@@ -108,12 +108,10 @@ export const ProfileTab = ({ onClose }: ProfileTabProps) => {
             </button>
           </div>
         ) : (
-          <div
+          <button
+            type="button"
             className={`${css.dropZone} ${isDragging ? css.dropZoneActive : ""}`}
-            role="button"
-            tabIndex={0}
             onClick={() => fileInputRef.current?.click()}
-            onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
@@ -123,7 +121,7 @@ export const ProfileTab = ({ onClose }: ProfileTabProps) => {
             </svg>
             <span className={css.dropLabel}>드래그하거나 클릭해서 업로드</span>
             <span className={css.dropHint}>JPG, PNG, GIF · 최대 5MB</span>
-          </div>
+          </button>
         )}
 
         <input

@@ -32,14 +32,35 @@ describe("ColumnSuggestions", () => {
     expect(within(secondBtn!).queryByText("PK")).not.toBeInTheDocument();
   });
 
-  it("suggestion 버튼을 mouseDown하면 onSelect가 해당 suggestion으로 호출된다", () => {
+  it("suggestion 버튼을 클릭하면 onSelect가 해당 suggestion으로 호출된다", () => {
+    const onSelect = vi.fn();
+    render(<ColumnSuggestions suggestions={suggestions} onSelect={onSelect} />);
+
+    const [, secondBtn] = screen.getAllByRole("button");
+    fireEvent.click(secondBtn!);
+
+    expect(onSelect).toHaveBeenCalledWith(suggestions[1]);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it("mouseDown만으로는 onSelect가 호출되지 않는다 (blur 방지 전용, 선택은 click에서 처리)", () => {
     const onSelect = vi.fn();
     render(<ColumnSuggestions suggestions={suggestions} onSelect={onSelect} />);
 
     const [, secondBtn] = screen.getAllByRole("button");
     fireEvent.mouseDown(secondBtn!);
 
-    expect(onSelect).toHaveBeenCalledWith(suggestions[1]);
-    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("키보드로 포커스한 뒤 Enter를 누르면(click 이벤트) onSelect가 호출된다", () => {
+    const onSelect = vi.fn();
+    render(<ColumnSuggestions suggestions={suggestions} onSelect={onSelect} />);
+
+    const [firstBtn] = screen.getAllByRole("button");
+    firstBtn!.focus();
+    fireEvent.click(firstBtn!);
+
+    expect(onSelect).toHaveBeenCalledWith(suggestions[0]);
   });
 });
