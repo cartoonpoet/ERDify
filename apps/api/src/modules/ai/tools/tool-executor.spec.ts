@@ -170,36 +170,92 @@ describe("ToolExecutor", () => {
       ],
     };
 
+    /** 타깃(users, e1)의 PK(c1) 타입만 바꾼 문서 — FK 타입 전파/불일치 케이스용 */
+    const withUsersPkType = (type: string): DiagramDocument => ({
+      ...twoTableDoc,
+      entities: twoTableDoc.entities.map((e) =>
+        e.id === "e1" ? { ...e, columns: e.columns.map((c) => ({ ...c, type })) } : e,
+      ),
+    });
+
     it("addRelation의 타깃 테이블이 없으면 해당 id를 명시한 오류를 반환한다", async () => {
       const res = await executor.execute("addRelation", { sourceTableId: "e1", targetTableId: "ghost", cardinality: "many-to-one" }, baseDoc);
       expect(res.changes).toHaveLength(0);
       expect(res.resultText).toContain('no table found with id "ghost"');
     });
 
-    it("fkColumnName이 없으면 FK 컬럼 생성 없이 관계만 추가한다", async () => {
+    it("타깃 테이블에 PK가 없으면 변경 없이 primary key 지정 안내 오류를 반환한다", async () => {
+      const noPkDoc: DiagramDocument = {
+        ...twoTableDoc,
+        entities: twoTableDoc.entities.map((e) =>
+          e.id === "e1" ? { ...e, columns: e.columns.map((c) => ({ ...c, primaryKey: false })) } : e,
+        ),
+      };
+      const res = await executor.execute(
+        "addRelation",
+        { sourceTableId: "e2", targetTableId: "e1", cardinality: "many-to-one", fkColumnName: "owner_id" },
+        noPkDoc,
+      );
+      expect(res.changes).toHaveLength(0);
+      expect(res.doc).toBe(noPkDoc); // 어떤 변형도 일어나지 않는다
+      expect(res.resultText).toContain("Error:");
+      expect(res.resultText).toContain("primary key");
+      expect(res.resultText).toContain("users");
+    });
+
+    it("타깃 테이블의 PK가 복합 키면 지원하지 않는다는 오류를 반환한다", async () => {
+      const compositePkDoc: DiagramDocument = {
+        ...twoTableDoc,
+        entities: twoTableDoc.entities.map((e) =>
+          e.id === "e1"
+            ? {
+                ...e,
+                columns: [
+                  ...e.columns,
+                  { id: "c9", name: "tenant_id", type: "uuid", nullable: false, primaryKey: true, unique: false, defaultValue: null, comment: null, ordinal: 1 },
+                ],
+              }
+            : e,
+        ),
+      };
+      const res = await executor.execute(
+        "addRelation",
+        { sourceTableId: "e2", targetTableId: "e1", cardinality: "many-to-one", fkColumnName: "owner_id" },
+        compositePkDoc,
+      );
+      expect(res.changes).toHaveLength(0);
+      expect(res.doc).toBe(compositePkDoc);
+      expect(res.resultText).toContain("복합 키");
+      expect(res.resultText).toContain("id, tenant_id");
+    });
+
+    it("fkColumnName이 없으면 FK 컬럼 생성 없이 관계만 추가하고 타깃 PK는 연결한다", async () => {
       const res = await executor.execute("addRelation", { sourceTableId: "e2", targetTableId: "e1", cardinality: "many-to-one" }, twoTableDoc);
       expect(res.changes).toHaveLength(1);
       expect(res.changes[0]).toMatchObject({ type: "addRelation", fromTable: "orders", toTable: "users", cardinality: "many-to-one" });
       expect(res.doc.relationships).toHaveLength(1);
       expect(res.doc.relationships[0]!.sourceColumnIds).toEqual([]);
+      expect(res.doc.relationships[0]!.targetColumnIds).toEqual(["c1"]);
       expect(res.resultText).toContain("added relation orders->users");
     });
 
-    it("fkColumnName이 새 이름이면 FK 컬럼을 만들고 관계에 연결한다", async () => {
+    it("fkColumnName이 새 이름이면 타깃 PK 타입으로 FK 컬럼을 만들고 양쪽 컬럼을 관계에 연결한다", async () => {
       const res = await executor.execute(
         "addRelation",
         { sourceTableId: "e2", targetTableId: "e1", cardinality: "many-to-one", fkColumnName: "owner_id", fkNullable: true },
-        twoTableDoc,
+        withUsersPkType("bigint"),
       );
       expect(res.changes).toHaveLength(2);
-      expect(res.changes[0]).toMatchObject({ type: "addColumn", tableId: "e2", tableName: "orders", columnName: "owner_id", columnType: "uuid" });
+      expect(res.changes[0]).toMatchObject({ type: "addColumn", tableId: "e2", tableName: "orders", columnName: "owner_id", columnType: "bigint" });
       expect(res.changes[1]).toMatchObject({ type: "addRelation", fromTable: "orders", toTable: "users" });
       const fkCol = res.doc.entities.find((e) => e.id === "e2")!.columns.find((c) => c.name === "owner_id")!;
+      expect(fkCol.type).toBe("bigint"); // uuid 고정이 아니라 타깃 PK 타입을 따른다
       expect(fkCol.nullable).toBe(true);
       expect(res.doc.relationships[0]!.sourceColumnIds).toEqual([fkCol.id]);
+      expect(res.doc.relationships[0]!.targetColumnIds).toEqual(["c1"]);
     });
 
-    it("fkColumnName이 이미 존재하는 컬럼이면 그 컬럼을 재사용한다", async () => {
+    it("fkColumnName이 이미 존재하고 타입이 PK와 같으면 그 컬럼을 재사용하고 타깃 PK를 연결한다", async () => {
       const res = await executor.execute(
         "addRelation",
         { sourceTableId: "e2", targetTableId: "e1", cardinality: "many-to-one", fkColumnName: "user_id" },
@@ -208,6 +264,22 @@ describe("ToolExecutor", () => {
       expect(res.changes).toHaveLength(1); // addColumn 없이 addRelation만
       expect(res.doc.entities.find((e) => e.id === "e2")!.columns.filter((c) => c.name === "user_id")).toHaveLength(1);
       expect(res.doc.relationships[0]!.sourceColumnIds).toEqual(["c3"]);
+      expect(res.doc.relationships[0]!.targetColumnIds).toEqual(["c1"]);
+    });
+
+    it("기존 컬럼 재사용 시 타입이 타깃 PK와 다르면 두 타입을 명시한 오류를 반환한다", async () => {
+      const bigintPkDoc = withUsersPkType("bigint"); // 소스의 user_id는 uuid 그대로
+      const res = await executor.execute(
+        "addRelation",
+        { sourceTableId: "e2", targetTableId: "e1", cardinality: "many-to-one", fkColumnName: "user_id" },
+        bigintPkDoc,
+      );
+      expect(res.changes).toHaveLength(0);
+      expect(res.doc).toBe(bigintPkDoc);
+      expect(res.doc.relationships).toHaveLength(0);
+      expect(res.resultText).toContain("uuid");
+      expect(res.resultText).toContain("bigint");
+      expect(res.resultText).toContain("updateColumn");
     });
 
     it("존재하지 않는 관계 삭제 시 명시적 오류를 반환한다", async () => {

@@ -188,6 +188,17 @@ export class ToolExecutor {
     const tgt = doc.entities.find((e) => e.id === input["targetTableId"]);
     if (!tgt) return tableNotFound(doc, input["targetTableId"] as string);
 
+    // FK는 대상 테이블의 PK를 참조해야 한다. PK 타입으로 FK 컬럼을 만들고 targetColumnIds를 채워
+    // DDL 생성기가 관계를 주석으로 강등하지 않게 한다 (#83).
+    const pkColumns = tgt.columns.filter((c) => c.primaryKey);
+    if (pkColumns.length === 0) {
+      return { doc, changes: [], resultText: `Error: 대상 테이블 "${tgt.name}" (id ${tgt.id})에 primary key 컬럼이 없어 FK 관계를 만들 수 없습니다. 먼저 addColumn 또는 updateColumn으로 primary key를 지정한 뒤 addRelation을 다시 시도하세요.` };
+    }
+    if (pkColumns.length > 1) {
+      return { doc, changes: [], resultText: `Error: 대상 테이블 "${tgt.name}"의 primary key가 복합 키(${pkColumns.map((c) => c.name).join(", ")})입니다. addRelation 도구는 복합 PK 관계를 지원하지 않습니다.` };
+    }
+    const pk = pkColumns[0]!;
+
     let updatedDoc = doc;
     const changes: DiffChange[] = [];
     const fkColumnName = input["fkColumnName"] as string | undefined;
@@ -197,14 +208,18 @@ export class ToolExecutor {
       if (!alreadyExists) {
         fkColId = randomUUID();
         const fkColumn: DiagramColumn = {
-          id: fkColId, name: fkColumnName, type: "uuid",
+          id: fkColId, name: fkColumnName, type: pk.type,
           nullable: (input["fkNullable"] as boolean | undefined) ?? false,
           primaryKey: false, unique: false, defaultValue: null, comment: null,
           ordinal: src.columns.length,
         };
         updatedDoc = domain.addColumn(updatedDoc, src.id, fkColumn);
-        changes.push({ type: "addColumn", tableId: src.id, tableName: src.name, columnId: fkColId, columnName: fkColumnName, columnType: "uuid" });
+        changes.push({ type: "addColumn", tableId: src.id, tableName: src.name, columnId: fkColId, columnName: fkColumnName, columnType: pk.type });
       } else {
+        // 타입이 다른 컬럼을 조용히 FK로 연결하면 잘못된 DDL이 나온다 → 명시적 오류로 self-correction 유도.
+        if (alreadyExists.type.trim().toLowerCase() !== pk.type.trim().toLowerCase()) {
+          return { doc, changes: [], resultText: `Error: 기존 컬럼 "${src.name}.${alreadyExists.name}"의 타입(${alreadyExists.type})이 대상 PK "${tgt.name}.${pk.name}"의 타입(${pk.type})과 달라 FK로 연결할 수 없습니다. updateColumn으로 타입을 "${pk.type}"으로 맞춘 뒤 addRelation을 다시 시도하세요.` };
+        }
         fkColId = alreadyExists.id;
       }
     }
@@ -214,7 +229,7 @@ export class ToolExecutor {
       sourceEntityId: input["sourceTableId"] as string,
       sourceColumnIds: fkColId ? [fkColId] : [],
       targetEntityId: input["targetTableId"] as string,
-      targetColumnIds: [],
+      targetColumnIds: [pk.id],
       cardinality: input["cardinality"] as RelationshipCardinality,
       onDelete: "no-action", onUpdate: "no-action", identifying: false,
     };
