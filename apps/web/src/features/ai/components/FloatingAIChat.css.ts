@@ -129,6 +129,13 @@ export const chatCloseBtn = style({
   },
 });
 
+// ── model dropdown wrapper ─────────────────────────────────────────────────
+
+/** 모델 토글 버튼과 드롭다운을 형제로 담는 포지셔닝 기준 래퍼 (드롭다운 absolute 기준). */
+export const modelBtnWrap = style({
+  position: "relative",
+});
+
 // ── shared styles (re-exported from ai-chat-shared.css.ts) ─────────────────
 
 export {

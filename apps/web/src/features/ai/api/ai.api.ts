@@ -37,16 +37,72 @@ export const setEnabledModels = (orgId: string, enabledModels: string[]): Promis
 export const getAiChatConfig = (diagramId: string): Promise<AiChatConfig> =>
   httpClient.get<AiChatConfig>(`/ai/chat/config/${diagramId}`).then((r) => r.data);
 
-export const sendAiChatStream = async (
-  diagramId: string,
-  message: string,
-  sessionId: string | null,
-  model: string,
-  onText: (delta: string) => void,
-  onDone: (result: { messageId: string; content?: string; diff: unknown[] | null; pendingDocument: unknown | null }) => void,
-  onError: (message: string) => void,
-  onStatus?: (label: string) => void,
-): Promise<void> => {
+export type AiChatStreamDoneResult = {
+  messageId: string;
+  content?: string;
+  diff: unknown[] | null;
+  pendingDocument: unknown;
+};
+
+export interface AiChatStreamOptions {
+  diagramId: string;
+  message: string;
+  sessionId: string | null;
+  model: string;
+  onText: (delta: string) => void;
+  onDone: (result: AiChatStreamDoneResult) => void;
+  onError: (message: string) => void;
+  onStatus?: (label: string) => void;
+}
+
+interface SseEvent {
+  eventType: string;
+  data: Record<string, unknown>;
+}
+
+/** SSE 이벤트 블록에서 event 타입과 JSON data를 파싱한다. data가 없거나 JSON이 아니면 null. */
+const parseSseEventBlock = (eventBlock: string): SseEvent | null => {
+  let eventType = "";
+  // SSE 규격상 data: 필드는 여러 줄로 나뉘어 올 수 있다 — 줄바꿈으로 이어 붙인다.
+  const dataLines: string[] = [];
+
+  // SSE 규격상 줄 끝은 \n 외에 \r\n·\r일 수도 있다.
+  for (const line of eventBlock.split(/\r\n|\r|\n/)) {
+    if (line.startsWith("event:")) {
+      eventType = line.slice("event:".length).trim();
+    } else if (line.startsWith("data:")) {
+      dataLines.push(line.slice("data:".length).trim());
+    }
+  }
+
+  const dataLine = dataLines.join("\n");
+  if (!dataLine) return null;
+
+  try {
+    return { eventType, data: JSON.parse(dataLine) as Record<string, unknown> };
+  } catch {
+    return null;
+  }
+};
+
+const dispatchSseEvent = (
+  { eventType, data }: SseEvent,
+  { onText, onDone, onError, onStatus }: AiChatStreamOptions,
+): void => {
+  if (eventType === "text") {
+    onText(data.delta as string);
+  } else if (eventType === "status") {
+    onStatus?.(data.label as string);
+  } else if (eventType === "done") {
+    onDone(data as AiChatStreamDoneResult);
+  } else if (eventType === "error") {
+    onError(data.message as string);
+  }
+};
+
+export const sendAiChatStream = async (options: AiChatStreamOptions): Promise<void> => {
+  const { diagramId, message, sessionId, model, onError } = options;
+
   const response = await fetch(`${API_BASE_URL}/ai/chat/stream`, {
     method: "POST",
     credentials: "include",
@@ -65,48 +121,36 @@ export const sendAiChatStream = async (
   const decoder = new TextDecoder();
   let buffer = "";
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-
+  /** 버퍼에서 완결된 이벤트 블록(빈 줄 기준)을 잘라 디스패치하고, 미완결 잔여분은 버퍼에 남긴다. */
+  const processBufferedEvents = (): void => {
     const events = buffer.split("\n\n");
     buffer = events.pop() ?? "";
 
     for (const eventBlock of events) {
-      if (!eventBlock.trim()) continue;
-
-      let eventType = "";
-      let dataLine = "";
-
-      for (const line of eventBlock.split("\n")) {
-        if (line.startsWith("event:")) {
-          eventType = line.slice("event:".length).trim();
-        } else if (line.startsWith("data:")) {
-          dataLine = line.slice("data:".length).trim();
-        }
-      }
-
-      if (!dataLine) continue;
-
-      let parsed: Record<string, unknown>;
-      try {
-        parsed = JSON.parse(dataLine) as Record<string, unknown>;
-      } catch {
-        continue;
-      }
-
-      if (eventType === "text") {
-        onText(parsed.delta as string);
-      } else if (eventType === "status") {
-        onStatus?.(parsed.label as string);
-      } else if (eventType === "done") {
-        onDone(parsed as { messageId: string; content?: string; diff: unknown[] | null; pendingDocument: unknown | null });
-      } else if (eventType === "error") {
-        onError(parsed.message as string);
-      }
+      const event = parseSseEventBlock(eventBlock);
+      if (event) dispatchSseEvent(event, options);
     }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+
+    if (done) {
+      // 스트림 종료: 청크 경계 대비로 보류해 둔 끝의 \r도 이제 정규화해 남은 완결 블록을 처리한다.
+      buffer = buffer.replace(/\r\n|\r/g, "\n");
+      processBufferedEvents();
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+
+    // SSE 규격상 개행은 \n 외에 \r\n·\r일 수도 있어 \n으로 정규화한다.
+    // 단, \r\n이 청크 경계에서 잘릴 수 있으므로 버퍼 끝의 \r은 다음 청크와 합쳐 처리한다.
+    const hasTrailingCr = buffer.endsWith("\r");
+    const normalizable = hasTrailingCr ? buffer.slice(0, -1) : buffer;
+    buffer = normalizable.replace(/\r\n|\r/g, "\n") + (hasTrailingCr ? "\r" : "");
+
+    processBufferedEvents();
   }
 };
 

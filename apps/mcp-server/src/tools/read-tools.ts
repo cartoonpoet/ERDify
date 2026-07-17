@@ -4,10 +4,12 @@ import { generateDdlReport, formatDiagram } from "@erdify/domain";
 import { client } from "../client.js";
 
 export const registerReadTools = (server: McpServer): void => {
-  server.tool(
+  server.registerTool(
     "list_organizations",
-    "List all ERDify organizations accessible with the current API key",
-    {},
+    {
+      description: "List all ERDify organizations accessible with the current API key",
+      inputSchema: {},
+    },
     async () => {
       const orgs = await client.getOrganizations();
       const text =
@@ -18,10 +20,12 @@ export const registerReadTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "list_projects",
-    "List projects in an organization",
-    { organizationId: z.string().describe("Organization ID from list_organizations") },
+    {
+      description: "List projects in an organization",
+      inputSchema: { organizationId: z.string().describe("Organization ID from list_organizations") },
+    },
     async ({ organizationId }) => {
       const projects = await client.getProjects(organizationId);
       const text =
@@ -32,10 +36,12 @@ export const registerReadTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "list_diagrams",
-    "List diagrams in a project",
-    { projectId: z.string().describe("Project ID from list_projects") },
+    {
+      description: "List diagrams in a project",
+      inputSchema: { projectId: z.string().describe("Project ID from list_projects") },
+    },
     async ({ projectId }) => {
       const diagrams = await client.getDiagrams(projectId);
       const text =
@@ -48,10 +54,12 @@ export const registerReadTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "get_diagram",
-    "Get a summary of tables, columns, and relationships in a diagram",
-    { diagramId: z.string().describe("Diagram ID from list_diagrams") },
+    {
+      description: "Get a summary of tables, columns, and relationships in a diagram",
+      inputSchema: { diagramId: z.string().describe("Diagram ID from list_diagrams") },
+    },
     async ({ diagramId }) => {
       const diagram = await client.getDiagram(diagramId);
       const text = formatDiagram(diagram.name, diagram.content);
@@ -60,12 +68,14 @@ export const registerReadTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "get_table",
-    "Get details of a specific table by name in a diagram. Use this instead of get_diagram when you only need one table.",
     {
-      diagramId: z.string().describe("Diagram ID from list_diagrams"),
-      tableName: z.string().describe("Table name to look up (case-insensitive)"),
+      description: "Get details of a specific table by name in a diagram. Use this instead of get_diagram when you only need one table.",
+      inputSchema: {
+        diagramId: z.string().describe("Diagram ID from list_diagrams"),
+        tableName: z.string().describe("Table name to look up (case-insensitive)"),
+      },
     },
     async ({ diagramId, tableName }) => {
       const diagram = await client.getDiagram(diagramId);
@@ -104,10 +114,12 @@ export const registerReadTools = (server: McpServer): void => {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "get_ddl",
-    "Generate DDL SQL for a diagram",
-    { diagramId: z.string().describe("Diagram ID from list_diagrams") },
+    {
+      description: "Generate DDL SQL for a diagram",
+      inputSchema: { diagramId: z.string().describe("Diagram ID from list_diagrams") },
+    },
     async ({ diagramId }) => {
       const diagram = await client.getDiagram(diagramId);
       const { sql, warnings } = generateDdlReport(diagram.content);

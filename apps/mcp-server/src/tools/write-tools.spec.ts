@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { DiagramDocument, DiagramEntity } from "@erdify/domain";
-import { addObject, createEmptyDiagram } from "@erdify/domain";
+import { addColumn, addEntity, addObject, createEmptyDiagram } from "@erdify/domain";
 
 import { assertColumnsExist, buildColumn, registerWriteTools } from "./write-tools.js";
 import { client } from "../client.js";
@@ -76,7 +76,10 @@ type ToolHandler = (args: Record<string, unknown>) => Promise<{
 function collectTools(): Map<string, ToolHandler> {
   const handlers = new Map<string, ToolHandler>();
   const fakeServer = {
-    tool: (name: string, _desc: string, _schema: unknown, handler: ToolHandler) => {
+    registerTool: (name: string, config: { description?: string; inputSchema?: unknown }, handler: ToolHandler) => {
+      if (!config.inputSchema || typeof config.inputSchema !== "object") {
+        throw new Error(`tool "${name}" registered without inputSchema`);
+      }
       handlers.set(name, handler);
     },
   } as unknown as McpServer;
@@ -128,6 +131,22 @@ describe("object write tools", () => {
 
     const saved = lastSavedDoc();
     expect(saved.objects![0]).toMatchObject({ id: "o1", kind: "view", name: "renamed" });
+  });
+
+  it("update_column: autoIncrement 갱신이 저장 문서에 반영된다", async () => {
+    let doc = addEntity(baseDoc(), { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", { ...buildColumn({ name: "id", type: "bigint", primaryKey: true }, 0), id: "c1" });
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc));
+
+    await tools.get("update_column")!({
+      diagramId: "d1",
+      tableId: "e1",
+      columnId: "c1",
+      updates: { autoIncrement: true },
+    });
+
+    const saved = lastSavedDoc();
+    expect(saved.entities[0]!.columns[0]).toMatchObject({ id: "c1", autoIncrement: true });
   });
 
   it("update_object: 존재하지 않는 id면 에러를 던지고 저장하지 않는다", async () => {

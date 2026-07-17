@@ -35,8 +35,9 @@ vi.mock("./MessageBubble", () => ({
   ),
 }));
 
-import { sendAiChatStream, acceptAiDiff, rejectAiDiff, createSession } from "../api/ai.api";
+import { sendAiChatStream, acceptAiDiff, rejectAiDiff, createSession, getAiChatConfig } from "../api/ai.api";
 import { randomUUID } from "@/shared/utils/uuid";
+import * as floatingCss from "./FloatingAIChat.css";
 
 const makeEmptyDoc = (id = "doc-1"): DiagramDocument => ({
   format: "erdify.schema.v1",
@@ -62,11 +63,14 @@ const initialAiChatState = {
 
 beforeEach(() => {
   useAIChatStore.setState(initialAiChatState);
+  localStorage.clear();
   vi.mocked(randomUUID).mockReset();
   vi.mocked(sendAiChatStream).mockReset();
   vi.mocked(acceptAiDiff).mockReset();
   vi.mocked(rejectAiDiff).mockReset();
   vi.mocked(createSession).mockReset();
+  vi.mocked(getAiChatConfig).mockReset();
+  vi.mocked(getAiChatConfig).mockResolvedValue({ models: [] });
   Element.prototype.scrollIntoView = vi.fn();
 });
 
@@ -106,7 +110,7 @@ describe("FloatingAIChat", () => {
   it("세션이 없을 때 메시지 전송 시 createSession → sendAiChatStream 순서로 호출된다", async () => {
     vi.mocked(randomUUID).mockReturnValue("user-msg-uuid");
     vi.mocked(createSession).mockResolvedValueOnce({ sessionId: "new-session-id" });
-    vi.mocked(sendAiChatStream).mockImplementation(async (_diagramId, _message, _sessionId, _model, _onText, onDone) => {
+    vi.mocked(sendAiChatStream).mockImplementation(async ({ onDone }) => {
       onDone({ messageId: "assistant-msg-id", diff: null, pendingDocument: null });
     });
 
@@ -123,10 +127,16 @@ describe("FloatingAIChat", () => {
 
     await waitFor(() => {
       expect(vi.mocked(createSession)).toHaveBeenCalledWith("diagram-1");
-      expect(vi.mocked(sendAiChatStream)).toHaveBeenCalledWith(
-        "diagram-1", "테이블 추가해줘", "new-session-id", "",
-        expect.any(Function), expect.any(Function), expect.any(Function), expect.any(Function),
-      );
+      expect(vi.mocked(sendAiChatStream)).toHaveBeenCalledWith({
+        diagramId: "diagram-1",
+        message: "테이블 추가해줘",
+        sessionId: "new-session-id",
+        model: "",
+        onText: expect.any(Function),
+        onDone: expect.any(Function),
+        onError: expect.any(Function),
+        onStatus: expect.any(Function),
+      });
     });
 
     const state = useAIChatStore.getState();
@@ -139,7 +149,7 @@ describe("FloatingAIChat", () => {
   it("sendAiChatStream onError 호출 시 에러 메시지가 sessionMessages에 추가된다", async () => {
     vi.mocked(randomUUID).mockReturnValue("error-msg-uuid");
     vi.mocked(createSession).mockResolvedValueOnce({ sessionId: "session-err" });
-    vi.mocked(sendAiChatStream).mockImplementation(async (_diagramId, _message, _sessionId, _model, _onText, _onDone, onError) => {
+    vi.mocked(sendAiChatStream).mockImplementation(async ({ onError }) => {
       onError("Network error");
     });
 
@@ -271,5 +281,102 @@ describe("FloatingAIChat", () => {
     const rejectedMsg = allMessages.find((m) => m.id === reviewMsgId);
     expect(rejectedMsg?.accepted).toBe(false);
     expect(state.reviewingMessageId).toBeNull();
+  });
+});
+
+describe("FloatingAIChat — FAB 키보드 접근성", () => {
+  it("닫힘 상태에서 FAB에 Enter 키 입력 시 채팅이 열린다", () => {
+    render(<FloatingAIChat diagramId="diagram-1" />);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "AI 채팅 열기" }), { key: "Enter" });
+
+    expect(useAIChatStore.getState().isOpen).toBe(true);
+  });
+
+  it("닫힘 상태에서 FAB에 Space 키 입력 시 채팅이 열린다", () => {
+    render(<FloatingAIChat diagramId="diagram-1" />);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "AI 채팅 열기" }), { key: " " });
+
+    expect(useAIChatStore.getState().isOpen).toBe(true);
+  });
+
+  it("Enter/Space 이외의 키 입력으로는 채팅이 열리지 않는다", () => {
+    render(<FloatingAIChat diagramId="diagram-1" />);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "AI 채팅 열기" }), { key: "Escape" });
+
+    expect(useAIChatStore.getState().isOpen).toBe(false);
+  });
+});
+
+describe("FloatingAIChat — 모델 드롭다운", () => {
+  const TEST_MODELS = [
+    { provider: "anthropic" as const, value: "claude-sonnet-5", label: "Claude Sonnet 5 (권장)" },
+    { provider: "openai" as const, value: "gpt-4o", label: "GPT-4o (권장)" },
+  ];
+
+  /** 채팅을 연 상태로 렌더링하고 모델 버튼이 나타날 때까지 기다린다. */
+  const renderWithModels = async () => {
+    vi.mocked(getAiChatConfig).mockResolvedValue({ models: TEST_MODELS });
+    useAIChatStore.setState({ ...initialAiChatState, isOpen: true });
+    render(<FloatingAIChat diagramId="diagram-1" />);
+    return await screen.findByRole("button", { name: /Claude Sonnet 5/ });
+  };
+
+  it("모델 버튼 클릭 시 드롭다운이 열리고 aria-expanded가 갱신된다", async () => {
+    const modelBtn = await renderWithModels();
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(modelBtn);
+
+    expect(modelBtn).toHaveAttribute("aria-expanded", "true");
+    // 프로바이더 그룹 라벨과 모델 항목이 표시된다
+    expect(screen.getByText("Anthropic")).toBeInTheDocument();
+    expect(screen.getByText("OpenAI")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "GPT-4o 권장" })).toBeInTheDocument();
+  });
+
+  it("모델 버튼을 다시 클릭하면 드롭다운이 닫힌다", async () => {
+    const modelBtn = await renderWithModels();
+    fireEvent.click(modelBtn);
+    expect(modelBtn).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(modelBtn);
+
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: "GPT-4o 권장" })).not.toBeInTheDocument();
+  });
+
+  it("드롭다운 항목 클릭 시 모델이 선택·저장되고 드롭다운이 닫힌다", async () => {
+    const modelBtn = await renderWithModels();
+    fireEvent.click(modelBtn);
+
+    fireEvent.click(screen.getByRole("button", { name: "GPT-4o 권장" }));
+
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+    expect(modelBtn).toHaveTextContent("GPT-4o");
+    expect(localStorage.getItem("erdify.ai.model")).toBe("gpt-4o");
+  });
+
+  it("드롭다운 내부(프로바이더 라벨) 클릭 시 드롭다운이 닫히지 않는다", async () => {
+    const modelBtn = await renderWithModels();
+    fireEvent.click(modelBtn);
+
+    fireEvent.click(screen.getByText("Anthropic"));
+
+    expect(modelBtn).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("백드롭 클릭 시 드롭다운이 닫힌다", async () => {
+    const modelBtn = await renderWithModels();
+    fireEvent.click(modelBtn);
+
+    const backdrop = document.querySelector(`.${floatingCss.modelDropdownBackdrop}`);
+    expect(backdrop).not.toBeNull();
+    fireEvent.click(backdrop!);
+
+    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+    expect(document.querySelector(`.${floatingCss.modelDropdownBackdrop}`)).toBeNull();
   });
 });
