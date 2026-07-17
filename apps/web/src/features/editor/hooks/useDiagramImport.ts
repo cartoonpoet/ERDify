@@ -21,7 +21,8 @@ const extractFirstTableName = (sql: string): string | null => {
     const rest = sql.slice(prefixMatch.index + prefixMatch[0].length);
     const nameMatch = TABLE_NAME_RE.exec(rest);
     if (nameMatch) return nameMatch[1] ?? null;
-    if (prefixRe.lastIndex === prefixMatch.index) prefixRe.lastIndex++; // 무한 루프 방지
+    // CREATE_TABLE_PREFIX_RE는 "CREATE"+"TABLE" 리터럴을 포함해 항상 폭이 0보다 커서
+    // lastIndex가 매 반복 진행하므로 별도의 무한루프 방지 가드가 필요 없다.
   }
   return null;
 };

@@ -52,6 +52,35 @@ describe("parseDdl", () => {
     expect(doc.entities[0]!.columns[0]!.defaultValue).toBe("'active'");
   });
 
+  it("따옴표 없는(bare) DEFAULT 값도 추출한다", () => {
+    const sql = `CREATE TABLE t (created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, count INT DEFAULT 0);`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.entities[0]!.columns[0]!.defaultValue).toBe("CURRENT_TIMESTAMP");
+    expect(doc.entities[0]!.columns[1]!.defaultValue).toBe("0");
+  });
+
+  it("CHARACTER SET / COLLATE 절이 타입 문자열에서 제거된다", () => {
+    const sql = `CREATE TABLE t (name VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL);`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.entities[0]!.columns[0]!.type).toBe("VARCHAR(255)");
+  });
+
+  it("테이블 레벨 COMMENT가 entity의 comment로 파싱된다", () => {
+    const sql = `CREATE TABLE t (id INT) COMMENT = '사용자 테이블';`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.entities[0]!.comment).toBe("사용자 테이블");
+  });
+
+  it("타입명 자체가 CHARACTER로 시작하는 경우(CHARACTER VARYING) 절 제거로 오인해 지우지 않는다", () => {
+    const sql = `CREATE TABLE t (name CHARACTER VARYING(255));`;
+    const doc = parseDdl(sql, "mysql");
+
+    expect(doc.entities[0]!.columns[0]!.type).toBe("CHARACTER VARYING(255)");
+  });
+
   it("AUTO_INCREMENT → autoIncrement가 true로 파싱된다", () => {
     const sql = `CREATE TABLE t (id BIGINT NOT NULL AUTO_INCREMENT, PRIMARY KEY (id));`;
     const doc = parseDdl(sql, "mysql");
