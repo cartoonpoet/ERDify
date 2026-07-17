@@ -175,7 +175,7 @@ describe("AiHistoryService", () => {
       );
     });
 
-    it("sessionId가 있으면 세션 기준으로 조회하고 역순으로 반환한다", async () => {
+    it("sessionId가 있으면 세션+다이어그램 기준으로 조회하고 역순으로 반환한다", async () => {
       repo.find.mockResolvedValue([
         { id: "2", createdAt: new Date("2026-01-02") },
         { id: "1", createdAt: new Date("2026-01-01") },
@@ -183,14 +183,27 @@ describe("AiHistoryService", () => {
 
       const result = await service.findRecent("user-1", "diag-1", "sess-1");
 
+      // diagramId 조건 포함: 다른 다이어그램에서 재사용된 sessionId의 대화가 섞이지 않아야 한다
       expect(repo.find).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { userId: "user-1", sessionId: "sess-1" },
+          where: { userId: "user-1", sessionId: "sess-1", diagramId: "diag-1" },
           order: { createdAt: "DESC" },
           take: 6,
         }),
       );
       expect(result.map((r) => r.id)).toEqual(["1", "2"]);
+    });
+
+    it("sessionId가 있어도 diagramId가 null이면 where에 diagramId를 포함하지 않는다", async () => {
+      repo.find.mockResolvedValue([]);
+
+      await service.findRecent("user-1", null, "sess-1");
+
+      expect(repo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: "user-1", sessionId: "sess-1" },
+        }),
+      );
     });
   });
 

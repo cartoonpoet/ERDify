@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import OpenAI from "openai";
 import type { Tool } from "@anthropic-ai/sdk/resources";
-import type { AiProvider, StreamTurnArgs, ProviderTurn, ConvMessage } from "./provider.types";
+import type { AiProvider, StreamTurnArgs, ProviderTurn, ConvMessage, NormalizedToolCall } from "./provider.types";
 
 function toOpenAiMessages(system: string, messages: ConvMessage[]): OpenAI.ChatCompletionMessageParam[] {
   const out: OpenAI.ChatCompletionMessageParam[] = [{ role: "system", content: system }];
@@ -70,7 +70,16 @@ export class OpenAiProvider implements AiProvider {
       }
       accumulateToolCallDeltas(acc, delta?.tool_calls);
     }
-    const toolCalls = [...acc.values()].map((t) => ({ id: t.id, name: t.name, input: JSON.parse(t.args || "{}") as Record<string, unknown> }));
+    const toolCalls: NormalizedToolCall[] = [];
+    for (const t of acc.values()) {
+      try {
+        toolCalls.push({ id: t.id, name: t.name, input: JSON.parse(t.args || "{}") as Record<string, unknown> });
+      } catch {
+        // 스트림이 중간에 끊겨(max token 등) tool_call 인자 JSON이 불완전한 경우:
+        // 해당 호출은 버리고 truncated로 표시해 에이전트 루프의 이어가기 로직에 맡긴다
+        truncated = true;
+      }
+    }
     return { text, toolCalls, truncated };
   }
 }

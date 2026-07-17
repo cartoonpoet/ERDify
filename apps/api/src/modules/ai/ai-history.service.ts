@@ -77,8 +77,9 @@ export class AiHistoryService {
 
   async findRecent(userId: string, diagramId: string | null, sessionId?: string | null): Promise<AiConversation[]> {
     if (sessionId) {
+      // diagramId 조건 필수: 다른 다이어그램에서 재사용된 sessionId로 그 대화가 현재 다이어그램 컨텍스트에 섞이는 것을 방지
       const rows = await this.repo.find({
-        where: { userId, sessionId },
+        where: { userId, sessionId, ...(diagramId !== null ? { diagramId } : {}) },
         order: { createdAt: "DESC" },
         take: HISTORY_LIMIT,
       });

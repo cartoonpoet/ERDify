@@ -66,7 +66,8 @@ const parseSseEventBlock = (eventBlock: string): SseEvent | null => {
   // SSE 규격상 data: 필드는 여러 줄로 나뉘어 올 수 있다 — 줄바꿈으로 이어 붙인다.
   const dataLines: string[] = [];
 
-  for (const line of eventBlock.split("\n")) {
+  // SSE 규격상 줄 끝은 \n 외에 \r\n·\r일 수도 있다.
+  for (const line of eventBlock.split(/\r\n|\r|\n/)) {
     if (line.startsWith("event:")) {
       eventType = line.slice("event:".length).trim();
     } else if (line.startsWith("data:")) {
@@ -120,12 +121,8 @@ export const sendAiChatStream = async (options: AiChatStreamOptions): Promise<vo
   const decoder = new TextDecoder();
   let buffer = "";
 
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-
+  /** 버퍼에서 완결된 이벤트 블록(빈 줄 기준)을 잘라 디스패치하고, 미완결 잔여분은 버퍼에 남긴다. */
+  const processBufferedEvents = (): void => {
     const events = buffer.split("\n\n");
     buffer = events.pop() ?? "";
 
@@ -133,6 +130,27 @@ export const sendAiChatStream = async (options: AiChatStreamOptions): Promise<vo
       const event = parseSseEventBlock(eventBlock);
       if (event) dispatchSseEvent(event, options);
     }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+
+    if (done) {
+      // 스트림 종료: 청크 경계 대비로 보류해 둔 끝의 \r도 이제 정규화해 남은 완결 블록을 처리한다.
+      buffer = buffer.replace(/\r\n|\r/g, "\n");
+      processBufferedEvents();
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+
+    // SSE 규격상 개행은 \n 외에 \r\n·\r일 수도 있어 \n으로 정규화한다.
+    // 단, \r\n이 청크 경계에서 잘릴 수 있으므로 버퍼 끝의 \r은 다음 청크와 합쳐 처리한다.
+    const hasTrailingCr = buffer.endsWith("\r");
+    const normalizable = hasTrailingCr ? buffer.slice(0, -1) : buffer;
+    buffer = normalizable.replace(/\r\n|\r/g, "\n") + (hasTrailingCr ? "\r" : "");
+
+    processBufferedEvents();
   }
 };
 

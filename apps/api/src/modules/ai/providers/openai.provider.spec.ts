@@ -87,6 +87,24 @@ describe("OpenAiProvider.streamTurn", () => {
     expect(sent[4]).toEqual({ role: "assistant", content: "확인했어요" });
   });
 
+  it("tool_call 인자 JSON이 불완전하게 끊기면 해당 호출만 버리고 truncated=true로 반환한다 (throw 금지)", async () => {
+    createMock.mockResolvedValue(chunkStream([
+      // 완전한 호출 하나 + 인자가 중간에 끊긴 호출 하나
+      { choices: [{ delta: { tool_calls: [{ index: 0, id: "call_1", function: { name: "listTables", arguments: "{}" } }] } }] },
+      { choices: [{ delta: { tool_calls: [{ index: 1, id: "call_2", function: { name: "addTable", arguments: '{"na' } }] } }] },
+      { choices: [{ delta: {}, finish_reason: "length" }] },
+    ]));
+
+    const provider = new OpenAiProvider();
+    const turn = await provider.streamTurn({
+      apiKey: "k", model: "gpt-4o", system: "sys",
+      messages: [{ role: "user", content: "users 테이블 만들어줘" }], tools, maxTokens: 10, onText: vi.fn(),
+    });
+
+    expect(turn.truncated).toBe(true);
+    expect(turn.toolCalls).toEqual([{ id: "call_1", name: "listTables", input: {} }]); // 불완전 호출은 제외
+  });
+
   it("gpt-5 계열 모델은 max_completion_tokens를 쓰고, 정상 종료 시 truncated=false", async () => {
     createMock.mockResolvedValue(chunkStream([
       { choices: [{ delta: { content: "hi" } }] },

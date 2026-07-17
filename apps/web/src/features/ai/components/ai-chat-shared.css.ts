@@ -64,6 +64,8 @@ export const modelBtn = style({
   cursor: "pointer",
   transition: "background 0.15s",
   position: "relative",
+  // 네이티브 <button>으로 렌더링해도 div와 동일하게 보이도록 UA 폰트를 초기화한다.
+  font: "inherit",
   selectors: {
     "&:hover": { background: "rgba(255,255,255,0.25)" },
   },
@@ -126,6 +128,12 @@ export const modelDropdownItem = style({
   cursor: "pointer",
   gap: vars.space["2"],
   transition: "background 0.1s",
+  // 네이티브 <button>으로 렌더링해도 기존 div와 동일하게 보이도록 UA 기본값을 초기화한다.
+  width: "100%",
+  border: "none",
+  background: "transparent",
+  font: "inherit",
+  textAlign: "left",
   selectors: {
     "&:hover": { background: vars.color.surfaceTertiary },
   },

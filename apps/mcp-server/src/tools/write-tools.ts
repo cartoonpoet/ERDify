@@ -194,6 +194,7 @@ export const registerWriteTools = (server: McpServer): void => {
       if (updates.unique !== undefined) changes.unique = updates.unique;
       if (updates.defaultValue !== undefined) changes.defaultValue = updates.defaultValue;
       if (updates.comment !== undefined) changes.comment = updates.comment;
+      if (updates.autoIncrement !== undefined) changes.autoIncrement = updates.autoIncrement;
       const updated = updateColumn(doc, tableId, columnId, changes);
       await client.updateDiagram(diagramId, updated);
       void client.recordToolCall(diagramId, "update_column", `"${entity.name}.${col.name}" 컬럼 수정`).catch(() => {});

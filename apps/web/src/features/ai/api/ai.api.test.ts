@@ -342,6 +342,55 @@ describe("sendAiChatStream", () => {
     expect(options.onDone).toHaveBeenCalledWith({ messageId: "m-1", diff: null, pendingDocument: null });
   });
 
+  it("CRLF(\\r\\n)로 프레이밍된 스트림도 파싱한다", async () => {
+    fetchMock.mockResolvedValue(
+      makeSseResponse([
+        'event: text\r\ndata: {"delta":"캐리지"}\r\n\r\n',
+        'event: done\r\ndata: {"messageId":"m-crlf","diff":null,"pendingDocument":null}\r\n\r\n',
+      ]),
+    );
+    const options = makeStreamOptions();
+
+    await sendAiChatStream(options);
+
+    expect(options.onText).toHaveBeenCalledWith("캐리지");
+    expect(options.onDone).toHaveBeenCalledWith({ messageId: "m-crlf", diff: null, pendingDocument: null });
+    expect(options.onError).not.toHaveBeenCalled();
+  });
+
+  it("CR(\\r)로만 프레이밍된 스트림도 파싱한다", async () => {
+    fetchMock.mockResolvedValue(
+      makeSseResponse([
+        'event: text\rdata: {"delta":"CR프레임"}\r\r',
+        'event: status\rdata: {"label":"진행 중"}\r\r',
+      ]),
+    );
+    const options = makeStreamOptions();
+
+    await sendAiChatStream(options);
+
+    expect(options.onText).toHaveBeenCalledWith("CR프레임");
+    expect(options.onStatus).toHaveBeenCalledWith("진행 중");
+    expect(options.onError).not.toHaveBeenCalled();
+  });
+
+  it("\\r\\n이 청크 경계에서 \\r과 \\n으로 잘려도 버퍼링해 이어서 파싱한다", async () => {
+    fetchMock.mockResolvedValue(
+      makeSseResponse([
+        // 첫 청크는 이벤트 경계(\r\n\r\n)의 첫 \r에서 끊긴다
+        'event: text\r\ndata: {"delta":"경계"}\r',
+        '\n\r\nevent: text\r\ndata: {"delta":"이어짐"}\r\n\r\n',
+      ]),
+    );
+    const options = makeStreamOptions();
+
+    await sendAiChatStream(options);
+
+    expect(options.onText).toHaveBeenNthCalledWith(1, "경계");
+    expect(options.onText).toHaveBeenNthCalledWith(2, "이어짐");
+    expect(options.onError).not.toHaveBeenCalled();
+  });
+
   it("HTTP 응답이 ok가 아니면 onError를 호출하고 스트림을 읽지 않는다", async () => {
     fetchMock.mockResolvedValue(makeSseResponse([], { ok: false, status: 500 }));
     const options = makeStreamOptions();
