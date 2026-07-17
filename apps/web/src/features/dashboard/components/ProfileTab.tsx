@@ -110,7 +110,10 @@ export const ProfileTab = ({ onClose }: ProfileTabProps) => {
         ) : (
           <div
             className={`${css.dropZone} ${isDragging ? css.dropZoneActive : ""}`}
+            role="button"
+            tabIndex={0}
             onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}

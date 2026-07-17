@@ -35,7 +35,7 @@ export const AnnouncementModal = ({ unread, onMarkSeen, onMarkAllSeen }: Announc
 
   return createPortal(
     <div className={css.backdrop}>
-      <div className={css.panel} role="dialog" aria-modal aria-label="공지사항">
+      <dialog open className={css.panel} aria-label="공지사항">
         <div className={css.header}>
           <span className={css.headerTitle}>공지사항</span>
           {isMultiple && (
@@ -78,7 +78,7 @@ export const AnnouncementModal = ({ unread, onMarkSeen, onMarkAllSeen }: Announc
             {isLast ? "확인" : "다음 →"}
           </button>
         </div>
-      </div>
+      </dialog>
     </div>,
     document.body,
   );

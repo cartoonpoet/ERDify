@@ -12,7 +12,7 @@ interface ModalProps extends PropsWithChildren {
 export const Modal = ({ open, onClose, title, maxWidth = "440px", children }: ModalProps) => {
   if (!open) return null;
 
-  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+  function onKeyDown(e: KeyboardEvent<HTMLDialogElement>) {
     if (e.key === "Escape") onClose();
   }
 
@@ -20,14 +20,14 @@ export const Modal = ({ open, onClose, title, maxWidth = "440px", children }: Mo
     <div
       className={backdrop}
       data-testid="modal-backdrop"
+      role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
+      <dialog
+        open
         className={panel}
-        role="dialog"
-        aria-modal
         aria-label={title}
         tabIndex={-1}
         autoFocus
@@ -39,7 +39,7 @@ export const Modal = ({ open, onClose, title, maxWidth = "440px", children }: Mo
           <button className={closeBtn} onClick={onClose} aria-label="닫기">×</button>
         </div>
         {children}
-      </div>
+      </dialog>
     </div>,
     document.body
   );

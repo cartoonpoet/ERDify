@@ -84,7 +84,15 @@ export const ErrorReportsPage = () => {
           <div
             key={`${report.errorType}:${report.path}`}
             className={`${css.errorRow} ${css.errorRowBorderVariants[report.errorType]}`}
+            role="button"
+            tabIndex={0}
             onClick={() => setSelected(report)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setSelected(report);
+              }
+            }}
           >
             <span className={`${css.typeBadge} ${css.typeBadgeVariants[report.errorType]}`}>
               {report.errorType}

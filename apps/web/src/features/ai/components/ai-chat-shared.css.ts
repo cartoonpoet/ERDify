@@ -96,6 +96,11 @@ export const modelBtnChevron = style({
   color: "rgba(255,255,255,0.7)",
 });
 
+/** 모델 토글 버튼과 드롭다운을 형제로 담는 포지셔닝 기준 래퍼 (드롭다운 absolute 기준). */
+export const modelBtnWrap = style({
+  position: "relative",
+});
+
 export const modelDropdown = style({
   position: "absolute",
   top: "calc(100% + 6px)",
@@ -118,7 +123,13 @@ export const modelDropdownProvider = style({
   textTransform: "uppercase",
 });
 
+// <button>으로 렌더링되므로(S6819) 기본 버튼 크롬(테두리/배경/정렬)을 리셋한다.
 export const modelDropdownItem = style({
+  width: "100%",
+  border: "none",
+  background: "none",
+  textAlign: "left",
+  font: "inherit",
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",

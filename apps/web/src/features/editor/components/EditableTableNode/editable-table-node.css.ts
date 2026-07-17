@@ -464,7 +464,18 @@ export const suggestionsList = style({
   boxShadow: vars.shadow.md,
 });
 
+// <button>을 감싸는 li 자체는 리스트 아이템 역할만 하므로 여백을 두지 않는다.
 export const suggestionItem = style({
+  padding: 0,
+});
+
+// 실제 선택 동작은 <button>으로 렌더링한다(S6847).
+export const suggestionItemBtn = style({
+  width: "100%",
+  border: "none",
+  background: "none",
+  font: "inherit",
+  textAlign: "left",
   padding: "6px 12px",
   cursor: "pointer",
   fontSize: vars.font.size.md,

@@ -54,10 +54,11 @@ export const EditDiagramModal = ({ open, onClose, diagram }: EditDiagramModalPro
           {...(error ? { error } : {})}
         />
         <div>
-          <label style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "4px" }}>
+          <label htmlFor="edit-diagram-dialect" style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "4px" }}>
             데이터베이스 종류
           </label>
           <select
+            id="edit-diagram-dialect"
             className={selectInput}
             value={dialect}
             onChange={(e) => setDialect(e.target.value as typeof dialect)}

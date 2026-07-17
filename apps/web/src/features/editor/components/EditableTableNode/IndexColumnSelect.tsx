@@ -39,8 +39,10 @@ export const IndexColumnSelect = ({
       </button>
       {open && (
         <>
+          {/* 배경 클릭 dismiss 전용 오버레이 — 키보드 사용자는 토글 버튼으로 닫는다. */}
           <div
             className={`${css.indexColsBackdrop} nodrag nopan`}
+            role="presentation"
             onClick={() => setOpen(false)}
           />
           <div className={`${css.indexColsDropdown} nodrag nopan`}>

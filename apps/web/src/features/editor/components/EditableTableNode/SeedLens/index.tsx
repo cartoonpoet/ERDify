@@ -42,14 +42,13 @@ export const SeedLens = ({ entity, onCommit }: SeedLensProps) => {
       {isOpen &&
         createPortal(
           <>
-            {/* backdrop */}
-            <div className={css.backdrop} onClick={close} />
+            {/* backdrop — 클릭 dismiss 전용, 키보드 사용자는 위 useEffect의 Escape 핸들러로 닫는다 */}
+            <div className={css.backdrop} role="presentation" onClick={close} />
 
             {/* 패널 */}
-            <div
+            <dialog
+              open
               className={css.panel}
-              role="dialog"
-              aria-modal
               aria-label={`${entity.name} 시드 데이터 편집`}
             >
               {/* 헤더 */}
@@ -85,7 +84,7 @@ export const SeedLens = ({ entity, onCommit }: SeedLensProps) => {
                   완료
                 </button>
               </div>
-            </div>
+            </dialog>
           </>,
           document.body,
         )}
