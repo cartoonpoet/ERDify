@@ -65,7 +65,8 @@ describe("AuthService", () => {
       await service.sendVerificationCode("new@example.com");
 
       expect(emailService.sendVerificationEmail).toHaveBeenCalledTimes(1);
-      const { code } = vi.mocked(emailService.sendVerificationEmail).mock.calls[0]![0];
+      const { to, code } = vi.mocked(emailService.sendVerificationEmail).mock.calls[0]![0];
+      expect(to).toBe("new@example.com");
       expect(code).toMatch(/^\d{6}$/);
       expect(Number(code)).toBeGreaterThanOrEqual(100000);
       expect(Number(code)).toBeLessThanOrEqual(999999);
