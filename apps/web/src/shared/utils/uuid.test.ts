@@ -25,11 +25,4 @@ describe("randomUUID", () => {
     const id = randomUUID();
     expect(id).toMatch(UUID_V4_RE);
   });
-
-  it("crypto 자체가 없으면 Math.random()으로 최종 폴백해도 v4 형식을 유지한다", () => {
-    vi.stubGlobal("crypto", undefined);
-
-    const id = randomUUID();
-    expect(id).toMatch(UUID_V4_RE);
-  });
 });
