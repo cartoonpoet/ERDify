@@ -124,6 +124,9 @@ export class AiChatService {
         if (i === MAX_ITERATIONS - 1) this.logger.warn(`AI loop hit MAX_ITERATIONS for diagram ${diagramId}`);
       }
 
+      // ② 최종 안전망: 루프가 검증 없이 끝나는 경로(MAX_ITERATIONS 도달, 재시도 소진)에서도
+      //    깨진 문서가 클라이언트에 전달되지 않도록 finalize 직전에 한 번 더 검증한다.
+      finalText = this.suppressInvalidPendingChanges(state, domain, baseErrors, diagramId, finalText);
       await this.finalizeChat({ userId, diagramId, sessionId, orgId, provider, model }, state, finalText, emit);
     } catch (e) {
       this.logger.error(e);
@@ -198,8 +201,7 @@ export class AiChatService {
     // ② 적용 전 자동검증: 변경이 있으면 커밋 전에 무결성을 확인하고,
     //    AI가 새로 만든 오류가 있으면 모델에게 수정 기회를 준다.
     if (state.diffs.length > 0 && state.validationAttempts < MAX_VALIDATION_RETRIES) {
-      const newErrors = [...domain.validateDiagram(state.updatedDoc).errors, ...extraIntegrityErrors(state.updatedDoc)]
-        .filter((e) => !baseErrors.has(e));
+      const newErrors = this.collectNewIntegrityErrors(domain, state.updatedDoc, baseErrors);
       if (newErrors.length > 0) {
         state.validationAttempts++;
         this.logger.warn(`AI proposed invalid changes for diagram ${diagramId}: ${newErrors.join(" | ")}`);
@@ -207,6 +209,32 @@ export class AiChatService {
       }
     }
     return null;
+  }
+
+  /** baseline(원본 문서에 이미 있던 오류)을 제외하고, AI 변경이 새로 만든 무결성 오류만 수집한다. */
+  private collectNewIntegrityErrors(domain: DomainModule, doc: DiagramDocument, baseErrors: Set<string>): string[] {
+    return [...domain.validateDiagram(doc).errors, ...extraIntegrityErrors(doc)].filter((e) => !baseErrors.has(e));
+  }
+
+  /**
+   * finalize 직전 최종 무결성 검증: 새 오류가 남아 있으면 diff/pendingDocument를 비워
+   * 저장·done 이벤트 모두에서 제외하고, 사용자에게 보류 사유를 안내하는 문구를 덧붙인다.
+   * (루프 중간 검증과 동일한 baseline 로직을 공유하며, 검증은 순수 함수라 중복 실행 비용은 무시 가능)
+   */
+  private suppressInvalidPendingChanges(
+    state: LoopState,
+    domain: DomainModule,
+    baseErrors: Set<string>,
+    diagramId: string,
+    finalText: string,
+  ): string {
+    if (state.diffs.length === 0) return finalText;
+    const newErrors = this.collectNewIntegrityErrors(domain, state.updatedDoc, baseErrors);
+    if (newErrors.length === 0) return finalText;
+    this.logger.warn(`AI final document failed integrity validation for diagram ${diagramId}: ${newErrors.join(" | ")}`);
+    state.diffs = [];
+    const notice = `⚠️ 제안된 변경이 무결성 검증을 통과하지 못해 적용을 보류했습니다: ${newErrors.slice(0, 2).join(" / ")}`;
+    return finalText ? `${finalText}\n\n${notice}` : notice;
   }
 
   /** turn의 도구 호출을 순서대로 실행하고, 결과를 state와 대화 메시지에 반영한다. */
