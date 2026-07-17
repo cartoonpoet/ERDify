@@ -65,6 +65,7 @@ export const AIChatSessionSelector = ({
               <button
                 type="button"
                 key={session.id}
+                aria-current={session.id === currentSessionId ? "true" : undefined}
                 className={
                   session.id === currentSessionId
                     ? `${css.dropdownItem} ${css.dropdownItemActive}`

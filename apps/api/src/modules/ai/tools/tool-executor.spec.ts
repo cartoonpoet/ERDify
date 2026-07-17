@@ -150,6 +150,14 @@ describe("ToolExecutor", () => {
     });
   });
 
+  it("updateColumn에 변경할 필드가 하나도 없으면 변경 없이 오류 텍스트를 반환한다", async () => {
+    const res = await executor.execute("updateColumn", { tableId: "e1", columnId: "c1" }, baseDoc);
+    expect(res.changes).toHaveLength(0);
+    expect(res.doc).toBe(baseDoc);
+    expect(res.resultText).toContain("Error:");
+    expect(res.resultText).toContain("no fields to change");
+  });
+
   describe("addRelation / removeRelation", () => {
     const twoTableDoc: DiagramDocument = {
       ...baseDoc,

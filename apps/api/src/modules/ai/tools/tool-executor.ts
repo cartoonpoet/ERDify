@@ -177,6 +177,13 @@ export class ToolExecutor {
     if (input["primaryKey"] !== undefined) patch.primaryKey = input["primaryKey"] as boolean;
     if (input["unique"] !== undefined) patch.unique = input["unique"] as boolean;
     if (input["defaultValue"] !== undefined) patch.defaultValue = input["defaultValue"] as string | null;
+    if (Object.keys(patch).length === 0) {
+      return {
+        doc,
+        changes: [],
+        resultText: `Error: updateColumn on "${entity.name}.${col.name}" received no fields to change. Pass at least one of name/type/nullable/primaryKey/unique/defaultValue, then retry.`,
+      };
+    }
     const updatedDoc = domain.updateColumn(doc, tableId, colId, patch);
     return applied(updatedDoc, [{ type: "updateColumn", tableId, tableName: entity.name, columnId: colId, columnName: col.name, changes: Object.keys(patch) }]);
   }

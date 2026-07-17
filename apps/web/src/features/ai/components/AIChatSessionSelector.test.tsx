@@ -77,7 +77,7 @@ describe("AIChatSessionSelector — 드롭다운 토글", () => {
 });
 
 describe("AIChatSessionSelector — 세션 선택", () => {
-  it("현재 세션 항목은 활성 스타일 클래스가 추가된다", () => {
+  it("현재 세션 항목은 aria-current=\"true\"로 표시되고 활성 스타일 클래스가 추가된다", () => {
     renderSelector({ currentSessionId: "sess-1" });
 
     fireEvent.click(getToggleBtn(/첫 번째 대화/));
@@ -85,6 +85,8 @@ describe("AIChatSessionSelector — 세션 선택", () => {
     // 토글 버튼의 접근성 이름은 화살표(▾)를 포함하므로 정확 일치 조회는 목록 항목만 반환한다
     const activeItem = screen.getByRole("button", { name: "첫 번째 대화" });
     const inactiveItem = screen.getByRole("button", { name: "두 번째 대화" });
+    expect(activeItem).toHaveAttribute("aria-current", "true");
+    expect(inactiveItem).not.toHaveAttribute("aria-current");
     // 활성 항목은 비활성 항목보다 클래스가 하나 더 붙는다 (dropdownItemActive)
     expect(activeItem.classList.length).toBe(inactiveItem.classList.length + 1);
   });

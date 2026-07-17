@@ -34,31 +34,14 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
     handleLoadMore, canLoadMore, isLoadingHistory,
   } = useAIChatCore(diagramId, selectedModel);
 
-  const handleModelToggle = (e: React.MouseEvent) => { e.stopPropagation(); setIsModelOpen((v) => !v); };
-  const handleModelBackdropClick = (e: React.MouseEvent) => { e.stopPropagation(); setIsModelOpen(false); };
+  const handleModelToggle = () => setIsModelOpen((v) => !v);
+  const handleModelBackdropClick = () => setIsModelOpen(false);
   const handleSelectModel = (value: string) => () => { handleModelSelect(value); setIsModelOpen(false); };
 
   const handleFabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       openChat();
-    }
-  };
-
-  const handleModelToggleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsModelOpen((v) => !v);
-    }
-  };
-
-  const handleSelectModelKeyDown = (value: string) => (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      e.stopPropagation();
-      handleModelSelect(value);
-      setIsModelOpen(false);
     }
   };
 
@@ -118,26 +101,26 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
                         onClick={handleModelBackdropClick}
                       />
                     )}
-                    <div
-                      className={s.modelBtn}
-                      role="button"
-                      tabIndex={0}
-                      aria-expanded={isModelOpen}
-                      onClick={handleModelToggle}
-                      onKeyDown={handleModelToggleKeyDown}
-                    >
-                      <span className={s.modelBtnDot} />
-                      <span className={s.modelBtnName}>
-                        {parseModelLabel(models.find((m) => m.value === selectedModel)?.label ?? "").name}
-                      </span>
-                      {(() => {
-                        const badge = parseModelLabel(models.find((m) => m.value === selectedModel)?.label ?? "").badge;
-                        return badge ? <span className={s.modelBtnBadge}>{badge}</span> : null;
-                      })()}
-                      <span className={s.modelBtnChevron}>{isModelOpen ? "▴" : "▾"}</span>
+                    {/* 토글 버튼과 드롭다운을 형제로 담는 포지셔닝 래퍼 — 인터랙티브 요소 중첩을 피한다. */}
+                    <div className={s.modelBtnWrap}>
+                      <button
+                        type="button"
+                        className={s.modelBtn}
+                        aria-expanded={isModelOpen}
+                        onClick={handleModelToggle}
+                      >
+                        <span className={s.modelBtnDot} />
+                        <span className={s.modelBtnName}>
+                          {parseModelLabel(models.find((m) => m.value === selectedModel)?.label ?? "").name}
+                        </span>
+                        {(() => {
+                          const badge = parseModelLabel(models.find((m) => m.value === selectedModel)?.label ?? "").badge;
+                          return badge ? <span className={s.modelBtnBadge}>{badge}</span> : null;
+                        })()}
+                        <span className={s.modelBtnChevron}>{isModelOpen ? "▴" : "▾"}</span>
+                      </button>
                       {isModelOpen && (
-                        // 내부 클릭이 모델 버튼 토글로 전파되지 않도록 막는 래퍼.
-                        <div className={s.modelDropdown} role="presentation" onClick={(e) => e.stopPropagation()}>
+                        <div className={s.modelDropdown}>
                           {AI_PROVIDERS.filter((p) => models.some((m) => m.provider === p)).map((p, i) => (
                             <React.Fragment key={p}>
                               {i > 0 && <hr className={s.modelDropdownDivider} />}
@@ -146,20 +129,18 @@ export const FloatingAIChat = ({ diagramId }: FloatingAIChatProps) => {
                                 const { name, badge } = parseModelLabel(m.label);
                                 const isActive = m.value === selectedModel;
                                 return (
-                                  <div
+                                  <button
+                                    type="button"
                                     key={m.value}
                                     className={[s.modelDropdownItem, isActive ? s.modelDropdownItemActive : ""].filter(Boolean).join(" ")}
-                                    role="button"
-                                    tabIndex={0}
                                     onClick={handleSelectModel(m.value)}
-                                    onKeyDown={handleSelectModelKeyDown(m.value)}
                                   >
                                     <span className={s.modelDropdownItemName}>{name}</span>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                       {badge && <span className={s.modelDropdownBadge[getBadgeVariant(badge)]}>{badge}</span>}
                                       {isActive && <span className={s.modelDropdownCheck}>✓</span>}
-                                    </div>
-                                  </div>
+                                    </span>
+                                  </button>
                                 );
                               })}
                             </React.Fragment>

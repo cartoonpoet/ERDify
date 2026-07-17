@@ -337,20 +337,18 @@ describe("FloatingAIChat — 모델 드롭다운", () => {
     expect(screen.getByRole("button", { name: "GPT-4o 권장" })).toBeInTheDocument();
   });
 
-  it("모델 버튼에서 Enter/Space 키로 드롭다운을 토글하고 다른 키는 무시한다", async () => {
+  it("모델 버튼을 다시 클릭하면 드롭다운이 닫힌다", async () => {
     const modelBtn = await renderWithModels();
-
-    fireEvent.keyDown(modelBtn, { key: "Enter" });
+    fireEvent.click(modelBtn);
     expect(modelBtn).toHaveAttribute("aria-expanded", "true");
 
-    fireEvent.keyDown(modelBtn, { key: " " });
-    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(modelBtn);
 
-    fireEvent.keyDown(modelBtn, { key: "Escape" });
     expect(modelBtn).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: "GPT-4o 권장" })).not.toBeInTheDocument();
   });
 
-  it("드롭다운 항목 클릭 시 모델이 선택되고 드롭다운이 닫힌다", async () => {
+  it("드롭다운 항목 클릭 시 모델이 선택·저장되고 드롭다운이 닫힌다", async () => {
     const modelBtn = await renderWithModels();
     fireEvent.click(modelBtn);
 
@@ -361,30 +359,7 @@ describe("FloatingAIChat — 모델 드롭다운", () => {
     expect(localStorage.getItem("erdify.ai.model")).toBe("gpt-4o");
   });
 
-  it("드롭다운 항목에서 Enter 키로 모델을 선택하면 전파가 막혀 드롭다운이 다시 열리지 않는다", async () => {
-    const modelBtn = await renderWithModels();
-    fireEvent.click(modelBtn);
-
-    fireEvent.keyDown(screen.getByRole("button", { name: "GPT-4o 권장" }), { key: "Enter" });
-
-    // stopPropagation이 없다면 모델 버튼 keydown 핸들러가 다시 토글해 열린 상태가 된다
-    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
-    expect(localStorage.getItem("erdify.ai.model")).toBe("gpt-4o");
-  });
-
-  it("드롭다운 항목에서 Space 키로도 모델을 선택할 수 있고 다른 키는 무시된다", async () => {
-    const modelBtn = await renderWithModels();
-    fireEvent.click(modelBtn);
-
-    fireEvent.keyDown(screen.getByRole("button", { name: "GPT-4o 권장" }), { key: "Tab" });
-    expect(modelBtn).toHaveAttribute("aria-expanded", "true");
-
-    fireEvent.keyDown(screen.getByRole("button", { name: "GPT-4o 권장" }), { key: " " });
-    expect(modelBtn).toHaveAttribute("aria-expanded", "false");
-    expect(localStorage.getItem("erdify.ai.model")).toBe("gpt-4o");
-  });
-
-  it("드롭다운 내부(프로바이더 라벨) 클릭은 토글로 전파되지 않아 드롭다운이 유지된다", async () => {
+  it("드롭다운 내부(프로바이더 라벨) 클릭 시 드롭다운이 닫히지 않는다", async () => {
     const modelBtn = await renderWithModels();
     fireEvent.click(modelBtn);
 
