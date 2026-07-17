@@ -1,0 +1,86 @@
+name: AI PR Review
+
+# PR이 올라오면 Claude가 리뷰를 수행하고 한국어 요약 코멘트 하나를 남긴다(재푸시 시 갱신).
+# 역할 분담: CodeRabbit = 라인 단위 지적, SonarCloud = 정적 분석·품질 게이트,
+# 이 워크플로우 = 로직·설계·경계 조건·모노레포 경계 위반 등 구조적 리뷰.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+# 같은 PR에 연속 푸시 시 이전 리뷰 실행을 취소한다 (ci.yml과 동일한 패턴).
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # 포크 PR 제외 — 시크릿이 노출되지 않아 실행 불가 (이 레포는 same-repo 브랜치 PR이 표준).
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          # Claude의 Bash 툴 안에서 gh CLI 인증에 사용.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Claude Pro/Max 구독 크레딧 사용. 로컬에서 `claude setup-token`으로 발급해
+          # CLAUDE_CODE_OAUTH_TOKEN 레포 시크릿으로 등록한다.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: '--allowedTools "Bash(gh:*),Read,Grep,Glob" --max-turns 30'
+          prompt: |
+            ${{ github.repository }} 저장소의 PR #${{ github.event.pull_request.number }}을 리뷰하라.
+
+            ## 저장소 컨텍스트 (ERDify)
+            ERD 편집 협업 도구. pnpm + turbo 모노레포:
+            - apps/web — React + TypeScript + vanilla-extract + Zustand (에디터·AI 챗)
+            - apps/api — NestJS (CommonJS). 권한은 반드시 서버에서 강제
+              (common/services/authorization.service.ts의 requireMember / requireEditorOrOwner)
+            - apps/cli, apps/mcp-server — npm으로 배포되는 패키지. package.json 버전 범프가
+              곧 npm 자동 퍼블리시 트리거이며, 소스에 하드코딩된 버전과 수동 동기화가 필요
+            - packages/domain — ESM 순수 코어(불변 커맨드·DDL 생성). api(CJS)는
+              DomainLoaderService의 dynamic import로만 소비하고, web/api는 domain의
+              빌드 산출물(dist)을 import한다
+            - packages/contracts — 프론트·백엔드 공유 계약 타입, packages/db — TypeORM 엔티티/마이그레이션
+            master 머지는 프로덕션 도커 배포로 직결되므로 신중히 리뷰할 것.
+
+            ## 진행 순서
+            1. 디프 확인:
+               `gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }}`
+               변경 파일 목록:
+               `gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --json files -q '.files[].path'`
+               맥락이 더 필요하면 체크아웃된 저장소에서 관련 파일을 Read/Grep으로 읽는다.
+            2. 아래 관점으로 리뷰한다. CodeRabbit(라인 단위)과 SonarCloud(스타일·복잡도·커버리지)가
+               별도로 돌고 있으므로 그들이 잡는 수준의 지적은 반복하지 말고,
+               구조적 문제에 집중한다:
+               - 로직 오류·경계 조건·동시성·놓친 엣지케이스
+               - 권한 누락: 조회/변경 엔드포인트가 서버 측 권한 검증 없이 열려 있는지,
+                 이동·복사처럼 대상이 있는 동작이 원본·대상 org 양쪽에 권한을 거는지
+               - 계약 양측 동시 변경 여부: contracts 타입, SSE 프로토콜(api StreamEvent ↔
+                 web sendAiChatStream), MCP tool zod 스키마 ↔ 핸들러
+               - 모노레포 경계 위반: api에서 domain 함수의 직접 정적 import(런타임 호출),
+                 domain 타입 변경 후 소비 앱 미반영, 순환 참조
+               - DB: 엔티티 변경에 마이그레이션이 동반되는지, 저장 데이터 하위호환
+                 (DiagramDocument 신규 필드는 optional이어야 함)
+               - CLI/MCP: 하드코딩 버전 ↔ package.json 정합, 의도치 않은 버전 범프(= npm 배포)
+               - 테스트: 새 로직에 테스트가 따라오는지 (SonarCloud 신규 코드 커버리지 80% 게이트)
+            3. 리뷰 코멘트는 PR당 하나만 유지한다. 마커로 기존 코멘트를 찾아서:
+               `gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments --jq '[.[] | select(.body | startswith("<!-- ai-pr-review -->"))][0].id'`
+               - 있으면 갱신: `gh api repos/${{ github.repository }}/issues/comments/<id> -X PATCH -f body="<리뷰>"`
+               - 없으면 생성: `gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "<리뷰>"`
+            4. 코멘트 형식 (한국어, 간결하게):
+               - 첫 줄은 반드시 `<!-- ai-pr-review -->` 마커
+               - 판정 헤더: 문제 없으면 `## ✅ AI 리뷰 — 승인 권장`, 사람이 봐야 할 문제가
+                 있으면 `## ⚠️ AI 리뷰 — 확인 필요`
+               - 변경 요약 1~2문장, 잘한 점 간단히, 발견한 문제는 파일:라인과 함께
+                 심각도 순으로. 확실하지 않은 지적은 추측임을 명시한다.
+               - 문제가 없는데 억지로 지적을 만들지 말 것.
