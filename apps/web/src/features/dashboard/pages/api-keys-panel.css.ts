@@ -1,4 +1,4 @@
-import { style, composeStyles } from "@vanilla-extract/css";
+import { style } from "@vanilla-extract/css";
 import { vars } from "@/style/tokens.css";
 
 export const page = style({
@@ -256,19 +256,19 @@ const chipBase = style({
   fontFamily: vars.font.family,
 });
 
-export const chip = composeStyles(chipBase, style({
+export const chip = style([chipBase, {
   border: `1.5px solid ${vars.color.border}`,
   color: vars.color.textSecondary,
   background: vars.color.surface,
   selectors: { "&:hover": { borderColor: vars.color.borderStrong } },
-}));
+}]);
 
-export const chipActive = composeStyles(chipBase, style({
+export const chipActive = style([chipBase, {
   border: `1.5px solid ${vars.color.primary}`,
   color: vars.color.primary,
   background: vars.color.selectedBg,
   fontWeight: "600",
-}));
+}]);
 
 export const formActions = style({
   display: "flex",
@@ -312,11 +312,11 @@ export const actionBtn = style({
   },
 });
 
-export const actionBtnDanger = composeStyles(actionBtn, style({
+export const actionBtnDanger = style([actionBtn, {
   selectors: {
     "&:hover": { background: "#fee2e2", color: vars.color.error, borderColor: "#fca5a5" },
   },
-}));
+}]);
 
 export const confirmInline = style({
   display: "flex",
