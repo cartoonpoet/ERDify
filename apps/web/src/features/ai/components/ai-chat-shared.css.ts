@@ -139,12 +139,6 @@ export const modelDropdownItem = style({
   cursor: "pointer",
   gap: vars.space["2"],
   transition: "background 0.1s",
-  // 네이티브 <button>으로 렌더링해도 기존 div와 동일하게 보이도록 UA 기본값을 초기화한다.
-  width: "100%",
-  border: "none",
-  background: "transparent",
-  font: "inherit",
-  textAlign: "left",
   selectors: {
     "&:hover": { background: vars.color.surfaceTertiary },
   },
