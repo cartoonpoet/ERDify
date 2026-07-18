@@ -1,4 +1,4 @@
-import { style, styleVariants } from "@vanilla-extract/css";
+import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
 import { vars } from "@/style/tokens.css";
 
 // 1. Container — width/minWidth differ by state → styleVariants
@@ -117,6 +117,13 @@ export const hiddenCheckboxInput = style({
   clip: "rect(0, 0, 0, 0)",
   whiteSpace: "nowrap",
   border: 0,
+});
+
+// input이 시각적으로 숨겨져 기본 포커스 링이 보이지 않으므로,
+// 키보드 포커스 시 형제인 체크박스 박스(label)에 링을 그린다.
+globalStyle(`${hiddenCheckboxInput}:focus-visible + label`, {
+  outline: `2px solid var(--schema-color, ${vars.color.primary})`,
+  outlineOffset: 2,
 });
 
 // 10. Checkbox box — 이제 input과 연결된 <label>에 적용된다. border/background는 CSS 커스텀 프로퍼티 사용.

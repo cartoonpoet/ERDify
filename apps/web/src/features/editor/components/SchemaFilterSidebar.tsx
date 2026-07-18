@@ -203,6 +203,7 @@ const FilterRow = ({
         id={checkboxId}
         type="checkbox"
         checked={checked}
+        disabled={dimmed}
         onChange={() => onClick()}
         aria-label={`${label} 표시/숨기기`}
         className={css.hiddenCheckboxInput}
