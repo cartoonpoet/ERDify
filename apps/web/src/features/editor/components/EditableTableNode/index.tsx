@@ -26,6 +26,12 @@ import * as css from "./editable-table-node.css";
 
 const EMPTY_INDEXES: DiagramIndex[] = [];
 
+const getBoxShadow = (collaboratorColor: string | undefined, selected: boolean): string => {
+  if (collaboratorColor) return `0 0 0 3px ${collaboratorColor}40`;
+  if (selected) return "0 4px 20px rgba(0, 100, 224, 0.18)";
+  return "0 1px 4px rgba(0,0,0,0.1)";
+};
+
 const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeType>) => {
   const { entity, collaboratorColor } = data;
   const applyCommand = useEditorStore((s) => s.applyCommand);
@@ -43,17 +49,14 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
   const schemaColor = entity.schema ? getSchemaColor(entity.schema, allSchemas, schemaColors) : null;
 
   const borderColor = collaboratorColor ?? (selected ? "var(--color-primary, #0064E0)" : "#d1d5db");
-  const boxShadow = collaboratorColor
-    ? `0 0 0 3px ${collaboratorColor}40`
-    : selected
-    ? "0 4px 20px rgba(0, 100, 224, 0.18)"
-    : "0 1px 4px rgba(0,0,0,0.1)";
+  const boxShadow = getBoxShadow(collaboratorColor, selected);
 
   // ─── 읽기 전용 모드 ───
   if (!canEdit) {
+    const glowClassSuffix = isFlashing ? " " + css.tableNodeGlow : "";
     return (
       <div
-        className={`${css.tableNodeWrapper} ${css.tableNodeWrapperReadOnly}${isFlashing ? ` ${css.tableNodeGlow}` : ""}`}
+        className={`${css.tableNodeWrapper} ${css.tableNodeWrapperReadOnly}${glowClassSuffix}`}
         style={{
           border: `2px solid ${borderColor}`,
           ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),
@@ -124,9 +127,10 @@ const EditableTableNodeInner = ({ data, selected }: NodeProps<EditableTableNodeT
   }
 
   // ─── 편집 모드 ───
+  const glowClassSuffixEdit = isFlashing ? " " + css.tableNodeGlow : "";
   return (
     <div
-      className={`${css.tableNodeWrapper} ${css.tableNodeWrapperEdit}${isFlashing ? ` ${css.tableNodeGlow}` : ""}`}
+      className={`${css.tableNodeWrapper} ${css.tableNodeWrapperEdit}${glowClassSuffixEdit}`}
       style={{
         border: `2px solid ${borderColor}`,
         ...(schemaColor ? { borderLeft: `5px solid ${schemaColor}` } : {}),

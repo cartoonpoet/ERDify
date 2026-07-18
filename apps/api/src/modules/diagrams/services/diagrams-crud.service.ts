@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Diagram, Organization, Project } from "@erdify/db";
@@ -98,12 +98,14 @@ export class DiagramsCrudService {
     // pg driver may return JSONB subquery columns as strings — parse defensively
     return rows.map((row) => ({
       ...row,
-      previewEntities: Array.isArray(row.previewEntities)
-        ? row.previewEntities
-        : typeof row.previewEntities === "string"
-          ? JSON.parse(row.previewEntities)
-          : [],
+      previewEntities: this.parsePreviewEntities(row.previewEntities),
     }));
+  }
+
+  private parsePreviewEntities(previewEntities: unknown): unknown[] {
+    if (Array.isArray(previewEntities)) return previewEntities;
+    if (typeof previewEntities === "string") return JSON.parse(previewEntities);
+    return [];
   }
 
   async findOne(

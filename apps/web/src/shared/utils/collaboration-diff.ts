@@ -76,7 +76,7 @@ export function applyDiff(
     const positions = draft.layout.entityPositions as Record<string, { x: number; y: number }>;
     for (const [id, pos] of Object.entries(next.layout.entityPositions)) {
       const p = prev.layout.entityPositions[id];
-      if (!p || p.x !== pos.x || p.y !== pos.y) positions[id] = pos;
+      if (p?.x !== pos.x || p?.y !== pos.y) positions[id] = pos;
     }
     for (const id of Object.keys(positions)) {
       if (!nextEntityIds.has(id)) delete positions[id];

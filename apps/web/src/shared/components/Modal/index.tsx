@@ -39,7 +39,7 @@ export const Modal = ({ open, onClose, title, maxWidth = "440px", children }: Mo
       >
         <div className={header}>
           <span className={titleStyle}>{title}</span>
-          <button className={closeBtn} onClick={onClose} aria-label="닫기">×</button>
+          <button type="button" className={closeBtn} onClick={onClose} aria-label="닫기">×</button>
         </div>
         {children}
       </dialog>

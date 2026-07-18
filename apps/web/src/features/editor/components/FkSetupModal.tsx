@@ -2,15 +2,48 @@ import { randomUUID } from "@/shared/utils/uuid";
 import { useState } from "react";
 import { Modal } from "@/shared/components/Modal";
 import { addColumn, addRelationship } from "@erdify/domain";
-import type { DiagramRelationship } from "@erdify/domain";
+import type { DiagramDocument, DiagramRelationship } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
-import type { PendingConnection } from "@/features/editor/store/useEditorStore";
+import type { PendingConnection, UnmatchedPkInput } from "@/features/editor/store/useEditorStore";
 import * as css from "./fk-setup-modal.css";
 
 const toSnake = (s: string) =>
   s.replace(/\s+/g, "_").replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
 
 type ColInput = { mode: "new"; name: string } | { mode: "existing"; colId: string };
+
+const applyUnmatchedPk = (
+  doc: DiagramDocument,
+  sourceEntityId: string,
+  inp: ColInput | undefined,
+  pk: UnmatchedPkInput,
+  fkColIds: string[],
+  pkColIds: string[]
+): DiagramDocument => {
+  if (!inp) return doc;
+
+  if (inp.mode === "new") {
+    const colId = randomUUID();
+    fkColIds.push(colId);
+    if (pk.pkColId) pkColIds.push(pk.pkColId);
+    const srcEntity = doc.entities.find((e) => e.id === sourceEntityId)!;
+    return addColumn(doc, sourceEntityId, {
+      id: colId,
+      name: inp.name.trim() || pk.suggestedName,
+      type: pk.pkColType,
+      nullable: true,
+      primaryKey: false,
+      unique: false,
+      defaultValue: null,
+      comment: null,
+      ordinal: srcEntity.columns.length,
+    });
+  }
+
+  fkColIds.push(inp.colId);
+  if (pk.pkColId) pkColIds.push(pk.pkColId);
+  return doc;
+};
 
 const Inner = ({ pending }: { pending: PendingConnection }) => {
   const document = useEditorStore((s) => s.document);
@@ -56,29 +89,7 @@ const Inner = ({ pending }: { pending: PendingConnection }) => {
       const pkColIds: string[] = pending.autoMatchedCols.map((m) => m.pkColId);
 
       pending.unmatchedPks.forEach((pk, i) => {
-        const inp = inputs[i];
-        if (!inp) return;
-
-        if (inp.mode === "new") {
-          const colId = randomUUID();
-          fkColIds.push(colId);
-          if (pk.pkColId) pkColIds.push(pk.pkColId);
-          const srcEntity = next.entities.find((e) => e.id === pending.sourceEntityId)!;
-          next = addColumn(next, pending.sourceEntityId, {
-            id: colId,
-            name: inp.name.trim() || pk.suggestedName,
-            type: pk.pkColType,
-            nullable: true,
-            primaryKey: false,
-            unique: false,
-            defaultValue: null,
-            comment: null,
-            ordinal: srcEntity.columns.length,
-          });
-        } else {
-          fkColIds.push(inp.colId);
-          if (pk.pkColId) pkColIds.push(pk.pkColId);
-        }
+        next = applyUnmatchedPk(next, pending.sourceEntityId, inputs[i], pk, fkColIds, pkColIds);
       });
 
       const srcName = toSnake(next.entities.find((e) => e.id === pending.sourceEntityId)!.name);
@@ -125,7 +136,7 @@ const Inner = ({ pending }: { pending: PendingConnection }) => {
                   checked={inp.mode === "new"}
                   onChange={() => setMode(i, "new")}
                 />
-                새 컬럼
+                {"새 컬럼"}
               </label>
               {inp.mode === "new" && (
                 <input
@@ -144,7 +155,7 @@ const Inner = ({ pending }: { pending: PendingConnection }) => {
                     checked={inp.mode === "existing"}
                     onChange={() => setMode(i, "existing")}
                   />
-                  기존 컬럼
+                  {"기존 컬럼"}
                 </label>
                 {inp.mode === "existing" && (
                   <select
@@ -166,10 +177,10 @@ const Inner = ({ pending }: { pending: PendingConnection }) => {
       })}
 
       <div className={css.footer}>
-        <button className={css.cancelBtn} onClick={() => setPendingConnection(null)}>
+        <button type="button" className={css.cancelBtn} onClick={() => setPendingConnection(null)}>
           취소
         </button>
-        <button className={css.confirmBtn} onClick={handleConfirm}>
+        <button type="button" className={css.confirmBtn} onClick={handleConfirm}>
           관계 생성
         </button>
       </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { InviteModal } from "./InviteModal";
 import * as orgApi from "@/shared/api/organizations.api";
 
@@ -49,9 +49,7 @@ describe("InviteModal", () => {
     fireEvent.change(screen.getByLabelText("이메일"), { target: { value: "user@test.com" } });
     const form = screen.getByRole("dialog").querySelector("form")!;
     fireEvent.submit(form);
-    await waitFor(() =>
-      expect(screen.getByText(/님을 초대했습니다/)).toBeInTheDocument()
-    );
+    expect(await screen.findByText(/님을 초대했습니다/)).toBeInTheDocument();
     expect(orgApi.inviteMemberByEmail).toHaveBeenCalledWith("org-1", "user@test.com", "editor");
   });
 
@@ -61,8 +59,6 @@ describe("InviteModal", () => {
     fireEvent.change(screen.getByLabelText("이메일"), { target: { value: "fail@test.com" } });
     const form = screen.getByRole("dialog").querySelector("form")!;
     fireEvent.submit(form);
-    await waitFor(() =>
-      expect(screen.getByText("이미 초대된 사용자입니다")).toBeInTheDocument()
-    );
+    expect(await screen.findByText("이미 초대된 사용자입니다")).toBeInTheDocument();
   });
 });

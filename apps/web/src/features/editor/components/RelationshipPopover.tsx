@@ -81,6 +81,8 @@ export const RelationshipPopover = ({ relationshipId, pos }: Props) => {
     }
   };
 
+  const identifyingActiveClass = ` ${css.toggleBtnActive}`;
+
   return (
     <dialog
       open
@@ -94,14 +96,16 @@ export const RelationshipPopover = ({ relationshipId, pos }: Props) => {
         <div className={css.sectionLabel}>관계 유형</div>
         <div className={css.toggleRow}>
           <button
-            className={`${css.toggleBtn}${rel.identifying ? ` ${css.toggleBtnActive}` : ""}`}
+            type="button"
+            className={`${css.toggleBtn}${rel.identifying ? identifyingActiveClass : ""}`}
             onClick={() => onToggleIdentifying(true)}
             aria-pressed={rel.identifying}
           >
             식별
           </button>
           <button
-            className={`${css.toggleBtn}${!rel.identifying ? ` ${css.toggleBtnActive}` : ""}`}
+            type="button"
+            className={`${css.toggleBtn}${!rel.identifying ? identifyingActiveClass : ""}`}
             onClick={() => onToggleIdentifying(false)}
             aria-pressed={!rel.identifying}
           >
@@ -139,7 +143,7 @@ export const RelationshipPopover = ({ relationshipId, pos }: Props) => {
         </select>
       </div>
 
-      <button onClick={onDelete} className={css.deleteBtn} aria-label="관계 삭제">관계 삭제</button>
+      <button type="button" onClick={onDelete} className={css.deleteBtn} aria-label="관계 삭제">관계 삭제</button>
     </dialog>
   );
 };

@@ -39,13 +39,18 @@ export const RelDeleteConfirmModal = () => {
             컬럼: {pendingRelDelete.fkColNames.join(", ")}
           </p>
           <div className={css.footer}>
-            <button className={css.cancelBtn} onClick={onClose}>
+            <button type="button" className={css.cancelBtn} onClick={onClose}>
               취소
             </button>
-            <button className={css.cancelBtn} onClick={onDeleteRelOnly}>
+            <button
+              type="button"
+              className={css.cancelBtn}
+              onClick={onDeleteRelOnly}
+            >
               관계만 삭제
             </button>
             <button
+              type="button"
               className={css.dangerBtn}
               onClick={onDeleteAll}
             >

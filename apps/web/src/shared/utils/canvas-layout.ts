@@ -2,18 +2,31 @@ import type { DiagramDocument } from "@erdify/domain";
 
 type MeasuredSizes = Map<string, { w: number; h: number }>;
 
-function layoutComponents(
-  components: string[][],
-  inDegree: Map<string, number>,
-  doc: DiagramDocument,
-  measuredSizes: MeasuredSizes,
-  originX: number,
-  originY: number,
-  NODE_W: number,
-  H_GAP: number,
-  V_GAP: number,
-  COMP_H_GAP: number,
-): { positions: Record<string, { x: number; y: number }>; groupW: number; groupH: number } {
+function layoutComponents(options: {
+  components: string[][];
+  inDegree: Map<string, number>;
+  doc: DiagramDocument;
+  measuredSizes: MeasuredSizes;
+  originX: number;
+  originY: number;
+  NODE_W: number;
+  H_GAP: number;
+  V_GAP: number;
+  COMP_H_GAP: number;
+}): { positions: Record<string, { x: number; y: number }>; groupW: number; groupH: number } {
+  const {
+    components,
+    inDegree,
+    doc,
+    measuredSizes,
+    originX,
+    originY,
+    NODE_W,
+    H_GAP,
+    V_GAP,
+    COMP_H_GAP,
+  } = options;
+
   const estimateH = (id: string, colCount: number) =>
     (measuredSizes.get(id)?.h ?? (38 + 28 + colCount * 30)) + V_GAP;
   const estimateW = (id: string) => (measuredSizes.get(id)?.w ?? NODE_W) + H_GAP;
@@ -31,8 +44,8 @@ function layoutComponents(
   for (const comp of sorted) {
     const sortedComp = [...comp].sort((a, b) => (inDegree.get(b) ?? 0) - (inDegree.get(a) ?? 0));
     const nCols = Math.min(4, Math.max(1, Math.ceil(Math.sqrt(sortedComp.length))));
-    const colWidths = Array<number>(nCols).fill(0);
-    const colHeights = Array<number>(nCols).fill(0);
+    const colWidths = new Array<number>(nCols).fill(0);
+    const colHeights = new Array<number>(nCols).fill(0);
 
     for (const id of sortedComp) {
       const entity = doc.entities.find((e) => e.id === id)!;
@@ -64,6 +77,12 @@ function layoutComponents(
   const groupH = allY.length ? Math.max(...allY) - originY + NODE_H_FALLBACK + V_GAP : 0;
 
   return { positions, groupW, groupH };
+}
+
+function compareSchemaKeys(a: string, b: string): number {
+  if (a === "__none__") return 1;
+  if (b === "__none__") return -1;
+  return a.localeCompare(b);
 }
 
 function bfsComponents(entityIds: string[], adj: Map<string, Set<string>>): string[][] {
@@ -99,9 +118,7 @@ export function computeAutoLayout(doc: DiagramDocument, measuredSizes: MeasuredS
     return acc.set(key, [...(acc.get(key) ?? []), e.id]);
   }, new Map());
 
-  const schemaKeys = [...schemaGroups.keys()].sort((a, b) =>
-    a === "__none__" ? 1 : b === "__none__" ? -1 : a.localeCompare(b)
-  );
+  const schemaKeys = [...schemaGroups.keys()].sort(compareSchemaKeys);
 
   const inDegree = doc.relationships.reduce<Map<string, number>>(
     (acc, r) => acc.set(r.targetEntityId, (acc.get(r.targetEntityId) ?? 0) + 1),
@@ -129,11 +146,18 @@ export function computeAutoLayout(doc: DiagramDocument, measuredSizes: MeasuredS
     }
 
     const components = bfsComponents(entityIds, adj);
-    const { positions: compPositions, groupW, groupH } = layoutComponents(
-      components, inDegree, doc, measuredSizes,
-      schemaX + SCHEMA_PAD, schemaY + SCHEMA_PAD,
-      NODE_W, H_GAP, V_GAP, COMP_H_GAP,
-    );
+    const { positions: compPositions, groupW, groupH } = layoutComponents({
+      components,
+      inDegree,
+      doc,
+      measuredSizes,
+      originX: schemaX + SCHEMA_PAD,
+      originY: schemaY + SCHEMA_PAD,
+      NODE_W,
+      H_GAP,
+      V_GAP,
+      COMP_H_GAP,
+    });
 
     Object.assign(positions, compPositions);
 

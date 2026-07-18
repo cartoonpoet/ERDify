@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { UsageLog } from "@erdify/db";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 
 @Injectable()
 export class UsageService {

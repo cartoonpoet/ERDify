@@ -1,7 +1,6 @@
 // apps/web/src/features/editor/stores/pendingSlice.ts
 import type { StateCreator } from "zustand";
-import type { PendingConnection, PendingRelDelete } from "./editor-store.types";
-import type { EditorState } from "./editor-store.types";
+import type { EditorState, PendingConnection, PendingRelDelete } from "./editor-store.types";
 
 export interface PendingSlice {
   pendingConnection: PendingConnection | null;

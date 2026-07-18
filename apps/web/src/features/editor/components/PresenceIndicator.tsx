@@ -1,6 +1,9 @@
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import * as css from "./presence-indicator.css";
 
+const getInitial = (email: string): string =>
+  (email.split("@")[0]?.[0] ?? "?").toUpperCase();
+
 export const PresenceIndicator = () => {
   const collaborators = useEditorStore((s) => s.collaborators);
   const document = useEditorStore((s) => s.document);
@@ -10,10 +13,6 @@ export const PresenceIndicator = () => {
   function getEntityName(entityId: string | null): string | null {
     if (!entityId || !document) return null;
     return document.entities.find((e) => e.id === entityId)?.name ?? null;
-  }
-
-  function getInitial(email: string): string {
-    return (email.split("@")[0]?.[0] ?? "?").toUpperCase();
   }
 
   return (

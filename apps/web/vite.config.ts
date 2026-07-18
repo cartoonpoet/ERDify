@@ -2,8 +2,8 @@ import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
 import react from "@vitejs/plugin-react";
 import wasm from "vite-plugin-wasm";
 import { defineConfig, type Plugin } from "vite";
-import path from "path";
-import { writeFileSync } from "fs";
+import path from "node:path";
+import { writeFileSync } from "node:fs";
 
 const buildTime = Date.now();
 

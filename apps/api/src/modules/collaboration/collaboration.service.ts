@@ -24,7 +24,7 @@ const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"
 
 @Injectable()
 export class CollaborationService {
-  private rooms = new Map<string, RoomState>();
+  private readonly rooms = new Map<string, RoomState>();
   private readonly persistIntervalMs: number;
 
   constructor(
@@ -121,7 +121,7 @@ export class CollaborationService {
   async persistNow(diagramId: string): Promise<void> {
     const room = this.rooms.get(diagramId);
     if (!room) return;
-    const content = JSON.parse(JSON.stringify(room.doc)) as DiagramDocument;
+    const content = structuredClone(room.doc) as DiagramDocument;
     await this.diagramRepo.update({ id: diagramId }, { content });
   }
 }

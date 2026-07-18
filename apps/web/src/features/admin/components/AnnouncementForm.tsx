@@ -105,8 +105,8 @@ export const AnnouncementForm = ({ open, initial, onClose, onSubmit }: Announcem
           </div>
         </div>
         <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: vars.color.textPrimary, cursor: "pointer" }}>
-          <input type="checkbox" checked={isUrgent} onChange={(e) => setIsUrgent(e.target.checked)} />
-          긴급 공지 (사용자가 반드시 확인해야 함, "다시 보지 않기" 비활성)
+          <input type="checkbox" checked={isUrgent} onChange={(e) => setIsUrgent(e.target.checked)} />{/*
+          */}긴급 공지 (사용자가 반드시 확인해야 함, "다시 보지 않기" 비활성)
         </label>
         {error && <div style={{ fontSize: "12px", color: vars.color.error }}>{error}</div>}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
