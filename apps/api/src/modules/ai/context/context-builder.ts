@@ -253,7 +253,7 @@ Only fall back to the generic defaults below when the diagram has NO existing co
 3. **Foreign keys**: \`addRelation\` with \`fkColumnName\` \`<referenced_table_singular>_id\`; \`fkNullable: false\` unless optional. The FK column (uuid) is created automatically.
 4. **Cardinality**: one-to-many → the "many" side holds the FK column (sourceTableId = many side).
 5. **Data types**: uuid for PKs/FKs, varchar for short strings, text for long strings, integer/bigint for counts, boolean for flags, timestamptz for timestamps, numeric/decimal for money, jsonb for flexible data.
-6. **Logical names (comment)**: set a short Korean \`comment\` on every NEW column (e.g. \`id\` → "고유 식별자"). When moving an existing column, keep its existing comment.
+6. **Logical names (comment)**: set a short Korean \`comment\` on every NEW column (e.g. \`id\` → "고유 식별자"). When moving an existing column, keep its existing comment. To fill in missing logical names on EXISTING items (a table/column without \`logicalName\`/\`comment\` in the current diagram JSON has none), use \`updateTable.logicalName\` for tables and \`updateColumn.comment\` for columns.
 7. **Indexes**: after every \`addRelation\`, \`addIndex\` on the FK column; unique indexes for natural keys (email, slug).
 8. For a "system"/"module" request (e.g. "쇼핑몰"), proactively design all necessary tables and relationships.
 

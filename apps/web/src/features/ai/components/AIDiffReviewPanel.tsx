@@ -25,6 +25,8 @@ interface TableReview {
   changeType: "added" | "removed" | "modified";
   /** 이름이 바뀐 경우 이전 이름(헤더에 old → new로 표시). */
   renamedFrom?: string;
+  /** 논리명이 바뀐 경우(이름 변경 없이도 가능) 배지에 표시. */
+  logicalNameChanged?: boolean;
   columns: ColumnReview[];
 }
 
@@ -55,7 +57,9 @@ const getTableReview = (tableMap: TableMap, tableId: string, tableName: string, 
 const applyUpdateTable = (tableMap: TableMap, change: ChangeOf<"updateTable">): void => {
   const review = getTableReview(tableMap, change.tableId, change.newName, "modified");
   review.tableName = change.newName;
-  review.renamedFrom = change.oldName;
+  // 논리명만 바뀐 경우 oldName===newName — 이때 renamedFrom을 세팅하면 배지가 '이름 변경'으로 잘못 표시된다.
+  if (change.oldName !== change.newName) review.renamedFrom = change.oldName;
+  if (change.changes?.includes("logicalName")) review.logicalNameChanged = true;
 };
 
 const applyAddTable = (tableMap: TableMap, change: ChangeOf<"addTable">, pendingDoc: DiagramDocument): void => {
@@ -185,9 +189,14 @@ const buildReview = (
 const hasColumnChanges = (table: TableReview): boolean =>
   table.columns.some((c) => c.changeType !== "unchanged");
 
-/** 테이블 카드 배지: 이름만 바뀐 경우 '이름 변경', 그 외에는 변경 종류 라벨. */
-const tableBadgeLabel = (table: TableReview): string =>
-  table.renamedFrom && !hasColumnChanges(table) ? "이름 변경" : CHANGE_LABEL[table.changeType];
+/** 테이블 카드 배지: 이름/논리명만 바뀐 경우 해당 라벨, 그 외에는 변경 종류 라벨. */
+const tableBadgeLabel = (table: TableReview): string => {
+  if (!hasColumnChanges(table)) {
+    if (table.renamedFrom) return "이름 변경";
+    if (table.logicalNameChanged) return "논리명 변경";
+  }
+  return CHANGE_LABEL[table.changeType];
+};
 
 const CHANGE_LABEL: Record<TableReview["changeType"], string> = {
   added: "추가됨",
