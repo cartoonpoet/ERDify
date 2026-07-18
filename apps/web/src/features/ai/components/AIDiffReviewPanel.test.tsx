@@ -240,6 +240,26 @@ describe("AIDiffReviewPanel", () => {
     expect(screen.getByText("contract_id")).toBeInTheDocument();
   });
 
+  it("논리명만 바뀐 updateTable(oldName===newName)은 이름 하나와 '논리명 변경' 배지를 렌더링한다", () => {
+    const col = { id: "col-1", name: "id", type: "uuid", nullable: false, primaryKey: true, unique: false, defaultValue: null, comment: null, ordinal: 0 };
+    const currentDoc = makeDoc([{ id: "t1", name: "users", logicalName: null, comment: null, color: null, columns: [col] }]);
+    const pendingDoc = makeDoc([{ id: "t1", name: "users", logicalName: "사용자", comment: null, color: null, columns: [col] }]);
+
+    render(
+      <AIDiffReviewPanel
+        diff={[{ type: "updateTable", tableId: "t1", oldName: "users", newName: "users", changes: ["logicalName"] }]}
+        pendingDocument={pendingDoc}
+        currentDocument={currentDoc}
+        onAccept={onAccept}
+        onReject={onReject}
+      />
+    );
+
+    expect(screen.getByText("users")).toBeInTheDocument();
+    expect(screen.getByText("논리명 변경")).toBeInTheDocument();
+    expect(screen.queryByText("이름 변경")).not.toBeInTheDocument();
+  });
+
   // ── catch-all (시각화되지 않은 변경은 '기타 변경'으로 노출) ────────────────────
 
   it("알려지지 않은 변경 타입도 '기타 변경' 섹션에 노출해 누락을 막는다", () => {
@@ -401,6 +421,153 @@ describe("AIDiffReviewPanel", () => {
     );
     expect(screen.queryByText("테이블")).not.toBeInTheDocument();
     expect(screen.queryByText("관계")).not.toBeInTheDocument();
+  });
+
+  // ── 문서 메타데이터 반영 (#84: diff 페이로드가 아닌 실제 문서에서 PK·타입·주석 조회) ──
+
+  it("addColumn: pending 문서에 PK·주석이 있으면 PK 배지와 주석을 표시한다", () => {
+    const pendingDoc = makeDoc([
+      {
+        id: "tbl-1",
+        name: "users",
+        logicalName: null,
+        comment: null,
+        color: null,
+        columns: [
+          { id: "col-new", name: "user_id", type: "bigint", nullable: false, primaryKey: true, unique: false, defaultValue: null, comment: "사용자 식별자", ordinal: 0 },
+        ],
+      },
+    ]);
+
+    const diff: DiffChange[] = [{
+      type: "addColumn",
+      tableId: "tbl-1",
+      tableName: "users",
+      columnId: "col-new",
+      columnName: "user_id",
+      columnType: "bigint",
+    }];
+
+    render(
+      <AIDiffReviewPanel diff={diff} pendingDocument={pendingDoc} currentDocument={null} onAccept={onAccept} onReject={onReject} />
+    );
+
+    expect(screen.getByText("PK")).toBeInTheDocument();
+    expect(screen.getByText("사용자 식별자")).toBeInTheDocument();
+    expect(screen.getByText("bigint")).toBeInTheDocument();
+  });
+
+  it("removeColumn: 삭제된 컬럼의 실제 타입·주석을 현재 문서에서 조회해 표시한다", () => {
+    const currentDoc = makeDoc([
+      {
+        id: "tbl-1",
+        name: "products",
+        logicalName: null,
+        comment: null,
+        color: null,
+        columns: [
+          { id: "col-removed", name: "legacy_code", type: "varchar(20)", nullable: true, primaryKey: false, unique: false, defaultValue: null, comment: "구 코드 체계", ordinal: 0 },
+        ],
+      },
+    ]);
+    const pendingDoc = makeDoc([
+      { id: "tbl-1", name: "products", logicalName: null, comment: null, color: null, columns: [] },
+    ]);
+
+    const diff: DiffChange[] = [{
+      type: "removeColumn",
+      tableId: "tbl-1",
+      tableName: "products",
+      columnId: "col-removed",
+      columnName: "legacy_code",
+    }];
+
+    render(
+      <AIDiffReviewPanel diff={diff} pendingDocument={pendingDoc} currentDocument={currentDoc} onAccept={onAccept} onReject={onReject} />
+    );
+
+    expect(screen.getByText("legacy_code")).toBeInTheDocument();
+    expect(screen.getByText("varchar(20)")).toBeInTheDocument();
+    expect(screen.getByText("구 코드 체계")).toBeInTheDocument();
+  });
+
+  it("updateColumn: 변경 후 메타데이터(타입·PK·주석)를 pending 문서에서 조회해 표시한다", () => {
+    const pendingDoc = makeDoc([
+      {
+        id: "tbl-1",
+        name: "orders",
+        logicalName: null,
+        comment: null,
+        color: null,
+        columns: [
+          { id: "col-1", name: "order_no", type: "bigint", nullable: false, primaryKey: true, unique: false, defaultValue: null, comment: "주문 번호", ordinal: 0 },
+        ],
+      },
+    ]);
+
+    const diff: DiffChange[] = [{
+      type: "updateColumn",
+      tableId: "tbl-1",
+      tableName: "orders",
+      columnId: "col-1",
+      columnName: "order_no",
+      changes: ["type"],
+    }];
+
+    render(
+      <AIDiffReviewPanel diff={diff} pendingDocument={pendingDoc} currentDocument={null} onAccept={onAccept} onReject={onReject} />
+    );
+
+    expect(screen.getByText("order_no")).toBeInTheDocument();
+    expect(screen.getByText("bigint")).toBeInTheDocument();
+    expect(screen.getByText("PK")).toBeInTheDocument();
+    expect(screen.getByText("주문 번호")).toBeInTheDocument();
+  });
+
+  it("두 문서 어디에도 없는 컬럼은 diff 값으로 폴백해 크래시 없이 표시한다", () => {
+    const diff: DiffChange[] = [
+      { type: "addColumn", tableId: "tbl-x", tableName: "ghost", columnId: "col-a", columnName: "added_col", columnType: "text", comment: "diff 주석" },
+      { type: "removeColumn", tableId: "tbl-x", tableName: "ghost", columnId: "col-b", columnName: "removed_col" },
+      { type: "updateColumn", tableId: "tbl-x", tableName: "ghost", columnId: "col-c", columnName: "updated_col", changes: ["type"] },
+    ];
+
+    render(
+      <AIDiffReviewPanel diff={diff} pendingDocument={makeEmptyDoc()} currentDocument={null} onAccept={onAccept} onReject={onReject} />
+    );
+
+    expect(screen.getByText("added_col")).toBeInTheDocument();
+    expect(screen.getByText("text")).toBeInTheDocument();
+    expect(screen.getByText("diff 주석")).toBeInTheDocument();
+    expect(screen.getByText("removed_col")).toBeInTheDocument();
+    expect(screen.getByText("updated_col")).toBeInTheDocument();
+  });
+
+  it("removeTable: 삭제된 테이블의 컬럼 주석도 현재 문서에서 조회해 표시한다", () => {
+    const currentDoc = makeDoc([
+      {
+        id: "tbl-old",
+        name: "legacy_table",
+        logicalName: null,
+        comment: null,
+        color: null,
+        columns: [
+          { id: "col-1", name: "id", type: "uuid", nullable: false, primaryKey: true, unique: false, defaultValue: null, comment: "기본 키", ordinal: 0 },
+        ],
+      },
+    ]);
+
+    render(
+      <AIDiffReviewPanel
+        diff={[{ type: "removeTable", tableId: "tbl-old", tableName: "legacy_table" }]}
+        pendingDocument={makeEmptyDoc()}
+        currentDocument={currentDoc}
+        onAccept={onAccept}
+        onReject={onReject}
+      />
+    );
+
+    expect(screen.getByText("기본 키")).toBeInTheDocument();
+    expect(screen.getByText("uuid")).toBeInTheDocument();
   });
 
   it("PK 컬럼에 PK 배지를 표시한다", () => {
