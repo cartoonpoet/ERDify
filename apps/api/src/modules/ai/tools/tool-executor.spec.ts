@@ -124,8 +124,40 @@ describe("ToolExecutor", () => {
   it("updateTable이 테이블 이름을 바꾸고 oldName/newName을 반환한다", async () => {
     const res = await executor.execute("updateTable", { tableId: "e1", name: "members" }, baseDoc);
     expect(res.doc.entities[0]!.name).toBe("members");
-    expect(res.changes[0]).toEqual({ type: "updateTable", tableId: "e1", oldName: "users", newName: "members" });
+    expect(res.changes[0]).toEqual({ type: "updateTable", tableId: "e1", oldName: "users", newName: "members", changes: ["name"] });
     expect(res.resultText).toContain("renamed users -> members");
+  });
+
+  it("updateTable이 logicalName만 바꾸면 이름은 유지되고 changes에 logicalName만 담긴다", async () => {
+    const res = await executor.execute("updateTable", { tableId: "e1", logicalName: "사용자" }, baseDoc);
+    expect(res.doc.entities[0]!.name).toBe("users");
+    expect(res.doc.entities[0]!.logicalName).toBe("사용자");
+    expect(res.changes[0]).toEqual({ type: "updateTable", tableId: "e1", oldName: "users", newName: "users", changes: ["logicalName"] });
+    expect(res.resultText).toContain("updated table users (logicalName)");
+    expect(res.resultText).not.toContain("->");
+  });
+
+  it("updateTable이 이름과 logicalName을 동시에 바꾸면 changes에 둘 다 담긴다", async () => {
+    const res = await executor.execute("updateTable", { tableId: "e1", name: "members", logicalName: "회원" }, baseDoc);
+    expect(res.doc.entities[0]!.name).toBe("members");
+    expect(res.doc.entities[0]!.logicalName).toBe("회원");
+    expect(res.changes[0]).toEqual({ type: "updateTable", tableId: "e1", oldName: "users", newName: "members", changes: ["name", "logicalName"] });
+  });
+
+  it("updateTable에 name도 logicalName도 없으면 변경 없이 오류 텍스트를 반환한다", async () => {
+    const res = await executor.execute("updateTable", { tableId: "e1" }, baseDoc);
+    expect(res.changes).toHaveLength(0);
+    expect(res.doc).toBe(baseDoc);
+    expect(res.resultText).toContain("Error:");
+    expect(res.resultText).toContain("no fields to change");
+    expect(res.resultText).toContain("logicalName");
+  });
+
+  it("addTable이 logicalName을 생성된 엔티티에 전달한다", async () => {
+    const res = await executor.execute("addTable", { name: "orders", logicalName: "주문" }, baseDoc);
+    const orders = res.doc.entities.find((e) => e.name === "orders")!;
+    expect(orders.logicalName).toBe("주문");
+    expect(res.changes[0]).toMatchObject({ type: "addTable", tableName: "orders" });
   });
 
   it("removeColumn이 컬럼을 제거하고 removeColumn DiffChange를 반환한다", async () => {
@@ -148,6 +180,12 @@ describe("ToolExecutor", () => {
       columnId: "c1",
       changes: ["name", "type", "nullable", "primaryKey", "unique", "defaultValue"],
     });
+  });
+
+  it("updateColumn이 comment(논리명)를 패치하고 changes에 comment를 담는다", async () => {
+    const res = await executor.execute("updateColumn", { tableId: "e1", columnId: "c1", comment: "고유 식별자" }, baseDoc);
+    expect(res.doc.entities[0]!.columns[0]!.comment).toBe("고유 식별자");
+    expect(res.changes[0]).toMatchObject({ type: "updateColumn", tableId: "e1", columnId: "c1", changes: ["comment"] });
   });
 
   it("updateColumn에 변경할 필드가 하나도 없으면 변경 없이 오류 텍스트를 반환한다", async () => {

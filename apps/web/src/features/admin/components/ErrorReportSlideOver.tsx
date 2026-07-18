@@ -124,8 +124,10 @@ export const ErrorReportSlideOver = ({ report, onClose, onResolved }: Props) => 
   };
 
   return (
-    <div className={css.slideOverBackdrop} onClick={onClose}>
-      <div className={css.slideOver} onClick={(e) => e.stopPropagation()}>
+    // 배경 클릭 dismiss 전용 오버레이 — 키보드 사용자는 아래 닫기(✕) 버튼으로 닫는다.
+    <div className={css.slideOverBackdrop} role="presentation" onClick={onClose}>
+      {/* 배경으로의 클릭 버블링만 막는 래퍼라 인터랙티브 요소가 아니다 */}
+      <div className={css.slideOver} role="presentation" onClick={(e) => e.stopPropagation()}>
         <div className={css.slideOverHeader}>
           <div className={css.slideOverTitle}>에러 상세</div>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>

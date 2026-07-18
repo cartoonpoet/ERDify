@@ -22,7 +22,12 @@ export const backdrop = style({
   animation: `${fadeIn} 150ms ease`,
 });
 
+// <dialog>로 렌더링되므로(S6819) 기본 UA 스타일(position: absolute, border, margin)을
+// 리셋한다 — 그렇지 않으면 backdrop의 flex 중앙 정렬이 깨진다.
 export const panel = style({
+  position: "static",
+  border: "none",
+  margin: 0,
   background: vars.color.surface,
   borderRadius: vars.radius.xl,
   boxShadow: vars.shadow.xl,

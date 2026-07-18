@@ -4,7 +4,7 @@ import type { AiProviderId, AiModelOption } from "./models.js";
 export type DiffChange =
   | { type: "addTable"; tableId: string; tableName: string }
   | { type: "removeTable"; tableId: string; tableName: string }
-  | { type: "updateTable"; tableId: string; oldName: string; newName: string }
+  | { type: "updateTable"; tableId: string; oldName: string; newName: string; changes?: string[] }
   | { type: "addColumn"; tableId: string; tableName: string; columnId: string; columnName: string; columnType: string; comment?: string }
   | { type: "removeColumn"; tableId: string; tableName: string; columnId: string; columnName: string }
   | { type: "updateColumn"; tableId: string; tableName: string; columnId: string; columnName: string; changes: string[] }

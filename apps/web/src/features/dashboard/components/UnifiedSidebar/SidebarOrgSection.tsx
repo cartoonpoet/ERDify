@@ -40,7 +40,7 @@ export const SidebarOrgSection = ({
         className={css.orgSelector}
         onClick={() => setDropdownOpen((v) => !v)}
         aria-expanded={dropdownOpen}
-        aria-haspopup="listbox"
+        aria-haspopup="true"
       >
         {selectedOrg ? (
           <>
@@ -58,8 +58,10 @@ export const SidebarOrgSection = ({
         <span className={css.orgChevron} aria-hidden="true">⌄</span>
       </button>
 
+      {/* 각 행이 선택 버튼 + 삭제 버튼을 함께 담고 있어 listbox/option 구조(단일 액션)와
+          맞지 않으므로 role 없이 일반 팝업으로 다룬다 — 각 버튼은 네이티브 포커스/키보드를 그대로 지원한다. */}
       {dropdownOpen && (
-        <div className={css.orgDropdown} role="listbox">
+        <div className={css.orgDropdown}>
           {orgs.map((org) => (
             <div key={org.id} className={css.orgDropdownItemWrapper}>
               <button

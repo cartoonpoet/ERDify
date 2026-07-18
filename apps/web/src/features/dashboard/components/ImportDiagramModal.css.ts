@@ -121,7 +121,12 @@ export const hintIcon = style({
   marginTop: "1px",
 });
 
+// <button>으로 렌더링되므로(S6819) 기본 버튼 크롬(배경/폭/폰트)을 리셋한다.
 export const dropzone = style({
+  width: "100%",
+  display: "block",
+  background: "none",
+  font: "inherit",
   border: `2px dashed ${vars.color.borderStrong}`,
   borderRadius: vars.radius.lg,
   padding: vars.space["6"],

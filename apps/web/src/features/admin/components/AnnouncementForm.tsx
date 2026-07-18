@@ -84,24 +84,24 @@ export const AnnouncementForm = ({ open, initial, onClose, onSubmit }: Announcem
       />
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
         <div>
-          <label style={{ fontSize: "12px", fontWeight: 600, color: vars.color.textSecondary, display: "block", marginBottom: "4px" }}>타입</label>
-          <select style={selectStyle} value={type} onChange={(e) => setType(e.target.value as AnnouncementType)}>
+          <label htmlFor="announcement-type" style={{ fontSize: "12px", fontWeight: 600, color: vars.color.textSecondary, display: "block", marginBottom: "4px" }}>타입</label>
+          <select id="announcement-type" style={selectStyle} value={type} onChange={(e) => setType(e.target.value as AnnouncementType)}>
             {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
         <Input label="제목" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="공지 제목" required />
         <div>
-          <label style={{ fontSize: "12px", fontWeight: 600, color: vars.color.textSecondary, display: "block", marginBottom: "4px" }}>내용</label>
-          <textarea style={textareaStyle} value={content} onChange={(e) => setContent(e.target.value)} placeholder="공지 내용을 입력하세요" required />
+          <label htmlFor="announcement-content" style={{ fontSize: "12px", fontWeight: 600, color: vars.color.textSecondary, display: "block", marginBottom: "4px" }}>내용</label>
+          <textarea id="announcement-content" style={textareaStyle} value={content} onChange={(e) => setContent(e.target.value)} placeholder="공지 내용을 입력하세요" required />
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <div style={{ flex: 1 }}>
-            <label style={{ fontSize: "12px", fontWeight: 600, color: vars.color.textSecondary, display: "block", marginBottom: "4px" }}>시작 일시</label>
-            <input type="datetime-local" style={{ ...selectStyle }} value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
+            <label htmlFor="announcement-starts-at" style={{ fontSize: "12px", fontWeight: 600, color: vars.color.textSecondary, display: "block", marginBottom: "4px" }}>시작 일시</label>
+            <input id="announcement-starts-at" type="datetime-local" style={{ ...selectStyle }} value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
           </div>
           <div style={{ flex: 1 }}>
-            <label style={{ fontSize: "12px", fontWeight: 600, color: vars.color.textSecondary, display: "block", marginBottom: "4px" }}>종료 일시 (선택)</label>
-            <input type="datetime-local" style={{ ...selectStyle }} value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+            <label htmlFor="announcement-ends-at" style={{ fontSize: "12px", fontWeight: 600, color: vars.color.textSecondary, display: "block", marginBottom: "4px" }}>종료 일시 (선택)</label>
+            <input id="announcement-ends-at" type="datetime-local" style={{ ...selectStyle }} value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
           </div>
         </div>
         <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: vars.color.textPrimary, cursor: "pointer" }}>

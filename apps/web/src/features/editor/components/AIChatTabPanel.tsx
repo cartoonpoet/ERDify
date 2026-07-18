@@ -31,8 +31,8 @@ export const AIChatTabPanel = ({ diagramId }: AIChatTabPanelProps) => {
     handleSelectSession, handleNewSession,
   } = useAIChatCore(diagramId, selectedModel);
 
-  const handleModelToggle = (e: React.MouseEvent) => { e.stopPropagation(); setIsModelOpen((v) => !v); };
-  const handleModelBackdropClick = (e: React.MouseEvent) => { e.stopPropagation(); setIsModelOpen(false); };
+  const handleModelToggle = () => setIsModelOpen((v) => !v);
+  const handleModelBackdropClick = () => setIsModelOpen(false);
   const handleSelectModel = (value: string) => () => { handleModelSelect(value); setIsModelOpen(false); };
 
   return (
@@ -55,26 +55,33 @@ export const AIChatTabPanel = ({ diagramId }: AIChatTabPanelProps) => {
             {models.length > 0 ? (
               <>
                 {isModelOpen && (
+                  // 배경 클릭 dismiss 전용 오버레이 — 키보드 사용자는 모델 버튼으로 토글한다.
                   <div
                     className={s.modelDropdownBackdrop}
+                    role="presentation"
                     onClick={handleModelBackdropClick}
                   />
                 )}
-                <div
-                  className={s.modelBtn}
-                  onClick={handleModelToggle}
-                >
-                  <span className={s.modelBtnDot} />
-                  <span className={s.modelBtnName}>
-                    {parseModelLabel(models.find((m) => m.value === selectedModel)?.label ?? "").name}
-                  </span>
-                  {(() => {
-                    const badge = parseModelLabel(models.find((m) => m.value === selectedModel)?.label ?? "").badge;
-                    return badge ? <span className={s.modelBtnBadge}>{badge}</span> : null;
-                  })()}
-                  <span className={s.modelBtnChevron}>{isModelOpen ? "▴" : "▾"}</span>
+                {/* 토글 버튼과 드롭다운을 형제로 담는 포지셔닝 래퍼 — 인터랙티브 요소 중첩을 피한다. */}
+                <div className={s.modelBtnWrap}>
+                  <button
+                    type="button"
+                    className={s.modelBtn}
+                    aria-expanded={isModelOpen}
+                    onClick={handleModelToggle}
+                  >
+                    <span className={s.modelBtnDot} />
+                    <span className={s.modelBtnName}>
+                      {parseModelLabel(models.find((m) => m.value === selectedModel)?.label ?? "").name}
+                    </span>
+                    {(() => {
+                      const badge = parseModelLabel(models.find((m) => m.value === selectedModel)?.label ?? "").badge;
+                      return badge ? <span className={s.modelBtnBadge}>{badge}</span> : null;
+                    })()}
+                    <span className={s.modelBtnChevron}>{isModelOpen ? "▴" : "▾"}</span>
+                  </button>
                   {isModelOpen && (
-                    <div className={s.modelDropdown} onClick={(e) => e.stopPropagation()}>
+                    <div className={s.modelDropdown}>
                       {AI_PROVIDERS.filter((p) => models.some((m) => m.provider === p)).map((p, i) => (
                         <React.Fragment key={p}>
                           {i > 0 && <hr className={s.modelDropdownDivider} />}
@@ -83,17 +90,18 @@ export const AIChatTabPanel = ({ diagramId }: AIChatTabPanelProps) => {
                             const { name, badge } = parseModelLabel(m.label);
                             const isActive = m.value === selectedModel;
                             return (
-                              <div
+                              <button
+                                type="button"
                                 key={m.value}
                                 className={[s.modelDropdownItem, isActive ? s.modelDropdownItemActive : ""].filter(Boolean).join(" ")}
                                 onClick={handleSelectModel(m.value)}
                               >
                                 <span className={s.modelDropdownItemName}>{name}</span>
-                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                   {badge && <span className={s.modelDropdownBadge[getBadgeVariant(badge)]}>{badge}</span>}
                                   {isActive && <span className={s.modelDropdownCheck}>✓</span>}
-                                </div>
-                              </div>
+                                </span>
+                              </button>
                             );
                           })}
                         </React.Fragment>
