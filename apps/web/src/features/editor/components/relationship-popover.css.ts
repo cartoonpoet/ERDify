@@ -1,7 +1,9 @@
 import { style } from "@vanilla-extract/css";
 import { vars } from "@/style/tokens.css";
 
+// <dialog>로 렌더링되므로(S6819) 기본 UA margin을 리셋한다 (position/border는 이미 명시돼 있음).
 export const popover = style({
+  margin: 0,
   position: "absolute",
   background: vars.color.surface,
   border: `1px solid ${vars.color.border}`,

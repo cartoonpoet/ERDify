@@ -29,7 +29,12 @@ export const SchemaStrip = ({ schema, onChange }: Props) => {
   const interactiveProps = interactive
     ? {
         className: "nodrag" as const,
+        role: "button" as const,
+        tabIndex: 0,
         onClick: () => setOpen((o) => !o),
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((o) => !o); }
+        },
         onMouseEnter: () => setHovered(true),
         onMouseLeave: () => setHovered(false),
       }
@@ -136,7 +141,7 @@ const SchemaDropdown = ({
   showRemove: boolean;
 }) => (
   <>
-    <div className={`nodrag nopan ${css.backdrop}`} onClick={onClose} />
+    <div className={`nodrag nopan ${css.backdrop}`} role="presentation" onClick={onClose} />
     <div className={`nodrag nopan ${css.dropdownContainer}`}>
       <div className={css.inputWrapper}>
         <input

@@ -54,10 +54,11 @@ export const ApiKeysPanel = () => {
       {showForm && (
         <div className={css.createForm}>
           <div className={css.formRow}>
-            <label className={css.label}>
+            <label className={css.label} htmlFor="api-key-name-input">
               키 이름 <span className={css.optional}>(선택)</span>
             </label>
             <input
+              id="api-key-name-input"
               className={css.input}
               type="text"
               placeholder="예: Production, Claude MCP"
@@ -67,8 +68,8 @@ export const ApiKeysPanel = () => {
             />
           </div>
           <div className={css.formRow}>
-            <label className={css.label}>만료 기간</label>
-            <div className={css.chips}>
+            <span className={css.label} id="api-key-expiry-label">만료 기간</span>
+            <div className={css.chips} role="group" aria-labelledby="api-key-expiry-label">
               {(["30d", "90d", "1y", "none", "custom"] as ExpiryPreset[]).map((p) => (
                 <button
                   key={p}

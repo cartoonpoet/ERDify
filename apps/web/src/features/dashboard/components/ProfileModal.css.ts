@@ -72,7 +72,11 @@ export const avatarInitial = style({
   lineHeight: 1,
 });
 
+// <button>으로 렌더링되므로(S6819) 기본 버튼 크롬(폭/배경/폰트)을 리셋한다.
 export const dropZone = style({
+  width: "100%",
+  background: "none",
+  font: "inherit",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",

@@ -16,7 +16,9 @@ export const backdrop = style({
   animation: `${fadeIn} 180ms ease`,
 });
 
+// <dialog>로 렌더링되므로(S6819) 기본 UA margin을 리셋한다 (position/border는 이미 명시돼 있음).
 export const panel = style({
+  margin: 0,
   position: "fixed",
   top: "50%",
   left: "50%",
