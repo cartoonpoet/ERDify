@@ -13,7 +13,8 @@ const TTL_DAYS = 90;
 
 function diffLabel(d: DiffChange): string {
   if ("tableName" in d) return d.tableName;
-  if ("newName" in d) return `${d.oldName}->${d.newName}`;
+  // 논리명만 바뀐 updateTable은 oldName===newName — "users->users" 대신 이름 하나만 표기
+  if ("newName" in d) return d.oldName === d.newName ? d.newName : `${d.oldName}->${d.newName}`;
   if ("fromTable" in d) return `${d.fromTable}->${d.toTable}`;
   return "";
 }

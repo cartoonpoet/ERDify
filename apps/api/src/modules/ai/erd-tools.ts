@@ -9,6 +9,7 @@ export const ERD_TOOLS: Tool[] = [
       type: "object",
       properties: {
         name: { type: "string", description: "Table name (snake_case recommended)" },
+        logicalName: { type: "string", description: "Korean logical name for the table (e.g. '사용자', '주문')" },
         columns: {
           type: "array",
           description: "Initial columns to add (optional)",
@@ -45,14 +46,16 @@ export const ERD_TOOLS: Tool[] = [
   },
   {
     name: "updateTable",
-    description: "Rename an existing table.",
+    description:
+      "Update an existing table: rename it (name) and/or set its Korean logical name (logicalName). Provide at least one of name/logicalName.",
     input_schema: {
       type: "object",
       properties: {
         tableId: { type: "string", description: "ID of the table" },
-        name: { type: "string", description: "New table name" },
+        name: { type: "string", description: "New table name (physical name)" },
+        logicalName: { type: "string", description: "Korean logical name for the table (e.g. '사용자', '주문')" },
       },
-      required: ["tableId", "name"],
+      required: ["tableId"],
     },
   },
   {
@@ -92,7 +95,7 @@ export const ERD_TOOLS: Tool[] = [
   {
     name: "updateColumn",
     description:
-      "Update properties of an existing column (name, type, nullable, pk, etc.).",
+      "Update properties of an existing column (name, type, nullable, pk, comment, etc.).",
     input_schema: {
       type: "object",
       properties: {
@@ -104,6 +107,7 @@ export const ERD_TOOLS: Tool[] = [
         primaryKey: { type: "boolean" },
         unique: { type: "boolean" },
         defaultValue: { type: "string" },
+        comment: { type: "string", description: "Korean logical name describing the column's purpose (e.g. '사용자 ID', '여행 제목')" },
       },
       required: ["tableId", "columnId"],
     },
@@ -125,14 +129,15 @@ export const ERD_TOOLS: Tool[] = [
         },
         fkColumnName: {
           type: "string",
-          description: "Name of the FK column to create on the source table (e.g. 'user_id'). ALWAYS provide this.",
+          description:
+            "Name of the FK column on the source table (e.g. 'user_id'). Optional — when omitted, a name is derived automatically from the target table and its primary key (e.g. users + id -> 'users_id'), matching the web editor's convention.",
         },
         fkNullable: {
           type: "boolean",
           description: "Whether the FK column is nullable. Defaults to false (required relationship).",
         },
       },
-      required: ["sourceTableId", "targetTableId", "cardinality", "fkColumnName"],
+      required: ["sourceTableId", "targetTableId", "cardinality"],
     },
   },
   {

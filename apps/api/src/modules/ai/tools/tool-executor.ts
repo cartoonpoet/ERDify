@@ -21,11 +21,23 @@ const columnNotFound = (doc: DiagramDocument, entityName: string, tableId: strin
   changes: [],
   resultText: `Error: table "${entityName}" (id ${tableId}) has no column with id "${colId}". Call getTableDetails("${tableId}") to get the valid column ids, then retry. Do not invent ids.`,
 });
+/** 웹 에디터(EditorCanvas)의 FK 이름 파생과 동일한 snake_case 변환. */
+const toSnake = (s: string): string =>
+  s.replace(/\s+/g, "_").replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
 /** 변경이 적용된 문서를 사람이 읽을 수 있는 요약과 함께 ToolResult로 포장한다. */
 const applied = (doc: DiagramDocument, changes: DiffChange[]): ToolResult => ({
   doc,
   changes,
   resultText: `Applied: ${changes.map(describeChange).join("; ")}`,
+});
+
+/**
+ * 엔티티 논리명(logicalName) 불변 갱신. packages/domain에는 엔티티 logicalName을 바꾸는
+ * 커맨드가 없어(renameEntity/updateEntityComment만 존재) 여기서 동일한 불변 패턴으로 처리한다.
+ */
+const setEntityLogicalName = (doc: DiagramDocument, entityId: string, logicalName: string): DiagramDocument => ({
+  ...doc,
+  entities: doc.entities.map((e) => (e.id === entityId ? { ...e, logicalName } : e)),
 });
 
 type DomainModule = Awaited<ReturnType<DomainLoaderService["load"]>>;
@@ -86,6 +98,8 @@ export class ToolExecutor {
     }
     const entityId = randomUUID();
     let updatedDoc = domain.addEntity(doc, { id: entityId, name });
+    const logicalName = input["logicalName"] as string | undefined;
+    if (logicalName !== undefined) updatedDoc = setEntityLogicalName(updatedDoc, entityId, logicalName);
     const changes: DiffChange[] = [{ type: "addTable", tableId: entityId, tableName: name }];
 
     const columns = input["columns"] as AddTableColumnInput[] | undefined;
@@ -121,9 +135,28 @@ export class ToolExecutor {
     const tableId = input["tableId"] as string;
     const entity = doc.entities.find((e) => e.id === tableId);
     if (!entity) return tableNotFound(doc, tableId);
-    const newName = input["name"] as string;
-    const updatedDoc = domain.renameEntity(doc, tableId, newName);
-    return applied(updatedDoc, [{ type: "updateTable", tableId, oldName: entity.name, newName }]);
+    const newName = input["name"] as string | undefined;
+    const logicalName = input["logicalName"] as string | undefined;
+    if (newName === undefined && logicalName === undefined) {
+      return {
+        doc,
+        changes: [],
+        resultText: `Error: updateTable on "${entity.name}" received no fields to change. Pass name (rename) and/or logicalName (Korean logical name), then retry.`,
+      };
+    }
+    let updatedDoc = doc;
+    const changedFields: string[] = [];
+    if (newName !== undefined) {
+      updatedDoc = domain.renameEntity(updatedDoc, tableId, newName);
+      changedFields.push("name");
+    }
+    if (logicalName !== undefined) {
+      updatedDoc = setEntityLogicalName(updatedDoc, tableId, logicalName);
+      changedFields.push("logicalName");
+    }
+    return applied(updatedDoc, [
+      { type: "updateTable", tableId, oldName: entity.name, newName: newName ?? entity.name, changes: changedFields },
+    ]);
   }
 
   private addColumn(input: Record<string, unknown>, doc: DiagramDocument, domain: DomainModule): ToolResult {
@@ -177,11 +210,12 @@ export class ToolExecutor {
     if (input["primaryKey"] !== undefined) patch.primaryKey = input["primaryKey"] as boolean;
     if (input["unique"] !== undefined) patch.unique = input["unique"] as boolean;
     if (input["defaultValue"] !== undefined) patch.defaultValue = input["defaultValue"] as string | null;
+    if (input["comment"] !== undefined) patch.comment = input["comment"] as string | null;
     if (Object.keys(patch).length === 0) {
       return {
         doc,
         changes: [],
-        resultText: `Error: updateColumn on "${entity.name}.${col.name}" received no fields to change. Pass at least one of name/type/nullable/primaryKey/unique/defaultValue, then retry.`,
+        resultText: `Error: updateColumn on "${entity.name}.${col.name}" received no fields to change. Pass at least one of name/type/nullable/primaryKey/unique/defaultValue/comment (comment = Korean logical name), then retry.`,
       };
     }
     const updatedDoc = domain.updateColumn(doc, tableId, colId, patch);
@@ -195,33 +229,49 @@ export class ToolExecutor {
     const tgt = doc.entities.find((e) => e.id === input["targetTableId"]);
     if (!tgt) return tableNotFound(doc, input["targetTableId"] as string);
 
+    // FK는 대상 테이블의 PK를 참조해야 한다. PK 타입으로 FK 컬럼을 만들고 targetColumnIds를 채워
+    // DDL 생성기가 관계를 주석으로 강등하지 않게 한다 (#83).
+    const pkColumns = tgt.columns.filter((c) => c.primaryKey);
+    if (pkColumns.length === 0) {
+      return { doc, changes: [], resultText: `Error: 대상 테이블 "${tgt.name}" (id ${tgt.id})에 primary key 컬럼이 없어 FK 관계를 만들 수 없습니다. 먼저 addColumn 또는 updateColumn으로 primary key를 지정한 뒤 addRelation을 다시 시도하세요.` };
+    }
+    if (pkColumns.length > 1) {
+      return { doc, changes: [], resultText: `Error: 대상 테이블 "${tgt.name}"의 primary key가 복합 키(${pkColumns.map((c) => c.name).join(", ")})입니다. addRelation 도구는 복합 PK 관계를 지원하지 않습니다.` };
+    }
+    const pk = pkColumns[0]!;
+
     let updatedDoc = doc;
     const changes: DiffChange[] = [];
-    const fkColumnName = input["fkColumnName"] as string | undefined;
-    let fkColId: string | undefined;
-    if (fkColumnName) {
-      const alreadyExists = src.columns.find((c) => c.name === fkColumnName);
-      if (!alreadyExists) {
-        fkColId = randomUUID();
-        const fkColumn: DiagramColumn = {
-          id: fkColId, name: fkColumnName, type: "uuid",
-          nullable: (input["fkNullable"] as boolean | undefined) ?? false,
-          primaryKey: false, unique: false, defaultValue: null, comment: null,
-          ordinal: src.columns.length,
-        };
-        updatedDoc = domain.addColumn(updatedDoc, src.id, fkColumn);
-        changes.push({ type: "addColumn", tableId: src.id, tableName: src.name, columnId: fkColId, columnName: fkColumnName, columnType: "uuid" });
-      } else {
-        fkColId = alreadyExists.id;
+    // fkColumnName이 생략되면 웹 에디터(EditorCanvas.analyzeFkMatch)와 같은 규칙으로 기본 이름을 파생한다:
+    // <snake_case 대상 테이블명>_<PK 이름> (예: users + id → "users_id"). FK 컬럼을 항상 확보해
+    // sourceColumnIds가 비지 않게 하고, DDL 생성기가 관계를 주석으로 강등하는 경로를 막는다.
+    const fkColumnName = (input["fkColumnName"] as string | undefined) || `${toSnake(tgt.name)}_${pk.name}`;
+    let fkColId: string;
+    const alreadyExists = src.columns.find((c) => c.name === fkColumnName);
+    if (!alreadyExists) {
+      fkColId = randomUUID();
+      const fkColumn: DiagramColumn = {
+        id: fkColId, name: fkColumnName, type: pk.type,
+        nullable: (input["fkNullable"] as boolean | undefined) ?? false,
+        primaryKey: false, unique: false, defaultValue: null, comment: null,
+        ordinal: src.columns.length,
+      };
+      updatedDoc = domain.addColumn(updatedDoc, src.id, fkColumn);
+      changes.push({ type: "addColumn", tableId: src.id, tableName: src.name, columnId: fkColId, columnName: fkColumnName, columnType: pk.type });
+    } else {
+      // 타입이 다른 컬럼을 조용히 FK로 연결하면 잘못된 DDL이 나온다 → 명시적 오류로 self-correction 유도.
+      if (alreadyExists.type.trim().toLowerCase() !== pk.type.trim().toLowerCase()) {
+        return { doc, changes: [], resultText: `Error: 기존 컬럼 "${src.name}.${alreadyExists.name}"의 타입(${alreadyExists.type})이 대상 PK "${tgt.name}.${pk.name}"의 타입(${pk.type})과 달라 FK로 연결할 수 없습니다. updateColumn으로 타입을 "${pk.type}"으로 맞추거나 fkColumnName에 다른 이름을 지정한 뒤 addRelation을 다시 시도하세요.` };
       }
+      fkColId = alreadyExists.id;
     }
 
     const rel: DiagramRelationship = {
       id: relId, name: "",
       sourceEntityId: input["sourceTableId"] as string,
-      sourceColumnIds: fkColId ? [fkColId] : [],
+      sourceColumnIds: [fkColId],
       targetEntityId: input["targetTableId"] as string,
-      targetColumnIds: [],
+      targetColumnIds: [pk.id],
       cardinality: input["cardinality"] as RelationshipCardinality,
       onDelete: "no-action", onUpdate: "no-action", identifying: false,
     };
@@ -266,7 +316,10 @@ function describeChange(c: DiffChange): string {
   switch (c.type) {
     case "addTable": return `added table ${c.tableName} (id: ${c.tableId})`;
     case "removeTable": return `removed table ${c.tableName}`;
-    case "updateTable": return `renamed ${c.oldName} -> ${c.newName}`;
+    case "updateTable":
+      return c.oldName === c.newName
+        ? `updated table ${c.newName} (${(c.changes ?? []).join(", ")})`
+        : `renamed ${c.oldName} -> ${c.newName}`;
     case "addColumn": return `added column ${c.tableName}.${c.columnName} (id: ${c.columnId})`;
     case "removeColumn": return `removed column ${c.tableName}.${c.columnName}`;
     case "updateColumn": return `updated column ${c.tableName}.${c.columnName}`;

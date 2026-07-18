@@ -344,4 +344,101 @@ describe("AiChatService.runChat", () => {
     expect(done.diff).toHaveLength(1);
     expect(done.pendingDocument?.entities.some((e) => e.name === "roles")).toBe(true);
   });
+
+  // "bad" 이름의 엔티티가 있으면 검증이 실패하는 도메인 — 최종 검증 안전망 테스트용
+  const badTableDomain = {
+    ...domain,
+    validateDiagram: (d: DiagramDocument) =>
+      d.entities.some((e) => e.name === "bad")
+        ? { valid: false, errors: ["INVALID_BAD_TABLE"] }
+        : { valid: true, errors: [] },
+  };
+
+  function makeSuppressionService(turns: ProviderTurn[]) {
+    const failingLoader = { load: async () => badTableDomain } as unknown as DomainLoaderService;
+    let i = 0;
+    const provider: AiProvider = {
+      streamTurn: vi.fn(async (a) => {
+        a.onText("…");
+        return turns[i++]!;
+      }),
+    };
+    const aiService = {
+      getDiagramAndOrgId: vi.fn(async () => ({ doc, orgId: "o1", diagramName: "shop" })),
+      resolveChatCredentials: vi.fn(async () => ({ apiKey: "k", provider: "anthropic", model: "m" })),
+    };
+    const history = { findRecentTurns: vi.fn(async () => []), saveUserMessage: vi.fn(async () => undefined), saveAssistantMessage: vi.fn(async () => ({ id: "m" })) };
+    const usage = { log: vi.fn(async () => undefined) };
+    const userRepo = { findOne: vi.fn(async () => ({ name: "u", email: "e" })) };
+    const orgRepo = { findOne: vi.fn(async () => ({ name: "o" })) };
+    const svc = new AiChatService(
+      aiService as never, history as never, new ToolExecutor(failingLoader), usage as never,
+      provider as never, provider as never, provider as never, userRepo as never, orgRepo as never, failingLoader,
+    );
+    return { svc, provider, history };
+  }
+
+  it("MAX_ITERATIONS까지 도구 호출로 끝나 검증 없이 종료돼도 최종 검증이 깨진 문서를 차단한다", async () => {
+    // 첫 turn이 무결성 오류(bad 테이블)를 만들고, 이후 매 turn 도구 호출만 반복해
+    // 루프가 resolveNoToolNudge(중간 검증)를 한 번도 거치지 않고 MAX_ITERATIONS로 종료되는 상황.
+    const turns: ProviderTurn[] = [
+      { text: "", toolCalls: [{ id: "t1", name: "addTable", input: { name: "bad" } }], truncated: false },
+      ...Array.from({ length: 15 }, (_, k): ProviderTurn => ({
+        text: "", toolCalls: [{ id: `r${k}`, name: "listTables", input: {} }], truncated: false,
+      })),
+    ];
+    const { svc, provider, history } = makeSuppressionService(turns);
+
+    const events: StreamEvent[] = [];
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "테이블 추가", sessionId: "s1" }, (e) => events.push(e));
+
+    expect(provider.streamTurn).toHaveBeenCalledTimes(16); // MAX_ITERATIONS 소진
+    const done = events.find((e) => e.event === "done") as Extract<StreamEvent, { event: "done" }>;
+    // 깨진 문서는 클라이언트가 적용할 수 없도록 diff/pendingDocument를 비운다
+    expect(done.diff).toBeNull();
+    expect(done.pendingDocument).toBeNull();
+    expect(done.content).toContain("무결성 검증을 통과하지 못해 적용을 보류");
+    expect(done.content).toContain("INVALID_BAD_TABLE");
+    // 저장된 대화 행도 emit된 내용과 동일하게 diff 없이 기록된다
+    expect(history.saveAssistantMessage).toHaveBeenCalledWith("u1", "d1", done.content, null, expect.anything(), "s1");
+  });
+
+  it("검증 재시도 한도가 소진되면 오류가 남은 문서를 done 이벤트에서 제외한다", async () => {
+    const turns: ProviderTurn[] = [
+      { text: "", toolCalls: [{ id: "t1", name: "addTable", input: { name: "bad" } }], truncated: false }, // 오류 생성
+      { text: "끝", toolCalls: [], truncated: false }, // 검증 실패 → 수정 요구 (시도 1)
+      { text: "끝", toolCalls: [], truncated: false }, // 검증 여전히 실패 → 수정 요구 (시도 2)
+      { text: "끝", toolCalls: [], truncated: false }, // MAX_VALIDATION_RETRIES 도달 → 종료
+    ];
+    const { svc, history } = makeSuppressionService(turns);
+
+    const events: StreamEvent[] = [];
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "테이블 추가", sessionId: "s1" }, (e) => events.push(e));
+
+    const done = events.find((e) => e.event === "done") as Extract<StreamEvent, { event: "done" }>;
+    expect(done.diff).toBeNull();
+    expect(done.pendingDocument).toBeNull();
+    // 마지막 응답 텍스트 뒤에 보류 안내가 덧붙는다
+    expect(done.content).toContain("끝");
+    expect(done.content).toContain("무결성 검증을 통과하지 못해 적용을 보류");
+    expect(history.saveAssistantMessage).toHaveBeenCalledWith("u1", "d1", done.content, null, expect.anything(), "s1");
+  });
+
+  it("검증을 통과한 정상 변경은 최종 검증에 걸리지 않고 diff/pendingDocument를 그대로 emit한다", async () => {
+    // badTableDomain에서도 "users"는 유효하므로 최종 검증이 통과해야 한다 (회귀 방지)
+    const turns: ProviderTurn[] = [
+      { text: "", toolCalls: [{ id: "t1", name: "addTable", input: { name: "users" } }], truncated: false },
+      { text: "users 테이블을 추가했어요", toolCalls: [], truncated: false },
+    ];
+    const { svc } = makeSuppressionService(turns);
+
+    const events: StreamEvent[] = [];
+    await svc.runChat({ userId: "u1", diagramId: "d1", message: "users 테이블", sessionId: "s1" }, (e) => events.push(e));
+
+    const done = events.find((e) => e.event === "done") as Extract<StreamEvent, { event: "done" }>;
+    expect(done.diff).toHaveLength(1);
+    expect(done.pendingDocument?.entities.some((e) => e.name === "users")).toBe(true);
+    expect(done.content).toBe("users 테이블을 추가했어요");
+    expect(done.content).not.toContain("보류");
+  });
 });

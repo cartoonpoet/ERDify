@@ -212,10 +212,15 @@ export const createForm = style({
   gap: vars.space["4"],
 });
 
+// 만료 기간 선택 그룹은 <fieldset>으로 렌더링되므로(S6819) 기본 UA 스타일
+// (border, padding, margin)을 리셋한다 — 그렇지 않으면 그룹 테두리가 추가로 생긴다.
 export const formRow = style({
   display: "flex",
   flexDirection: "column",
   gap: vars.space["2"],
+  border: "none",
+  padding: 0,
+  margin: 0,
 });
 
 export const label = style({
@@ -223,6 +228,12 @@ export const label = style({
   fontWeight: "600",
   color: vars.color.textPrimary,
 });
+
+// <legend>은 UA 기본 padding-inline이 있어 기존 label span과 다른 여백이 생기므로 리셋한다.
+export const legend = style([label, {
+  padding: 0,
+  margin: 0,
+}]);
 
 export const optional = style({
   fontWeight: "400",

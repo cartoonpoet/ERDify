@@ -25,6 +25,8 @@ interface TableReview {
   changeType: "added" | "removed" | "modified";
   /** 이름이 바뀐 경우 이전 이름(헤더에 old → new로 표시). */
   renamedFrom?: string;
+  /** 논리명이 바뀐 경우(이름 변경 없이도 가능) 배지에 표시. */
+  logicalNameChanged?: boolean;
   columns: ColumnReview[];
 }
 
@@ -45,6 +47,10 @@ interface RelationReview {
 type TableMap = Map<string, TableReview>;
 type ChangeOf<T extends DiffChange["type"]> = Extract<DiffChange, { type: T }>;
 
+/** 문서에서 실제 컬럼 메타데이터(PK·타입·주석)를 id로 조회한다. 없으면 undefined. */
+const findColumn = (doc: DiagramDocument | null, tableId: string, columnId: string) =>
+  doc?.entities.find((e) => e.id === tableId)?.columns.find((c) => c.id === columnId);
+
 const getTableReview = (tableMap: TableMap, tableId: string, tableName: string, changeType: TableReview["changeType"]): TableReview => {
   if (!tableMap.has(tableId)) {
     tableMap.set(tableId, { tableId, tableName, changeType, columns: [] });
@@ -55,7 +61,9 @@ const getTableReview = (tableMap: TableMap, tableId: string, tableName: string, 
 const applyUpdateTable = (tableMap: TableMap, change: ChangeOf<"updateTable">): void => {
   const review = getTableReview(tableMap, change.tableId, change.newName, "modified");
   review.tableName = change.newName;
-  review.renamedFrom = change.oldName;
+  // 논리명만 바뀐 경우 oldName===newName — 이때 renamedFrom을 세팅하면 배지가 '이름 변경'으로 잘못 표시된다.
+  if (change.oldName !== change.newName) review.renamedFrom = change.oldName;
+  if (change.changes?.includes("logicalName")) review.logicalNameChanged = true;
 };
 
 const applyAddTable = (tableMap: TableMap, change: ChangeOf<"addTable">, pendingDoc: DiagramDocument): void => {
@@ -71,31 +79,55 @@ const applyRemoveTable = (tableMap: TableMap, change: ChangeOf<"removeTable">, c
   const entity = currentDoc?.entities.find((e) => e.id === change.tableId);
   const review = getTableReview(tableMap, change.tableId, change.tableName, "removed");
   review.columns = (entity?.columns ?? []).map((c) => ({
-    id: c.id, name: c.name, type: c.type, isPk: c.primaryKey, changeType: "removed",
+    id: c.id, name: c.name, type: c.type, isPk: c.primaryKey, changeType: "removed" as const,
+    ...(c.comment ? { comment: c.comment } : {}),
   }));
 };
 
-const applyAddColumn = (tableMap: TableMap, change: ChangeOf<"addColumn">): void => {
+const applyAddColumn = (tableMap: TableMap, change: ChangeOf<"addColumn">, pendingDoc: DiagramDocument): void => {
   const review = getTableReview(tableMap, change.tableId, change.tableName, "modified");
-  if (!review.columns.some((c) => c.id === change.columnId)) {
-    review.columns.push({ id: change.columnId, name: change.columnName, type: change.columnType, isPk: false, changeType: "added", ...(change.comment ? { comment: change.comment } : {}) });
-  }
+  if (review.columns.some((c) => c.id === change.columnId)) return;
+  // 추가된 컬럼의 실제 메타데이터는 변경 후 문서에서 조회하고, 없으면 diff 페이로드로 폴백한다.
+  const col = findColumn(pendingDoc, change.tableId, change.columnId);
+  const comment = (col ? col.comment : change.comment) ?? undefined;
+  review.columns.push({
+    id: change.columnId,
+    name: col?.name ?? change.columnName,
+    type: col?.type ?? change.columnType,
+    isPk: col?.primaryKey ?? false,
+    changeType: "added",
+    ...(comment ? { comment } : {}),
+  });
 };
 
-const applyRemoveColumn = (tableMap: TableMap, change: ChangeOf<"removeColumn">): void => {
+const applyRemoveColumn = (tableMap: TableMap, change: ChangeOf<"removeColumn">, currentDoc: DiagramDocument | null): void => {
   const review = getTableReview(tableMap, change.tableId, change.tableName, "modified");
-  if (!review.columns.some((c) => c.id === change.columnId)) {
-    review.columns.push({ id: change.columnId, name: change.columnName, type: "", isPk: false, changeType: "removed" });
-  }
+  if (review.columns.some((c) => c.id === change.columnId)) return;
+  // 삭제된 컬럼은 변경 후 문서에 없으므로 변경 전(현재) 문서에서 메타데이터를 조회한다.
+  const col = findColumn(currentDoc, change.tableId, change.columnId);
+  review.columns.push({
+    id: change.columnId,
+    name: col?.name ?? change.columnName,
+    type: col?.type ?? "",
+    isPk: col?.primaryKey ?? false,
+    changeType: "removed",
+    ...(col?.comment ? { comment: col.comment } : {}),
+  });
 };
 
 const applyUpdateColumn = (tableMap: TableMap, change: ChangeOf<"updateColumn">, pendingDoc: DiagramDocument): void => {
   const review = getTableReview(tableMap, change.tableId, change.tableName, "modified");
-  const entity = pendingDoc.entities.find((e) => e.id === change.tableId);
-  const col = entity?.columns.find((c) => c.id === change.columnId);
-  if (col && !review.columns.some((c) => c.id === change.columnId)) {
-    review.columns.push({ id: col.id, name: col.name, type: col.type, isPk: col.primaryKey, changeType: "modified" });
-  }
+  if (review.columns.some((c) => c.id === change.columnId)) return;
+  // 변경 후 메타데이터는 pending 문서에서 조회한다. 문서에 없어도 diff 값으로 폴백해 변경을 누락하지 않는다.
+  const col = findColumn(pendingDoc, change.tableId, change.columnId);
+  review.columns.push({
+    id: change.columnId,
+    name: col?.name ?? change.columnName,
+    type: col?.type ?? "",
+    isPk: col?.primaryKey ?? false,
+    changeType: "modified",
+    ...(col?.comment ? { comment: col.comment } : {}),
+  });
 };
 
 const applyDiffChange = (
@@ -110,8 +142,8 @@ const applyDiffChange = (
     case "updateTable": applyUpdateTable(tableMap, change); break;
     case "addTable": applyAddTable(tableMap, change, pendingDoc); break;
     case "removeTable": applyRemoveTable(tableMap, change, currentDoc); break;
-    case "addColumn": applyAddColumn(tableMap, change); break;
-    case "removeColumn": applyRemoveColumn(tableMap, change); break;
+    case "addColumn": applyAddColumn(tableMap, change, pendingDoc); break;
+    case "removeColumn": applyRemoveColumn(tableMap, change, currentDoc); break;
     case "updateColumn": applyUpdateColumn(tableMap, change, pendingDoc); break;
     // 관계/인덱스는 buildReview에서 따로 모으므로 여기서는 통과시킨다.
     case "addRelation":
@@ -185,9 +217,14 @@ const buildReview = (
 const hasColumnChanges = (table: TableReview): boolean =>
   table.columns.some((c) => c.changeType !== "unchanged");
 
-/** 테이블 카드 배지: 이름만 바뀐 경우 '이름 변경', 그 외에는 변경 종류 라벨. */
-const tableBadgeLabel = (table: TableReview): string =>
-  table.renamedFrom && !hasColumnChanges(table) ? "이름 변경" : CHANGE_LABEL[table.changeType];
+/** 테이블 카드 배지: 이름/논리명만 바뀐 경우 해당 라벨, 그 외에는 변경 종류 라벨. */
+const tableBadgeLabel = (table: TableReview): string => {
+  if (!hasColumnChanges(table)) {
+    if (table.renamedFrom) return "이름 변경";
+    if (table.logicalNameChanged) return "논리명 변경";
+  }
+  return CHANGE_LABEL[table.changeType];
+};
 
 const CHANGE_LABEL: Record<TableReview["changeType"], string> = {
   added: "추가됨",
