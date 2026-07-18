@@ -31,6 +31,15 @@ const applied = (doc: DiagramDocument, changes: DiffChange[]): ToolResult => ({
   resultText: `Applied: ${changes.map(describeChange).join("; ")}`,
 });
 
+/**
+ * 엔티티 논리명(logicalName) 불변 갱신. packages/domain에는 엔티티 logicalName을 바꾸는
+ * 커맨드가 없어(renameEntity/updateEntityComment만 존재) 여기서 동일한 불변 패턴으로 처리한다.
+ */
+const setEntityLogicalName = (doc: DiagramDocument, entityId: string, logicalName: string): DiagramDocument => ({
+  ...doc,
+  entities: doc.entities.map((e) => (e.id === entityId ? { ...e, logicalName } : e)),
+});
+
 type DomainModule = Awaited<ReturnType<DomainLoaderService["load"]>>;
 
 interface AddTableColumnInput {
@@ -89,6 +98,8 @@ export class ToolExecutor {
     }
     const entityId = randomUUID();
     let updatedDoc = domain.addEntity(doc, { id: entityId, name });
+    const logicalName = input["logicalName"] as string | undefined;
+    if (logicalName !== undefined) updatedDoc = setEntityLogicalName(updatedDoc, entityId, logicalName);
     const changes: DiffChange[] = [{ type: "addTable", tableId: entityId, tableName: name }];
 
     const columns = input["columns"] as AddTableColumnInput[] | undefined;
@@ -124,9 +135,28 @@ export class ToolExecutor {
     const tableId = input["tableId"] as string;
     const entity = doc.entities.find((e) => e.id === tableId);
     if (!entity) return tableNotFound(doc, tableId);
-    const newName = input["name"] as string;
-    const updatedDoc = domain.renameEntity(doc, tableId, newName);
-    return applied(updatedDoc, [{ type: "updateTable", tableId, oldName: entity.name, newName }]);
+    const newName = input["name"] as string | undefined;
+    const logicalName = input["logicalName"] as string | undefined;
+    if (newName === undefined && logicalName === undefined) {
+      return {
+        doc,
+        changes: [],
+        resultText: `Error: updateTable on "${entity.name}" received no fields to change. Pass name (rename) and/or logicalName (Korean logical name), then retry.`,
+      };
+    }
+    let updatedDoc = doc;
+    const changedFields: string[] = [];
+    if (newName !== undefined) {
+      updatedDoc = domain.renameEntity(updatedDoc, tableId, newName);
+      changedFields.push("name");
+    }
+    if (logicalName !== undefined) {
+      updatedDoc = setEntityLogicalName(updatedDoc, tableId, logicalName);
+      changedFields.push("logicalName");
+    }
+    return applied(updatedDoc, [
+      { type: "updateTable", tableId, oldName: entity.name, newName: newName ?? entity.name, changes: changedFields },
+    ]);
   }
 
   private addColumn(input: Record<string, unknown>, doc: DiagramDocument, domain: DomainModule): ToolResult {
@@ -180,11 +210,12 @@ export class ToolExecutor {
     if (input["primaryKey"] !== undefined) patch.primaryKey = input["primaryKey"] as boolean;
     if (input["unique"] !== undefined) patch.unique = input["unique"] as boolean;
     if (input["defaultValue"] !== undefined) patch.defaultValue = input["defaultValue"] as string | null;
+    if (input["comment"] !== undefined) patch.comment = input["comment"] as string | null;
     if (Object.keys(patch).length === 0) {
       return {
         doc,
         changes: [],
-        resultText: `Error: updateColumn on "${entity.name}.${col.name}" received no fields to change. Pass at least one of name/type/nullable/primaryKey/unique/defaultValue, then retry.`,
+        resultText: `Error: updateColumn on "${entity.name}.${col.name}" received no fields to change. Pass at least one of name/type/nullable/primaryKey/unique/defaultValue/comment (comment = Korean logical name), then retry.`,
       };
     }
     const updatedDoc = domain.updateColumn(doc, tableId, colId, patch);
@@ -285,7 +316,10 @@ function describeChange(c: DiffChange): string {
   switch (c.type) {
     case "addTable": return `added table ${c.tableName} (id: ${c.tableId})`;
     case "removeTable": return `removed table ${c.tableName}`;
-    case "updateTable": return `renamed ${c.oldName} -> ${c.newName}`;
+    case "updateTable":
+      return c.oldName === c.newName
+        ? `updated table ${c.newName} (${(c.changes ?? []).join(", ")})`
+        : `renamed ${c.oldName} -> ${c.newName}`;
     case "addColumn": return `added column ${c.tableName}.${c.columnName} (id: ${c.columnId})`;
     case "removeColumn": return `removed column ${c.tableName}.${c.columnName}`;
     case "updateColumn": return `updated column ${c.tableName}.${c.columnName}`;
