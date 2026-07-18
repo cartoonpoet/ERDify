@@ -85,6 +85,15 @@ export const avatarWrapper = style({
   outline: "none",
 });
 
+// 아바타를 <button>으로 감싸므로(S6819) 기본 버튼 크롬을 리셋한다.
+export const avatarBtn = style({
+  border: "none",
+  background: "none",
+  padding: 0,
+  cursor: "pointer",
+  display: "flex",
+});
+
 export const dropdown = style({
   position: "absolute",
   top: "calc(100% + 8px)",

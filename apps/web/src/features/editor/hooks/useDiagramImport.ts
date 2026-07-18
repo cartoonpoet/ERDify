@@ -94,7 +94,7 @@ export const useDiagramImport = ({ projectId, onImported, onClose }: UseDiagramI
     setError(null);
   };
 
-  const handleExerdDrop = (e: DragEvent<HTMLDivElement>) => {
+  const handleExerdDrop = (e: DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsDragOver(false);
     const file = e.dataTransfer.files[0];

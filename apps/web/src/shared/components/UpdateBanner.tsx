@@ -10,7 +10,7 @@ export const UpdateBanner = () => {
   if (!hasUpdate || dismissed) return null;
 
   return (
-    <div className={banner} role="status">
+    <output className={banner}>
       <span className={message}>새 버전이 배포되었습니다.</span>
       <button className={refreshBtn} onClick={() => window.location.reload()}>
         새로고침
@@ -18,6 +18,6 @@ export const UpdateBanner = () => {
       <button className={dismissBtn} aria-label="닫기" onClick={() => setDismissed(true)}>
         <X size={14} />
       </button>
-    </div>
+    </output>
   );
 };

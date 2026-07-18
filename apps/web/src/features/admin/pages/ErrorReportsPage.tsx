@@ -81,6 +81,9 @@ export const ErrorReportsPage = () => {
 
       <div className={css.list}>
         {groups.map((report) => (
+          // 행 전체를 role="button"으로 만들면 안에 있는 실제 "해결" 버튼과
+          // 인터랙티브 요소가 중첩되어 스크린리더 포커스 순서가 꼬인다. 마우스 클릭은
+          // 행 전체에서 계속 동작하되, 키보드 접근은 이미 실제 <button>인 "해결" 버튼이 담당한다.
           <div
             key={`${report.errorType}:${report.path}`}
             className={`${css.errorRow} ${css.errorRowBorderVariants[report.errorType]}`}
