@@ -1,4 +1,4 @@
-import { useRef, memo } from "react";
+import { useRef, useId, memo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { getSchemaColor } from "@/shared/utils/schema-colors";
@@ -127,25 +127,31 @@ const ColorableFilterRow = ({
   onColorChange: (color: string) => void;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const checkboxId = useId();
 
   return (
     <div className={css.filterRowContainer}>
-      {/* 가시성 토글 체크박스 */}
-      <div
+      {/* 가시성 토글 체크박스 — 실제 input은 시각적으로 숨기고, 아래 label로 시각적 박스를 그린다.
+          <label htmlFor>로 연결되므로 클릭/키보드 토글은 브라우저 기본 동작으로 처리된다. */}
+      <input
+        id={checkboxId}
+        type="checkbox"
+        checked={checked}
+        onChange={() => onClick()}
+        aria-label={`${label} 표시/숨기기`}
+        className={css.hiddenCheckboxInput}
+      />
+      <label
+        htmlFor={checkboxId}
+        aria-hidden="true"
         className={css.filterCheckbox}
         style={{
           "--schema-color": checked ? color : "#CBD2D9",
           "--schema-bg": checked ? color : "transparent",
         } as React.CSSProperties}
-        role="checkbox"
-        aria-checked={checked}
-        aria-label={`${label} 표시/숨기기`}
-        tabIndex={0}
-        onClick={onClick}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
       >
         {checked && <span className={css.checkMark}>✓</span>}
-      </div>
+      </label>
 
       {/* 색상 변경 버튼 */}
       <button
@@ -167,14 +173,11 @@ const ColorableFilterRow = ({
         aria-label={`${label} 스키마 색상`}
       />
 
-      {/* 위 체크박스와 동일한 토글 동작 — 라벨 클릭으로도 토글 가능하되, 키보드 탐색은
-          체크박스(role="checkbox") 쪽에서 이미 제공하므로 여기서는 중복 tabstop을 만들지 않는다. */}
-      <span
-        onClick={onClick}
-        className={css.filterLabel}
-      >
+      {/* 체크박스와 동일한 input에 연결된 두 번째 label — 라벨 텍스트 클릭으로도 토글 가능하며,
+          <label>은 그 자체로 포커스를 받지 않으므로 중복 tabstop이 생기지 않는다. */}
+      <label htmlFor={checkboxId} className={css.filterLabel}>
         {label}
-      </span>
+      </label>
       <span className={css.filterCount}>{count}</span>
     </div>
   );
@@ -189,32 +192,40 @@ const FilterRow = ({
   checked: boolean;
   onClick: () => void;
   dimmed?: boolean;
-}) => (
-  <div
-    onClick={onClick}
-    role="checkbox"
-    aria-checked={checked}
-    aria-label={`${label} 표시/숨기기`}
-    tabIndex={0}
-    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
-    className={css.filterRowVariants[dimmed ? "dimmed" : "normal"]}
-  >
-    <div
-      className={css.filterRowCheckbox}
-      style={{
-        "--schema-color": checked ? color : "#CBD2D9",
-        "--schema-bg": checked ? color : "transparent",
-      } as React.CSSProperties}
-    >
-      {checked && <span className={css.checkMark}>✓</span>}
+}) => {
+  const checkboxId = useId();
+
+  return (
+    <div className={css.filterRowVariants[dimmed ? "dimmed" : "normal"]}>
+      {/* 실제 input은 시각적으로 숨기고, 아래 label 두 개(체크박스 박스·라벨 텍스트)로
+          연결하여 클릭/키보드 토글을 브라우저 기본 동작에 맡긴다. */}
+      <input
+        id={checkboxId}
+        type="checkbox"
+        checked={checked}
+        onChange={() => onClick()}
+        aria-label={`${label} 표시/숨기기`}
+        className={css.hiddenCheckboxInput}
+      />
+      <label
+        htmlFor={checkboxId}
+        aria-hidden="true"
+        className={css.filterRowCheckbox}
+        style={{
+          "--schema-color": checked ? color : "#CBD2D9",
+          "--schema-bg": checked ? color : "transparent",
+        } as React.CSSProperties}
+      >
+        {checked && <span className={css.checkMark}>✓</span>}
+      </label>
+      <div
+        className={css.filterRowDot}
+        style={{ background: color }}
+      />
+      <label htmlFor={checkboxId} className={css.filterRowLabel}>
+        {label}
+      </label>
+      <span className={css.filterRowCount}>{count}</span>
     </div>
-    <div
-      className={css.filterRowDot}
-      style={{ background: color }}
-    />
-    <span className={css.filterRowLabel}>
-      {label}
-    </span>
-    <span className={css.filterRowCount}>{count}</span>
-  </div>
-);
+  );
+};

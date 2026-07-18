@@ -105,7 +105,21 @@ export const filterRowContainer = style({
   borderRadius: 6,
 });
 
-// 10. Checkbox div — border and background use CSS custom properties
+// 9b. 실제 <input type="checkbox">는 시각적으로 숨기되(S6819), 접근성 트리와
+// 키보드 포커스는 유지한다 — display:none/visibility:hidden은 사용하지 않는다.
+export const hiddenCheckboxInput = style({
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+});
+
+// 10. Checkbox box — 이제 input과 연결된 <label>에 적용된다. border/background는 CSS 커스텀 프로퍼티 사용.
 export const filterCheckbox = style({
   vars: {
     "--schema-color": "transparent",
@@ -151,7 +165,7 @@ export const hiddenColorInput = style({
   height: 0,
 });
 
-// 14. Label span — all static (fontSize 12 is not a token, use literal)
+// 14. Label — 이제 checkbox input에 연결된 <label>에 적용된다 (fontSize 12 is not a token, use literal)
 export const filterLabel = style({
   fontSize: 12,
   color: vars.color.textPrimary,
@@ -182,7 +196,7 @@ export const filterRowVariants = styleVariants({
   dimmed: [filterRowBase, { cursor: "default", opacity: 0.45 }],
 });
 
-// 17. FilterRow checkbox — same dynamic color approach as filterCheckbox
+// 17. FilterRow checkbox box — 이제 input과 연결된 <label>에 적용된다 (same dynamic color approach as filterCheckbox)
 export const filterRowCheckbox = style({
   vars: {
     "--schema-color": "transparent",
