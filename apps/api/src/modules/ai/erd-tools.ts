@@ -129,14 +129,15 @@ export const ERD_TOOLS: Tool[] = [
         },
         fkColumnName: {
           type: "string",
-          description: "Name of the FK column to create on the source table (e.g. 'user_id'). ALWAYS provide this.",
+          description:
+            "Name of the FK column on the source table (e.g. 'user_id'). Optional — when omitted, a name is derived automatically from the target table and its primary key (e.g. users + id -> 'users_id'), matching the web editor's convention.",
         },
         fkNullable: {
           type: "boolean",
           description: "Whether the FK column is nullable. Defaults to false (required relationship).",
         },
       },
-      required: ["sourceTableId", "targetTableId", "cardinality", "fkColumnName"],
+      required: ["sourceTableId", "targetTableId", "cardinality"],
     },
   },
   {
