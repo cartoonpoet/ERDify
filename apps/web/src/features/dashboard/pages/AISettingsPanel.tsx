@@ -131,13 +131,12 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
                       .filter(Boolean)
                       .join(" ");
                     return (
-                      <div
+                      <button
                         key={m.value}
+                        type="button"
                         className={itemClass}
-                        role="button"
-                        tabIndex={isOwner ? 0 : -1}
-                        onClick={() => isOwner && toggleModel(m.value)}
-                        onKeyDown={(e) => e.key === "Enter" && isOwner && toggleModel(m.value)}
+                        disabled={!isOwner}
+                        onClick={() => toggleModel(m.value)}
                       >
                         <div className={boxClass}>
                           {isSelected && <CheckMark />}
@@ -146,7 +145,7 @@ export const AISettingsPanel = ({ orgId, isOwner }: AISettingsPanelProps) => {
                           {name}
                           {badge && <span className={css.checkboxBadge[getBadgeVariant(badge)]}>{badge}</span>}
                         </span>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

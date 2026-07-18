@@ -85,10 +85,11 @@ export const MoveOrCopyDiagramModal = ({ open, mode, diagram, onClose }: MoveOrC
         {isProjectsLoading && <p style={{ fontSize: "14px", color: "inherit" }}>프로젝트 목록을 불러오는 중...</p>}
         {!isProjectsLoading && hasCandidates && (
           <div>
-            <label style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "4px" }}>
+            <label htmlFor="move-copy-target-project" style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "4px" }}>
               대상 프로젝트
             </label>
             <select
+              id="move-copy-target-project"
               className={selectInput}
               value={selectedTargetProjectId}
               onChange={(e) => setTargetProjectId(e.target.value)}

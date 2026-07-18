@@ -1,4 +1,4 @@
-import { type MouseEvent as ReactMouseEvent, useCallback, useRef, useState } from "react";
+import { type MouseEvent as ReactMouseEvent, type KeyboardEvent as ReactKeyboardEvent, useCallback, useRef, useState } from "react";
 import { Database, Search } from "lucide-react";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { AIChatTabPanel } from "./AIChatTabPanel";
@@ -54,6 +54,14 @@ export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
     [panelWidth, setPanelWidth],
   );
 
+  const RESIZE_STEP = 20;
+
+  const handleResizeKeyDown = (e: ReactKeyboardEvent) => {
+    // 핸들이 패널 왼쪽에 있으므로, 왼쪽 화살표로 넓히고 오른쪽 화살표로 좁힌다(드래그와 동일한 방향).
+    if (e.key === "ArrowLeft") { e.preventDefault(); setPanelWidth(panelWidth + RESIZE_STEP); }
+    if (e.key === "ArrowRight") { e.preventDefault(); setPanelWidth(panelWidth - RESIZE_STEP); }
+  };
+
   const handleTabClick = (tabId: number) => {
     if (panelOpen && activeTab === tabId) {
       setPanelOpen(false);
@@ -85,6 +93,11 @@ export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
           role="separator"
           aria-orientation="vertical"
           aria-label="패널 크기 조절"
+          aria-valuenow={panelWidth}
+          aria-valuemin={240}
+          aria-valuemax={720}
+          tabIndex={0}
+          onKeyDown={handleResizeKeyDown}
         />
       )}
       <div

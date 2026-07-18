@@ -193,7 +193,13 @@ export const checkboxList = style({
   marginBottom: vars.space["2"],
 });
 
+// <button>으로 렌더링되므로(S6819) 기본 버튼 크롬(테두리/배경/폭/정렬/폰트)을 리셋한다.
 export const checkboxItem = style({
+  width: "100%",
+  border: "none",
+  background: "none",
+  font: "inherit",
+  textAlign: "left",
   display: "flex",
   alignItems: "center",
   gap: vars.space["2"],
