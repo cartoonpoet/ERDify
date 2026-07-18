@@ -17,6 +17,7 @@ vi.mock("./schema-filter-sidebar.css", () => ({
   collapsedSchemaButton: "collapsedSchemaButton",
   collapsedDot: "collapsedDot",
   filterRowContainer: "filterRowContainer",
+  hiddenCheckboxInput: "hiddenCheckboxInput",
   filterCheckbox: "filterCheckbox",
   checkMark: "checkMark",
   colorPickerDot: "colorPickerDot",
@@ -86,7 +87,7 @@ describe("SchemaFilterSidebar", () => {
   });
 
   describe("펼친 상태(expanded)", () => {
-    it("'전체' FilterRow는 role=checkbox이며 모든 스키마가 보일 때 aria-checked=true이다", () => {
+    it("'전체' FilterRow는 실제 checkbox input이며 모든 스키마가 보일 때 체크되어 있다", () => {
       setupStore({
         schemaFilterExpanded: true,
         allSchemas: ["auth", "billing"],
@@ -95,10 +96,11 @@ describe("SchemaFilterSidebar", () => {
       render(<SchemaFilterSidebar />);
 
       const allRow = screen.getByRole("checkbox", { name: "전체 표시/숨기기" });
-      expect(allRow).toHaveAttribute("aria-checked", "true");
+      expect(allRow.tagName).toBe("INPUT");
+      expect(allRow).toBeChecked();
     });
 
-    it("일부 스키마가 숨겨져 있으면 '전체' 행의 aria-checked는 false이다", () => {
+    it("일부 스키마가 숨겨져 있으면 '전체' 행의 체크박스는 체크되어 있지 않다", () => {
       setupStore({
         schemaFilterExpanded: true,
         allSchemas: ["auth", "billing"],
@@ -107,10 +109,10 @@ describe("SchemaFilterSidebar", () => {
       render(<SchemaFilterSidebar />);
 
       const allRow = screen.getByRole("checkbox", { name: "전체 표시/숨기기" });
-      expect(allRow).toHaveAttribute("aria-checked", "false");
+      expect(allRow).not.toBeChecked();
     });
 
-    it("'전체' 행에서 Enter 키를 누르면 모든 스키마의 표시 여부가 토글된다", () => {
+    it("'전체' 행 체크박스를 클릭하면 모든 스키마의 표시 여부가 토글된다", () => {
       const state = setupStore({
         schemaFilterExpanded: true,
         allSchemas: ["auth", "billing"],
@@ -119,14 +121,27 @@ describe("SchemaFilterSidebar", () => {
       render(<SchemaFilterSidebar />);
 
       const allRow = screen.getByRole("checkbox", { name: "전체 표시/숨기기" });
-      fireEvent.keyDown(allRow, { key: "Enter" });
+      fireEvent.click(allRow);
 
       expect(state.toggleSchemaVisibility).toHaveBeenCalledTimes(2);
       expect(state.toggleSchemaVisibility).toHaveBeenCalledWith("auth");
       expect(state.toggleSchemaVisibility).toHaveBeenCalledWith("billing");
     });
 
-    it("스키마 행의 체크박스는 role=checkbox이며 숨김 여부에 따라 aria-checked가 반영된다 (ColorableFilterRow)", () => {
+    it("'전체' 행의 라벨 텍스트를 클릭해도 체크박스와 동일하게 토글된다 (label 연결)", () => {
+      const state = setupStore({
+        schemaFilterExpanded: true,
+        allSchemas: ["auth", "billing"],
+        hiddenSchemas: new Set(),
+      });
+      render(<SchemaFilterSidebar />);
+
+      fireEvent.click(screen.getByText("전체"));
+
+      expect(state.toggleSchemaVisibility).toHaveBeenCalledTimes(2);
+    });
+
+    it("스키마 행의 체크박스는 실제 input이며 숨김 여부에 따라 checked가 반영된다 (ColorableFilterRow)", () => {
       setupStore({
         schemaFilterExpanded: true,
         allSchemas: ["auth", "billing"],
@@ -134,17 +149,14 @@ describe("SchemaFilterSidebar", () => {
       });
       render(<SchemaFilterSidebar />);
 
-      expect(screen.getByRole("checkbox", { name: "auth 표시/숨기기" })).toHaveAttribute(
-        "aria-checked",
-        "true"
-      );
-      expect(screen.getByRole("checkbox", { name: "billing 표시/숨기기" })).toHaveAttribute(
-        "aria-checked",
-        "false"
-      );
+      const authCheckbox = screen.getByRole("checkbox", { name: "auth 표시/숨기기" });
+      const billingCheckbox = screen.getByRole("checkbox", { name: "billing 표시/숨기기" });
+      expect(authCheckbox.tagName).toBe("INPUT");
+      expect(authCheckbox).toBeChecked();
+      expect(billingCheckbox).not.toBeChecked();
     });
 
-    it("스키마 행 체크박스에서 Space 키를 누르면 해당 스키마의 표시 여부가 토글된다 (ColorableFilterRow)", () => {
+    it("스키마 행 체크박스를 클릭하면 해당 스키마의 표시 여부가 토글된다 (ColorableFilterRow)", () => {
       const state = setupStore({
         schemaFilterExpanded: true,
         allSchemas: ["auth"],
@@ -152,7 +164,20 @@ describe("SchemaFilterSidebar", () => {
       });
       render(<SchemaFilterSidebar />);
 
-      fireEvent.keyDown(screen.getByRole("checkbox", { name: "auth 표시/숨기기" }), { key: " " });
+      fireEvent.click(screen.getByRole("checkbox", { name: "auth 표시/숨기기" }));
+
+      expect(state.toggleSchemaVisibility).toHaveBeenCalledWith("auth");
+    });
+
+    it("스키마 행의 라벨 텍스트를 클릭해도 체크박스와 동일하게 토글된다 (label 연결, 중복 tabstop 없음)", () => {
+      const state = setupStore({
+        schemaFilterExpanded: true,
+        allSchemas: ["auth"],
+        hiddenSchemas: new Set(),
+      });
+      render(<SchemaFilterSidebar />);
+
+      fireEvent.click(screen.getByText("auth"));
 
       expect(state.toggleSchemaVisibility).toHaveBeenCalledWith("auth");
     });
