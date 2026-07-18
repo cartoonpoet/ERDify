@@ -42,15 +42,17 @@ export const SeedLens = ({ entity, onCommit }: SeedLensProps) => {
       {isOpen &&
         createPortal(
           <>
-            {/* backdrop */}
-            <div className={css.backdrop} onClick={close} />
+            {/* backdrop — 클릭 dismiss 전용, 키보드 사용자는 위 useEffect의 Escape 핸들러로 닫는다 */}
+            <div className={css.backdrop} role="presentation" onClick={close} />
 
-            {/* 패널 */}
-            <div
+            {/* 패널 — open 속성만으로는 <dialog>가 비모달로 동작해 aria-modal이 암묵적으로 붙지
+                않는다(showModal() 미사용). 기존 div+role="dialog" 구조에 있던 aria-modal 신호를
+                명시적으로 되살린다. */}
+            <dialog
+              open
               className={css.panel}
-              role="dialog"
-              aria-modal
               aria-label={`${entity.name} 시드 데이터 편집`}
+              aria-modal="true"
             >
               {/* 헤더 */}
               <div className={css.panelHeader}>
@@ -85,7 +87,7 @@ export const SeedLens = ({ entity, onCommit }: SeedLensProps) => {
                   완료
                 </button>
               </div>
-            </div>
+            </dialog>
           </>,
           document.body,
         )}

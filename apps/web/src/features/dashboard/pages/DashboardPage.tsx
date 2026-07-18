@@ -15,7 +15,7 @@ import { useAvatarMenu } from "@/features/dashboard/hooks/useAvatarMenu";
 import { AnnouncementModal } from "@/features/announcement/components/AnnouncementModal";
 import { useAnnouncements } from "@/features/announcement/hooks/useAnnouncements";
 import {
-  shell, topbar, brand, brandLogo, topbarSpacer, topbarSearch, avatar, avatarImg,
+  shell, topbar, brand, brandLogo, topbarSpacer, topbarSearch, avatar, avatarImg, avatarBtn,
   avatarWrapper, dropdown, dropdownHeader, dropdownEmail,
   dropdownItem, dropdownItemDanger, body,
 } from "./dashboard-page.css";
@@ -75,19 +75,20 @@ export const DashboardPage = () => {
         />
 
         <div className={avatarWrapper} tabIndex={-1} onBlur={handleBlur}>
-          {me?.avatarUrl ? (
-            <img
-              src={me.avatarUrl}
-              alt="프로필"
-              className={avatarImg}
-              onClick={toggleMenu}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-            />
-          ) : (
-            <div className={avatar} onClick={toggleMenu}>
-              {getInitial(me?.name ?? me?.email)}
-            </div>
-          )}
+          <button type="button" className={avatarBtn} onClick={toggleMenu} aria-label="프로필 메뉴" aria-expanded={menuOpen}>
+            {me?.avatarUrl ? (
+              <img
+                src={me.avatarUrl}
+                alt=""
+                className={avatarImg}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              />
+            ) : (
+              <span className={avatar}>
+                {getInitial(me?.name ?? me?.email)}
+              </span>
+            )}
+          </button>
 
           {menuOpen && (
             <div className={dropdown}>

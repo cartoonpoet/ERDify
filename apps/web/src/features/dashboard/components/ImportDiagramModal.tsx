@@ -156,20 +156,18 @@ export const ImportDiagramModal = ({ open, projectId, onClose, onImported }: Imp
         </>
       ) : (
         <>
-          <div
+          <button
+            type="button"
             className={[dropzone, isDragOver ? dropzoneActive : ""].join(" ")}
             onDrop={handleExerdDrop}
             onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
             onDragLeave={() => setIsDragOver(false)}
             onClick={() => fileInputRef.current?.click()}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
           >
             <div className={dropzoneIcon}>📂</div>
             <div>클릭하거나 파일을 여기에 끌어다 놓으세요</div>
             <div className={dropzoneHint}>.exerd, .xml 파일 지원</div>
-          </div>
+          </button>
           <input
             ref={fileInputRef}
             type="file"

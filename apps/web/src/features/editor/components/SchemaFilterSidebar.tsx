@@ -137,19 +137,26 @@ const ColorableFilterRow = ({
           "--schema-color": checked ? color : "#CBD2D9",
           "--schema-bg": checked ? color : "transparent",
         } as React.CSSProperties}
+        role="checkbox"
+        aria-checked={checked}
+        aria-label={`${label} 표시/숨기기`}
+        tabIndex={0}
         onClick={onClick}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
       >
         {checked && <span className={css.checkMark}>✓</span>}
       </div>
 
       {/* 색상 변경 버튼 */}
-      <div
+      <button
+        type="button"
         title="색상 변경"
         onClick={() => inputRef.current?.click()}
         className={css.colorPickerDot}
         style={{ background: color }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.outlineColor = color; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.outlineColor = "transparent"; }}
+        aria-label={`${label} 색상 변경`}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.outlineColor = color; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.outlineColor = "transparent"; }}
       />
       <input
         ref={inputRef}
@@ -160,6 +167,8 @@ const ColorableFilterRow = ({
         aria-label={`${label} 스키마 색상`}
       />
 
+      {/* 위 체크박스와 동일한 토글 동작 — 라벨 클릭으로도 토글 가능하되, 키보드 탐색은
+          체크박스(role="checkbox") 쪽에서 이미 제공하므로 여기서는 중복 tabstop을 만들지 않는다. */}
       <span
         onClick={onClick}
         className={css.filterLabel}
@@ -183,6 +192,11 @@ const FilterRow = ({
 }) => (
   <div
     onClick={onClick}
+    role="checkbox"
+    aria-checked={checked}
+    aria-label={`${label} 표시/숨기기`}
+    tabIndex={0}
+    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
     className={css.filterRowVariants[dimmed ? "dimmed" : "normal"]}
   >
     <div

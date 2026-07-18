@@ -12,7 +12,7 @@ interface ModalProps extends PropsWithChildren {
 export const Modal = ({ open, onClose, title, maxWidth = "440px", children }: ModalProps) => {
   if (!open) return null;
 
-  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+  function onKeyDown(e: KeyboardEvent<HTMLDialogElement>) {
     if (e.key === "Escape") onClose();
   }
 
@@ -20,15 +20,18 @@ export const Modal = ({ open, onClose, title, maxWidth = "440px", children }: Mo
     <div
       className={backdrop}
       data-testid="modal-backdrop"
+      role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
+      {/* open 속성만으로는 <dialog>가 비모달로 동작해 aria-modal이 암묵적으로 붙지 않는다(showModal() 미사용) —
+          기존 div+role="dialog" 구조에 있던 aria-modal 신호를 명시적으로 되살린다. */}
+      <dialog
+        open
         className={panel}
-        role="dialog"
-        aria-modal
         aria-label={title}
+        aria-modal="true"
         tabIndex={-1}
         autoFocus
         onKeyDown={onKeyDown}
@@ -39,7 +42,7 @@ export const Modal = ({ open, onClose, title, maxWidth = "440px", children }: Mo
           <button className={closeBtn} onClick={onClose} aria-label="닫기">×</button>
         </div>
         {children}
-      </div>
+      </dialog>
     </div>,
     document.body
   );

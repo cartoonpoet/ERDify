@@ -47,10 +47,11 @@ export const CreateDiagramModal = ({ open, onClose, onCreated, projectId }: Crea
           autoFocus
         />
         <div>
-          <label style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "4px" }}>
+          <label htmlFor="create-diagram-dialect" style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "4px" }}>
             데이터베이스 종류
           </label>
           <select
+            id="create-diagram-dialect"
             className={selectInput}
             value={dialect}
             onChange={(e) => setDialect(e.target.value as "postgresql" | "mysql" | "mariadb")}
