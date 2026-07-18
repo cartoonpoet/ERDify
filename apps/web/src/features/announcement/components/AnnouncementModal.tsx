@@ -35,7 +35,9 @@ export const AnnouncementModal = ({ unread, onMarkSeen, onMarkAllSeen }: Announc
 
   return createPortal(
     <div className={css.backdrop}>
-      <dialog open className={css.panel} aria-label="공지사항">
+      {/* open 속성만으로는 <dialog>가 비모달로 동작해 aria-modal이 암묵적으로 붙지 않는다(showModal() 미사용) —
+          기존 div+role="dialog" 구조에 있던 aria-modal 신호를 명시적으로 되살린다. */}
+      <dialog open className={css.panel} aria-label="공지사항" aria-modal="true">
         <div className={css.header}>
           <span className={css.headerTitle}>공지사항</span>
           {isMultiple && (

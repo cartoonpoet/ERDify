@@ -105,23 +105,19 @@ describe("ErrorReportsPage", () => {
 
   it("행 클릭 시 ErrorReportSlideOver가 열린다", async () => {
     wrap();
-    const row = (await screen.findByText("/api/orgs")).closest('[role="button"]') as HTMLElement;
-    fireEvent.click(row);
+    fireEvent.click(await screen.findByText("/api/orgs"));
     expect(await screen.findByText("에러 상세")).toBeInTheDocument();
   });
 
-  it("행에서 Enter 키를 누르면 ErrorReportSlideOver가 열린다 (키보드 접근성)", async () => {
+  it("행 자체는 인터랙티브 role을 갖지 않는다 (내부 '해결' 버튼과의 중첩 방지)", async () => {
     wrap();
-    const row = (await screen.findByText("/api/orgs")).closest('[role="button"]') as HTMLElement;
-    expect(row).toHaveAttribute("tabIndex", "0");
-    fireEvent.keyDown(row, { key: "Enter" });
-    expect(await screen.findByText("에러 상세")).toBeInTheDocument();
+    await screen.findByText("/api/orgs");
+    expect(screen.queryByRole("button", { name: /\/api\/orgs/ })).not.toBeInTheDocument();
   });
 
-  it("행에서 Space 키를 누르면 ErrorReportSlideOver가 열린다 (키보드 접근성)", async () => {
+  it("'해결 →' 버튼 클릭 시 ErrorReportSlideOver가 열린다 (키보드 사용자의 접근 경로)", async () => {
     wrap();
-    const row = (await screen.findByText("/api/orgs")).closest('[role="button"]') as HTMLElement;
-    fireEvent.keyDown(row, { key: " " });
+    fireEvent.click(await screen.findByRole("button", { name: "해결 →" }));
     expect(await screen.findByText("에러 상세")).toBeInTheDocument();
   });
 
