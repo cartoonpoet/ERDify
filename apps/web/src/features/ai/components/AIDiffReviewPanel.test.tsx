@@ -240,6 +240,26 @@ describe("AIDiffReviewPanel", () => {
     expect(screen.getByText("contract_id")).toBeInTheDocument();
   });
 
+  it("논리명만 바뀐 updateTable(oldName===newName)은 이름 하나와 '논리명 변경' 배지를 렌더링한다", () => {
+    const col = { id: "col-1", name: "id", type: "uuid", nullable: false, primaryKey: true, unique: false, defaultValue: null, comment: null, ordinal: 0 };
+    const currentDoc = makeDoc([{ id: "t1", name: "users", logicalName: null, comment: null, color: null, columns: [col] }]);
+    const pendingDoc = makeDoc([{ id: "t1", name: "users", logicalName: "사용자", comment: null, color: null, columns: [col] }]);
+
+    render(
+      <AIDiffReviewPanel
+        diff={[{ type: "updateTable", tableId: "t1", oldName: "users", newName: "users", changes: ["logicalName"] }]}
+        pendingDocument={pendingDoc}
+        currentDocument={currentDoc}
+        onAccept={onAccept}
+        onReject={onReject}
+      />
+    );
+
+    expect(screen.getByText("users")).toBeInTheDocument();
+    expect(screen.getByText("논리명 변경")).toBeInTheDocument();
+    expect(screen.queryByText("이름 변경")).not.toBeInTheDocument();
+  });
+
   // ── catch-all (시각화되지 않은 변경은 '기타 변경'으로 노출) ────────────────────
 
   it("알려지지 않은 변경 타입도 '기타 변경' 섹션에 노출해 누락을 막는다", () => {
