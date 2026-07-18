@@ -4,6 +4,8 @@ import { FkSetupModal } from "./FkSetupModal";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import type { EditorState } from "@/features/editor/store/useEditorStore";
 import type { PendingConnection } from "@/features/editor/store/useEditorStore";
+import { addColumn, addRelationship } from "@erdify/domain";
+import type { DiagramDocument } from "@erdify/domain";
 
 vi.mock("@/features/editor/store/useEditorStore");
 vi.mock("@erdify/domain", () => ({
@@ -210,5 +212,92 @@ describe("FkSetupModal", () => {
     render(<FkSetupModal />);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.queryByText("취소")).not.toBeInTheDocument();
+  });
+
+  it("취소/관계 생성 버튼은 type=button 속성을 가진다", () => {
+    setupStoreMock(samplePending);
+    render(<FkSetupModal />);
+    expect(screen.getByText("취소")).toHaveAttribute("type", "button");
+    expect(screen.getByText("관계 생성")).toHaveAttribute("type", "button");
+  });
+
+  it('새 컬럼 모드로 "관계 생성" 클릭 시 addColumn과 addRelationship이 올바른 인자로 호출된다', () => {
+    setupStoreMock(samplePending);
+    mockApplyCommand.mockImplementation((updater: (doc: DiagramDocument) => DiagramDocument) =>
+      updater(sampleDocument as unknown as DiagramDocument)
+    );
+    render(<FkSetupModal />);
+
+    fireEvent.click(screen.getByText("관계 생성"));
+
+    expect(addColumn).toHaveBeenCalledWith(
+      sampleDocument,
+      "src-entity",
+      expect.objectContaining({
+        id: "test-uuid",
+        name: "users_id",
+        type: "int",
+        nullable: true,
+        primaryKey: false,
+        unique: false,
+        defaultValue: null,
+        comment: null,
+        ordinal: 1,
+      })
+    );
+    expect(addRelationship).toHaveBeenCalledWith(
+      sampleDocument,
+      expect.objectContaining({
+        id: "test-uuid",
+        name: "fk_orders_users",
+        sourceEntityId: "src-entity",
+        sourceColumnIds: ["test-uuid"],
+        targetEntityId: "tgt-entity",
+        targetColumnIds: ["pk-col-1"],
+        cardinality: "many-to-one",
+        onDelete: "no-action",
+        onUpdate: "no-action",
+        identifying: false,
+      })
+    );
+  });
+
+  it('새 컬럼 이름을 공백으로 지운 뒤 "관계 생성" 클릭 시 suggestedName으로 대체된다', () => {
+    setupStoreMock(samplePending);
+    mockApplyCommand.mockImplementation((updater: (doc: DiagramDocument) => DiagramDocument) =>
+      updater(sampleDocument as unknown as DiagramDocument)
+    );
+    render(<FkSetupModal />);
+
+    const nameInput = screen.getByDisplayValue("users_id");
+    fireEvent.change(nameInput, { target: { value: "   " } });
+    fireEvent.click(screen.getByText("관계 생성"));
+
+    expect(addColumn).toHaveBeenCalledWith(
+      sampleDocument,
+      "src-entity",
+      expect.objectContaining({ name: "users_id" })
+    );
+  });
+
+  it('"기존 컬럼" 선택 후 "관계 생성" 클릭 시 addColumn은 호출되지 않고 선택한 컬럼 id가 관계에 사용된다', () => {
+    setupStoreMock(samplePending);
+    mockApplyCommand.mockImplementation((updater: (doc: DiagramDocument) => DiagramDocument) =>
+      updater(sampleDocument as unknown as DiagramDocument)
+    );
+    render(<FkSetupModal />);
+
+    fireEvent.click(screen.getByLabelText("기존 컬럼"));
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "existing-col-1" } });
+    fireEvent.click(screen.getByText("관계 생성"));
+
+    expect(addColumn).not.toHaveBeenCalled();
+    expect(addRelationship).toHaveBeenCalledWith(
+      sampleDocument,
+      expect.objectContaining({
+        sourceColumnIds: ["existing-col-1"],
+        targetColumnIds: ["pk-col-1"],
+      })
+    );
   });
 });

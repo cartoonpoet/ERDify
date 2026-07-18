@@ -112,4 +112,26 @@ describe("MemberManagementPage", () => {
       vi.restoreAllMocks();
     });
   });
+
+  describe("대기 중인 초대", () => {
+    it("초대의 역할 뱃지를 렌더링한다", async () => {
+      vi.mocked(useInvites).mockReturnValue({
+        invites: [
+          {
+            id: "inv-1",
+            email: "c@b.com",
+            role: "viewer",
+            expiresAt: new Date(Date.now() + 86400000).toISOString(),
+            createdAt: "",
+          },
+        ],
+        isLoading: false,
+        invite: vi.fn(),
+        cancelInvite: vi.fn(),
+        isInviting: false,
+      });
+      wrap();
+      expect(await screen.findByText("Viewer · 대기중")).toBeInTheDocument();
+    });
+  });
 });
