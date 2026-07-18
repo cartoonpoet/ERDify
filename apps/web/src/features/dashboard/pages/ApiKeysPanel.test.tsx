@@ -24,6 +24,7 @@ vi.mock("./api-keys-panel.css", () => ({
   createForm: "",
   formRow: "",
   label: "",
+  legend: "",
   optional: "",
   input: "",
   chips: "",
@@ -138,6 +139,21 @@ it("toggles form open and closed with create button", async () => {
 
   fireEvent.click(screen.getByText("취소"));
   expect(screen.queryByText("키 생성")).not.toBeInTheDocument();
+});
+
+it("만료 기간 선택 그룹은 fieldset/legend로 렌더링되며 legend가 그룹명을 표시한다", async () => {
+  vi.mocked(apiKeysApi.listApiKeys).mockResolvedValue([]);
+  wrap();
+
+  await waitFor(() => {
+    expect(screen.getByText("API 키가 없습니다. 새 키를 생성해주세요.")).toBeInTheDocument();
+  });
+
+  fireEvent.click(screen.getByText("+ 새 키 생성"));
+
+  const group = screen.getByRole("group", { name: "만료 기간" });
+  expect(group.tagName).toBe("FIELDSET");
+  expect(screen.getByText("만료 기간").tagName).toBe("LEGEND");
 });
 
 it("submitting create form calls createApiKey and shows reveal box", async () => {

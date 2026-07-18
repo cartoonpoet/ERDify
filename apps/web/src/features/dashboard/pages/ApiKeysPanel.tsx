@@ -164,9 +164,9 @@ export const ApiKeysPanel = () => {
               maxLength={100}
             />
           </div>
-          <div className={css.formRow}>
-            <span className={css.label} id="api-key-expiry-label">만료 기간</span>
-            <div className={css.chips} role="group" aria-labelledby="api-key-expiry-label">
+          <fieldset className={css.formRow}>
+            <legend className={css.legend}>만료 기간</legend>
+            <div className={css.chips}>
               {(["30d", "90d", "1y", "none", "custom"] as ExpiryPreset[]).map((p) => (
                 <button
                   key={p}
@@ -188,7 +188,7 @@ export const ApiKeysPanel = () => {
                 style={{ marginTop: 8 }}
               />
             )}
-          </div>
+          </fieldset>
           <div className={css.formActions}>
             <button
               type="button"
