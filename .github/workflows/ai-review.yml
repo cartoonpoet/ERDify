@@ -44,7 +44,7 @@ jobs:
           # api는 스티키 코멘트에 필요한 두 엔드포인트만: 코멘트 목록 조회(--paginate)와 코멘트 PATCH.
           # Write는 리뷰 본문을 파일로 만들기 위해 필요 — 본문을 인라인 인자로 넘기면
           # 명령 치환($()·heredoc) 규칙에 걸려 거부되므로 --body-file/-F body=@file을 쓴다.
-          claude_args: '--allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api --paginate repos/cartoonpoet/ERDify/issues/*/comments*),Bash(gh api repos/cartoonpoet/ERDify/issues/*/comments*),Bash(gh api repos/cartoonpoet/ERDify/issues/comments/*),Read,Write,Grep,Glob" --max-turns 30'
+          claude_args: '--allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api --paginate repos/cartoonpoet/ERDify/issues/*/comments*),Bash(gh api repos/cartoonpoet/ERDify/issues/comments/*),Read,Write,Grep,Glob" --max-turns 30'
           prompt: |
             ${{ github.repository }} 저장소의 PR #${{ github.event.pull_request.number }}을 리뷰하라.
 
