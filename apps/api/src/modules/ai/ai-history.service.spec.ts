@@ -40,6 +40,22 @@ describe("rowsToConvMessages()", () => {
     ]);
   });
 
+  it("논리명만 바뀐 updateTable(oldName===newName)은 이름 하나로만 요약한다", () => {
+    const rows = [
+      {
+        role: "assistant",
+        content: "논리명을 채웠어요",
+        diff: [
+          { type: "updateTable", tableId: "e1", oldName: "users", newName: "users", changes: ["logicalName"] },
+        ],
+      },
+    ] as unknown as AiConversation[];
+
+    expect(rowsToConvMessages(rows)).toEqual([
+      { role: "assistant", text: "논리명을 채웠어요\n[적용한 변경: users]", toolCalls: [] },
+    ]);
+  });
+
   it("diff가 null이거나 비어 있으면 요약 없이 본문만 복원한다", () => {
     const rows = [
       { role: "assistant", content: "안녕하세요", diff: null },
