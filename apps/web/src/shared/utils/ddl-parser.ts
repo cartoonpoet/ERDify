@@ -3,17 +3,17 @@ import { randomUUID as uuid } from "./uuid";
 
 function stripIdentifierQuotes(s: string): string {
   if (s.startsWith("[") && s.endsWith("]")) return s.slice(1, -1);
-  return s.replace(/^["'`]|["'`]$/g, "");
+  return s.replaceAll(/^["'`]|["'`]$/g, "");
 }
 
 // Parses "schema"."table", [schema].[table], schema.table, or just table
 function parseSchemaAndTable(raw: string): { schema: string | null; name: string } {
   const trimmed = raw.trim();
   // MSSQL: [schema].[table]
-  const mssql = trimmed.match(/^\[([^\]]*)\]\.\[([^\]]*)\]$/);
+  const mssql = /^\[([^\]]*)\]\.\[([^\]]*)\]$/.exec(trimmed);
   if (mssql) return { schema: mssql[1]! || null, name: mssql[2]! };
   // Quoted: "schema"."table" or `schema`.`table`
-  const quoted = trimmed.match(/^(["'`])([^"'`]+)\1\.(["'`])([^"'`]+)\3$/);
+  const quoted = /^(["'`])([^"'`]+)\1\.(["'`])([^"'`]+)\3$/.exec(trimmed);
   if (quoted) return { schema: quoted[2]! || null, name: quoted[4]! };
   // Dotted unquoted: schema.table
   const dot = trimmed.lastIndexOf(".");
@@ -27,9 +27,9 @@ function parseSchemaAndTable(raw: string): { schema: string | null; name: string
 }
 
 function removeComments(sql: string): string {
-  sql = sql.replace(/\uFEFF/g, ""); // strip UTF-8 BOM (appears when multiple files are joined)
-  sql = sql.replace(/\/\*[\s\S]*?\*\//g, "");
-  sql = sql.replace(/--[^\n]*/g, "");
+  sql = sql.replaceAll(/\uFEFF/g, ""); // strip UTF-8 BOM (appears when multiple files are joined)
+  sql = sql.replaceAll(/\/\*[\s\S]*?\*\//g, "");
+  sql = sql.replaceAll(/--[^\n]*/g, "");
   return sql;
 }
 
@@ -146,7 +146,7 @@ function parseColumnType(tokens: string[]): string {
   let i = 0;
   while (i < tokens.length) {
     const tok = tokens[i]!;
-    const upper = tok.toUpperCase().replace(/[^A-Z_]/g, "");
+    const upper = tok.toUpperCase().replaceAll(/[^A-Z_]/g, "");
     if (CONSTRAINT_KEYWORDS.has(upper) && typeParts.length > 0) break;
     typeParts.push(tok);
     i++;
@@ -170,7 +170,7 @@ function parseColumnType(tokens: string[]): string {
 function findKeywordOutsideQuotes(s: string, keyword: string): number {
   const lower = s.toLowerCase();
   const kw = keyword.toLowerCase();
-  const isWordChar = (c: string | undefined) => !!c && /[A-Za-z0-9_]/.test(c);
+  const isWordChar = (c: string | undefined) => !!c && /\w/.test(c);
   let quoteChar: string | null = null;
   let i = 0;
   while (i < s.length) {
@@ -258,7 +258,7 @@ function parseReferentialAction(word: string): DiagramRelationship["onDelete"] {
 }
 
 function parseFkClause(line: string, constraintName: string): ParsedFK | null {
-  const fkMatch = line.match(/FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+([^\s(]+)\s*\(([^)]+)\)(.*)/i);
+  const fkMatch = /FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+([^\s(]+)\s*\(([^)]+)\)(.*)/i.exec(line);
   if (!fkMatch) return null;
 
   const srcCols = (fkMatch[1] ?? "").split(",").map((c) => stripIdentifierQuotes(c.trim()));
@@ -269,9 +269,9 @@ function parseFkClause(line: string, constraintName: string): ParsedFK | null {
   let onDelete: DiagramRelationship["onDelete"] = "no-action";
   let onUpdate: DiagramRelationship["onUpdate"] = "no-action";
 
-  const delMatch = rest.match(/ON\s+DELETE\s+(\w+)(?:\s+(\w+))?/i);
+  const delMatch = /ON\s+DELETE\s+(\w+)(?:\s+(\w+))?/i.exec(rest);
   if (delMatch) onDelete = parseReferentialAction(delMatch[1] ?? "");
-  const updMatch = rest.match(/ON\s+UPDATE\s+(\w+)(?:\s+(\w+))?/i);
+  const updMatch = /ON\s+UPDATE\s+(\w+)(?:\s+(\w+))?/i.exec(rest);
   if (updMatch) onUpdate = parseReferentialAction(updMatch[1] ?? "");
 
   return { constraintName, srcCols, tgtSchema, tgtTable, tgtCols, onDelete, onUpdate };
@@ -290,7 +290,7 @@ function parseCreateTable(stmt: string): {
   fks: ParsedFK[];
   uniqueConstraints: ParsedUniqueConstraint[];
 } | null {
-  const tableMatch = stmt.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([^\s(]+)\s*\(/i);
+  const tableMatch = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([^\s(]+)\s*\(/i.exec(stmt);
   if (!tableMatch) return null;
 
   const { schema, name: tableName } = parseSchemaAndTable(tableMatch[1] ?? "");
@@ -304,7 +304,7 @@ function parseCreateTable(stmt: string): {
 
   const afterBody = stmt.slice(bodyEnd + 1);
   const tableCommentValue = extractQuotedCommentValue(afterBody);
-  const tableComment = tableCommentValue?.replace(/^['"]|['"]$/g, "") ?? null;
+  const tableComment = tableCommentValue?.replaceAll(/^['"]|['"]$/g, "") ?? null;
 
   const columns: Omit<DiagramColumn, "id">[] = [];
   const fks: ParsedFK[] = [];
@@ -337,7 +337,7 @@ function parseCreateTable(stmt: string): {
     }
 
     if (/^CONSTRAINT\s+/i.test(line)) {
-      const cnMatch = line.match(/^CONSTRAINT\s+([^\s]+)\s+(.*)/i);
+      const cnMatch = /^CONSTRAINT\s+([^\s]+)\s+(.*)/i.exec(line);
       if (!cnMatch) continue;
       const cname = stripIdentifierQuotes(cnMatch[1] ?? "");
       const rest = cnMatch[2] ?? "";
@@ -390,7 +390,7 @@ function parseCreateTable(stmt: string): {
       while (j < line.length && /\s/.test(line[j]!)) j++;
       COMMENT_VALUE_RE.lastIndex = j;
       const commentMatch = COMMENT_VALUE_RE.exec(line);
-      if (commentMatch) comment = commentMatch[0].replace(/^['"]|['"]$/g, "");
+      if (commentMatch) comment = commentMatch[0].replaceAll(/^['"]|['"]$/g, "");
     }
 
     const autoIncrement = /\bAUTO_?INCREMENT\b/i.test(upperLine);
@@ -407,7 +407,7 @@ function parseCreateTable(stmt: string): {
 }
 
 function parseAlterTableFk(stmt: string): { schema: string | null; tableName: string; fk: ParsedFK } | null {
-  const match = stmt.match(/ALTER\s+TABLE\s+([^\s]+)\s+ADD\s+(?:CONSTRAINT\s+([^\s]+)\s+)?FOREIGN\s+KEY(.*)/i);
+  const match = /ALTER\s+TABLE\s+([^\s]+)\s+ADD\s+(?:CONSTRAINT\s+([^\s]+)\s+)?FOREIGN\s+KEY(.*)/i.exec(stmt);
   if (!match) return null;
 
   const { schema, name: tableName } = parseSchemaAndTable(match[1] ?? "");
@@ -573,7 +573,7 @@ export function applySeedInserts(sql: string, existingEntities: DiagramEntity[])
 
   for (const stmt of statements) {
     if (!/^INSERT\s+INTO\s+/i.test(stmt)) continue;
-    const m = stmt.match(/^INSERT\s+INTO\s+([^\s(]+)\s*\(([^)]+)\)\s+VALUES\s+([\s\S]+)$/i);
+    const m = /^INSERT\s+INTO\s+([^\s(]+)\s*\(([^)]+)\)\s+VALUES\s+([\s\S]+)$/i.exec(stmt);
     if (!m) continue;
 
     const { schema, name: tableName } = parseSchemaAndTable((m[1] ?? "").trim());
@@ -672,24 +672,24 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
         pendingFks.push({ sourceSchema: result.schema, sourceTable: result.tableName, fk: result.fk });
       }
     } else if (/^COMMENT\s+ON\s+TABLE\s+/i.test(stmt)) {
-      const m = stmt.match(/COMMENT\s+ON\s+TABLE\s+([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
+      const m = /COMMENT\s+ON\s+TABLE\s+([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i.exec(stmt);
       if (m) {
         const { schema, name } = parseSchemaAndTable(m[1] ?? "");
         const entity = lookupEntity(schema, name);
-        if (entity) entity.comment = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
+        if (entity) entity.comment = (m[2] ?? "").replaceAll(/^['"]|['"]$/g, "");
       }
     } else if (/^COMMENT\s+ON\s+COLUMN\s+/i.test(stmt)) {
       // Handles: schema.table.column or table.column
-      const m = stmt.match(/COMMENT\s+ON\s+COLUMN\s+([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i);
+      const m = /COMMENT\s+ON\s+COLUMN\s+([^\s]+)\s+IS\s+('(?:[^']|\\')*'|"(?:[^"]|\\")*")/i.exec(stmt);
       if (m) {
         const parts = (m[1] ?? "").split(".");
-        const colName = stripIdentifierQuotes(parts[parts.length - 1]!);
+        const colName = stripIdentifierQuotes(parts.at(-1)!);
         const tableRef = parts.slice(0, -1).join(".");
         const { schema, name: tableName } = parseSchemaAndTable(tableRef);
         const entity = lookupEntity(schema, tableName);
         if (entity) {
           const col = entity.columns.find((c) => c.name === colName);
-          if (col) col.comment = (m[2] ?? "").replace(/^['"]|['"]$/g, "");
+          if (col) col.comment = (m[2] ?? "").replaceAll(/^['"]|['"]$/g, "");
         }
       }
     } else if (/^INSERT\s+INTO\s+/i.test(stmt)) {
@@ -699,7 +699,7 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
 
   // Second pass: populate seed data from INSERT statements
   for (const stmt of pendingInserts) {
-    const m = stmt.match(/^INSERT\s+INTO\s+([^\s(]+)\s*\(([^)]+)\)\s+VALUES\s+([\s\S]+)$/i);
+    const m = /^INSERT\s+INTO\s+([^\s(]+)\s*\(([^)]+)\)\s+VALUES\s+([\s\S]+)$/i.exec(stmt);
     if (!m) continue;
 
     const { schema, name: tableName } = parseSchemaAndTable((m[1] ?? "").trim());
@@ -765,7 +765,7 @@ export function parseDdl(sql: string, dialect: DiagramDialect): DiagramDocument 
   const N_COLS = Math.min(8, Math.max(4, Math.ceil(Math.sqrt(entities.length))));
   const estimateH = (e: { columns: unknown[] }) => 38 + 28 + e.columns.length * 30 + ROW_GAP;
 
-  const colHeights = Array<number>(N_COLS).fill(0);
+  const colHeights = new Array<number>(N_COLS).fill(0);
   const entityPositions: Record<string, { x: number; y: number }> = {};
   entities.forEach((e) => {
     const minH = Math.min(...colHeights);

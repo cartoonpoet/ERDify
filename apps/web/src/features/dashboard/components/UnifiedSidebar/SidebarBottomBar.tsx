@@ -22,6 +22,7 @@ export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps
   return (
     <div className={css.sidebarBottomBar}>
       <button
+        type="button"
         className={[css.projRow, apiKeysActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
         onClick={handleApiKeysNav}
         aria-pressed={apiKeysActive}
@@ -32,6 +33,7 @@ export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps
       </button>
       {isAdmin && (
         <button
+          type="button"
           className={[css.projRow, errorReportsActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
           onClick={() => navigate("/admin/error-reports")}
           aria-pressed={errorReportsActive}
@@ -43,6 +45,7 @@ export const SidebarBottomBar = ({ orgId, apiKeysActive }: SidebarBottomBarProps
       )}
       {isAdmin && (
         <button
+          type="button"
           className={[css.projRow, announcementsActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
           onClick={() => navigate("/admin/announcements")}
           aria-pressed={announcementsActive}

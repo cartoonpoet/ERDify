@@ -71,10 +71,10 @@ export const AnnouncementAiPanel = ({ type, currentTitle, currentContent, onAppl
           onChange={(e) => setKeywords(e.target.value)}
           disabled={loading}
         />
-        <button style={btnStyle} onClick={handleGenerate} disabled={loading || !keywords.trim()}>
+        <button type="button" style={btnStyle} onClick={handleGenerate} disabled={loading || !keywords.trim()}>
           {loading ? "생성 중..." : "AI로 작성"}
         </button>
-        <button style={refineBtnStyle} onClick={handleRefine} disabled={loading || (!currentTitle && !currentContent)}>
+        <button type="button" style={refineBtnStyle} onClick={handleRefine} disabled={loading || (!currentTitle && !currentContent)}>
           AI로 다듬기
         </button>
       </div>
@@ -83,8 +83,8 @@ export const AnnouncementAiPanel = ({ type, currentTitle, currentContent, onAppl
           <div style={{ fontSize: "12px", fontWeight: 600, color: vars.color.textPrimary }}>{preview.title}</div>
           <div style={{ fontSize: "12px", color: vars.color.textSecondary, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{preview.content}</div>
           <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
-            <button style={btnStyle} onClick={handleApplyPreview}>적용</button>
-            <button style={{ ...btnStyle, background: "transparent", color: vars.color.textSecondary, border: `1px solid ${vars.color.border}` }} onClick={() => setPreview(null)}>취소</button>
+            <button type="button" style={btnStyle} onClick={handleApplyPreview}>적용</button>
+            <button type="button" style={{ ...btnStyle, background: "transparent", color: vars.color.textSecondary, border: `1px solid ${vars.color.border}` }} onClick={() => setPreview(null)}>취소</button>
           </div>
         </div>
       )}

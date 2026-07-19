@@ -92,8 +92,8 @@ export const AnnouncementsAdminPage = () => {
             </div>
             <div style={{ fontSize: "12px", color: "var(--text-2)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{a.content}</div>
             <div className={css.cardActions}>
-              <button className={css.actionBtn} onClick={handleEditAnnouncement(a)}>수정</button>
-              <button className={css.deleteBtn} onClick={handleDeleteAnnouncement(a)}>삭제</button>
+              <button type="button" className={css.actionBtn} onClick={handleEditAnnouncement(a)}>수정</button>
+              <button type="button" className={css.deleteBtn} onClick={handleDeleteAnnouncement(a)}>삭제</button>
             </div>
           </div>
         ))}

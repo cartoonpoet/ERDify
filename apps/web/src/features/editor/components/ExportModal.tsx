@@ -28,11 +28,10 @@ export const ExportModal = ({ open, diagramName, onClose }: ExportModalProps) =>
   const document = useEditorStore((s) => s.document);
 
   const currentTab = TABS.find((t) => t.value === tab)!;
-  const code = document
-    ? tab === "sql"
-      ? generateDdl(document)
-      : generateOrm(document, tab as OrmType)
-    : "";
+  let code = "";
+  if (document) {
+    code = tab === "sql" ? generateDdl(document) : generateOrm(document, tab as OrmType);
+  }
   const filename =
     tab === "sql"
       ? `${diagramName.replace(/[^a-zA-Z0-9_-]/g, "_")}.sql`
@@ -61,16 +60,19 @@ export const ExportModal = ({ open, diagramName, onClose }: ExportModalProps) =>
     <Modal open={open} onClose={onClose} title="내보내기" maxWidth="680px">
       <div className={css.body}>
         <div className={css.tabRow}>
-          {TABS.map((t) => (
-            <button
-              key={t.value}
-              className={`${css.tab}${tab === t.value ? ` ${css.tabActive}` : ""}`}
-              onClick={handleTabSelect(t.value)}
-              type="button"
-            >
-              {t.label}
-            </button>
-          ))}
+          {TABS.map((t) => {
+            const activeClass = tab === t.value ? ` ${css.tabActive}` : "";
+            return (
+              <button
+                key={t.value}
+                className={`${css.tab}${activeClass}`}
+                onClick={handleTabSelect(t.value)}
+                type="button"
+              >
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         {code ? (

@@ -14,6 +14,7 @@ export const Button = ({
   ...props
 }: ButtonProps) => (
   <button
+    type="button"
     className={[buttonRecipe({ variant, size }), className].filter(Boolean).join(" ")}
     {...props}
   >

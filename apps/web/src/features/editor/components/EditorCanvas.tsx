@@ -321,7 +321,7 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
     const srcId = connection.source;
     const tgtId = connection.target;
 
-    if (!document.entities.find((e) => e.id === srcId) || !document.entities.find((e) => e.id === tgtId)) return;
+    if (!document.entities.some((e) => e.id === srcId) || !document.entities.some((e) => e.id === tgtId)) return;
 
     const { autoMatchedCols, unmatchedPks } = analyzeFkMatch(document, srcId, tgtId);
 

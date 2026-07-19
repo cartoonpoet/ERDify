@@ -3,7 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, IsNull } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { ErrorReport, type ErrorType } from "@erdify/db";
 import { EmailService } from "../email/email.service";
 

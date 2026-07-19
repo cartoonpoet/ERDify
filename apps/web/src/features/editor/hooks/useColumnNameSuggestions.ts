@@ -18,6 +18,10 @@ export const useColumnNameSuggestions = (
   const [activeSuggestionColId, setActiveSuggestionColId] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const applyMatchingSuggestions = (results: ColumnSuggestion[], value: string) => {
+    setSuggestions(results.filter((r) => r.name.toLowerCase().startsWith(value.toLowerCase())));
+  };
+
   const handleColumnNameInput = (columnId: string, value: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.length < 2) {
@@ -28,9 +32,7 @@ export const useColumnNameSuggestions = (
     debounceRef.current = setTimeout(() => {
       const existingColumnNames = entityColumns.map((c) => c.name);
       suggestColumns(entityName, existingColumnNames)
-        .then((results) => {
-          setSuggestions(results.filter((r) => r.name.toLowerCase().startsWith(value.toLowerCase())));
-        })
+        .then((results) => applyMatchingSuggestions(results, value))
         .catch(() => setSuggestions([]));
     }, 300);
   };

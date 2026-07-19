@@ -118,25 +118,15 @@ describe("EmailService", () => {
       );
     });
 
-    it("includes inviteUrl in html body", async () => {
+    it.each([
+      ["inviteUrl", "https://erdify.app/invite/abc123"],
+      ["inviterName", "Alice"],
+      ["role", "editor"],
+    ])("includes %s in html body", async (_field, expected) => {
       await service.sendInviteEmail(defaultParams);
 
       const callArgs = mockSendMail.mock.calls[0]![0] as { html: string };
-      expect(callArgs.html).toContain("https://erdify.app/invite/abc123");
-    });
-
-    it("includes inviterName in html body", async () => {
-      await service.sendInviteEmail(defaultParams);
-
-      const callArgs = mockSendMail.mock.calls[0]![0] as { html: string };
-      expect(callArgs.html).toContain("Alice");
-    });
-
-    it("includes role in html body", async () => {
-      await service.sendInviteEmail(defaultParams);
-
-      const callArgs = mockSendMail.mock.calls[0]![0] as { html: string };
-      expect(callArgs.html).toContain("editor");
+      expect(callArgs.html).toContain(expected);
     });
 
     it("logs error and returns false when sendMail fails", async () => {

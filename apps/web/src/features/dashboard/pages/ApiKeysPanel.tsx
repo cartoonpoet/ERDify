@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useApiKeys } from "@/features/dashboard/hooks/useApiKeys";
 import type { ExpiryPreset } from "@/features/dashboard/hooks/useApiKeys";
 import type { ApiKeyItem } from "@/shared/api/api-keys.api";
@@ -39,6 +40,102 @@ export const ApiKeysPanel = () => {
     handleCreate, handleCopyKey, handleDismissReveal,
   } = useApiKeys();
 
+  const renderKeyActions = (key: ApiKeyItem) => {
+    if (confirmRegenerateId === key.id) {
+      return (
+        <div className={css.confirmInline}>
+          <span>기존 키가 즉시 무효화됩니다.</span>
+          <button
+            type="button"
+            className={css.confirmYesBtn}
+            onClick={() => regenerateMutation.mutate(key.id)}
+            disabled={regenerateMutation.isPending}
+          >
+            확인
+          </button>
+          <button
+            type="button"
+            className={css.confirmNoBtn}
+            onClick={() => setConfirmRegenerateId(null)}
+          >
+            취소
+          </button>
+        </div>
+      );
+    }
+    if (confirmRevokeId === key.id) {
+      return (
+        <div className={css.confirmInline}>
+          <span>정말 폐기할까요?</span>
+          <button
+            type="button"
+            className={css.confirmYesBtn}
+            onClick={() => revokeMutation.mutate(key.id)}
+            disabled={revokeMutation.isPending}
+          >
+            확인
+          </button>
+          <button
+            type="button"
+            className={css.confirmNoBtn}
+            onClick={() => setConfirmRevokeId(null)}
+          >
+            취소
+          </button>
+        </div>
+      );
+    }
+    return (
+      <>
+        <button
+          type="button"
+          className={css.actionBtn}
+          onClick={() => setConfirmRegenerateId(key.id)}
+        >
+          재생성
+        </button>
+        <button
+          type="button"
+          className={css.actionBtnDanger}
+          onClick={() => setConfirmRevokeId(key.id)}
+        >
+          폐기
+        </button>
+      </>
+    );
+  };
+
+  let keysSection: ReactNode;
+  if (isLoading) {
+    keysSection = <p className={css.emptyMsg}>불러오는 중...</p>;
+  } else if (keys.length === 0) {
+    keysSection = <p className={css.emptyMsg}>API 키가 없습니다. 새 키를 생성해주세요.</p>;
+  } else {
+    keysSection = (
+      <>
+        <div className={css.sectionLabel}>활성 키 · {keys.length}개</div>
+        <div className={css.card}>
+          {keys.map((key) => {
+            const status = getStatusInfo(key);
+            return (
+              <div key={key.id} className={css.keyRow}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className={css.keyName}>{key.name ?? "—"}</div>
+                  <div className={css.keyMeta}>
+                    <span>{key.prefix}••••</span>
+                    <span> · {key.expiresAt ? new Date(key.expiresAt).toLocaleDateString("ko-KR") : "무기한"}</span>
+                  </div>
+                </div>
+                <span className={BADGE_CLASS[status.type]}>{status.label}</span>
+                {renderKeyActions(key)}
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+
   return (
     <div className={css.page}>
       <div className={css.header}>
@@ -46,7 +143,7 @@ export const ApiKeysPanel = () => {
           <h1 className={css.title}>API 키</h1>
           <p className={css.subtitle}>HTTP 헤더 X-Api-Key 또는 Bearer 토큰으로 사용</p>
         </div>
-        <button className={css.createBtn} onClick={() => setShowForm((v) => !v)}>
+        <button type="button" className={css.createBtn} onClick={() => setShowForm((v) => !v)}>
           {showForm ? "취소" : "+ 새 키 생성"}
         </button>
       </div>
@@ -73,6 +170,7 @@ export const ApiKeysPanel = () => {
               {(["30d", "90d", "1y", "none", "custom"] as ExpiryPreset[]).map((p) => (
                 <button
                   key={p}
+                  type="button"
                   className={formExpiry === p ? css.chipActive : css.chip}
                   onClick={() => setFormExpiry(p)}
                 >
@@ -93,6 +191,7 @@ export const ApiKeysPanel = () => {
           </fieldset>
           <div className={css.formActions}>
             <button
+              type="button"
               className={css.createSubmitBtn}
               onClick={handleCreate}
               disabled={createMutation.isPending || (formExpiry === "custom" && !formCustomDate)}
@@ -112,92 +211,18 @@ export const ApiKeysPanel = () => {
           <div className={css.keyBox}>
             <span className={css.keyText}>{revealedKey.apiKey}</span>
             <button
+              type="button"
               className={copied ? css.copySuccessBtn : css.copyBtn}
               onClick={handleCopyKey}
             >
               {copied ? "복사됨 ✓" : "복사"}
             </button>
           </div>
-          <button className={css.confirmBtn} onClick={handleDismissReveal}>확인</button>
+          <button type="button" className={css.confirmBtn} onClick={handleDismissReveal}>확인</button>
         </div>
       )}
 
-      {isLoading ? (
-        <p className={css.emptyMsg}>불러오는 중...</p>
-      ) : keys.length === 0 ? (
-        <p className={css.emptyMsg}>API 키가 없습니다. 새 키를 생성해주세요.</p>
-      ) : (
-        <>
-          <div className={css.sectionLabel}>활성 키 · {keys.length}개</div>
-          <div className={css.card}>
-            {keys.map((key) => {
-              const status = getStatusInfo(key);
-              return (
-                <div key={key.id} className={css.keyRow}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className={css.keyName}>{key.name ?? "—"}</div>
-                    <div className={css.keyMeta}>
-                      <span>{key.prefix}••••</span>
-                      <span> · {key.expiresAt ? new Date(key.expiresAt).toLocaleDateString("ko-KR") : "무기한"}</span>
-                    </div>
-                  </div>
-                  <span className={BADGE_CLASS[status.type]}>{status.label}</span>
-                  {confirmRegenerateId === key.id ? (
-                    <div className={css.confirmInline}>
-                      <span>기존 키가 즉시 무효화됩니다.</span>
-                      <button
-                        className={css.confirmYesBtn}
-                        onClick={() => regenerateMutation.mutate(key.id)}
-                        disabled={regenerateMutation.isPending}
-                      >
-                        확인
-                      </button>
-                      <button
-                        className={css.confirmNoBtn}
-                        onClick={() => setConfirmRegenerateId(null)}
-                      >
-                        취소
-                      </button>
-                    </div>
-                  ) : confirmRevokeId === key.id ? (
-                    <div className={css.confirmInline}>
-                      <span>정말 폐기할까요?</span>
-                      <button
-                        className={css.confirmYesBtn}
-                        onClick={() => revokeMutation.mutate(key.id)}
-                        disabled={revokeMutation.isPending}
-                      >
-                        확인
-                      </button>
-                      <button
-                        className={css.confirmNoBtn}
-                        onClick={() => setConfirmRevokeId(null)}
-                      >
-                        취소
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <button
-                        className={css.actionBtn}
-                        onClick={() => setConfirmRegenerateId(key.id)}
-                      >
-                        재생성
-                      </button>
-                      <button
-                        className={css.actionBtnDanger}
-                        onClick={() => setConfirmRevokeId(key.id)}
-                      >
-                        폐기
-                      </button>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
+      {keysSection}
     </div>
   );
 };

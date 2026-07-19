@@ -37,7 +37,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   private extractToken(client: Socket): string | null {
     // 쿠키 우선 (웹 브라우저), Bearer 폴백 (MCP/API key)
     const cookieHeader = client.handshake.headers?.cookie ?? "";
-    const cookieMatch = cookieHeader.match(/(?:^|;\s*)access_token=([^;]+)/);
+    const cookieMatch = /(?:^|;\s*)access_token=([^;]+)/.exec(cookieHeader);
     if (cookieMatch?.[1]) return cookieMatch[1];
 
     const bearer = client.handshake.auth?.token as string | undefined;

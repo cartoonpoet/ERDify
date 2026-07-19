@@ -23,10 +23,10 @@ const sqlToTs = (t: string): string => {
   if (l === "uuid") return "string";
   if (/^int|^integer|^smallint|^tinyint/.test(l)) return "number";
   if (l === "bigint") return "bigint";
-  if (/^bool/.test(l)) return "boolean";
+  if (l.startsWith("bool")) return "boolean";
   if (/^decimal|^numeric|^float|^double|^real/.test(l)) return "number";
   if (/^timestamp|^datetime|^date/.test(l)) return "Date";
-  if (/^json/.test(l)) return "Record<string, unknown>";
+  if (l.startsWith("json")) return "Record<string, unknown>";
   return "string";
 };
 
@@ -35,30 +35,30 @@ const sqlToPrisma = (t: string): string => {
   if (/^varchar|^text|^char|uuid/.test(l)) return "String";
   if (/^int|^integer|^smallint|^tinyint/.test(l)) return "Int";
   if (l === "bigint") return "BigInt";
-  if (/^bool/.test(l)) return "Boolean";
+  if (l.startsWith("bool")) return "Boolean";
   if (/^decimal|^numeric/.test(l)) return "Decimal";
   if (/^float|^double|^real/.test(l)) return "Float";
   if (/^timestamp|^datetime|^date/.test(l)) return "DateTime";
-  if (/^json/.test(l)) return "Json";
+  if (l.startsWith("json")) return "Json";
   return "String";
 };
 
 const sqlToSa = (t: string): string => {
   const l = t.toLowerCase();
-  const varcharM = l.match(/^varchar\((\d+)\)/);
+  const varcharM = /^varchar\((\d+)\)/.exec(l);
   if (varcharM) return `String(${varcharM[1]})`;
   if (l === "text") return "Text";
   if (l === "uuid") return "UUID(as_uuid=True)";
   if (/^int|^integer$/.test(l)) return "Integer";
   if (l === "smallint") return "SmallInteger";
   if (l === "bigint") return "BigInteger";
-  if (/^bool/.test(l)) return "Boolean";
-  const decM = l.match(/^(?:decimal|numeric)\((\d+),\s*(\d+)\)/);
+  if (l.startsWith("bool")) return "Boolean";
+  const decM = /^(?:decimal|numeric)\((\d+),\s*(\d+)\)/.exec(l);
   if (decM) return `Numeric(${decM[1]}, ${decM[2]})`;
   if (/^float|^double|^real/.test(l)) return "Float";
   if (/^timestamp|^datetime/.test(l)) return "DateTime";
   if (l === "date") return "Date";
-  if (/^json/.test(l)) return "JSON";
+  if (l.startsWith("json")) return "JSON";
   return "String";
 };
 
@@ -92,10 +92,12 @@ function generateTypeOrm(doc: DiagramDocument): string {
       if (col.comment) lines.push(`  /** ${col.comment} */`);
 
       if (col.primaryKey) {
-        lines.push(col.type.toLowerCase() === "uuid"
-          ? `  @PrimaryGeneratedColumn("uuid")`
-          : `  @PrimaryGeneratedColumn()`);
-        lines.push(`  ${propName}!: ${tsType};`);
+        lines.push(
+          col.type.toLowerCase() === "uuid"
+            ? `  @PrimaryGeneratedColumn("uuid")`
+            : `  @PrimaryGeneratedColumn()`,
+          `  ${propName}!: ${tsType};`,
+        );
       } else {
         const opts: string[] = [];
         if (!col.nullable) opts.push("nullable: false");
@@ -181,8 +183,7 @@ function generatePrisma(doc: DiagramDocument): string {
       lines.push(idx.unique ? `  @@unique([${cols}])` : `  @@index([${cols}])`);
     }
 
-    lines.push(`}`);
-    lines.push(``);
+    lines.push(`}`, ``);
   }
 
   return lines.join("\n");
@@ -207,8 +208,10 @@ function generateSqlAlchemy(doc: DiagramDocument): string {
     const entityIndexes = doc.indexes.filter((i) => i.entityId === entity.id);
 
     if (entity.comment) lines.push(`# ${entity.comment}`);
-    lines.push(`class ${toPascalCase(entity.name)}(Base):`);
-    lines.push(`    __tablename__ = "${toSnake(entity.name)}"`);
+    lines.push(
+      `class ${toPascalCase(entity.name)}(Base):`,
+      `    __tablename__ = "${toSnake(entity.name)}"`,
+    );
 
     const tableArgs: string[] = [];
     for (const idx of entityIndexes) {
@@ -239,8 +242,7 @@ function generateSqlAlchemy(doc: DiagramDocument): string {
       lines.push(`    ${toSnake(col.name)} = Column(${attrs.join(", ")})`);
     }
 
-    lines.push(``);
-    lines.push(``);
+    lines.push(``, ``);
   }
 
   return lines.join("\n");

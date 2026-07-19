@@ -3,12 +3,11 @@ import type { Doc } from "@automerge/automerge";
 import type { Socket } from "socket.io-client";
 import type { DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
-import type { Collaborator } from "@/features/editor/store/useEditorStore";
 import { applyDiff } from "@/shared/utils/collaboration-diff";
 import { useCollaborationSocket } from "./useCollaborationSocket";
 import { usePresence } from "./usePresence";
 
-export type { Collaborator };
+export type { Collaborator } from "@/features/editor/store/useEditorStore";
 
 // Kick off the WASM download lazily — doesn't block EditorPage from rendering
 let _amPromise: Promise<typeof import("@automerge/automerge")> | null = null;
@@ -34,8 +33,8 @@ export const useRealtimeCollaboration = (diagramId: string) => {
       const { isDirty, document: localDoc } = useEditorStore.getState();
       if (isDirty && localDoc) {
         const baseDoc = amDocRef.current
-          ? (JSON.parse(JSON.stringify(amDocRef.current)) as DiagramDocument)
-          : (JSON.parse(JSON.stringify(serverDoc)) as DiagramDocument);
+          ? (structuredClone(amDocRef.current) as DiagramDocument)
+          : (structuredClone(serverDoc) as DiagramDocument);
         const mergedDoc = Automerge.change(serverDoc, (draft) => {
           applyDiff(draft as DiagramDocument, baseDoc, localDoc);
         });
@@ -48,7 +47,7 @@ export const useRealtimeCollaboration = (diagramId: string) => {
       }
       amDocRef.current = serverDoc;
       isRemoteRef.current = true;
-      setDocument(JSON.parse(JSON.stringify(serverDoc)) as DiagramDocument);
+      setDocument(structuredClone(serverDoc) as DiagramDocument);
       isRemoteRef.current = false;
     },
 
@@ -59,7 +58,7 @@ export const useRealtimeCollaboration = (diagramId: string) => {
       amDocRef.current = newDoc;
       const wasDirty = useEditorStore.getState().isDirty;
       isRemoteRef.current = true;
-      setDocument(JSON.parse(JSON.stringify(newDoc)) as DiagramDocument);
+      setDocument(structuredClone(newDoc) as DiagramDocument);
       isRemoteRef.current = false;
       if (wasDirty) useEditorStore.setState({ isDirty: true });
     },

@@ -49,19 +49,13 @@ describe("MemberManagementPage", () => {
     });
   });
 
-  it("URL의 orgId로 org 이름을 렌더링한다", async () => {
+  it.each([
+    ["URL의 orgId로 org 이름을 렌더링한다", "Acme Corp"],
+    ["멤버 이메일을 렌더링한다", "a@b.com"],
+    ["'멤버 관리' 제목을 렌더링한다", "멤버 관리"],
+  ])("%s", async (_description, text) => {
     wrap();
-    expect(await screen.findByText("Acme Corp")).toBeInTheDocument();
-  });
-
-  it("멤버 이메일을 렌더링한다", async () => {
-    wrap();
-    expect(await screen.findByText("a@b.com")).toBeInTheDocument();
-  });
-
-  it("'멤버 관리' 제목을 렌더링한다", async () => {
-    wrap();
-    expect(await screen.findByText("멤버 관리")).toBeInTheDocument();
+    expect(await screen.findByText(text)).toBeInTheDocument();
   });
 
   describe("멤버 내보내기", () => {
@@ -116,6 +110,28 @@ describe("MemberManagementPage", () => {
       fireEvent.click(await screen.findByRole("button", { name: "내보내기" }));
       expect(removeMember).not.toHaveBeenCalled();
       vi.restoreAllMocks();
+    });
+  });
+
+  describe("대기 중인 초대", () => {
+    it("초대의 역할 뱃지를 렌더링한다", async () => {
+      vi.mocked(useInvites).mockReturnValue({
+        invites: [
+          {
+            id: "inv-1",
+            email: "c@b.com",
+            role: "viewer",
+            expiresAt: new Date(Date.now() + 86400000).toISOString(),
+            createdAt: "",
+          },
+        ],
+        isLoading: false,
+        invite: vi.fn(),
+        cancelInvite: vi.fn(),
+        isInviting: false,
+      });
+      wrap();
+      expect(await screen.findByText("Viewer · 대기중")).toBeInTheDocument();
     });
   });
 });

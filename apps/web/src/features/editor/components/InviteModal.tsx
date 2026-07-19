@@ -48,7 +48,7 @@ export const InviteModal = ({ open, onClose, organizationId }: InviteModalProps)
         <div className={css.successContainer}>
           <div className={css.successIcon}>✓</div>
           <p className={css.successText}>{state.email} 님을 초대했습니다.</p>
-          <button onClick={onClose} className={css.successCloseBtn}>
+          <button type="button" onClick={onClose} className={css.successCloseBtn}>
             닫기
           </button>
         </div>

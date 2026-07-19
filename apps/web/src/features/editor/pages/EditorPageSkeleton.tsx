@@ -8,7 +8,7 @@ export const EditorPageSkeleton = () => {
   return (
     <div className={css.root}>
       <div className={css.topbar}>
-        <button onClick={() => navigate(-1)} className={css.backBtn} title="뒤로가기">←</button>
+        <button type="button" onClick={() => navigate(-1)} className={css.backBtn} title="뒤로가기">←</button>
         <Skeleton width={140} height={14} />
         <Skeleton width={44} height={12} />
         <div className={css.spacer} />

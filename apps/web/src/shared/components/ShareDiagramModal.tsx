@@ -86,7 +86,7 @@ export const ShareDiagramModal = ({
           <>
             <div className={css.linkBox}>
               <input className={css.linkInput} value={shareUrl ?? ""} readOnly />
-              <button className={css.copyBtn} onClick={handleCopy}>
+              <button type="button" className={css.copyBtn} onClick={handleCopy}>
                 {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
                 {copied ? "복사됨" : "복사"}
               </button>
@@ -104,6 +104,7 @@ export const ShareDiagramModal = ({
             <div className={css.presetRow}>
               {PRESETS.map((preset) => (
                 <button
+                  type="button"
                   key={preset}
                   className={css.presetBtn}
                   onClick={() => shareMutation.mutate(preset)}
@@ -115,6 +116,7 @@ export const ShareDiagramModal = ({
             </div>
 
             <button
+              type="button"
               className={css.revokeBtn}
               onClick={() => revokeMutation.mutate()}
               disabled={isLoading}
@@ -132,6 +134,7 @@ export const ShareDiagramModal = ({
             <div className={css.presetRow}>
               {PRESETS.map((preset) => (
                 <button
+                  type="button"
                   key={preset}
                   className={css.presetBtn}
                   onClick={() => shareMutation.mutate(preset)}

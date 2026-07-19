@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { join } from "path";
+import { join } from "node:path";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 import { ValidationPipe } from "@nestjs/common";

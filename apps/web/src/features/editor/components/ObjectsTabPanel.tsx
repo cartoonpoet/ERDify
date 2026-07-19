@@ -80,7 +80,7 @@ export const ObjectsTabPanel = ({ diagramId: _diagramId }: ObjectsTabPanelProps)
           <button
             key={kind}
             type="button"
-            className={`${css.chip}${activeKinds.has(kind) ? ` ${css.chipOn}` : ""}`}
+            className={css.chip + (activeKinds.has(kind) ? ` ${css.chipOn}` : "")}
             onClick={() => toggleKind(kind)}
           >
             <span className={css.chipDot} style={{ background: OBJECT_KIND_DOT_COLORS[kind] }} />

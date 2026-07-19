@@ -161,6 +161,30 @@ describe("DiagramsService", () => {
       diagramRepo.query.mockResolvedValue(rows);
       expect(await service.findAll("proj-1", "user-1")).toEqual(rows);
     });
+
+    it("parses previewEntities when the pg driver returns it as a JSON string", async () => {
+      const rows = [
+        { id: "diag-1", projectId: "proj-1", name: "ERD", dialect: "postgresql", previewEntities: '[{"id":"ent-1","name":"users","columns":[]}]' },
+      ];
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember());
+      diagramRepo.query.mockResolvedValue(rows);
+
+      const result = await service.findAll("proj-1", "user-1");
+
+      expect(result[0]!.previewEntities).toEqual([{ id: "ent-1", name: "users", columns: [] }]);
+    });
+
+    it("defaults previewEntities to an empty array for unexpected types", async () => {
+      const rows = [{ id: "diag-1", projectId: "proj-1", name: "ERD", dialect: "postgresql", previewEntities: null }];
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember());
+      diagramRepo.query.mockResolvedValue(rows);
+
+      const result = await service.findAll("proj-1", "user-1");
+
+      expect(result[0]!.previewEntities).toEqual([]);
+    });
   });
 
   describe("findOne", () => {

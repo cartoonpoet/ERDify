@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { useActivityFeed } from "@/features/editor/hooks/useActivityFeed";
 import type { ActivityItem, VersionActivityItem, AiActivityItem } from "@/features/editor/hooks/useActivityFeed";
@@ -61,6 +61,7 @@ const ActivityItemRow = ({
             {v.createdByName} · {formatTime(v.createdAt)}
           </div>
           <button
+            type="button"
             className={css.itemRevertBtn}
             onClick={handleRestore}
             disabled={isRestoring}
@@ -92,6 +93,7 @@ const ActivityItemRow = ({
         <div className={css.itemMeta}>AI · {formatTime(s.createdAt)}</div>
         {s.snapshotVersionId !== null && (
           <button
+            type="button"
             className={css.itemRevertBtn}
             onClick={handleRevert}
             disabled={isReverting}
@@ -121,44 +123,45 @@ export const HistoryTabPanel = ({ diagramId }: HistoryTabPanelProps) => {
     return showAi;
   });
 
+  let drawerContent: ReactNode;
+  if (isLoading) {
+    drawerContent = <p className={css.emptyText}>불러오는 중…</p>;
+  } else if (filteredItems.length === 0) {
+    drawerContent = <p className={css.emptyText}>표시할 활동이 없습니다.</p>;
+  } else {
+    drawerContent = filteredItems.map((item) => (
+      <ActivityItemRow
+        key={`${item.kind}-${item.id}`}
+        item={item}
+        onRestore={restoreVersion}
+        onRevert={revertSession}
+        isRestoring={isRestoring}
+        isReverting={isReverting}
+        isDirty={isDirty}
+      />
+    ));
+  }
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div className={css.filterRow}>
         <button
-          className={`${css.chip}${showHuman ? ` ${css.chipOn}` : ""}`}
+          type="button"
+          className={`${css.chip}${showHuman ? " " + css.chipOn : ""}`}
           onClick={() => setShowHuman((v) => !v)}
         >
-          <span className={css.chipDot} style={{ background: "#60a5fa" }} />
-          사람
+          <span className={css.chipDot} style={{ background: "#60a5fa" }} />사람
         </button>
         <button
-          className={`${css.chip}${showAi ? ` ${css.chipOn}` : ""}`}
+          type="button"
+          className={`${css.chip}${showAi ? " " + css.chipOn : ""}`}
           onClick={() => setShowAi((v) => !v)}
         >
-          <span className={css.chipDot} style={{ background: "#a78bfa" }} />
-          AI
+          <span className={css.chipDot} style={{ background: "#a78bfa" }} />AI
         </button>
       </div>
 
-      <div className={css.drawerBody}>
-        {isLoading ? (
-          <p className={css.emptyText}>불러오는 중…</p>
-        ) : filteredItems.length === 0 ? (
-          <p className={css.emptyText}>표시할 활동이 없습니다.</p>
-        ) : (
-          filteredItems.map((item) => (
-            <ActivityItemRow
-              key={`${item.kind}-${item.id}`}
-              item={item}
-              onRestore={restoreVersion}
-              onRevert={revertSession}
-              isRestoring={isRestoring}
-              isReverting={isReverting}
-              isDirty={isDirty}
-            />
-          ))
-        )}
-      </div>
+      <div className={css.drawerBody}>{drawerContent}</div>
     </div>
   );
 };

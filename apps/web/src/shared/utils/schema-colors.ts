@@ -27,5 +27,5 @@ export function getSchemasFromDocument(entities: { schema?: string | null }[]): 
   for (const e of entities) {
     if (e.schema) seen.add(e.schema);
   }
-  return [...seen].sort();
+  return [...seen].sort((a, b) => a.localeCompare(b));
 }

@@ -74,6 +74,11 @@ const wrap = (onClose = vi.fn(), onResolved = vi.fn()) => {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(errorReportsApi.getErrorReportOccurrences).mockResolvedValue(occurrences);
+
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    configurable: true,
+  });
 });
 
 describe("ErrorReportSlideOver", () => {
@@ -111,5 +116,67 @@ describe("ErrorReportSlideOver", () => {
     });
     fireEvent.click(screen.getByText("✓ 해결 완료로 표시"));
     expect(onResolved).toHaveBeenCalledWith("/api/orgs", "5xx", "원인: 타임아웃");
+  });
+
+  it("'Claude에게 복사' 클릭 시 Request/Response Body와 Params를 포함한 텍스트를 클립보드에 복사한다", async () => {
+    const fullOccurrence: OccurrenceItem = {
+      id: "o2",
+      createdAt: "2026-01-03T00:00:00.000Z",
+      userId: "u2",
+      pageName: "조직 상세",
+      url: "https://app.example.com/orgs/1",
+      requestMethod: "POST",
+      requestBody: '{"name":"acme"}',
+      requestParams: '{"page":1}',
+      responseBody: '{"error":"internal"}',
+      userAgent: "test-agent-2",
+      httpStatus: 500,
+    };
+    vi.mocked(errorReportsApi.getErrorReportOccurrences).mockResolvedValue([fullOccurrence]);
+
+    wrap();
+    await waitFor(() => expect(screen.getByText("조직 상세")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText("Claude에게 복사"));
+
+    await waitFor(() => expect(screen.getByText("✓ 복사됨")).toBeInTheDocument());
+
+    const writeText = navigator.clipboard.writeText as ReturnType<typeof vi.fn>;
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const copiedText = writeText.mock.calls[0]![0] as string;
+
+    expect(copiedText).toContain("- **URL**: https://app.example.com/orgs/1");
+    expect(copiedText).toContain("- **요청**: POST /api/orgs (HTTP 500)");
+    expect(copiedText).toContain("- **Request Body**:");
+    expect(copiedText).toContain('"name": "acme"');
+    expect(copiedText).toContain("- **Request Params**:");
+    expect(copiedText).toContain('"page": 1');
+    expect(copiedText).toContain("- **Response Body**:");
+    expect(copiedText).toContain('"error": "internal"');
+    expect(copiedText).toContain("- **Browser**: test-agent-2");
+  });
+
+  it("Request/Response Body가 없는 발생건은 해당 섹션 없이 복사된다", async () => {
+    wrap();
+    // API가 호출된 것만으로는 응답이 반영돼 렌더링됐다는 보장이 없으므로,
+    // 실제 발생건 내용이 화면에 나타날 때까지 기다린다.
+    await waitFor(() => expect(screen.getByText("조직 목록")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText("Claude에게 복사"));
+
+    await waitFor(() => {
+      const writeText = navigator.clipboard.writeText as ReturnType<typeof vi.fn>;
+      expect(writeText).toHaveBeenCalledTimes(1);
+    });
+
+    const writeText = navigator.clipboard.writeText as ReturnType<typeof vi.fn>;
+    const copiedText = writeText.mock.calls[0]![0] as string;
+
+    expect(copiedText).toContain("- **URL**: https://app.example.com/orgs");
+    expect(copiedText).toContain("- **요청**: GET /api/orgs (HTTP 500)");
+    expect(copiedText).toContain("- **Browser**: test-agent");
+    expect(copiedText).not.toContain("- **Request Body**:");
+    expect(copiedText).not.toContain("- **Request Params**:");
+    expect(copiedText).not.toContain("- **Response Body**:");
   });
 });

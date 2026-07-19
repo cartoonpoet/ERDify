@@ -152,3 +152,40 @@ describe("DiagramSlice - derived state", () => {
     expect(schAfter).toBe(schBefore);
   });
 });
+
+describe("DiagramSlice - undo", () => {
+  it("history에 여러 스냅샷이 쌓인 뒤 undo 시 가장 최근 스냅샷(history의 마지막 요소)으로 복원된다", () => {
+    const store = makeStore();
+    store.getState().setDocument(makeDoc());
+
+    store.getState().applyCommand((doc) => ({
+      ...doc,
+      entities: doc.entities.map((e) => (e.id === "e1" ? { ...e, name: "users_v1" } : e)),
+    }));
+    store.getState().applyCommand((doc) => ({
+      ...doc,
+      entities: doc.entities.map((e) => (e.id === "e1" ? { ...e, name: "users_v2" } : e)),
+    }));
+
+    // history = [original(users), users_v1] before undo
+    expect(store.getState().history).toHaveLength(2);
+
+    store.getState().undo();
+
+    const { document, history } = store.getState();
+    expect(document!.entities.find((e) => e.id === "e1")!.name).toBe("users_v1");
+    expect(history).toHaveLength(1);
+    expect(history[0]!.entities.find((e) => e.id === "e1")!.name).toBe("users");
+  });
+
+  it("history가 비어있으면 undo는 아무 것도 변경하지 않는다", () => {
+    const store = makeStore();
+    store.getState().setDocument(makeDoc());
+    const before = store.getState().document;
+
+    store.getState().undo();
+
+    expect(store.getState().document).toBe(before);
+    expect(store.getState().history).toHaveLength(0);
+  });
+});

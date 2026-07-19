@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Diagram, Project } from "@erdify/db";
@@ -8,7 +8,7 @@ import type { SharePreset } from "../dto/share-diagram.dto";
 
 @Injectable()
 export class DiagramsShareService {
-  private static presetToMs: Record<SharePreset, number> = {
+  private static readonly presetToMs: Record<SharePreset, number> = {
     "1h": 3_600_000,
     "1d": 86_400_000,
     "7d": 604_800_000,

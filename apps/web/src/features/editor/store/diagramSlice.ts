@@ -3,9 +3,8 @@ import type { Edge, NodeChange } from "@xyflow/react";
 import { applyNodeChanges as applyXyflowNodeChanges } from "@xyflow/react";
 import type { DiagramDocument, DiagramIndex } from "@erdify/domain";
 import type { StateCreator } from "zustand";
-import type { EditableTableNodeType } from "./editor-store.types";
+import type { EditableTableNodeType, EditorState } from "./editor-store.types";
 import { docToEdges, docToNodes, updateNodes } from "./editor-store.helpers";
-import type { EditorState } from "./editor-store.types";
 import { getSchemasFromDocument } from "@/shared/utils/schema-colors";
 
 const HISTORY_LIMIT = 50;
@@ -108,7 +107,7 @@ export const createDiagramSlice: StateCreator<EditorState, [], [], DiagramSlice>
 
   undo: () => {
     const { history, collaborators } = get();
-    const prev = history[history.length - 1];
+    const prev = history.at(-1);
     if (!prev) return;
     set({
       document: prev,

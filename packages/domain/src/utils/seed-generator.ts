@@ -19,7 +19,7 @@ function quoteValue(value: string, columnType: string): string {
   const v = value.trim();
   if (v === "" || v.toLowerCase() === "null") return "NULL";
   if (NUMERIC_TYPE.test(columnType)) return v;
-  return `'${v.replace(/'/g, "''")}'`;
+  return `'${v.replaceAll("'", "''")}'`;
 }
 
 export function generateSeedSql(doc: DiagramDocument): string {

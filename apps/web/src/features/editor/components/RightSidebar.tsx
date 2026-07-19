@@ -115,6 +115,7 @@ export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
 
       <div className={css.tabBar}>
         <button
+          type="button"
           className={css.tabBtn[panelOpen && activeTab === 0 ? "active" : "default"]}
           onClick={() => handleTabClick(0)}
           aria-label="AI"
@@ -124,6 +125,7 @@ export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
           <span className={css.tabLabel}>AI</span>
         </button>
         <button
+          type="button"
           className={css.tabBtn[panelOpen && activeTab === 1 ? "active" : "default"]}
           onClick={() => handleTabClick(1)}
           aria-label="검색"
@@ -134,6 +136,7 @@ export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
         </button>
         <div className={css.tabSep} />
         <button
+          type="button"
           className={css.tabBtn[panelOpen && activeTab === 2 ? "active" : "default"]}
           onClick={() => handleTabClick(2)}
           aria-label="기록"
@@ -143,6 +146,7 @@ export const RightSidebar = ({ diagramId }: RightSidebarProps) => {
           <span className={css.tabLabel}>기록</span>
         </button>
         <button
+          type="button"
           className={css.tabBtn[panelOpen && activeTab === 3 ? "active" : "default"]}
           onClick={() => handleTabClick(3)}
           aria-label="객체"
