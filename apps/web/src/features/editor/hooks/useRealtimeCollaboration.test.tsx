@@ -136,6 +136,70 @@ describe("useRealtimeCollaboration", () => {
     );
   });
 
+  it("merges a pending local edit into a cloned server doc when isDirty on am:init (no prior am doc)", async () => {
+    mockSocket.connected = true;
+    const localDoc: DiagramDocument = {
+      ...makeEmptyDoc(),
+      entities: [{ id: "e-local", name: "Local", logicalName: null, comment: null, color: null, columns: [] }]
+    };
+    (storeHook.getState as ReturnType<typeof vi.fn>).mockReturnValueOnce({ isDirty: true, document: localDoc });
+
+    renderHook(() => useRealtimeCollaboration("d1"));
+
+    const doc = Automerge.from(makeEmptyDoc() as unknown as Record<string, unknown>);
+    const bytes = Automerge.save(doc);
+    const initCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "am:init"
+    );
+    await act(async () => { await (initCall![1] as (b: number[]) => Promise<void>)(Array.from(bytes)); });
+
+    // The merge branch emits the resulting change instead of calling setDocument directly.
+    expect(mockSetDocument).not.toHaveBeenCalled();
+    const changeCall = (mockSocket.emit as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "am:change"
+    );
+    expect(changeCall).toBeTruthy();
+
+    const [appliedDoc] = Automerge.applyChanges(doc, [Uint8Array.from(changeCall![1] as number[])]);
+    expect((appliedDoc as unknown as DiagramDocument).entities).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "e-local" })])
+    );
+  });
+
+  it("merges a pending local edit into a cloned prior am doc when isDirty on a reconnect am:init", async () => {
+    mockSocket.connected = true;
+    renderHook(() => useRealtimeCollaboration("d1"));
+
+    const doc = Automerge.from(makeEmptyDoc() as unknown as Record<string, unknown>);
+    const bytes = Automerge.save(doc);
+    const initCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "am:init"
+    );
+
+    // First am:init (not dirty) populates amDocRef.current with the server doc.
+    await act(async () => { await (initCall![1] as (b: number[]) => Promise<void>)(Array.from(bytes)); });
+
+    // Second am:init (e.g. reconnect) while a local edit is pending — should clone
+    // the previously-stored am doc (not the freshly-received serverDoc) as the base.
+    const localDoc: DiagramDocument = {
+      ...makeEmptyDoc(),
+      entities: [{ id: "e-local-2", name: "Local2", logicalName: null, comment: null, color: null, columns: [] }]
+    };
+    (storeHook.getState as ReturnType<typeof vi.fn>).mockReturnValueOnce({ isDirty: true, document: localDoc });
+    await act(async () => { await (initCall![1] as (b: number[]) => Promise<void>)(Array.from(bytes)); });
+
+    const changeCalls = (mockSocket.emit as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (c: unknown[]) => c[0] === "am:change"
+    );
+    expect(changeCalls.length).toBeGreaterThan(0);
+
+    const [, lastChangeBytes] = changeCalls[changeCalls.length - 1] as [string, number[]];
+    const [appliedDoc] = Automerge.applyChanges(doc, [Uint8Array.from(lastChangeBytes)]);
+    expect((appliedDoc as unknown as DiagramDocument).entities).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "e-local-2" })])
+    );
+  });
+
   it("calls setCollaborators in store from presence:state event", () => {
     renderHook(() => useRealtimeCollaboration("d1"));
 

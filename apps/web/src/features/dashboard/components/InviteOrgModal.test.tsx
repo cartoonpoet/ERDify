@@ -35,7 +35,7 @@ describe("InviteOrgModal", () => {
     fireEvent.change(screen.getByLabelText("이메일"), { target: { value: "a@b.com" } });
     fireEvent.click(screen.getByRole("button", { name: "초대 보내기" }));
     await waitFor(() => expect(invite).toHaveBeenCalledWith("a@b.com", "editor"));
-    await waitFor(() => expect(screen.getByText("멤버로 추가되었습니다.")).toBeInTheDocument());
+    expect(await screen.findByText("멤버로 추가되었습니다.")).toBeInTheDocument();
   });
 
   it("성공 후 '추가 초대' 클릭 시 초대 폼으로 돌아간다", async () => {
@@ -47,7 +47,7 @@ describe("InviteOrgModal", () => {
     render(<InviteOrgModal open orgId="org-1" onClose={vi.fn()} />, { wrapper });
     fireEvent.change(screen.getByLabelText("이메일"), { target: { value: "a@b.com" } });
     fireEvent.click(screen.getByRole("button", { name: "초대 보내기" }));
-    await waitFor(() => expect(screen.getByText("멤버로 추가되었습니다.")).toBeInTheDocument());
+    expect(await screen.findByText("멤버로 추가되었습니다.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "추가 초대" }));
     expect(screen.getByLabelText("이메일")).toBeInTheDocument();
   });
@@ -61,6 +61,6 @@ describe("InviteOrgModal", () => {
     render(<InviteOrgModal open orgId="org-1" onClose={vi.fn()} />, { wrapper });
     fireEvent.change(screen.getByLabelText("이메일"), { target: { value: "new@b.com" } });
     fireEvent.click(screen.getByRole("button", { name: "초대 보내기" }));
-    await waitFor(() => expect(screen.getByText("가입 초대 메일을 보냈습니다.")).toBeInTheDocument());
+    expect(await screen.findByText("가입 초대 메일을 보냈습니다.")).toBeInTheDocument();
   });
 });

@@ -44,16 +44,19 @@ export const TypeSelect = ({
       />
       {open && filtered.length > 0 && (
         <div className={`${css.typeDropdown} nodrag nopan`}>
-          {filtered.map((t) => (
-            <button
-              key={t}
-              type="button"
-              className={`${css.typeOption}${t === value ? ` ${css.typeOptionActive}` : ""}`}
-              onMouseDown={(e) => { e.preventDefault(); onChange(t); setInputVal(t); setOpen(false); }}
-            >
-              {t}
-            </button>
-          ))}
+          {filtered.map((t) => {
+            const activeClass = t === value ? ` ${css.typeOptionActive}` : "";
+            return (
+              <button
+                key={t}
+                type="button"
+                className={`${css.typeOption}${activeClass}`}
+                onMouseDown={(e) => { e.preventDefault(); onChange(t); setInputVal(t); setOpen(false); }}
+              >
+                {t}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

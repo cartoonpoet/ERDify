@@ -15,7 +15,7 @@ export const copyToClipboard = (text: string): Promise<void> => {
   try {
     document.execCommand("copy"); // NOSONAR: 비보안 컨텍스트용 폴백, 대체 API 없음 (위 주석 참고)
   } finally {
-    document.body.removeChild(textarea);
+    textarea.remove();
   }
   return Promise.resolve();
 };

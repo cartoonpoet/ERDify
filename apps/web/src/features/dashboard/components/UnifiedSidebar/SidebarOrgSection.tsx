@@ -37,6 +37,7 @@ export const SidebarOrgSection = ({
       onBlur={handleWrapperBlur}
     >
       <button
+        type="button"
         className={css.orgSelector}
         onClick={() => setDropdownOpen((v) => !v)}
         aria-expanded={dropdownOpen}
@@ -65,6 +66,7 @@ export const SidebarOrgSection = ({
           {orgs.map((org) => (
             <div key={org.id} className={css.orgDropdownItemWrapper}>
               <button
+                type="button"
                 className={css.orgDropdownItem}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -80,6 +82,7 @@ export const SidebarOrgSection = ({
                 <span className={css.orgDropdownName}>{org.name}</span>
               </button>
               <button
+                type="button"
                 className={css.orgDropdownDeleteBtn}
                 aria-label={`${org.name} 삭제`}
                 onClick={(e) => {
@@ -96,6 +99,7 @@ export const SidebarOrgSection = ({
           ))}
           <div className={css.orgDropdownDivider} />
           <button
+            type="button"
             className={css.orgDropdownCreateBtn}
             onClick={(e) => {
               e.stopPropagation();

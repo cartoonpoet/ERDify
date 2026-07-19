@@ -97,7 +97,7 @@ function referentialAction(action: DiagramRelationship["onDelete"]): string {
 }
 
 function escapeComment(value: string): string {
-  return value.replace(/'/g, "''");
+  return value.replaceAll(/'/g, "''");
 }
 
 function columnDdl(
@@ -414,11 +414,12 @@ function checkSensitiveInfo(doc: DiagramDocument, warnings: DdlWarning[]): void 
     if (isPrivateIp(text)) kind = "private IP";
     else if (EMAIL_RE.test(text)) kind = "email";
     if (!kind) return;
+    const target = columnName ? `${entityName}.${columnName}` : entityName;
     warnings.push({
       code: "sensitive_info",
       entity: entityName,
       ...(columnName ? { column: columnName } : {}),
-      message: `Possible ${kind} in ${where} of "${columnName ? `${entityName}.${columnName}` : entityName}" — review before sharing the exported DDL.`,
+      message: `Possible ${kind} in ${where} of "${target}" — review before sharing the exported DDL.`,
     });
   };
   for (const entity of doc.entities) {
@@ -444,7 +445,7 @@ function objectsDdl(objects: DiagramObject[], warnings: DdlWarning[]): string {
   const blocks: string[] = ["-- Objects"];
   for (const obj of objects) {
     // 헤더는 한 줄 주석이어야 한다 — 이름에 개행이 있으면 다음 줄이 실행 SQL로 새어나가므로 공백으로 정규화한다.
-    const headerName = obj.name.replace(/[\r\n]+/g, " ");
+    const headerName = obj.name.replaceAll(/[\r\n]+/g, " ");
     blocks.push(`-- ${obj.kind}: ${headerName}\n${obj.sql.trim()}`);
     warnings.push({
       code: "object_raw_sql",

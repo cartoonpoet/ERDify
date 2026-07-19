@@ -1,4 +1,4 @@
-import type { FocusEvent } from "react";
+import type { FocusEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -89,6 +89,94 @@ export const DiagramGrid = () => {
     handleMenuToggle,
   } = useDiagramGrid();
 
+  let diagramSection: ReactNode;
+  if (isError) {
+    diagramSection = (
+      <div className={sectionError}>
+        <div className={sectionErrorIcon}>{ERROR_CONTENT[errorStatus!].icon}</div>
+        <div className={sectionErrorTitle}>{ERROR_CONTENT[errorStatus!].title}</div>
+        <div className={sectionErrorDesc}>{ERROR_CONTENT[errorStatus!].desc}</div>
+        {ERROR_CONTENT[errorStatus!].retryable && (
+          <button type="button" className={sectionErrorBtn} onClick={() => refetch()}>
+            다시 시도
+          </button>
+        )}
+        <div className={sectionErrorGuide}>{ERROR_CONTENT[errorStatus!].guide}</div>
+      </div>
+    );
+  } else if (isLoading && !!projectId) {
+    diagramSection = (
+      <div className={grid}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} height={140} />
+        ))}
+      </div>
+    );
+  } else {
+    diagramSection = (
+      <div className={grid}>
+        {filtered.map((diagram) => (
+          <div
+            key={diagram.id}
+            className={diagramCardWrapper}
+            tabIndex={0}
+            onBlur={(e: FocusEvent<HTMLDivElement>) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) handleMenuClose();
+            }}
+          >
+            <Link to={`/diagrams/${diagram.id}`} className={diagramCard} aria-label={`${diagram.name} 다이어그램 열기`}>
+              <DiagramCardPreview diagram={diagram} />
+              <div className={cardBody}>
+                <div className={cardName}>{diagram.name}</div>
+                <div className={cardMeta}>
+                  <span className={dialectBadge}>{diagram.dialect}</span>
+                  {(activeUsers[diagram.id]?.length ?? 0) === 0 && formatDistanceToNow(new Date(diagram.updatedAt), { addSuffix: true, locale: ko })}
+                  <ActiveUsersIndicator users={activeUsers[diagram.id] ?? []} />
+                </div>
+              </div>
+            </Link>
+            <button
+              type="button"
+              className={ctxBtn}
+              aria-label="더보기"
+              aria-expanded={menuOpenId === diagram.id}
+              aria-haspopup="menu"
+              onClick={handleMenuToggle(diagram.id)}
+            >
+              <MoreVertical size={13} aria-hidden="true" />
+            </button>
+            {menuOpenId === diagram.id && (
+              <div className={ctxMenu}>
+                <button type="button" className={ctxItemPrimary} onClick={handleEditDiagram(diagram)}>
+                  <Pencil size={13} aria-hidden="true" /> 수정
+                </button>
+                <button type="button" className={ctxItem} onClick={handleShareDiagram(diagram)}>
+                  <Share2 size={13} aria-hidden="true" /> 공유하기
+                </button>
+                <button type="button" className={ctxItem} onClick={handleMoveDiagram(diagram)}>
+                  <FolderInput size={13} aria-hidden="true" /> 다른 프로젝트로 이동
+                </button>
+                <button type="button" className={ctxItem} onClick={handleCopyDiagram(diagram)}>
+                  <Copy size={13} aria-hidden="true" /> 다른 프로젝트로 복사
+                </button>
+                <div className={ctxDivider} />
+                <button type="button" className={ctxItemDanger} onClick={handleDeleteDiagram(diagram)}>
+                  <Trash2 size={13} aria-hidden="true" /> 삭제
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+        {projectName && (
+          <button type="button" className={newCard} onClick={onCreateDiagram}>
+            <div className={newCardIcon}>+</div>
+            새 ERD 만들기
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={mainArea}>
       <div className={mainHeader}>
@@ -107,6 +195,7 @@ export const DiagramGrid = () => {
       {projectName && (
         <div className={[filterRow, isError ? filterRowDisabled : ""].filter(Boolean).join(" ")}>
           <button
+            type="button"
             className={[filterChip, activeFilter === "all" ? filterChipVariants.active : filterChipVariants.inactive].join(" ")}
             aria-pressed={activeFilter === "all"}
             onClick={() => setActiveFilter("all")}
@@ -114,6 +203,7 @@ export const DiagramGrid = () => {
             전체
           </button>
           <button
+            type="button"
             className={[filterChip, activeFilter === "recent" ? filterChipVariants.active : filterChipVariants.inactive].join(" ")}
             aria-pressed={activeFilter === "recent"}
             onClick={() => setActiveFilter("recent")}
@@ -121,6 +211,7 @@ export const DiagramGrid = () => {
             최근 수정
           </button>
           <button
+            type="button"
             className={[filterChip, activeFilter === "mine" ? filterChipVariants.active : filterChipVariants.inactive].join(" ")}
             aria-pressed={activeFilter === "mine"}
             onClick={() => setActiveFilter("mine")}
@@ -129,85 +220,7 @@ export const DiagramGrid = () => {
           </button>
         </div>
       )}
-      {isError ? (
-        <div className={sectionError}>
-          <div className={sectionErrorIcon}>{ERROR_CONTENT[errorStatus!].icon}</div>
-          <div className={sectionErrorTitle}>{ERROR_CONTENT[errorStatus!].title}</div>
-          <div className={sectionErrorDesc}>{ERROR_CONTENT[errorStatus!].desc}</div>
-          {ERROR_CONTENT[errorStatus!].retryable && (
-            <button type="button" className={sectionErrorBtn} onClick={() => refetch()}>
-              다시 시도
-            </button>
-          )}
-          <div className={sectionErrorGuide}>{ERROR_CONTENT[errorStatus!].guide}</div>
-        </div>
-      ) : isLoading && !!projectId ? (
-        <div className={grid}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} height={140} />
-          ))}
-        </div>
-      ) : (
-        <div className={grid}>
-          {filtered.map((diagram) => (
-            <div
-              key={diagram.id}
-              className={diagramCardWrapper}
-              tabIndex={0}
-              onBlur={(e: FocusEvent<HTMLDivElement>) => {
-                if (!e.currentTarget.contains(e.relatedTarget)) handleMenuClose();
-              }}
-            >
-              <Link to={`/diagrams/${diagram.id}`} className={diagramCard} aria-label={`${diagram.name} 다이어그램 열기`}>
-                <DiagramCardPreview diagram={diagram} />
-                <div className={cardBody}>
-                  <div className={cardName}>{diagram.name}</div>
-                  <div className={cardMeta}>
-                    <span className={dialectBadge}>{diagram.dialect}</span>
-                    {(activeUsers[diagram.id]?.length ?? 0) === 0 && formatDistanceToNow(new Date(diagram.updatedAt), { addSuffix: true, locale: ko })}
-                    <ActiveUsersIndicator users={activeUsers[diagram.id] ?? []} />
-                  </div>
-                </div>
-              </Link>
-              <button
-                className={ctxBtn}
-                aria-label="더보기"
-                aria-expanded={menuOpenId === diagram.id}
-                aria-haspopup="menu"
-                onClick={handleMenuToggle(diagram.id)}
-              >
-                <MoreVertical size={13} aria-hidden="true" />
-              </button>
-              {menuOpenId === diagram.id && (
-                <div className={ctxMenu}>
-                  <button className={ctxItemPrimary} onClick={handleEditDiagram(diagram)}>
-                    <Pencil size={13} aria-hidden="true" /> 수정
-                  </button>
-                  <button className={ctxItem} onClick={handleShareDiagram(diagram)}>
-                    <Share2 size={13} aria-hidden="true" /> 공유하기
-                  </button>
-                  <button className={ctxItem} onClick={handleMoveDiagram(diagram)}>
-                    <FolderInput size={13} aria-hidden="true" /> 다른 프로젝트로 이동
-                  </button>
-                  <button className={ctxItem} onClick={handleCopyDiagram(diagram)}>
-                    <Copy size={13} aria-hidden="true" /> 다른 프로젝트로 복사
-                  </button>
-                  <div className={ctxDivider} />
-                  <button className={ctxItemDanger} onClick={handleDeleteDiagram(diagram)}>
-                    <Trash2 size={13} aria-hidden="true" /> 삭제
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-          {projectName && (
-            <button className={newCard} onClick={onCreateDiagram}>
-              <div className={newCardIcon}>+</div>
-              새 ERD 만들기
-            </button>
-          )}
-        </div>
-      )}
+      {diagramSection}
       {shareDiagramItem && (
         <ShareDiagramModal
           open={!!shareDiagramItem}

@@ -34,28 +34,20 @@ const formatForClaude = (report: GroupedErrorReport, occurrences: OccurrenceItem
       `- **사용자**: ${occ.userId ?? "(미인증)"}`,
     ];
     if (occ.pageName) lines.push(`- **페이지**: ${occ.pageName}`);
-    lines.push(`- **URL**: ${occ.url}`);
-    lines.push(`- **요청**: ${occ.requestMethod ?? "?"} ${report.path} (HTTP ${occ.httpStatus ?? "?"})`);
+    lines.push(
+      `- **URL**: ${occ.url}`,
+      `- **요청**: ${occ.requestMethod ?? "?"} ${report.path} (HTTP ${occ.httpStatus ?? "?"})`,
+    );
     if (occ.requestBody) {
-      lines.push(`- **Request Body**:`);
-      lines.push("```json");
-      lines.push(formatJson(occ.requestBody));
-      lines.push("```");
+      lines.push(`- **Request Body**:`, "```json", formatJson(occ.requestBody), "```");
     }
     if (occ.requestParams) {
-      lines.push(`- **Request Params**:`);
-      lines.push("```json");
-      lines.push(formatJson(occ.requestParams));
-      lines.push("```");
+      lines.push(`- **Request Params**:`, "```json", formatJson(occ.requestParams), "```");
     }
     if (occ.responseBody) {
-      lines.push(`- **Response Body**:`);
-      lines.push("```json");
-      lines.push(formatJson(occ.responseBody));
-      lines.push("```");
+      lines.push(`- **Response Body**:`, "```json", formatJson(occ.responseBody), "```");
     }
-    lines.push(`- **Browser**: ${occ.userAgent}`);
-    lines.push(``);
+    lines.push(`- **Browser**: ${occ.userAgent}`, ``);
     return lines.join("\n");
   });
 

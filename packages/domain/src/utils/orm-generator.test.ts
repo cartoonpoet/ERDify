@@ -118,6 +118,7 @@ describe("generateOrm — TypeORM: type mappings", () => {
     ["timestamp", "Date"],
     ["date", "Date"],
     ["uuid", "string"],
+    ["json", "Record<string, unknown>"],
   ];
 
   for (const [sqlType, tsType] of cases) {

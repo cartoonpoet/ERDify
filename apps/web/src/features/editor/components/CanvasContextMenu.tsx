@@ -58,13 +58,11 @@ export const CanvasContextMenu = ({ menuX, menuY, clientX, clientY, onClose }: C
       style={{ left: menuX, top: menuY }}
     >
       <button type="button" onClick={handleAddTable} className={css.menuItem}>
-        <span className={css.iconLg}>+</span>
-        테이블 추가
+        <span className={css.iconLg}>+</span>테이블 추가
       </button>
       <div className={css.separator} />
       <button type="button" onClick={handleAutoLayout} className={css.menuItem}>
-        <span className={css.iconSm}>⊞</span>
-        테이블 자동 정렬
+        <span className={css.iconSm}>⊞</span>테이블 자동 정렬
       </button>
       <div className={css.separator} />
       <button

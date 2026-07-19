@@ -1,8 +1,7 @@
 // apps/web/src/features/editor/stores/collaboratorsSlice.ts
 import type { StateCreator } from "zustand";
-import type { Collaborator } from "./editor-store.types";
+import type { Collaborator, EditorState } from "./editor-store.types";
 import { updateNodes } from "./editor-store.helpers";
-import type { EditorState } from "./editor-store.types";
 
 export interface CollaboratorsSlice {
   collaborators: Collaborator[];

@@ -90,6 +90,19 @@ describe("parseDdl", () => {
     expect(doc.entities[0]!.comment).toBe("real comment");
   });
 
+  it("COMMENT ON TABLE / COMMENT ON COLUMN 구문으로 기존 엔티티와 컬럼에 comment를 설정한다", () => {
+    const sql = `
+      CREATE TABLE users (id INT, name VARCHAR(50));
+      COMMENT ON TABLE users IS 'user accounts table';
+      COMMENT ON COLUMN users.name IS 'display name';
+    `;
+    const doc = parseDdl(sql, "postgresql");
+
+    const entity = doc.entities.find((e) => e.name === "users")!;
+    expect(entity.comment).toBe("user accounts table");
+    expect(entity.columns.find((c) => c.name === "name")!.comment).toBe("display name");
+  });
+
   it("타입명 자체가 CHARACTER로 시작하는 경우(CHARACTER VARYING) 절 제거로 오인해 지우지 않는다", () => {
     const sql = `CREATE TABLE t (name CHARACTER VARYING(255));`;
     const doc = parseDdl(sql, "mysql");

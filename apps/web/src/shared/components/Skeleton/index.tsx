@@ -9,7 +9,7 @@ interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
 export const Skeleton = ({ width, height, style, className, ...props }: SkeletonProps) => (
   <div
     className={[skeleton, className].filter(Boolean).join(" ")}
-    style={{ width, height, ...(style ?? {}) }}
+    style={{ width, height, ...style }}
     {...props}
     aria-hidden="true"
   />

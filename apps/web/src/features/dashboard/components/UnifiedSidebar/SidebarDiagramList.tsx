@@ -53,6 +53,7 @@ export const SidebarDiagramList = ({
             <div key={project.id}>
               <div className={css.projRowWrapper}>
                 <button
+                  type="button"
                   className={[css.projRow, isExpanded ? css.projRowActive : ""].filter(Boolean).join(" ")}
                   onClick={() => handleSelectProject(project.id)}
                   aria-pressed={isExpanded}
@@ -62,6 +63,7 @@ export const SidebarDiagramList = ({
                   <span className={css.projName}>{project.name}</span>
                 </button>
                 <button
+                  type="button"
                   className={css.projDeleteBtn}
                   aria-label={`${project.name} 삭제`}
                   onClick={handleDeleteProject(project)}
@@ -74,6 +76,7 @@ export const SidebarDiagramList = ({
                   {diagrams.filter((d) => d.projectId === project.id).map((diagram) => (
                     <button
                       key={diagram.id}
+                      type="button"
                       className={css.erdRow}
                       onClick={() => navigate(`/diagrams/${diagram.id}`)}
                     >
@@ -84,7 +87,7 @@ export const SidebarDiagramList = ({
                       </span>
                     </button>
                   ))}
-                  <button className={css.erdNewBtn} onClick={() => openModal("diagram")}>
+                  <button type="button" className={css.erdNewBtn} onClick={() => openModal("diagram")}>
                     + 새 ERD 만들기
                   </button>
                 </>
@@ -95,6 +98,7 @@ export const SidebarDiagramList = ({
       </div>
       <div className={[css.treeSectionLabel, css.treeSectionLabelSpaced].join(" ")}>관리</div>
       <button
+        type="button"
         className={[css.projRow, memberManagementActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
         onClick={() => navigate(`/${orgId}/members`)}
         aria-pressed={memberManagementActive}
@@ -104,6 +108,7 @@ export const SidebarDiagramList = ({
         <span className={css.projName}>멤버 관리</span>
       </button>
       <button
+        type="button"
         className={[css.projRow, orgSettingsActive ? css.projRowActive : ""].filter(Boolean).join(" ")}
         onClick={() => navigate(`/${orgId}/settings`)}
         aria-pressed={orgSettingsActive}
@@ -113,7 +118,7 @@ export const SidebarDiagramList = ({
         <span className={css.projName}>조직 설정</span>
       </button>
       <div className={css.sidebarFooter}>
-        <button className={css.addProjectBtn} onClick={() => openModal("project")}>
+        <button type="button" className={css.addProjectBtn} onClick={() => openModal("project")}>
           + 새 프로젝트
         </button>
       </div>

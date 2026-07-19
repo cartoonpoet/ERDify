@@ -11,7 +11,7 @@ const getStrength = (pw: string) => {
   if (pw.length === 0) return 0;
   if (pw.length < 6) return 1;
   if (pw.length < 8) return 2;
-  if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) return 4;
+  if (/[A-Z]/.test(pw) && /\d/.test(pw)) return 4;
   return 3;
 };
 

@@ -35,8 +35,8 @@ function parseTable(el: Element): { entity: DiagramEntity; x: number | null; y: 
 
   const xAttr = el.getAttribute("x");
   const yAttr = el.getAttribute("y");
-  const x = xAttr !== null ? parseFloat(xAttr) : null;
-  const y = yAttr !== null ? parseFloat(yAttr) : null;
+  const x = xAttr !== null ? Number.parseFloat(xAttr) : null;
+  const y = yAttr !== null ? Number.parseFloat(yAttr) : null;
 
   const columnEls = Array.from(el.querySelectorAll("column"));
   const columns: DiagramColumn[] = columnEls.map((c, i) => parseColumn(c, i));
@@ -74,8 +74,8 @@ export function parseExerd(
     const col = i % 4;
     const row = Math.floor(i / 4);
     entityPositions[info.entity.id] = {
-      x: info.x !== null ? info.x : col * 280,
-      y: info.y !== null ? info.y : row * 320,
+      x: info.x ?? col * 280,
+      y: info.y ?? row * 320,
     };
   });
 

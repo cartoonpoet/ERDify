@@ -44,6 +44,7 @@ export const AnnouncementModal = ({ unread, onMarkSeen, onMarkAllSeen }: Announc
             <span className={css.counter}>{index + 1} / {unread.length}</span>
           )}
           <button
+            type="button"
             className={css.closeBtn}
             onClick={onMarkAllSeen}
             disabled={current.isUrgent}
@@ -55,8 +56,8 @@ export const AnnouncementModal = ({ unread, onMarkSeen, onMarkAllSeen }: Announc
 
         {isMultiple && (
           <div className={css.dots} data-testid="pagination-dots">
-            {unread.map((_, i) => (
-              <div key={i} className={`${css.dot} ${i === index ? css.dotActive : ""}`} />
+            {unread.map((a, i) => (
+              <div key={a.id} className={`${css.dot} ${i === index ? css.dotActive : ""}`} />
             ))}
           </div>
         )}
@@ -68,15 +69,15 @@ export const AnnouncementModal = ({ unread, onMarkSeen, onMarkAllSeen }: Announc
         <div className={css.navRow}>
           {isMultiple && (
             <>
-              <button className={css.navBtn} onClick={() => setIndex((i) => i - 1)} disabled={index === 0} aria-label="이전">‹</button>
-              <button className={css.navBtn} onClick={() => setIndex((i) => i + 1)} disabled={isLast} aria-label="다음">›</button>
+              <button type="button" className={css.navBtn} onClick={() => setIndex((i) => i - 1)} disabled={index === 0} aria-label="이전">‹</button>
+              <button type="button" className={css.navBtn} onClick={() => setIndex((i) => i + 1)} disabled={isLast} aria-label="다음">›</button>
             </>
           )}
           {!current.isUrgent && (
-            <button className={css.noShow} onClick={handleNoShow}>다시 보지 않기</button>
+            <button type="button" className={css.noShow} onClick={handleNoShow}>다시 보지 않기</button>
           )}
           <div className={css.spacer} />
-          <button className={css.confirmBtn} onClick={handleConfirm}>
+          <button type="button" className={css.confirmBtn} onClick={handleConfirm}>
             {isLast ? "확인" : "다음 →"}
           </button>
         </div>

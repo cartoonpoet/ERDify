@@ -13,8 +13,14 @@ const getStrength = (pw: string) => {
   if (pw.length === 0) return 0;
   if (pw.length < 6) return 1;
   if (pw.length < 8) return 2;
-  if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) return 4;
+  if (/[A-Z]/.test(pw) && /\d/.test(pw)) return 4;
   return 3;
+};
+
+const getSendCodeLabel = (sendingCode: boolean, resendCooldown: number, codeSent: boolean) => {
+  if (sendingCode) return "발송 중...";
+  if (resendCooldown > 0) return `재전송 (${resendCooldown}s)`;
+  return codeSent ? "재전송" : "인증 코드 발송";
 };
 
 export const RegisterPage = () => {
@@ -149,7 +155,7 @@ export const RegisterPage = () => {
                   disabled={sendingCode || !email || resendCooldown > 0}
                   style={{ flexShrink: 0, marginBottom: 2 }}
                 >
-                  {sendingCode ? "발송 중..." : resendCooldown > 0 ? `재전송 (${resendCooldown}s)` : codeSent ? "재전송" : "인증 코드 발송"}
+                  {getSendCodeLabel(sendingCode, resendCooldown, codeSent)}
                 </Button>
               )}
             </div>

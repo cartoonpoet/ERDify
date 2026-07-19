@@ -7,8 +7,15 @@ import { listMyOrganizations } from "@/shared/api/organizations.api";
 import { queryKeys } from "@/shared/lib/queryKeys";
 import { useMembers } from "@/features/dashboard/hooks/useMembers";
 import { useInvites } from "@/features/dashboard/hooks/useInvites";
+import type { MemberRoleType } from "@/shared/api/members.api";
 import { InviteOrgModal } from "../components/InviteOrgModal";
 import * as css from "./member-management-page.css";
+
+const ROLE_LABELS: Record<MemberRoleType, string> = {
+  owner: "Owner",
+  editor: "Editor",
+  viewer: "Viewer",
+};
 
 export const MemberManagementPage = () => {
   const { orgId = "" } = useParams<{ orgId: string }>();
@@ -95,7 +102,7 @@ export const MemberManagementPage = () => {
                     </>
                   ) : (
                     <div className={css.roleBadge}>
-                      {member.role === "owner" ? "Owner" : member.role === "editor" ? "Editor" : "Viewer"}
+                      {ROLE_LABELS[member.role]}
                     </div>
                   )}
                 </div>
@@ -126,7 +133,7 @@ export const MemberManagementPage = () => {
                         </div>
                       </div>
                       <div className={css.pendingBadge}>
-                        {invite.role === "owner" ? "Owner" : invite.role === "editor" ? "Editor" : "Viewer"} · 대기중
+                        {ROLE_LABELS[invite.role]} · 대기중
                       </div>
                       {!meLoading && isOwner && (
                         <Button

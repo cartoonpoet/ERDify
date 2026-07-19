@@ -45,7 +45,7 @@ export const CardinalityEdge = ({
     strokeWidth: selected ? 2.5 : 1.5,
     ...(!data.identifying ? { strokeDasharray: "6 3" } : {}),
     ...(selected ? { filter: "drop-shadow(0 0 5px rgba(99,102,241,0.55))" } : {}),
-    ...(style ?? {}),
+    ...style,
   };
 
   return (

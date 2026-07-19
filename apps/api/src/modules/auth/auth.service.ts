@@ -1,6 +1,6 @@
-import { createHash, randomBytes, randomInt, randomUUID } from "crypto";
-import { extname, join } from "path";
-import { writeFile, unlink } from "fs/promises";
+import { createHash, randomBytes, randomInt, randomUUID } from "node:crypto";
+import { extname, join } from "node:path";
+import { writeFile, unlink } from "node:fs/promises";
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";

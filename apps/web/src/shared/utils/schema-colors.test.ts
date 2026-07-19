@@ -10,7 +10,7 @@ describe("SCHEMA_PALETTE", () => {
   });
 
   it("has 10 colors", () => {
-    expect(SCHEMA_PALETTE.length).toBe(10);
+    expect(SCHEMA_PALETTE).toHaveLength(10);
   });
 });
 
@@ -106,7 +106,7 @@ describe("getSchemasFromDocument", () => {
     expect(getSchemasFromDocument(entities)).toEqual(["auth"]);
   });
 
-  it("excludes entities with null schema", () => {
+  it("excludes entities with null schema when the valid schema is billing", () => {
     const entities = [{ schema: null }, { schema: "billing" }];
     expect(getSchemasFromDocument(entities)).toEqual(["billing"]);
   });

@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SharedDiagramPage } from "./SharedDiagramPage";
@@ -87,9 +87,7 @@ describe("SharedDiagramPage", () => {
       content,
     } as unknown as Awaited<ReturnType<typeof getPublicDiagram>>);
     wrap("tok123");
-    await waitFor(() =>
-      expect(screen.getByText("My ERD")).toBeInTheDocument()
-    );
+    expect(await screen.findByText("My ERD")).toBeInTheDocument();
     expect(mockSetDocument).toHaveBeenCalledWith(content);
     expect(mockSetCanEdit).toHaveBeenCalledWith(false);
     expect(screen.getByText("읽기 전용")).toBeInTheDocument();

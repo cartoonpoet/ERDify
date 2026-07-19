@@ -73,6 +73,27 @@ function indexPrefixOf(name: string): string | null {
   return i > 0 ? name.slice(0, i + 1) : null;
 }
 
+/** 두 후보의 등장 빈도를 비교해 하나만 있으면 그 값을, 둘 다 있으면 "mixed", 둘 다 없으면 "unknown"을 고른다. */
+function classifyByPresence<A extends string, B extends string>(
+  aCount: number,
+  bCount: number,
+  aLabel: A,
+  bLabel: B,
+): A | B | "mixed" | "unknown" {
+  if (aCount > 0 && bCount > 0) return "mixed";
+  if (aCount > 0) return aLabel;
+  if (bCount > 0) return bLabel;
+  return "unknown";
+}
+
+/** 복수형/단수형 테이블 수를 비교해 우세한 쪽을 고른다. 대상이 없으면 "unknown", 동률이면 "mixed". */
+function classifyTableNumber(total: number, plural: number, singular: number): ConventionProfile["tableNaming"]["number"] {
+  if (total === 0) return "unknown";
+  if (plural > singular) return "plural";
+  if (singular > plural) return "singular";
+  return "mixed";
+}
+
 /**
  * 다이어그램의 컨벤션을 결정적으로 추출한다.
  * 순수 함수 — 입력을 변경하지 않으며 동일 입력에 항상 동일 출력(LLM 호출 없음).
@@ -87,15 +108,13 @@ export function detectConventions(doc: DiagramDocument): ConventionProfile {
   const styles = allColumns.map((c) => caseStyle(c.name));
   const snake = styles.filter((s) => s === "snake").length;
   const camel = styles.filter((s) => s === "camel").length;
-  const caseResult: ConventionProfile["caseStyle"] =
-    snake > 0 && camel > 0 ? "mixed" : snake > 0 ? "snake" : camel > 0 ? "camel" : "unknown";
+  const caseResult: ConventionProfile["caseStyle"] = classifyByPresence(snake, camel, "snake", "camel");
 
   // 2) 테이블 단/복수 + 공통 접두사
   const tableNames = entities.map((e) => e.name);
   const plural = tableNames.filter((n) => n.endsWith("s")).length;
   const singular = tableNames.length - plural;
-  const number: ConventionProfile["tableNaming"]["number"] =
-    tableNames.length === 0 ? "unknown" : plural > singular ? "plural" : singular > plural ? "singular" : "mixed";
+  const number: ConventionProfile["tableNaming"]["number"] = classifyTableNumber(tableNames.length, plural, singular);
   const prefixCounts = new Map<string, number>();
   for (const n of tableNames) {
     const p = indexPrefixOf(n);
@@ -148,8 +167,7 @@ export function detectConventions(doc: DiagramDocument): ConventionProfile {
   const coveragePct = allColumns.length === 0 ? 0 : Math.round((withComment.length / allColumns.length) * 100);
   const korean = withComment.filter((c) => HANGUL.test(c.comment!)).length;
   const english = withComment.filter((c) => !HANGUL.test(c.comment!) && /[A-Za-z]/.test(c.comment!)).length;
-  const language: ConventionProfile["comments"]["language"] =
-    korean > 0 && english > 0 ? "mixed" : korean > 0 ? "korean" : english > 0 ? "english" : "unknown";
+  const language: ConventionProfile["comments"]["language"] = classifyByPresence(korean, english, "korean", "english");
 
   return {
     caseStyle: caseResult,

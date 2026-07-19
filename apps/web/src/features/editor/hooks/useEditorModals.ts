@@ -16,7 +16,13 @@ export const useEditorModals = (diagramId: string | undefined) => {
   const handleFileMenuClose = () => setShowFileMenu(false);
   const handleImportOpen = () => { setShowFileMenu(false); setShowImport(true); };
   const handleExportOpen = () => { setShowFileMenu(false); setShowExport(true); };
-  const handleSaveCopyOpen = () => { if (!diagramId) return; setShowFileMenu(false); setShowSaveCopy(true); };
+  const handleSaveCopyOpen = () => {
+    if (!diagramId) {
+      return;
+    }
+    setShowFileMenu(false);
+    setShowSaveCopy(true);
+  };
 
   return {
     showInvite, setShowInvite,
