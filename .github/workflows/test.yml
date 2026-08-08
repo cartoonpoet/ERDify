@@ -73,6 +73,10 @@ jobs:
             } catch { return null; }
           }
 
+          // 알림 본문은 서식이 없는 평문이다. 브랜치·커밋 메시지·테스트 이름은 사람이 쓴 값이라
+          // 마크업 문자가 섞이면 Telegram이 파싱에 실패해 알림이 통째로 죽는다(그래서 html + escape).
+          const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
           const web    = parse('.ci/web.json');
           const domain = parse('.ci/domain.json');
 
@@ -83,9 +87,9 @@ jobs:
 
           const ok = allFailed.length === 0;
           const icon = ok ? '✅' : '❌';
-          const branch = process.env.BRANCH;
+          const branch = esc(process.env.BRANCH);
           const sha = (process.env.COMMIT_SHA || '').slice(0, 7);
-          const commitMsg = (process.env.COMMIT_MSG || '').split('\n')[0].slice(0, 72);
+          const commitMsg = esc((process.env.COMMIT_MSG || '').split('\n')[0].slice(0, 72));
           const runUrl = process.env.GITHUB_RUN_URL;
 
           const webLine = web
@@ -97,7 +101,7 @@ jobs:
 
           let failBlock = '';
           if (allFailed.length > 0) {
-            const items = allFailed.slice(0, 15).map(t => `  • ${t}`).join('\n');
+            const items = allFailed.slice(0, 15).map(t => `  • ${esc(t)}`).join('\n');
             const more = allFailed.length > 15 ? `\n  … 외 ${allFailed.length - 15}개` : '';
             failBlock = `\n\n💥 실패한 테스트\n${items}${more}`;
           }
@@ -121,6 +125,9 @@ jobs:
 
       - name: Send Telegram notification
         if: always() && env.TELEGRAM_BOT_TOKEN != ''
+        # 알림은 테스트 결과를 전달할 뿐이므로, 알림이 실패해도 test 잡을 실패시키지 않는다.
+        # (실제 게이트는 아래 "Fail job if tests failed")
+        continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -128,7 +135,7 @@ jobs:
         with:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          format: markdown
+          format: html
           message_file: .ci/telegram-msg.txt
 
       - name: Upload test results

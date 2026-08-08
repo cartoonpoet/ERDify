@@ -106,7 +106,7 @@ mcp_servers:
 → AI가 ERDify MCP로 현재 스키마를 확인하고 테이블·관계를 추가합니다
 ```
 
-**사용 가능한 MCP 툴:** `list_organizations` · `list_projects` · `list_diagrams` · `get_diagram` · `get_ddl` · `add_table` · `remove_table` · `add_column` · `update_column` · `remove_column` · `add_relationship` · `remove_relationship`
+**사용 가능한 MCP 툴:** `list_organizations` · `list_projects` · `list_diagrams` · `get_diagram` · `get_table` · `get_ddl` · `add_table` · `update_table` · `remove_table` · `add_column` · `update_column` · `remove_column` · `add_relationship` · `update_relationship` · `remove_relationship` · `add_index` · `update_index` · `remove_index` · `add_object` · `update_object` · `remove_object`
 
 ---
 

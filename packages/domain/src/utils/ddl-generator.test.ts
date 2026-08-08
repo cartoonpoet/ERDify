@@ -404,3 +404,98 @@ describe("generateDdlReport — objects", () => {
     expect(sql).not.toContain("-- procedure: sp_a\nDROP TABLE users;");
   });
 });
+
+describe("generateDdlReport — TEXT/BLOB/JSON 리터럴 DEFAULT (#108)", () => {
+  const mysqlDoc = (column: Partial<DiagramColumn>) => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "Article" });
+    return addColumn(doc, "e1", col({ id: "c1", name: "Body", primaryKey: false, ...column }));
+  };
+
+  it("MySQL이 거부하는 리터럴 DEFAULT를 제거하고 경고한다 (ERROR 1101 방지)", () => {
+    const { sql, warnings } = generateDdlReport(mysqlDoc({ type: "text", defaultValue: "CHARSET=utf8mb4" }));
+    expect(sql).not.toContain("DEFAULT");
+    expect(warnings.map((w) => w.code)).toContain("default_invalid_for_type");
+  });
+
+  it.each(["text", "tinytext", "mediumtext", "longtext", "blob", "longblob", "json", "geometry"])(
+    "%s 타입에도 같은 규칙을 적용한다",
+    (type) => {
+      const { sql } = generateDdlReport(mysqlDoc({ type, defaultValue: "x" }));
+      expect(sql).not.toContain("DEFAULT");
+    }
+  );
+
+  it("DEFAULT NULL은 MySQL이 허용하므로 그대로 둔다", () => {
+    const { sql, warnings } = generateDdlReport(mysqlDoc({ type: "text", defaultValue: "NULL" }));
+    expect(sql).toContain("DEFAULT NULL");
+    expect(warnings.map((w) => w.code)).not.toContain("default_invalid_for_type");
+  });
+
+  it("괄호 표현식 DEFAULT는 MySQL 8.0.13+에서 유효하므로 그대로 둔다", () => {
+    const { sql } = generateDdlReport(mysqlDoc({ type: "json", defaultValue: "(JSON_ARRAY())" }));
+    expect(sql).toContain("DEFAULT (JSON_ARRAY())");
+  });
+
+  it("varchar처럼 DEFAULT가 유효한 타입은 건드리지 않는다", () => {
+    const { sql } = generateDdlReport(mysqlDoc({ type: "varchar(20)", defaultValue: "code" }));
+    expect(sql).toContain("DEFAULT 'code'");
+  });
+
+  it("MariaDB는 10.2.1부터 TEXT 리터럴 DEFAULT를 허용하므로 유지한다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mariadb" });
+    doc = addEntity(doc, { id: "e1", name: "Article" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "Body", type: "text", primaryKey: false, defaultValue: "x" }));
+    expect(generateDdl(doc)).toContain("DEFAULT 'x'");
+  });
+
+  it("빈 DEFAULT는 문법 오류가 되므로 절 자체를 뺀다", () => {
+    const { sql, warnings } = generateDdlReport(mysqlDoc({ type: "varchar(20)", defaultValue: "   " }));
+    expect(sql).not.toContain("DEFAULT");
+    expect(warnings.map((w) => w.code)).toContain("default_empty");
+  });
+});
+
+describe("generateDdlReport — ON UPDATE 컬럼 절 (#109)", () => {
+  const docWith = (dialect: "mysql" | "mariadb" | "postgresql") => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect });
+    doc = addEntity(doc, { id: "e1", name: "Article" });
+    return addColumn(doc, "e1", col({
+      id: "c1", name: "UpdateDate", type: "datetime", primaryKey: false, nullable: false,
+      defaultValue: "CURRENT_TIMESTAMP", onUpdate: "CURRENT_TIMESTAMP",
+    }));
+  };
+
+  it("MySQL에서 DEFAULT 뒤에 ON UPDATE를 붙인다", () => {
+    expect(generateDdl(docWith("mysql"))).toContain(
+      "`UpdateDate` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+    );
+  });
+
+  it("MariaDB도 같은 문법을 쓴다", () => {
+    expect(generateDdl(docWith("mariadb"))).toContain("ON UPDATE CURRENT_TIMESTAMP");
+  });
+
+  it("PostgreSQL에는 없는 문법이라 출력하지 않고 경고한다", () => {
+    const { sql, warnings } = generateDdlReport(docWith("postgresql"));
+    expect(sql).not.toContain("ON UPDATE");
+    expect(warnings.map((w) => w.code)).toContain("onupdate_unsupported_dialect");
+  });
+
+  it("ON UPDATE는 AUTO_INCREMENT 앞에 온다 (MySQL 컬럼 정의 순서)", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "Article" });
+    doc = addColumn(doc, "e1", col({
+      id: "c1", name: "Seq", type: "bigint", defaultValue: "1", onUpdate: "CURRENT_TIMESTAMP", autoIncrement: true,
+    }));
+    const line = generateDdl(doc).split("\n").find((l) => l.includes("`Seq`"))!;
+    expect(line.indexOf("ON UPDATE")).toBeLessThan(line.indexOf("AUTO_INCREMENT"));
+  });
+
+  it("onUpdate가 없거나 빈 문자열이면 아무것도 출력하지 않는다", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    doc = addEntity(doc, { id: "e1", name: "Article" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "a", type: "int", onUpdate: "  " }));
+    expect(generateDdl(doc)).not.toContain("ON UPDATE");
+  });
+});

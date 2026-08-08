@@ -5,8 +5,9 @@ export type { SchemaFinding } from "./utils/analyze-schema.js";
 export { selectRelevantTables } from "./utils/select-relevant-tables.js";
 export { detectConventions } from "./utils/detect-conventions.js";
 export type { ConventionProfile } from "./utils/detect-conventions.js";
-export { addEntity, renameEntity, removeEntity, updateEntityColor, updateEntityComment, setEntitySchema, setSeedData } from "./commands/entity-commands.js";
-export { addColumn, addColumns, updateColumn, removeColumn } from "./commands/column-commands.js";
+export { addEntity, renameEntity, removeEntity, updateEntity, updateEntityColor, updateEntityComment, setEntitySchema, setSeedData } from "./commands/entity-commands.js";
+export type { EntityPatch } from "./commands/entity-commands.js";
+export { addColumn, addColumns, insertColumn, moveColumn, moveColumnAfter, updateColumn, removeColumn } from "./commands/column-commands.js";
 export { addRelationship, removeRelationship, updateRelationship } from "./commands/relationship-commands.js";
 export { updateEntityPosition } from "./commands/layout-commands.js";
 export { addIndex, removeIndex, updateIndex } from "./commands/index-commands.js";
@@ -32,7 +33,8 @@ export type {
   RelationshipCardinality,
   SeedRow,
 } from "./types/index.js";
-export { formatDiagram } from "./utils/format-diagram.js";
+export { formatDiagram, formatColumn, formatIndex, formatEntityLines, qualifiedEntityName } from "./utils/format-diagram.js";
+export type { FormatDiagramOptions } from "./utils/format-diagram.js";
 export { generateDdl, generateDdlReport } from "./utils/ddl-generator.js";
 export { generateSeedSql, generateSetupSql } from "./utils/seed-generator.js";
 export { generateOrm } from "./utils/orm-generator.js";
