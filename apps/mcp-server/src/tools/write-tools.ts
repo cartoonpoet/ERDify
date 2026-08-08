@@ -200,7 +200,7 @@ export const registerWriteTools = (server: McpServer): void => {
         content: [
           {
             type: "text",
-            text: `Table "${schema ? `${schema}.${name}` : name}" added. tableId=${entityId}.${colInfo}${schemaHint}`,
+            text: `Table "${qualifiedEntityName({ name, schema: schema ?? null })}" added. tableId=${entityId}.${colInfo}${schemaHint}`,
           },
         ],
       };
@@ -250,11 +250,12 @@ export const registerWriteTools = (server: McpServer): void => {
       const updated = updateEntity(doc, tableId, patch);
       await client.updateDiagram(diagramId, updated);
       void client.recordToolCall(diagramId, "update_table", `"${before}" 테이블 수정`).catch(() => {});
+      const renamed = after === before ? "" : ` → "${after}"`;
       return {
         content: [
           {
             type: "text",
-            text: `Table "${before}" (${tableId}) updated${after === before ? "" : ` → "${after}"`}. Changed: ${changed.join(", ")}.`,
+            text: `Table "${before}" (${tableId}) updated${renamed}. Changed: ${changed.join(", ")}.`,
           },
         ],
       };

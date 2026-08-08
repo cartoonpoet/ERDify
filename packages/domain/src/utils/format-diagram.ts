@@ -12,13 +12,13 @@ export interface FormatDiagramOptions {
  * 스키마가 있으면 `Schema.Table`로 표기한다.
  * MCP/CLI 응답만 보고도 테이블이 어느 스키마에 속하는지 알 수 있어야 한다.
  */
-export function qualifiedEntityName(entity: DiagramEntity): string {
+export function qualifiedEntityName(entity: Pick<DiagramEntity, "name"> & { schema?: string | null }): string {
   return entity.schema ? `${entity.schema}.${entity.name}` : entity.name;
 }
 
 /** 요약은 한 줄 단위라 주석의 개행이 새면 구조가 깨진다. 공백으로 정규화한다. */
 function oneLine(value: string): string {
-  return value.replaceAll(/\s*[\r\n]+\s*/g, " ").trim();
+  return value.replaceAll(/\s+/g, " ").trim();
 }
 
 /** 한 컬럼을 한 줄로 요약한다. detail이면 DEFAULT·ON UPDATE·AUTO_INCREMENT·주석까지 붙는다. */
