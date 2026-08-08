@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { DiagramColumn, DiagramDocument, DiagramEntity, DiagramRelationship } from "@erdify/domain";
 import { createEmptyDiagram } from "@erdify/domain";
 
-import { registerReadTools } from "./read-tools.js";
+import { findEntitiesByName, registerReadTools } from "./read-tools.js";
 import { client } from "../client.js";
 
 vi.mock("../client.js", () => ({
@@ -247,5 +247,114 @@ describe("read tools", () => {
       expect(text).toContain("[fk_missing_entity]");
       expect(text.indexOf("경고")).toBeLessThan(text.indexOf("CREATE TABLE"));
     });
+  });
+});
+
+describe("findEntitiesByName (#110 #111)", () => {
+  const withSchema = (id: string, name: string, schema: string | null): DiagramEntity => ({
+    ...makeEntity(id, name, []),
+    schema,
+  });
+
+  const entities = [
+    withSchema("e1", "Article", "App"),
+    withSchema("e2", "Article", "Legal"),
+    withSchema("e3", "Bar.Foo", null),
+    withSchema("e4", "Foo", "Bar"),
+  ];
+
+  it("같은 이름이 여러 스키마에 있으면 전부 돌려준다", () => {
+    expect(findEntitiesByName(entities, "article").map((e) => e.id)).toEqual(["e1", "e2"]);
+  });
+
+  it("schema를 주면 그 스키마로 좁힌다", () => {
+    expect(findEntitiesByName(entities, "Article", "legal").map((e) => e.id)).toEqual(["e2"]);
+    expect(findEntitiesByName(entities, "Article", "Nope")).toEqual([]);
+  });
+
+  it("이름 자체에 점이 든 테이블을 스키마 표기보다 먼저 찾는다 (#111)", () => {
+    expect(findEntitiesByName(entities, "Bar.Foo").map((e) => e.id)).toEqual(["e3"]);
+  });
+
+  it("이름 전체로 못 찾을 때만 Schema.Table 표기로 해석한다", () => {
+    expect(findEntitiesByName(entities.filter((e) => e.id !== "e3"), "Bar.Foo").map((e) => e.id)).toEqual(["e4"]);
+  });
+
+  it("없으면 빈 배열", () => {
+    expect(findEntitiesByName(entities, "ghost")).toEqual([]);
+  });
+});
+
+describe("get_table / get_diagram — 스키마·상세 (#106 #110 #112)", () => {
+  const tools = collectTools();
+  const asResponse = (content: DiagramDocument) => ({ id: "d1", name: "T", content, organizationId: "org1" });
+
+  const doc = (): DiagramDocument => ({
+    ...createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" }),
+    entities: [
+      {
+        ...makeEntity("e1", "Article", [
+          makeColumn("c1", "ArticleID", { type: "int", primaryKey: true, nullable: false, ordinal: 0 }),
+          makeColumn("c2", "UpdateDate", {
+            type: "datetime", nullable: false, ordinal: 1,
+            defaultValue: "CURRENT_TIMESTAMP", onUpdate: "CURRENT_TIMESTAMP", comment: "수정 일시",
+          }),
+        ]),
+        schema: "App",
+      },
+      { ...makeEntity("e2", "Article", [makeColumn("c3", "id", { ordinal: 0 })]), schema: "Legal" },
+    ],
+    indexes: [{ id: "i1", entityId: "e1", name: "IX_Article_UpdateDate", columnIds: ["c2"], unique: false }],
+  });
+
+  beforeEach(() => {
+    vi.mocked(client.getDiagram).mockReset();
+    vi.mocked(client.recordToolCall).mockReset().mockResolvedValue(undefined as never);
+  });
+
+  it("get_table: 기본값·ON UPDATE·주석·인덱스를 함께 낸다 (#110 #112)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc()));
+
+    const text = (await tools.get("get_table")!({ diagramId: "d1", tableName: "Article", schema: "App" }))
+      .content[0]!.text;
+
+    expect(text).toContain("Table: App.Article [tableId: e1]");
+    expect(text).toContain(
+      "- UpdateDate [columnId: c2]: datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP -- 수정 일시"
+    );
+    expect(text).toContain("* IX_Article_UpdateDate (UpdateDate) [indexId: i1]");
+  });
+
+  it("get_table: 같은 이름 테이블을 전부 보여준다 (#110)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc()));
+
+    const text = (await tools.get("get_table")!({ diagramId: "d1", tableName: "Article" })).content[0]!.text;
+
+    expect(text).toContain('2 tables named "Article"');
+    expect(text).toContain("App.Article [tableId: e1]");
+    expect(text).toContain("Legal.Article [tableId: e2]");
+  });
+
+  it("get_table: 스키마로 못 찾으면 스키마를 밝혀서 알린다", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc()));
+
+    const text = (await tools.get("get_table")!({ diagramId: "d1", tableName: "Article", schema: "Nope" }))
+      .content[0]!.text;
+
+    expect(text).toBe('Table "Article" in schema "Nope" not found in diagram "T".');
+  });
+
+  it("get_diagram: 기본은 요약, detail=true면 기본값·인덱스까지 낸다 (#110)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc()));
+
+    const brief = (await tools.get("get_diagram")!({ diagramId: "d1" })).content[0]!.text;
+    expect(brief).toContain("App.Article [tableId: e1]");
+    expect(brief).not.toContain("CURRENT_TIMESTAMP");
+    expect(brief).toContain("Indexes (1)");
+
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc()));
+    const full = (await tools.get("get_diagram")!({ diagramId: "d1", detail: true })).content[0]!.text;
+    expect(full).toContain("ON UPDATE CURRENT_TIMESTAMP");
+    expect(full).toContain("* IX_Article_UpdateDate (UpdateDate) [indexId: i1]");
   });
 });

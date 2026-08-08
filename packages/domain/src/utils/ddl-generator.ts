@@ -27,6 +27,24 @@ function isStringType(type: string): boolean {
   return /\b(char|varchar|nchar|nvarchar|character|text|clob|enum|set)\b/i.test(type);
 }
 
+/**
+ * MySQL이 리터럴 DEFAULT를 거부하는 타입 (ERROR 1101: "BLOB, TEXT, GEOMETRY or JSON column
+ * can't have a default value"). MariaDB는 10.2.1부터 허용하므로 mysql에만 적용한다.
+ */
+const NO_LITERAL_DEFAULT_TYPE_RE =
+  /\b(tiny|medium|long)?(text|blob)\b|\b(json|geometry|point|linestring|polygon|geometrycollection|multipoint|multilinestring|multipolygon)\b/i;
+
+/**
+ * 해당 DEFAULT가 MySQL이 거부하는 "리터럴" 기본값인지 판정한다.
+ * `NULL`은 허용되고, 8.0.13+의 괄호 표현식 기본값(`DEFAULT ('x')`)도 허용된다.
+ */
+function isRejectedLiteralDefault(type: string, defaultValue: string): boolean {
+  if (!NO_LITERAL_DEFAULT_TYPE_RE.test(type)) return false;
+  const v = defaultValue.trim();
+  if (v === "" || v.toUpperCase() === "NULL") return false;
+  return !v.startsWith("("); // 괄호 표현식은 MySQL 8.0.13+에서 허용
+}
+
 /** 문자열 컬럼의 DEFAULT가 인용되지 않은 맨몸 리터럴이면 true (예: `DEFAULT 코드값` → 문법 오류) */
 function defaultNeedsQuoting(defaultValue: string): boolean {
   const v = defaultValue.trim();
@@ -100,6 +118,77 @@ function escapeComment(value: string): string {
   return value.replaceAll(/'/g, "''");
 }
 
+/**
+ * DEFAULT 절을 만든다. 실행 불가능한 조합(빈 기본값, MySQL의 TEXT/BLOB/JSON 리터럴 기본값)은
+ * 절 자체를 생략하고 경고를 남긴다 — export 불변식: 어떤 경우에도 실행 불가능한 SQL을 출력하지 않는다.
+ */
+function defaultClause(
+  col: DiagramColumn,
+  type: string,
+  dialect: DiagramDocument["dialect"],
+  entityName: string,
+  colName: string,
+  warnings: DdlWarning[],
+): string | null {
+  if (col.defaultValue === null) return null;
+  const raw = col.defaultValue.trim();
+
+  if (raw === "") {
+    warnings.push({
+      code: "default_empty",
+      entity: entityName,
+      column: colName,
+      message: `Dropped empty DEFAULT for "${entityName}.${colName}" — "DEFAULT" with no value is a syntax error. Use NULL or '' explicitly.`,
+    });
+    return null;
+  }
+
+  if (dialect === "mysql" && isRejectedLiteralDefault(type, raw)) {
+    warnings.push({
+      code: "default_invalid_for_type",
+      entity: entityName,
+      column: colName,
+      message: `Dropped DEFAULT ${raw} for "${entityName}.${colName}": MySQL rejects a literal default on ${type} columns (ERROR 1101). Use an expression default — DEFAULT (${raw}) — on MySQL 8.0.13+ if it is really needed.`,
+    });
+    return null;
+  }
+
+  if (isStringType(type) && defaultNeedsQuoting(col.defaultValue)) {
+    warnings.push({
+      code: "default_autoquoted",
+      entity: entityName,
+      column: colName,
+      message: `Auto-quoted DEFAULT for "${entityName}.${colName}": ${col.defaultValue} → '${raw}'.`,
+    });
+    return `DEFAULT '${escapeComment(raw)}'`;
+  }
+
+  return `DEFAULT ${col.defaultValue}`;
+}
+
+/**
+ * `ON UPDATE <expr>` 절(MySQL/MariaDB 전용)을 만든다.
+ * 다른 dialect에서는 문법 오류가 되므로 출력하지 않고 경고만 남긴다.
+ */
+function onUpdateClause(
+  col: DiagramColumn,
+  dialect: DiagramDocument["dialect"],
+  entityName: string,
+  colName: string,
+  warnings: DdlWarning[],
+): string | null {
+  const expr = col.onUpdate?.trim();
+  if (!expr) return null;
+  if (dialect === "mysql" || dialect === "mariadb") return `ON UPDATE ${expr}`;
+  warnings.push({
+    code: "onupdate_unsupported_dialect",
+    entity: entityName,
+    column: colName,
+    message: `Dropped ON UPDATE ${expr} for "${entityName}.${colName}": the ON UPDATE column clause is MySQL/MariaDB only (dialect is ${dialect}).`,
+  });
+  return null;
+}
+
 function columnDdl(
   col: DiagramColumn,
   dialect: DiagramDocument["dialect"],
@@ -120,19 +209,11 @@ function columnDdl(
   const parts: string[] = [quote(col.name, dialect), type];
   if (!col.nullable) parts.push("NOT NULL");
   if (col.unique && !col.primaryKey) parts.push("UNIQUE");
-  if (col.defaultValue !== null) {
-    if (isStringType(type) && defaultNeedsQuoting(col.defaultValue)) {
-      parts.push(`DEFAULT '${escapeComment(col.defaultValue.trim())}'`);
-      warnings.push({
-        code: "default_autoquoted",
-        entity: entityName,
-        column: colName,
-        message: `Auto-quoted DEFAULT for "${entityName}.${colName}": ${col.defaultValue} → '${col.defaultValue.trim()}'.`,
-      });
-    } else {
-      parts.push(`DEFAULT ${col.defaultValue}`);
-    }
-  }
+  const defaultSql = defaultClause(col, type, dialect, entityName, colName, warnings);
+  if (defaultSql) parts.push(defaultSql);
+  // ON UPDATE는 DEFAULT 뒤, AUTO_INCREMENT 앞에 와야 한다 (MySQL 컬럼 정의 문법 순서).
+  const onUpdateSql = onUpdateClause(col, dialect, entityName, colName, warnings);
+  if (onUpdateSql) parts.push(onUpdateSql);
   // AUTO_INCREMENT는 MySQL/MariaDB 문법. 다른 dialect에서는 잘못된 SQL이 되므로 출력하지 않는다.
   if (col.autoIncrement && (dialect === "mysql" || dialect === "mariadb")) {
     parts.push("AUTO_INCREMENT");

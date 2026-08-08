@@ -6,7 +6,7 @@ import { registerWriteTools } from "./tools/write-tools.js";
 const server = new McpServer({
   name: "erdify",
   // package.json version과 일치시킬 것 (릴리즈 시 함께 상향).
-  version: "0.3.0",
+  version: "0.4.0",
 });
 
 registerReadTools(server);

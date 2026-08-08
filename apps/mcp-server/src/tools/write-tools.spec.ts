@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { DiagramDocument, DiagramEntity } from "@erdify/domain";
-import { addColumn, addEntity, addObject, createEmptyDiagram } from "@erdify/domain";
+import { addColumn, addColumns, addEntity, addIndex, addObject, createEmptyDiagram } from "@erdify/domain";
 
-import { assertColumnsExist, buildColumn, registerWriteTools } from "./write-tools.js";
+import { assertColumnsExist, buildColumn, registerWriteTools, resolveColumnRef } from "./write-tools.js";
 import { client } from "../client.js";
 
 vi.mock("../client.js", () => ({
@@ -180,5 +180,272 @@ describe("object write tools", () => {
       tools.get("remove_object")!({ diagramId: "d1", objectId: "ghost" })
     ).rejects.toThrow(/ghost/);
     expect(vi.mocked(client.updateDiagram)).not.toHaveBeenCalled();
+  });
+});
+
+describe("table / column placement / index write tools (#106 #107 #109 #112)", () => {
+  const tools = collectTools();
+  const asResponse = (content: DiagramDocument) => ({ id: "d1", name: "T", content, organizationId: "org1" });
+  const lastSavedDoc = (): DiagramDocument =>
+    vi.mocked(client.updateDiagram).mock.calls[0]![1] as DiagramDocument;
+
+  const mysqlDoc = (): DiagramDocument => createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+
+  /** ArticleID / ManageNo / Title 3컬럼짜리 App.Article */
+  const articleDoc = (): DiagramDocument => {
+    let doc = addEntity(mysqlDoc(), { id: "e1", name: "Article", schema: "App" });
+    doc = addColumns(doc, "e1", [
+      { ...buildColumn({ name: "ArticleID", type: "int", primaryKey: true }, 0), id: "c1" },
+      { ...buildColumn({ name: "ManageNo", type: "varchar(20)" }, 1), id: "c2" },
+      { ...buildColumn({ name: "Title", type: "varchar(200)" }, 2), id: "c3" },
+    ]);
+    return doc;
+  };
+
+  const columnNames = (doc: DiagramDocument): string[] =>
+    [...doc.entities[0]!.columns].sort((a, b) => a.ordinal - b.ordinal).map((c) => c.name);
+
+  beforeEach(() => {
+    vi.mocked(client.getDiagram).mockReset();
+    vi.mocked(client.updateDiagram).mockReset().mockResolvedValue(undefined);
+    vi.mocked(client.recordToolCall).mockReset().mockResolvedValue(undefined as never);
+  });
+
+  it("add_table: schema를 저장하고 응답에 Schema.Table로 알린다 (#106)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(mysqlDoc()));
+
+    const res = await tools.get("add_table")!({ diagramId: "d1", name: "OrderItem", schema: "Sales" });
+
+    expect(lastSavedDoc().entities[0]).toMatchObject({ name: "OrderItem", schema: "Sales" });
+    expect(res.content[0]!.text).toContain('Table "Sales.OrderItem" added');
+  });
+
+  it("add_table: 스키마를 쓰는 다이어그램에 스키마 없이 만들면 경고를 붙인다 (#106)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+
+    const res = await tools.get("add_table")!({ diagramId: "d1", name: "Orphan" });
+
+    expect(res.content[0]!.text).toContain("Warning");
+    expect(res.content[0]!.text).toContain("update_table");
+  });
+
+  it("add_table: 스키마를 안 쓰는 다이어그램에서는 경고하지 않는다 (#106)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(addEntity(mysqlDoc(), { id: "e1", name: "A" })));
+
+    const res = await tools.get("add_table")!({ diagramId: "d1", name: "B" });
+
+    expect(res.content[0]!.text).not.toContain("Warning");
+  });
+
+  it("update_table: 이름 앞뒤 공백을 삭제·재생성 없이 고친다 (#107)", async () => {
+    let doc = addEntity(mysqlDoc(), { id: "e1", name: "Orders  ", schema: "Sales" });
+    doc = addColumn(doc, "e1", { ...buildColumn({ name: "id", type: "int" }, 0), id: "c1" });
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc));
+
+    const res = await tools.get("update_table")!({
+      diagramId: "d1", tableId: "e1", updates: { name: "Orders" },
+    });
+
+    const saved = lastSavedDoc().entities[0]!;
+    expect(saved).toMatchObject({ id: "e1", name: "Orders", schema: "Sales" });
+    expect(saved.columns).toHaveLength(1); // tableId·컬럼 유지
+    expect(res.content[0]!.text).toContain('→ "Sales.Orders"');
+  });
+
+  it("update_table: schema만 바꿀 수 있고 null로 지울 수 있다 (#106 #107)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+    await tools.get("update_table")!({ diagramId: "d1", tableId: "e1", updates: { schema: null } });
+    expect(lastSavedDoc().entities[0]!.schema).toBeNull();
+  });
+
+  it("update_table: 빈 updates나 없는 tableId는 저장 없이 실패한다", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+
+    await expect(
+      tools.get("update_table")!({ diagramId: "d1", tableId: "e1", updates: {} })
+    ).rejects.toThrow(/updates` is empty/);
+    await expect(
+      tools.get("update_table")!({ diagramId: "d1", tableId: "ghost", updates: { name: "X" } })
+    ).rejects.toThrow(/ghost/);
+    expect(vi.mocked(client.updateDiagram)).not.toHaveBeenCalled();
+  });
+
+  it("add_column: after로 지정한 컬럼 바로 뒤에 넣는다 (#109)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+
+    await tools.get("add_column")!({
+      diagramId: "d1", tableId: "e1",
+      column: { name: "CategoryCode", type: "varchar(11)" },
+      after: "ManageNo",
+    });
+
+    expect(columnNames(lastSavedDoc())).toEqual(["ArticleID", "ManageNo", "CategoryCode", "Title"]);
+  });
+
+  it("add_column: position으로도 위치를 지정할 수 있다 (#109)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+
+    await tools.get("add_column")!({
+      diagramId: "d1", tableId: "e1", column: { name: "Z", type: "int" }, position: 0,
+    });
+
+    expect(columnNames(lastSavedDoc())[0]).toBe("Z");
+  });
+
+  it("add_column: 위치를 안 주면 기존처럼 맨 뒤에 붙는다", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+    await tools.get("add_column")!({ diagramId: "d1", tableId: "e1", column: { name: "Z", type: "int" } });
+    expect(columnNames(lastSavedDoc()).at(-1)).toBe("Z");
+  });
+
+  it("add_column: after와 position을 함께 주면 거부한다", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+    await expect(
+      tools.get("add_column")!({
+        diagramId: "d1", tableId: "e1", column: { name: "Z", type: "int" }, after: "c1", position: 0,
+      })
+    ).rejects.toThrow(/either `after` or `position`/);
+    expect(vi.mocked(client.updateDiagram)).not.toHaveBeenCalled();
+  });
+
+  it("add_column: 없는 after 컬럼이면 저장 없이 실패한다", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+    await expect(
+      tools.get("add_column")!({ diagramId: "d1", tableId: "e1", column: { name: "Z", type: "int" }, after: "ghost" })
+    ).rejects.toThrow(/Column "ghost" not found/);
+    expect(vi.mocked(client.updateDiagram)).not.toHaveBeenCalled();
+  });
+
+  it("add_column: onUpdate를 저장한다 (#109)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+
+    await tools.get("add_column")!({
+      diagramId: "d1", tableId: "e1",
+      column: { name: "UpdateDate", type: "datetime", nullable: false,
+        defaultValue: "CURRENT_TIMESTAMP", onUpdate: "CURRENT_TIMESTAMP" },
+    });
+
+    expect(lastSavedDoc().entities[0]!.columns.at(-1)).toMatchObject({ onUpdate: "CURRENT_TIMESTAMP" });
+  });
+
+  it("update_column: onUpdate를 갱신하고 null로 지울 수 있다 (#109)", async () => {
+    let doc = addEntity(mysqlDoc(), { id: "e1", name: "A" });
+    doc = addColumn(doc, "e1", {
+      ...buildColumn({ name: "UpdateDate", type: "datetime", onUpdate: "CURRENT_TIMESTAMP" }, 0), id: "c1",
+    });
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc));
+
+    await tools.get("update_column")!({ diagramId: "d1", tableId: "e1", columnId: "c1", updates: { onUpdate: null } });
+
+    expect(lastSavedDoc().entities[0]!.columns[0]!.onUpdate).toBeNull();
+  });
+
+  it("update_column: after로 기존 컬럼을 재배치한다 (#109)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+
+    await tools.get("update_column")!({
+      diagramId: "d1", tableId: "e1", columnId: "c3", updates: {}, after: "ArticleID",
+    });
+
+    expect(columnNames(lastSavedDoc())).toEqual(["ArticleID", "Title", "ManageNo"]);
+  });
+
+  it("update_column: 자기 자신을 after로 주면 거부한다", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+    await expect(
+      tools.get("update_column")!({ diagramId: "d1", tableId: "e1", columnId: "c3", updates: {}, after: "c3" })
+    ).rejects.toThrow(/cannot reference the column being moved/);
+  });
+
+  it("add_index: 컬럼 이름·id를 모두 받아 인덱스를 만든다 (#112)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+
+    const res = await tools.get("add_index")!({
+      diagramId: "d1", tableId: "e1", name: "IX_Article_ManageNo", columns: ["ManageNo", "c3"],
+    });
+
+    expect(lastSavedDoc().indexes[0]).toMatchObject({
+      entityId: "e1", name: "IX_Article_ManageNo", columnIds: ["c2", "c3"], unique: false,
+    });
+    expect(res.content[0]!.text).toContain("indexId=");
+  });
+
+  it("add_index: unique 인덱스를 만들 수 있다 (#112)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+    await tools.get("add_index")!({
+      diagramId: "d1", tableId: "e1", name: "UX", columns: ["c2"], unique: true,
+    });
+    expect(lastSavedDoc().indexes[0]!.unique).toBe(true);
+  });
+
+  it("add_index: 없는 컬럼·중복 컬럼·없는 테이블은 저장 없이 실패한다 (#112)", async () => {
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(articleDoc()));
+
+    await expect(
+      tools.get("add_index")!({ diagramId: "d1", tableId: "e1", name: "IX", columns: ["ghost"] })
+    ).rejects.toThrow(/Column "ghost" not found/);
+    await expect(
+      tools.get("add_index")!({ diagramId: "d1", tableId: "e1", name: "IX", columns: ["c2", "ManageNo"] })
+    ).rejects.toThrow(/must be distinct/);
+    await expect(
+      tools.get("add_index")!({ diagramId: "d1", tableId: "ghost", name: "IX", columns: ["c2"] })
+    ).rejects.toThrow(/ghost/);
+    expect(vi.mocked(client.updateDiagram)).not.toHaveBeenCalled();
+  });
+
+  it("update_index: 제공된 필드만 갱신하고 entityId는 유지한다 (#112)", async () => {
+    const doc = addIndex(articleDoc(), {
+      id: "i1", entityId: "e1", name: "IX", columnIds: ["c2"], unique: false,
+    });
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc));
+
+    await tools.get("update_index")!({ diagramId: "d1", indexId: "i1", columns: ["Title"], unique: true });
+
+    expect(lastSavedDoc().indexes[0]).toMatchObject({
+      id: "i1", entityId: "e1", name: "IX", columnIds: ["c3"], unique: true,
+    });
+  });
+
+  it("update_index: 바꿀 게 없거나 없는 id면 저장 없이 실패한다 (#112)", async () => {
+    const doc = addIndex(articleDoc(), { id: "i1", entityId: "e1", name: "IX", columnIds: ["c2"], unique: false });
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc));
+
+    await expect(tools.get("update_index")!({ diagramId: "d1", indexId: "i1" })).rejects.toThrow(/Nothing to update/);
+    await expect(tools.get("update_index")!({ diagramId: "d1", indexId: "ghost", name: "X" })).rejects.toThrow(/ghost/);
+    expect(vi.mocked(client.updateDiagram)).not.toHaveBeenCalled();
+  });
+
+  it("remove_index: 인덱스를 삭제한다 (#112)", async () => {
+    const doc = addIndex(articleDoc(), { id: "i1", entityId: "e1", name: "IX", columnIds: ["c2"], unique: false });
+    vi.mocked(client.getDiagram).mockResolvedValue(asResponse(doc));
+
+    const res = await tools.get("remove_index")!({ diagramId: "d1", indexId: "i1" });
+
+    expect(lastSavedDoc().indexes).toHaveLength(0);
+    expect(res.content[0]!.text).toContain('Index "IX" (i1) removed');
+  });
+});
+
+describe("resolveColumnRef", () => {
+  const entity: DiagramEntity = {
+    id: "e1", name: "Article", logicalName: null, comment: null, color: null,
+    columns: [
+      { ...buildColumn({ name: "ManageNo", type: "int" }, 0), id: "c1" },
+      { ...buildColumn({ name: "manageno", type: "int" }, 1), id: "c2" },
+      { ...buildColumn({ name: "Title", type: "int" }, 2), id: "c3" },
+    ],
+  };
+
+  it("columnId를 그대로 해석한다", () => {
+    expect(resolveColumnRef(entity, "c3").id).toBe("c3");
+  });
+
+  it("이름은 대소문자를 무시하지만, 후보가 여러 개면 모호하다고 실패한다", () => {
+    expect(resolveColumnRef(entity, "TITLE").id).toBe("c3");
+    expect(() => resolveColumnRef(entity, "ManageNo")).toThrow(/ambiguous/);
+  });
+
+  it("없는 컬럼이면 테이블명과 함께 실패한다", () => {
+    expect(() => resolveColumnRef(entity, "ghost")).toThrow(/Column "ghost" not found in table "Article"/);
   });
 });

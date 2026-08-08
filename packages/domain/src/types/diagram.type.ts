@@ -15,6 +15,11 @@ export interface DiagramColumn {
   comment: string | null;
   /** AUTO_INCREMENT(MySQL/MariaDB) 여부. 기존 저장 데이터 호환을 위해 optional(undefined=false). */
   autoIncrement?: boolean;
+  /**
+   * MySQL/MariaDB `ON UPDATE <expr>` 절 (예: `CURRENT_TIMESTAMP`).
+   * autoIncrement와 같은 방언 전용 속성이며, 기존 저장 데이터 호환을 위해 optional(undefined=없음).
+   */
+  onUpdate?: string | null;
   ordinal: number;
 }
 
@@ -114,6 +119,9 @@ export type DdlWarningCode =
   | "autoincrement_multiple"
   | "identifier_whitespace"
   | "default_autoquoted"
+  | "default_invalid_for_type"
+  | "default_empty"
+  | "onupdate_unsupported_dialect"
   | "type_sanitized"
   | "fk_target_not_keyed"
   | "sensitive_info"

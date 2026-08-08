@@ -1,5 +1,5 @@
 import { createEmptyDiagram } from "../schema/create-empty-diagram.js";
-import { addEntity, removeEntity, renameEntity, setSeedData, updateEntityComment } from "./entity-commands.js";
+import { addEntity, removeEntity, renameEntity, setSeedData, updateEntity, updateEntityComment } from "./entity-commands.js";
 import { addIndex } from "./index-commands.js";
 import { addColumn } from "./column-commands.js";
 import type { DiagramColumn, DiagramRelationship } from "../types/index.js";
@@ -131,5 +131,44 @@ describe("setSeedData", () => {
     const original = doc;
     setSeedData(doc, "e1", [{ c1: "1" }]);
     expect(original.entities[0].seedData).toBeUndefined();
+  });
+});
+
+describe("updateEntity — 테이블 부분 갱신 (#107)", () => {
+  const doc = () => {
+    const d = createEmptyDiagram({ id: "d1", name: "T", dialect: "mysql" });
+    return addEntity(d, { id: "e1", name: "Orders  ", schema: "Sales" });
+  };
+
+  it("주어진 필드만 바꾸고 나머지는 유지한다", () => {
+    const out = updateEntity(doc(), "e1", { name: "Orders" });
+    expect(out.entities[0]!.name).toBe("Orders");
+    expect(out.entities[0]!.schema).toBe("Sales");
+  });
+
+  it("schema·comment·logicalName·color를 한 번에 바꿀 수 있다", () => {
+    const out = updateEntity(doc(), "e1", {
+      schema: "Legal", comment: "주문", logicalName: "주문 테이블", color: "#4f46e5",
+    });
+    expect(out.entities[0]).toMatchObject({
+      schema: "Legal", comment: "주문", logicalName: "주문 테이블", color: "#4f46e5",
+    });
+  });
+
+  it("null을 주면 값을 지운다", () => {
+    expect(updateEntity(doc(), "e1", { schema: null }).entities[0]!.schema).toBeNull();
+  });
+
+  it("컬럼과 id는 건드리지 않는다", () => {
+    let d = doc();
+    d = addColumn(d, "e1", col({ id: "c1" }));
+    const out = updateEntity(d, "e1", { name: "X" });
+    expect(out.entities[0]!.id).toBe("e1");
+    expect(out.entities[0]!.columns).toHaveLength(1);
+  });
+
+  it("없는 테이블 id면 문서를 그대로 둔다", () => {
+    const d = doc();
+    expect(updateEntity(d, "nope", { name: "X" }).entities).toEqual(d.entities);
   });
 });

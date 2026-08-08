@@ -34,6 +34,20 @@ export function renameEntity(
   };
 }
 
+/** update_table(MCP)·CLI가 쓰는 부분 갱신. 주어진 필드만 바꾼다(컬럼·id는 대상 아님). */
+export type EntityPatch = Partial<Pick<DiagramEntity, "name" | "schema" | "logicalName" | "comment" | "color">>;
+
+export function updateEntity(
+  doc: DiagramDocument,
+  entityId: string,
+  changes: EntityPatch
+): DiagramDocument {
+  return {
+    ...doc,
+    entities: doc.entities.map((e) => (e.id === entityId ? { ...e, ...changes } : e))
+  };
+}
+
 export function updateEntityColor(
   doc: DiagramDocument,
   entityId: string,
