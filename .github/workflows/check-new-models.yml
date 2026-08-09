@@ -20,11 +20,33 @@ jobs:
         with:
           node-version: 22
 
+      # 키가 없으면 스크립트가 모든 provider를 건너뛰고 "신규 없음"으로 끝나 매주 초록불이 된다.
+      # 조회를 시도하기 전에 무엇이 빠졌는지 이름을 대며 실패시킨다.
+      - name: Verify provider API keys are configured
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        shell: bash
+        run: |
+          missing=()
+          for key in ANTHROPIC_API_KEY OPENAI_API_KEY GEMINI_API_KEY; do
+            [ -n "${!key}" ] || missing+=("$key")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::저장소 시크릿 미설정: ${missing[*]} — 이 provider의 신규 모델은 감지되지 않습니다."
+            echo "Settings → Secrets and variables → Actions 에서 등록하세요."
+            exit 1
+          fi
+
       - name: Detect new models and update models.ts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        # 기본 셸은 pipefail이 없어 `| tee`가 node의 종료 코드를 삼킨다 —
+        # provider 조회가 실패해도 잡이 성공으로 끝나던 원인. `shell: bash`가 -eo pipefail을 켠다.
+        shell: bash
         run: node scripts/check-new-models.mjs --write | tee .model-check.log
 
       - name: Create pull request
