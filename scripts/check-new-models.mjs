@@ -133,15 +133,19 @@ async function main() {
   const ignore = new Set(JSON.parse(readFileSync(IGNORE_JSON, "utf8")).ignore);
 
   const additions = {};
+  const skipped = [];
+  let queried = 0;
   for (const { provider, env, fetch: fetchModels } of PROVIDERS) {
     const key = process.env[env];
     if (!key) {
       console.log(`[skip] ${provider}: ${env} 미설정`);
+      skipped.push(env);
       continue;
     }
     const values = registry.filter((e) => e.provider === provider).map((e) => e.value);
     try {
       const candidates = await fetchModels(key);
+      queried++;
       const fresh = candidates.filter((m) => !isCovered(values, m.id) && !ignore.has(m.id));
       additions[provider] = fresh;
       console.log(
@@ -154,9 +158,25 @@ async function main() {
     }
   }
 
+  // 키가 하나도 없으면 "조회해봤더니 신규 없음"과 구분이 안 된다. 이 상태로 성공하면
+  // 주간 점검이 매주 초록불로 아무것도 안 하고 끝난다 — 명시적으로 실패시킨다.
+  if (skipped.length === PROVIDERS.length) {
+    console.error(
+      `[fatal] API 키가 하나도 없어 provider를 조회하지 못했습니다 (${skipped.join(", ")}). ` +
+        `저장소 시크릿에 등록하세요 — 키가 없으면 신규 모델은 영원히 감지되지 않습니다.`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (skipped.length > 0) {
+    console.warn(`[warn] ${skipped.join(", ")} 미설정 — 해당 provider의 신규 모델은 감지되지 않습니다.`);
+  }
+  // 키는 있는데 전부 조회 실패한 경우: 원인은 위 [error] 줄에 이미 찍혔고 exitCode도 1이다.
+  if (queried === 0) return;
+
   const total = Object.values(additions).flat().length;
   if (total === 0) {
-    console.log("신규 모델 없음.");
+    console.log(`신규 모델 없음. (provider ${queried}개 조회함)`);
     return;
   }
   if (write) {
