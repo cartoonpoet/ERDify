@@ -1,0 +1,225 @@
+name: Deploy — production
+
+# prod 브랜치 push/merge → 테스트 → 이미지 빌드 → Mac mini 운영 호스트 배포.
+#
+# 운영 호스트로 들어오는 SSH는 열지 않는다. Mac mini에 설치한 self-hosted runner가
+# GitHub로 아웃바운드 연결을 맺고 배포 잡을 스스로 가져와 실행한다.
+
+on:
+  push:
+    branches: [prod]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "재배포/롤백할 이미지 태그 (예: prod-<40자리 커밋 SHA>). 비우면 현재 커밋으로 새로 빌드"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  resolve:
+    name: Resolve Image Tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      ref: ${{ steps.tag.outputs.ref }}
+      build: ${{ steps.tag.outputs.build }}
+    steps:
+      - id: tag
+        env:
+          INPUT_TAG: ${{ inputs.image_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${INPUT_TAG}" ]; then
+            tag="prod-${GITHUB_SHA}"
+            ref="${GITHUB_SHA}"
+            build=true
+          else
+            # 수동 롤백 경로. 태그가 운영 호스트의 셸 스크립트로 흘러가므로 형식을 엄격히 검증한다.
+            if ! printf '%s' "$INPUT_TAG" | grep -Eq '^prod-[0-9a-f]{40}$'; then
+              echo "::error::image_tag는 prod-<40자리 커밋 SHA> 형식이어야 합니다 (받은 값: ${INPUT_TAG})"
+              exit 1
+            fi
+            # 태그에 커밋 SHA가 들어 있으므로 compose/nginx 설정도 같은 커밋으로 되돌린다.
+            tag="$INPUT_TAG"
+            ref="${INPUT_TAG#prod-}"
+            build=false
+          fi
+
+          {
+            echo "tag=${tag}"
+            echo "ref=${ref}"
+            echo "build=${build}"
+          } >> "$GITHUB_OUTPUT"
+
+  test:
+    name: Build · Lint · Typecheck · Test
+    needs: resolve
+    if: needs.resolve.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Telegram — 테스트 실패
+        if: failure()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>ERDify 운영 배포 중단 — 테스트 실패</b>
+            • 커밋: <code>${{ github.sha }}</code>
+            • 로그: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  # 이미지는 GitHub 호스티드 러너(linux/amd64)에서 빌드한다.
+  # Mac mini(arm64)에서는 docker-compose.mac-app.yml의 platform 지정으로 에뮬레이션 실행된다.
+  build:
+    name: Build Images
+    needs: [resolve, test]
+    if: needs.resolve.outputs.build == 'true'
+    # 재사용 워크플로우의 잡 권한은 호출자 권한과 교집합이 된다 — 여기서 packages:write를
+    # 주지 않으면 GHCR push가 403으로 실패한다. 배포 잡은 packages:read만 갖는다.
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-images.yml
+    with:
+      environment: production
+      image_tag: prod
+      sha_tag: ${{ needs.resolve.outputs.tag }}
+    secrets: inherit
+
+  deploy:
+    name: Deploy to Mac mini
+    needs: [resolve, test, build]
+    if: |
+      always() &&
+      needs.resolve.result == 'success' &&
+      needs.test.result != 'failure' && needs.test.result != 'cancelled' &&
+      needs.build.result != 'failure' && needs.build.result != 'cancelled'
+    # Mac mini에 등록한 self-hosted runner. erdify-production은 이 호스트에만 붙인 커스텀 라벨로,
+    # 다른 self-hosted 러너가 운영 배포를 집어가지 못하게 한다.
+    runs-on: [self-hosted, macOS, ARM64, erdify-production]
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    env:
+      DOCKER_BIN: /Users/junhoson/.docker/bin/docker
+      PROD_REPO: /Users/junhoson/erdify-production/repo
+    steps:
+      # Docker Desktop이 떠 있지 않으면 여기서 멈춘다 — 볼륨·컨테이너를 건드리기 전에 실패시킨다.
+      - name: Verify Docker daemon
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x "$DOCKER_BIN"
+          "$DOCKER_BIN" info > /dev/null
+          dirname "$DOCKER_BIN" >> "$GITHUB_PATH"
+
+      - name: Log in to ghcr.io
+        shell: bash
+        env:
+          DEPLOY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          echo "$DEPLOY_TOKEN" | "$DOCKER_BIN" login ghcr.io -u "$GH_ACTOR" --password-stdin
+
+      # 운영 호스트의 런타임 리포를 배포 대상 커밋으로 맞춘다. compose 파일·nginx 설정·배포
+      # 스크립트가 모두 이 리포에서 읽히므로 이미지 태그와 같은 커밋이어야 한다.
+      # .env는 gitignore 대상이라 `git clean -fd`로 지워지지 않는다(-x를 쓰지 않는 이유).
+      - name: Sync runtime repository
+        shell: bash
+        env:
+          DEPLOY_REF: ${{ needs.resolve.outputs.ref }}
+        run: |
+          set -euo pipefail
+          cd "$PROD_REPO"
+          test -f .env || { echo "::error::${PROD_REPO}/.env 가 없습니다"; exit 1; }
+          git fetch --prune origin prod
+          git reset --hard HEAD
+          git clean -fd
+          git checkout -q --detach "$DEPLOY_REF"
+          chmod +x scripts/setup.sh scripts/deploy.sh
+
+      - name: Ensure shared services
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROD_REPO"
+          ERDIFY_TARGET=prod bash scripts/setup.sh
+
+      # 헬스 검증 실패 시 스크립트가 직전 태그로 자동 롤백한 뒤 non-zero로 끝난다.
+      - name: Deploy application
+        shell: bash
+        env:
+          DEPLOY_TAG: ${{ needs.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          cd "$PROD_REPO"
+          ERDIFY_TARGET=prod bash scripts/deploy.sh --tag "$DEPLOY_TAG"
+
+  # 텔레그램 액션은 Docker 컨테이너 액션이라 macOS 러너에서 실행할 수 없어 잡을 분리한다.
+  notify:
+    name: Notify
+    needs: [resolve, deploy]
+    if: always() && needs.resolve.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare commit subject
+        id: commit
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+        run: echo "subject=${MSG%%$'\n'*}" >> "$GITHUB_OUTPUT"
+
+      - name: Telegram — 운영 배포 성공
+        if: needs.deploy.result == 'success'
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            🚀 <b>ERDify 운영 배포 완료</b>
+            • 이미지: <code>${{ needs.resolve.outputs.tag }}</code>
+            • 메시지: ${{ steps.commit.outputs.subject }}
+            • 배포자: ${{ github.actor }}
+
+      - name: Telegram — 운영 배포 실패
+        if: needs.deploy.result != 'success'
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>ERDify 운영 배포 실패</b>
+            • 이미지: <code>${{ needs.resolve.outputs.tag }}</code>
+            • 메시지: ${{ steps.commit.outputs.subject }}
+            • 로그: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

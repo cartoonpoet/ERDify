@@ -1,6 +1,10 @@
+# 앱 서비스. 이미지 태그는 배포 대상마다 다르다 — dev는 `dev-<sha>`, prod는 `prod-<sha>`처럼
+# 브랜치+커밋 SHA로 고정된 불변 태그를 쓴다(공유 `latest` 하나를 두고 경쟁하지 않도록).
+# scripts/deploy.sh가 IMAGE_TAG를 export해서 넘긴다. 아래 기본값은 태그를 넘기지 않고
+# `docker compose ps/config`를 돌리는 경우를 위한 하위 호환 값일 뿐이다.
 services:
   api:
-    image: ghcr.io/cartoonpoet/erdify-api:latest
+    image: ghcr.io/cartoonpoet/erdify-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -23,13 +27,13 @@ services:
       - erdify-db
 
   web:
-    image: ghcr.io/cartoonpoet/erdify-web:latest
+    image: ghcr.io/cartoonpoet/erdify-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     networks:
       - erdify-proxy
 
   landing:
-    image: ghcr.io/cartoonpoet/erdify-landing:latest
+    image: ghcr.io/cartoonpoet/erdify-landing:${IMAGE_TAG:-latest}
     restart: unless-stopped
     networks:
       - erdify-proxy

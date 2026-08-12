@@ -1,0 +1,116 @@
+name: Build Images
+
+# dev/prod 배포 워크플로우가 재사용하는 이미지 빌드 잡.
+#
+# 태그 전략: 브랜치 이동 태그(`dev`/`prod`)와 커밋 SHA 기반 불변 태그(`dev-<sha>`) 두 개를 민다.
+# 실제 배포는 항상 불변 태그로 하므로 dev/prod가 하나의 `latest`를 두고 경쟁하지 않고,
+# 롤백 대상도 태그 이름만으로 특정된다.
+#
+# 세 이미지를 매번 모두 빌드한다 — 변경된 앱만 빌드하면 안 바뀐 앱의 `<env>-<sha>` 태그가
+# 레지스트리에 존재하지 않아 배포가 깨진다. 미변경 이미지는 GHA 레이어 캐시로 거의 즉시 끝난다.
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 이미지를 빌드할 GitHub Environment (development / production)
+        required: true
+        type: string
+      image_tag:
+        description: 브랜치 이동 태그 (dev / prod)
+        required: true
+        type: string
+      sha_tag:
+        description: 커밋 SHA 기반 불변 태그 (dev-<sha> / prod-<sha>)
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/erdify
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  api:
+    name: Build API Image
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-api:${{ inputs.image_tag }}
+            ${{ env.IMAGE_PREFIX }}-api:${{ inputs.sha_tag }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+  web:
+    name: Build Web Image
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-web:${{ inputs.image_tag }}
+            ${{ env.IMAGE_PREFIX }}-web:${{ inputs.sha_tag }}
+          # 분석 도구 ID는 환경별로 다를 수 있다(개발 트래픽이 운영 지표를 오염시키지 않도록).
+          # 값이 없으면 Vite 빌드에서 빈 문자열로 들어가 계측이 비활성화된다.
+          build-args: |
+            VITE_API_BASE_URL=/api
+            VITE_GA4_MEASUREMENT_ID=${{ secrets.VITE_GA4_MEASUREMENT_ID }}
+            VITE_CLARITY_PROJECT_ID=${{ secrets.VITE_CLARITY_PROJECT_ID }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  landing:
+    name: Build Landing Image
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/landing/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-landing:${{ inputs.image_tag }}
+            ${{ env.IMAGE_PREFIX }}-landing:${{ inputs.sha_tag }}
+          cache-from: type=gha,scope=landing
+          cache-to: type=gha,mode=max,scope=landing

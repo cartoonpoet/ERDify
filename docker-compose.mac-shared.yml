@@ -1,0 +1,10 @@
+# Mac mini(Apple Silicon) 운영 호스트용 shared 오버라이드.
+# postgres는 로컬 백업/점검용으로만 포트를 열고, 반드시 루프백에만 바인딩한다
+# (0.0.0.0으로 열면 공유기 포트포워딩 설정에 따라 DB가 인터넷에 노출될 수 있다).
+# postgres/nginx/certbot 이미지는 arm64 네이티브가 있으므로 platform을 지정하지 않는다.
+#
+# 사용: docker compose -f docker-compose.shared.yml -f docker-compose.mac-shared.yml ...
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"

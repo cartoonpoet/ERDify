@@ -1,0 +1,13 @@
+# Mac mini(Apple Silicon) 운영 호스트용 앱 오버라이드.
+# 앱 이미지는 GitHub의 linux/amd64 러너에서 빌드되므로, arm64 호스트에서는 platform을
+# 명시해 Rosetta/QEMU 에뮬레이션으로 실행한다. 명시하지 않으면 compose가 매니페스트
+# 불일치로 기동에 실패한다.
+#
+# 사용: docker compose -f docker-compose.app.yml -f docker-compose.mac-app.yml ...
+services:
+  api:
+    platform: linux/amd64
+  web:
+    platform: linux/amd64
+  landing:
+    platform: linux/amd64
