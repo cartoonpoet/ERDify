@@ -1,0 +1,185 @@
+name: Publish to npm
+
+# master push 전용 — CLI/MCP 서버 npm 퍼블리시.
+# 배포(dev/prod)와 의도적으로 분리되어 있다. dev/prod 브랜치에서는 절대 실행되지 않으므로
+# 배포 브랜치를 오가며 같은 버전을 중복 퍼블리시하는 사고가 나지 않는다.
+# (버전이 이미 올라가 있으면 각 잡이 스스로 건너뛴다.)
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  test-web:
+    name: Test Web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enable corepack & install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run web tests
+        run: pnpm --filter @erdify/web test
+      - name: Telegram — 테스트 실패
+        if: failure()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>ERDify Web 테스트 실패</b>
+            • 커밋: <code>${{ github.sha }}</code>
+            • 배포자: ${{ github.actor }}
+            • 로그: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Enable corepack & install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run API tests
+        run: pnpm --filter @erdify/api test
+      - name: Telegram — 테스트 실패
+        if: failure()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>ERDify API 테스트 실패</b>
+            • 커밋: <code>${{ github.sha }}</code>
+            • 배포자: ${{ github.actor }}
+            • 로그: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  # ── CLI npm 퍼블리시 ──────────────────────────────────────────────────────
+  publish-cli:
+    name: Publish CLI to npm
+    runs-on: ubuntu-latest
+    needs: [test-web, test-api]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Enable corepack & install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build CLI
+        run: pnpm turbo run build --filter=@erdify/cli
+      - name: Publish to npm (skip if version already exists)
+        run: |
+          cd apps/cli
+          VERSION=$(node -p "require('./package.json').version")
+          PUBLISHED=$(npm view "@erdify/cli@$VERSION" version 2>/dev/null || echo "")
+          if [ "$PUBLISHED" = "$VERSION" ]; then
+            echo "Version $VERSION already published, skipping."
+          else
+            pnpm publish --no-git-checks
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Telegram — CLI 퍼블리시 성공
+        if: success()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            📦 <b>ERDify CLI 퍼블리시 완료</b>
+            • 커밋: <code>${{ github.sha }}</code>
+            • 배포자: ${{ github.actor }}
+      - name: Telegram — CLI 퍼블리시 실패
+        if: failure()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>ERDify CLI 퍼블리시 실패</b>
+            • 커밋: <code>${{ github.sha }}</code>
+            • 로그: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  # ── MCP Server npm 퍼블리시 ──────────────────────────────────────────────────
+  publish-mcp:
+    name: Publish MCP Server to npm
+    runs-on: ubuntu-latest
+    needs: [test-web, test-api]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Enable corepack & install pnpm
+        run: corepack enable && corepack prepare pnpm@10.32.1 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build MCP Server
+        run: pnpm turbo run build --filter=@erdify/mcp-server
+      - name: Publish to npm (skip if version already exists)
+        run: |
+          cd apps/mcp-server
+          VERSION=$(node -p "require('./package.json').version")
+          PUBLISHED=$(npm view "@erdify/mcp-server@$VERSION" version 2>/dev/null || echo "")
+          if [ "$PUBLISHED" = "$VERSION" ]; then
+            echo "Version $VERSION already published, skipping."
+          else
+            pnpm publish --no-git-checks
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Telegram — MCP 퍼블리시 성공
+        if: success()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            📦 <b>ERDify MCP Server 퍼블리시 완료</b>
+            • 커밋: <code>${{ github.sha }}</code>
+            • 배포자: ${{ github.actor }}
+      - name: Telegram — MCP 퍼블리시 실패
+        if: failure()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>ERDify MCP Server 퍼블리시 실패</b>
+            • 커밋: <code>${{ github.sha }}</code>
+            • 로그: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

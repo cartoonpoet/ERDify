@@ -1,0 +1,8 @@
+# actionlint 설정. 커스텀 self-hosted 러너 라벨을 알려 주지 않으면
+# deploy-prod.yml의 runs-on을 "알 수 없는 라벨"로 잘못 지적한다.
+#
+# erdify-production: 운영 Mac mini(Apple Silicon)에 등록한 러너에만 붙인 라벨.
+# self-hosted / macOS / ARM64는 러너가 자동으로 붙이는 GitHub 기본 라벨이다.
+self-hosted-runner:
+  labels:
+    - erdify-production

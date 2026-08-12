@@ -50,3 +50,47 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # 배포 스크립트는 배포 순간에야 실행되므로, PR 단계에서 정적 검사 + 가짜 docker 기반
+  # 동작 테스트로 미리 막는다. (테스트 내용은 scripts/test/deploy-test.sh 참고)
+  deploy-scripts:
+    name: Deploy Scripts · shellcheck · test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      # shellcheck는 ubuntu-latest 러너에 기본 설치되어 있다.
+      - name: Shellcheck
+        run: |
+          shellcheck --version
+          shellcheck -x \
+            scripts/deploy.sh \
+            scripts/setup.sh \
+            scripts/lib/deploy-common.sh \
+            scripts/test/deploy-test.sh \
+            scripts/test/fake-docker.sh \
+            init-letsencrypt.sh \
+            nginx/certbot-entrypoint.sh \
+            apps/api/docker-entrypoint.sh
+
+      - name: Deploy script tests
+        run: bash scripts/test/deploy-test.sh
+
+      # compose 파일이 실제로 파싱되는지, 이미지 태그가 IMAGE_TAG로 치환되는지 확인한다.
+      - name: Validate compose files
+        env:
+          IMAGE_TAG: ci-validation
+          DB_PASSWORD: ci
+          JWT_SECRET: ci
+          SMTP_USER: ci
+          SMTP_PASS: ci
+          APP_URL: https://example.invalid
+          FIELD_ENCRYPTION_KEY: ci
+        run: |
+          set -euo pipefail
+          docker compose -f docker-compose.shared.yml -f docker-compose.mac-shared.yml config -q
+          rendered=$(docker compose -f docker-compose.app.yml -f docker-compose.mac-app.yml config)
+          printf '%s\n' "$rendered" | grep -q 'erdify-api:ci-validation'
+          printf '%s\n' "$rendered" | grep -q 'erdify-web:ci-validation'
+          printf '%s\n' "$rendered" | grep -q 'erdify-landing:ci-validation'
+          printf '%s\n' "$rendered" | grep -q 'linux/amd64'

@@ -1,0 +1,193 @@
+name: Deploy — development
+
+# dev 브랜치 push/merge → 테스트 → 이미지 빌드 → 개발 서버(SSH) 배포.
+# 접속 정보는 development 환경 시크릿(DEV_SSH_*)에만 있고 워크플로우 로그에 찍지 않는다.
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "재배포/롤백할 이미지 태그 (예: dev-<40자리 커밋 SHA>). 비우면 현재 커밋으로 새로 빌드"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+# 같은 환경에 대한 배포는 직렬화한다. 진행 중인 배포를 취소하면 컨테이너가 중간 상태로
+# 남을 수 있으므로 cancel-in-progress는 끈다.
+concurrency:
+  group: deploy-development
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  # ── 배포할 이미지 태그 결정 ────────────────────────────────────────────────
+  resolve:
+    name: Resolve Image Tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      ref: ${{ steps.tag.outputs.ref }}
+      build: ${{ steps.tag.outputs.build }}
+    steps:
+      - id: tag
+        env:
+          INPUT_TAG: ${{ inputs.image_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${INPUT_TAG}" ]; then
+            # 평소 경로: 이번 커밋으로 빌드하고 그 불변 태그를 배포한다.
+            tag="dev-${GITHUB_SHA}"
+            ref="${GITHUB_SHA}"
+            build=true
+          else
+            # 수동 롤백 경로: 이미 레지스트리에 있는 태그를 그대로 쓴다.
+            # 태그는 원격 셸 스크립트로 흘러가므로 형식을 엄격히 검증한다.
+            if ! printf '%s' "$INPUT_TAG" | grep -Eq '^dev-[0-9a-f]{40}$'; then
+              echo "::error::image_tag는 dev-<40자리 커밋 SHA> 형식이어야 합니다 (받은 값: ${INPUT_TAG})"
+              exit 1
+            fi
+            # 태그에 커밋 SHA가 들어 있으므로 compose/nginx 설정도 같은 커밋으로 되돌린다.
+            tag="$INPUT_TAG"
+            ref="${INPUT_TAG#dev-}"
+            build=false
+          fi
+
+          {
+            echo "tag=${tag}"
+            echo "ref=${ref}"
+            echo "build=${build}"
+          } >> "$GITHUB_OUTPUT"
+
+  # ── 테스트 (빌드 전) ───────────────────────────────────────────────────────
+  test:
+    name: Build · Lint · Typecheck · Test
+    needs: resolve
+    if: needs.resolve.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Telegram — 테스트 실패
+        if: failure()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>ERDify 개발 배포 중단 — 테스트 실패</b>
+            • 커밋: <code>${{ github.sha }}</code>
+            • 로그: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+  # ── 이미지 빌드 ────────────────────────────────────────────────────────────
+  build:
+    name: Build Images
+    needs: [resolve, test]
+    if: needs.resolve.outputs.build == 'true'
+    # 재사용 워크플로우의 잡 권한은 호출자 권한과 교집합이 된다 — 여기서 packages:write를
+    # 주지 않으면 GHCR push가 403으로 실패한다. 배포 잡은 packages:read만 갖는다.
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-images.yml
+    with:
+      environment: development
+      image_tag: dev
+      sha_tag: ${{ needs.resolve.outputs.tag }}
+    secrets: inherit
+
+  # ── 개발 서버 배포 ─────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to development server
+    needs: [resolve, test, build]
+    if: |
+      always() &&
+      needs.resolve.result == 'success' &&
+      needs.test.result != 'failure' && needs.test.result != 'cancelled' &&
+      needs.build.result != 'failure' && needs.build.result != 'cancelled'
+    runs-on: ubuntu-latest
+    environment: development
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      # 배포 스크립트가 헬스 검증에 실패하면 non-zero로 끝나므로 이 스텝이 곧 게이트다.
+      # (스크립트는 실패 시 직전 태그로 자동 롤백한 뒤 실패로 종료한다)
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+          DEPLOY_TAG: ${{ needs.resolve.outputs.tag }}
+          DEPLOY_REF: ${{ needs.resolve.outputs.ref }}
+        with:
+          host: ${{ secrets.DEV_SSH_HOST }}
+          username: ${{ secrets.DEV_SSH_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          port: ${{ vars.DEV_SSH_PORT || 22 }}
+          envs: GH_ACTOR,DEPLOY_TOKEN,DEPLOY_TAG,DEPLOY_REF
+          script: |
+            set -euo pipefail
+            echo "$DEPLOY_TOKEN" | sudo docker login ghcr.io -u "$GH_ACTOR" --password-stdin
+            cd /opt/erdify/repo
+            git fetch --prune origin dev
+            git reset --hard HEAD
+            git clean -fd
+            git checkout -q --detach "$DEPLOY_REF"
+            chmod +x scripts/setup.sh scripts/deploy.sh
+            ERDIFY_TARGET=dev bash scripts/setup.sh
+            ERDIFY_TARGET=dev bash scripts/deploy.sh --tag "$DEPLOY_TAG"
+
+      - name: Prepare commit subject
+        id: commit
+        if: always()
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+        run: echo "subject=${MSG%%$'\n'*}" >> "$GITHUB_OUTPUT"
+
+      - name: Telegram — 개발 배포 성공
+        if: success()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ✅ <b>ERDify 개발 서버 배포 완료</b>
+            • 이미지: <code>${{ needs.resolve.outputs.tag }}</code>
+            • 메시지: ${{ steps.commit.outputs.subject }}
+            • 배포자: ${{ github.actor }}
+
+      - name: Telegram — 개발 배포 실패
+        if: failure()
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>ERDify 개발 서버 배포 실패</b>
+            • 이미지: <code>${{ needs.resolve.outputs.tag }}</code>
+            • 메시지: ${{ steps.commit.outputs.subject }}
+            • 로그: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

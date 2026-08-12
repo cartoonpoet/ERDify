@@ -17,7 +17,8 @@ flowchart TD
     G --> I
     I -- "아니오" --> C
     I -- "예" --> J[사람 승인 후 Merge]
-    J --> K["master push<br/>→ Build & Deploy 자동 실행"]
+    J --> K["master push<br/>→ npm 퍼블리시 (배포 아님)"]
+    J --> L["dev / prod 머지<br/>→ 해당 환경 자동 배포"]
 ```
 
 ## 1. 이슈 → 브랜치 → PR
@@ -46,6 +47,7 @@ gh pr create --base master --title "..." --body "... Closes #<이슈번호>"
 | **Lint · Typecheck · Test** (`.github/workflows/ci.yml`) | 워크스페이스 전체 build/lint/typecheck/test(+coverage) 게이트 | 머지 차단 (required) |
 | **SonarCloud Code Analysis** | 정적분석 + Quality Gate(New Code 기준) + 커버리지 | 머지 차단 (required) |
 | **CodeRabbit** | AI 코드 리뷰 (로직/설계/엣지케이스 중심) | 머지 차단 안 함 (advisory) |
+| **Deploy Scripts · shellcheck · test** (`ci.yml`) | 배포 스크립트 정적 검사 + 동작 테스트 | 머지 차단 (required 등록 권장) |
 | **test** (`test.yml`) | 텔레그램 알림용 (`continue-on-error`) | 항상 통과, 참고용 |
 
 - **CI 게이트**와 **SonarCloud**만 [master branch protection](https://github.com/cartoonpoet/ERDify/settings/branches)의 required status check로 등록되어 있어 실제로 머지를 막습니다.
@@ -57,22 +59,29 @@ gh pr create --base master --title "..." --body "... Closes #<이슈번호>"
 - Required checks: `Lint · Typecheck · Test`, `SonarCloud Code Analysis`
 - `strict: true` — 머지 전 브랜치가 최신 master 기준이어야 함 (뒤처져 있으면 `git merge origin/master` 또는 GitHub UI의 "Update branch")
 - force-push, 브랜치 삭제 금지
+- 배포 브랜치(`dev`/`prod`)에도 같은 required check + force-push 금지를 걸어야 합니다 — 이미지 불변 태그가 커밋 SHA에 묶여 있어 force-push는 롤백 대상 커밋을 통째로 날립니다. 자세한 내용은 [docs/operations/deployment.md](./docs/operations/deployment.md)를 보세요.
 
-## 4. 배포 (master merge 이후)
+## 4. 배포 (브랜치 분리)
 
-master에 push되면 `.github/workflows/deploy.yml`이 **별도로, 자동으로** 실행됩니다 (CI 게이트와 독립적인 워크플로우 — CI가 이미 PR 단계에서 막았다는 전제 하에 동작).
+**master는 더 이상 서버에 배포하지 않습니다.** 배포 브랜치는 `dev`와 `prod`입니다.
 
 ```mermaid
 flowchart LR
-    M[master push] --> P[변경 경로 감지]
-    P --> T1[test-web / test-api]
-    T1 --> B1[build-api / build-web / build-landing<br/>Docker 이미지 → ghcr.io]
-    B1 --> D[Blue/Green Deploy<br/>Oracle Cloud, SSH]
-    P --> PB["publish-cli / publish-mcp<br/>(버전 변경 시에만) → npm"]
+    M[master merge] --> PB["publish-npm.yml<br/>CLI/MCP 퍼블리시 (버전 올라간 경우만)"]
+    M -->|merge| D[dev]
+    D --> DW["deploy-dev.yml<br/>테스트 → 이미지 빌드 → SSH 배포"]
+    DW --> DS[개발 서버]
+    M -->|merge| P[prod]
+    P --> PW["deploy-prod.yml<br/>테스트 → 이미지 빌드 → self-hosted runner 배포"]
+    PW --> PS[운영 Mac mini]
 ```
 
-- 경로 기반 감지(`dorny/paths-filter`)로 실제로 바뀐 앱만 빌드·배포합니다 (예: `apps/web`만 고쳤으면 api 이미지는 다시 안 만듦).
-- CLI/MCP 서버는 `package.json` 버전이 올라간 경우에만 npm publish됩니다.
+- 이미지는 브랜치 이동 태그(`dev`/`prod`)와 **커밋 SHA 불변 태그**(`dev-<sha>`/`prod-<sha>`) 두 개로 밀고, 배포는 항상 불변 태그로 합니다 — 공유 `latest` 하나를 두고 dev/prod가 경쟁하지 않습니다.
+- 환경별 동시 배포는 `concurrency`로 직렬화되고, 배포 실패(헬스 검증 실패 포함) 시 직전 태그로 자동 롤백됩니다.
+- 운영 호스트로 들어오는 SSH는 열지 않습니다 — Mac mini의 self-hosted runner가 잡을 가져가는 방식입니다.
+- CLI/MCP 서버는 master에서만, `package.json` 버전이 올라간 경우에만 npm publish됩니다.
+
+환경/시크릿 설정, self-hosted runner 등록, 롤백·검증 절차는 **[docs/operations/deployment.md](./docs/operations/deployment.md)** 를 보세요.
 
 ## 로컬 개발 명령어
 
