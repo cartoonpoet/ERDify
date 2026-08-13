@@ -1,4 +1,4 @@
-import type { DiagramColumn, DiagramDocument } from "../types/index.js";
+import type { DiagramColumn, DiagramDocument, DiagramEntity, DiagramRelationship } from "../types/index.js";
 
 /**
  * 다이어그램에서 코드로 추출한 결정적 네이밍/구조 컨벤션 프로필.
@@ -86,6 +86,21 @@ function classifyByPresence<A extends string, B extends string>(
   return "unknown";
 }
 
+/** 관계의 source 컬럼들을 실제 컬럼 객체로 해석한다. 대상 엔티티/컬럼이 없는 관계는 건너뛴다. */
+function collectFkColumns(entities: DiagramEntity[], relationships: DiagramRelationship[]): DiagramColumn[] {
+  const entityById = new Map(entities.map((e) => [e.id, e]));
+  const fkColumns: DiagramColumn[] = [];
+  for (const rel of relationships) {
+    const src = entityById.get(rel.sourceEntityId);
+    if (!src) continue;
+    for (const cid of rel.sourceColumnIds) {
+      const c = src.columns.find((x) => x.id === cid);
+      if (c) fkColumns.push(c);
+    }
+  }
+  return fkColumns;
+}
+
 /** 복수형/단수형 테이블 수를 비교해 우세한 쪽을 고른다. 대상이 없으면 "unknown", 동률이면 "mixed". */
 function classifyTableNumber(total: number, plural: number, singular: number): ConventionProfile["tableNaming"]["number"] {
   if (total === 0) return "unknown";
@@ -131,16 +146,7 @@ export function detectConventions(doc: DiagramDocument): ConventionProfile {
   };
 
   // 4) FK 패턴 (관계의 source 컬럼명 기준)
-  const entityById = new Map(entities.map((e) => [e.id, e]));
-  const fkColumns: DiagramColumn[] = [];
-  for (const rel of relationships) {
-    const src = entityById.get(rel.sourceEntityId);
-    if (!src) continue;
-    for (const cid of rel.sourceColumnIds) {
-      const c = src.columns.find((x) => x.id === cid);
-      if (c) fkColumns.push(c);
-    }
-  }
+  const fkColumns = collectFkColumns(entities, relationships);
   const foreignKey = {
     pattern: mode(fkColumns.map((c) => classifyFkPattern(c.name)).filter((p): p is string => p !== null)),
   };
