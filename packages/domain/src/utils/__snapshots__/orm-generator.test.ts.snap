@@ -1,0 +1,104 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`generateOrm — golden snapshots (전문 고정) > prisma output is stable 1`] = `
+"generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// 회원
+model Users {
+  id String  @id @default(uuid())
+  email String  @unique // 이메일
+  createdAt DateTime  @default(now())
+  bio String?
+  orderss Orders[]
+  @@unique([email])
+}
+
+model Orders {
+  id BigInt  @id @default(autoincrement())
+  userId String  @default(uuid())
+  amount Decimal
+  users Users? @relation(fields: ["userId"], references: ["id"])
+  @@index([userId])
+}
+"
+`;
+
+exports[`generateOrm — golden snapshots (전문 고정) > sqlalchemy output is stable 1`] = `
+"from sqlalchemy import Column, Integer, String, Boolean, Text, Float, DateTime, Date, BigInteger, SmallInteger, Numeric, JSON, Index, UniqueConstraint
+from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.dialects.postgresql import UUID
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+# 회원
+class Users(Base):
+    __tablename__ = "users"
+    __table_args__ = (
+        UniqueConstraint("email", name="ux_users_email"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    email = Column(String(255), nullable=False, unique=True, comment="이메일")
+    created_at = Column(DateTime, nullable=False, server_default="now()")
+    bio = Column(Text)
+
+
+class Orders(Base):
+    __tablename__ = "orders"
+    __table_args__ = (
+        Index("idx_orders_user_id", "user_id"),
+    )
+
+    id = Column(BigInteger, primary_key=True)
+    user_id = Column(UUID(as_uuid=True), nullable=False)
+    amount = Column(Numeric(10, 2), nullable=False)
+
+"
+`;
+
+exports[`generateOrm — golden snapshots (전문 고정) > typeorm output is stable 1`] = `
+"import { Entity, Column, PrimaryGeneratedColumn, Index } from "typeorm";
+
+/** 회원 */
+@Entity("users")
+@Index(["email"], { unique: true })
+export class Users {
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
+
+  /** 이메일 */
+  @Column({ nullable: false, unique: true })
+  email!: string;
+
+  @Column({ nullable: false, default: () => "now()" })
+  createdAt!: Date;
+
+  @Column()
+  bio?: string | null;
+
+}
+
+@Entity("orders")
+@Index(["user_id"])
+export class Orders {
+  @PrimaryGeneratedColumn()
+  id!: bigint;
+
+  @Column({ nullable: false })
+  userId!: string;
+
+  @Column({ nullable: false })
+  amount!: number;
+
+}"
+`;

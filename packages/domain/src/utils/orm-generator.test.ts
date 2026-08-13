@@ -528,3 +528,96 @@ describe("generateOrm — SQLAlchemy: multiple entities", () => {
     expect(out).toContain(`class Posts(Base):`);
   });
 });
+
+// ─── 리팩터링 안전망 (#74) ────────────────────────────────────────────────────
+// 기존 테스트는 전부 toContain 부분 매칭이라 줄 순서·들여쓰기·빈 줄 회귀를 잡지 못한다
+// (Python 출력은 들여쓰기가 곧 문법). 아래 골든 스냅샷이 출력 전문을 바이트 단위로 고정한다.
+
+function richFixture() {
+  let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });
+  doc = addEntity(doc, { id: "e1", name: "users" });
+  doc = updateEntityComment(doc, "e1", "회원");
+  doc = addColumn(doc, "e1", col({ id: "u1", name: "id", type: "uuid", primaryKey: true }));
+  doc = addColumn(doc, "e1", col({ id: "u2", name: "email", type: "varchar(255)", primaryKey: false, nullable: false, unique: true, comment: "이메일", ordinal: 1 }));
+  doc = addColumn(doc, "e1", col({ id: "u3", name: "created_at", type: "timestamptz", primaryKey: false, nullable: false, defaultValue: "now()", ordinal: 2 }));
+  doc = addColumn(doc, "e1", col({ id: "u4", name: "bio", type: "text", primaryKey: false, nullable: true, ordinal: 3 }));
+  doc = addEntity(doc, { id: "e2", name: "orders" });
+  doc = addColumn(doc, "e2", col({ id: "o1", name: "id", type: "bigint", primaryKey: true }));
+  doc = addColumn(doc, "e2", col({ id: "o2", name: "user_id", type: "uuid", primaryKey: false, nullable: false, ordinal: 1 }));
+  doc = addColumn(doc, "e2", col({ id: "o3", name: "amount", type: "decimal(10, 2)", primaryKey: false, nullable: false, ordinal: 2 }));
+  doc = addIndex(doc, { id: "i1", entityId: "e2", name: "idx_orders_user_id", columnIds: ["o2"], unique: false });
+  doc = addIndex(doc, { id: "i2", entityId: "e1", name: "ux_users_email", columnIds: ["u2"], unique: true });
+  doc = addRelationship(doc, {
+    id: "r1", name: "", sourceEntityId: "e2", sourceColumnIds: ["o2"],
+    targetEntityId: "e1", targetColumnIds: ["u1"], cardinality: "many-to-one",
+    onDelete: "no-action", onUpdate: "no-action", identifying: false,
+  });
+  return doc;
+}
+
+describe("generateOrm — golden snapshots (전문 고정)", () => {
+  it("typeorm output is stable", () => {
+    expect(generateOrm(richFixture(), "typeorm")).toMatchSnapshot();
+  });
+
+  it("prisma output is stable", () => {
+    expect(generateOrm(richFixture(), "prisma")).toMatchSnapshot();
+  });
+
+  it("sqlalchemy output is stable", () => {
+    expect(generateOrm(richFixture(), "sqlalchemy")).toMatchSnapshot();
+  });
+});
+
+describe("generateOrm — defaultValue emission", () => {
+  const docWithDefault = () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id", type: "int", primaryKey: true }));
+    doc = addColumn(doc, "e1", col({ id: "c2", name: "created_at", type: "timestamptz", primaryKey: false, nullable: false, defaultValue: "now()", ordinal: 1 }));
+    return doc;
+  };
+
+  it("typeorm emits default option", () => {
+    expect(generateOrm(docWithDefault(), "typeorm")).toContain(`default: () => "now()"`);
+  });
+
+  it("prisma emits @default attribute", () => {
+    expect(generateOrm(docWithDefault(), "prisma")).toContain(`@default(now())`);
+  });
+
+  it("sqlalchemy emits server_default", () => {
+    expect(generateOrm(docWithDefault(), "sqlalchemy")).toContain(`server_default="now()"`);
+  });
+});
+
+describe("generateOrm — 방어 분기 (dangling 참조)", () => {
+  it("prisma skips relations whose source or target entity is missing", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id", type: "int", primaryKey: true }));
+    doc = addRelationship(doc, {
+      id: "r1", name: "", sourceEntityId: "e1", sourceColumnIds: ["c1"],
+      targetEntityId: "ghost", targetColumnIds: [], cardinality: "many-to-one",
+      onDelete: "no-action", onUpdate: "no-action", identifying: false,
+    });
+    doc = addRelationship(doc, {
+      id: "r2", name: "", sourceEntityId: "ghost", sourceColumnIds: [],
+      targetEntityId: "e1", targetColumnIds: ["c1"], cardinality: "many-to-one",
+      onDelete: "no-action", onUpdate: "no-action", identifying: false,
+    });
+    const out = generateOrm(doc, "prisma");
+    expect(out).not.toContain("@relation");
+    expect(out).not.toContain("ghost");
+  });
+
+  it("falls back to the raw column id when an index references a missing column", () => {
+    let doc = createEmptyDiagram({ id: "d1", name: "T", dialect: "postgresql" });
+    doc = addEntity(doc, { id: "e1", name: "users" });
+    doc = addColumn(doc, "e1", col({ id: "c1", name: "id", type: "int", primaryKey: true }));
+    doc = addIndex(doc, { id: "i1", entityId: "e1", name: "idx_ghost", columnIds: ["ghost_col"], unique: false });
+    expect(generateOrm(doc, "typeorm")).toContain(`@Index(["ghost_col"])`);
+    expect(generateOrm(doc, "prisma")).toContain(`@@index([ghostCol])`);
+    expect(generateOrm(doc, "sqlalchemy")).toContain(`Index("idx_ghost", "ghost_col")`);
+  });
+});
