@@ -1,4 +1,4 @@
-import type { DiagramDocument, DiagramRelationship } from "../types/diagram.type.js";
+import type { DiagramColumn, DiagramDocument, DiagramEntity, DiagramIndex, DiagramRelationship } from "../types/diagram.type.js";
 
 export type OrmType = "typeorm" | "prisma" | "sqlalchemy";
 
@@ -14,6 +14,16 @@ const toCamelCase = (s: string): string => {
 
 const toSnake = (s: string): string =>
   s.replace(/\s+/g, "_").replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+
+/** 컬럼 id → 이름. 컬럼이 지워져 참조가 끊긴 경우 id 원문을 그대로 쓴다. */
+const columnNameById = (entity: DiagramEntity, id: string): string =>
+  entity.columns.find((c) => c.id === id)?.name ?? id;
+
+const sortedColumns = (entity: DiagramEntity): DiagramColumn[] =>
+  [...entity.columns].sort((a, b) => a.ordinal - b.ordinal);
+
+const indexesOf = (doc: DiagramDocument, entityId: string): DiagramIndex[] =>
+  doc.indexes.filter((i) => i.entityId === entityId);
 
 // ─── 타입 매핑 ───────────────────────────────────────────────────────────────
 
@@ -64,52 +74,56 @@ const sqlToSa = (t: string): string => {
 
 // ─── TypeORM ─────────────────────────────────────────────────────────────────
 
+function renderTypeOrmIndex(idx: DiagramIndex, entity: DiagramEntity): string {
+  const cols = idx.columnIds
+    .map((id) => columnNameById(entity, id))
+    .map((n) => `"${n}"`)
+    .join(", ");
+  return `@Index([${cols}]${idx.unique ? ", { unique: true }" : ""})`;
+}
+
+function renderTypeOrmPkColumn(col: DiagramColumn, propName: string, tsType: string): string[] {
+  return [
+    col.type.toLowerCase() === "uuid"
+      ? `  @PrimaryGeneratedColumn("uuid")`
+      : `  @PrimaryGeneratedColumn()`,
+    `  ${propName}!: ${tsType};`,
+  ];
+}
+
+function renderTypeOrmRegularColumn(col: DiagramColumn, propName: string, tsType: string): string[] {
+  const opts: string[] = [];
+  if (!col.nullable) opts.push("nullable: false");
+  if (col.unique) opts.push("unique: true");
+  if (col.defaultValue) opts.push(`default: () => "${col.defaultValue}"`);
+  const decorator = opts.length > 0 ? `  @Column({ ${opts.join(", ")} })` : `  @Column()`;
+  const nullSuffix = col.nullable ? " | null" : "";
+  return [decorator, `  ${propName}${col.nullable ? "?" : "!"}: ${tsType}${nullSuffix};`];
+}
+
+function renderTypeOrmColumn(col: DiagramColumn): string[] {
+  const propName = toCamelCase(col.name);
+  const tsType = sqlToTs(col.type);
+  const lines: string[] = [];
+  if (col.comment) lines.push(`  /** ${col.comment} */`);
+  lines.push(...(col.primaryKey
+    ? renderTypeOrmPkColumn(col, propName, tsType)
+    : renderTypeOrmRegularColumn(col, propName, tsType)));
+  lines.push("");
+  return lines;
+}
+
 function generateTypeOrm(doc: DiagramDocument): string {
   const blocks: string[] = [];
 
   for (const entity of doc.entities) {
-    const entityIndexes = doc.indexes.filter((i) => i.entityId === entity.id);
     const lines: string[] = [];
 
     if (entity.comment) lines.push(`/** ${entity.comment} */`);
     lines.push(`@Entity("${toSnake(entity.name)}")`);
-
-    for (const idx of entityIndexes) {
-      const cols = idx.columnIds
-        .map((id) => entity.columns.find((c) => c.id === id)?.name ?? id)
-        .map((n) => `"${n}"`)
-        .join(", ");
-      lines.push(`@Index([${cols}]${idx.unique ? ", { unique: true }" : ""})`);
-    }
-
+    for (const idx of indexesOf(doc, entity.id)) lines.push(renderTypeOrmIndex(idx, entity));
     lines.push(`export class ${toPascalCase(entity.name)} {`);
-
-    const sorted = [...entity.columns].sort((a, b) => a.ordinal - b.ordinal);
-    for (const col of sorted) {
-      const propName = toCamelCase(col.name);
-      const tsType = sqlToTs(col.type);
-
-      if (col.comment) lines.push(`  /** ${col.comment} */`);
-
-      if (col.primaryKey) {
-        lines.push(
-          col.type.toLowerCase() === "uuid"
-            ? `  @PrimaryGeneratedColumn("uuid")`
-            : `  @PrimaryGeneratedColumn()`,
-          `  ${propName}!: ${tsType};`,
-        );
-      } else {
-        const opts: string[] = [];
-        if (!col.nullable) opts.push("nullable: false");
-        if (col.unique) opts.push("unique: true");
-        if (col.defaultValue) opts.push(`default: () => "${col.defaultValue}"`);
-        lines.push(opts.length > 0 ? `  @Column({ ${opts.join(", ")} })` : `  @Column()`);
-        const nullSuffix = col.nullable ? " | null" : "";
-        lines.push(`  ${propName}${col.nullable ? "?" : "!"}: ${tsType}${nullSuffix};`);
-      }
-      lines.push("");
-    }
-
+    for (const col of sortedColumns(entity)) lines.push(...renderTypeOrmColumn(col));
     lines.push(`}`);
     blocks.push(lines.join("\n"));
   }
@@ -120,69 +134,89 @@ function generateTypeOrm(doc: DiagramDocument): string {
 
 // ─── Prisma ──────────────────────────────────────────────────────────────────
 
-function generatePrisma(doc: DiagramDocument): string {
-  const relBySource = new Map<string, DiagramRelationship[]>();
-  const relByTarget = new Map<string, DiagramRelationship[]>();
-  for (const rel of doc.relationships) {
-    (relBySource.get(rel.sourceEntityId) ?? relBySource.set(rel.sourceEntityId, []).get(rel.sourceEntityId)!).push(rel);
-    (relByTarget.get(rel.targetEntityId) ?? relByTarget.set(rel.targetEntityId, []).get(rel.targetEntityId)!).push(rel);
+function groupRelationshipsBy(
+  relationships: DiagramRelationship[],
+  key: "sourceEntityId" | "targetEntityId",
+): Map<string, DiagramRelationship[]> {
+  const map = new Map<string, DiagramRelationship[]>();
+  for (const rel of relationships) {
+    const list = map.get(rel[key]) ?? [];
+    list.push(rel);
+    map.set(rel[key], list);
   }
+  return map;
+}
 
-  const lines: string[] = [
+function renderPrismaHeader(dialect: DiagramDocument["dialect"]): string[] {
+  return [
     `generator client {`,
     `  provider = "prisma-client-js"`,
     `}`,
     ``,
     `datasource db {`,
-    `  provider = "${doc.dialect === "postgresql" ? "postgresql" : "mysql"}"`,
+    `  provider = "${dialect === "postgresql" ? "postgresql" : "mysql"}"`,
     `  url      = env("DATABASE_URL")`,
     `}`,
     ``,
   ];
+}
+
+function renderPrismaColumn(col: DiagramColumn): string {
+  const prismaType = sqlToPrisma(col.type);
+  const attrs: string[] = [];
+
+  if (col.primaryKey) attrs.push("@id");
+  if (col.type.toLowerCase() === "uuid") attrs.push("@default(uuid())");
+  else if (col.primaryKey) attrs.push("@default(autoincrement())");
+  if (col.unique && !col.primaryKey) attrs.push("@unique");
+  if (col.defaultValue) attrs.push(`@default(${col.defaultValue})`);
+  if (col.comment) attrs.push(`// ${col.comment}`);
+
+  const nullMark = col.nullable && !col.primaryKey ? "?" : "";
+  const attrStr = attrs.length > 0 ? `  ${attrs.join(" ")}` : "";
+  return `  ${toCamelCase(col.name)} ${prismaType}${nullMark}${attrStr}`;
+}
+
+/** 소스 측은 `@relation` 필드, 타깃 측은 역참조 배열 필드를 만든다. 끊긴 관계는 건너뛴다. */
+function renderPrismaRelations(
+  entity: DiagramEntity,
+  doc: DiagramDocument,
+  relBySource: Map<string, DiagramRelationship[]>,
+  relByTarget: Map<string, DiagramRelationship[]>,
+): string[] {
+  const lines: string[] = [];
+  for (const rel of relBySource.get(entity.id) ?? []) {
+    const tgt = doc.entities.find((e) => e.id === rel.targetEntityId);
+    if (!tgt) continue;
+    const fkFields = rel.sourceColumnIds.map((id) => `"${toCamelCase(columnNameById(entity, id))}"`).join(", ");
+    const refFields = rel.targetColumnIds.map((id) => `"${toCamelCase(columnNameById(tgt, id))}"`).join(", ");
+    lines.push(`  ${toCamelCase(tgt.name)} ${toPascalCase(tgt.name)}? @relation(fields: [${fkFields}], references: [${refFields}])`);
+  }
+  for (const rel of relByTarget.get(entity.id) ?? []) {
+    const src = doc.entities.find((e) => e.id === rel.sourceEntityId);
+    if (!src) continue;
+    lines.push(`  ${toCamelCase(src.name)}s ${toPascalCase(src.name)}[]`);
+  }
+  return lines;
+}
+
+function renderPrismaIndex(idx: DiagramIndex, entity: DiagramEntity): string {
+  const cols = idx.columnIds.map((id) => toCamelCase(columnNameById(entity, id))).join(", ");
+  return idx.unique ? `  @@unique([${cols}])` : `  @@index([${cols}])`;
+}
+
+function generatePrisma(doc: DiagramDocument): string {
+  const relBySource = groupRelationshipsBy(doc.relationships, "sourceEntityId");
+  const relByTarget = groupRelationshipsBy(doc.relationships, "targetEntityId");
+
+  const lines: string[] = renderPrismaHeader(doc.dialect);
 
   for (const entity of doc.entities) {
-    const entityIndexes = doc.indexes.filter((i) => i.entityId === entity.id);
-
     if (entity.comment) lines.push(`/// ${entity.comment}`);
     lines.push(`model ${toPascalCase(entity.name)} {`);
-
-    const sorted = [...entity.columns].sort((a, b) => a.ordinal - b.ordinal);
-    for (const col of sorted) {
-      const prismaType = sqlToPrisma(col.type);
-      const attrs: string[] = [];
-
-      if (col.primaryKey) attrs.push("@id");
-      if (col.type.toLowerCase() === "uuid") attrs.push("@default(uuid())");
-      else if (col.primaryKey) attrs.push("@default(autoincrement())");
-      if (col.unique && !col.primaryKey) attrs.push("@unique");
-      if (col.defaultValue) attrs.push(`@default(${col.defaultValue})`);
-      if (col.comment) attrs.push(`// ${col.comment}`);
-
-      const nullMark = col.nullable && !col.primaryKey ? "?" : "";
-      const attrStr = attrs.length > 0 ? `  ${attrs.join(" ")}` : "";
-      lines.push(`  ${toCamelCase(col.name)} ${prismaType}${nullMark}${attrStr}`);
-    }
-
-    // 관계 필드
-    for (const rel of relBySource.get(entity.id) ?? []) {
-      const tgt = doc.entities.find((e) => e.id === rel.targetEntityId);
-      if (!tgt) continue;
-      const fkFields = rel.sourceColumnIds.map((id) => `"${toCamelCase(entity.columns.find((c) => c.id === id)?.name ?? id)}"`).join(", ");
-      const refFields = rel.targetColumnIds.map((id) => `"${toCamelCase(tgt.columns.find((c) => c.id === id)?.name ?? id)}"`).join(", ");
-      lines.push(`  ${toCamelCase(tgt.name)} ${toPascalCase(tgt.name)}? @relation(fields: [${fkFields}], references: [${refFields}])`);
-    }
-    for (const rel of relByTarget.get(entity.id) ?? []) {
-      const src = doc.entities.find((e) => e.id === rel.sourceEntityId);
-      if (!src) continue;
-      lines.push(`  ${toCamelCase(src.name)}s ${toPascalCase(src.name)}[]`);
-    }
-
-    // 인덱스
-    for (const idx of entityIndexes) {
-      const cols = idx.columnIds.map((id) => toCamelCase(entity.columns.find((c) => c.id === id)?.name ?? id)).join(", ");
-      lines.push(idx.unique ? `  @@unique([${cols}])` : `  @@index([${cols}])`);
-    }
-
+    for (const col of sortedColumns(entity)) lines.push(renderPrismaColumn(col));
+    lines.push(...renderPrismaRelations(entity, doc, relBySource, relByTarget));
+    for (const idx of indexesOf(doc, entity.id)) lines.push(renderPrismaIndex(idx, entity));
     lines.push(`}`, ``);
   }
 
@@ -191,57 +225,55 @@ function generatePrisma(doc: DiagramDocument): string {
 
 // ─── SQLAlchemy ───────────────────────────────────────────────────────────────
 
+const SQLALCHEMY_HEADER = [
+  `from sqlalchemy import Column, Integer, String, Boolean, Text, Float, DateTime, Date, BigInteger, SmallInteger, Numeric, JSON, Index, UniqueConstraint`,
+  `from sqlalchemy.orm import DeclarativeBase, relationship`,
+  `from sqlalchemy.dialects.postgresql import UUID`,
+  ``,
+  ``,
+  `class Base(DeclarativeBase):`,
+  `    pass`,
+  ``,
+  ``,
+];
+
+function renderSaTableArgs(entityIndexes: DiagramIndex[], entity: DiagramEntity): string[] {
+  const tableArgs: string[] = [];
+  for (const idx of entityIndexes) {
+    const cols = idx.columnIds
+      .map((id) => columnNameById(entity, id))
+      .map((n) => `"${toSnake(n)}"`)
+      .join(", ");
+    tableArgs.push(idx.unique
+      ? `UniqueConstraint(${cols}, name="${idx.name}")`
+      : `Index("${idx.name}", ${cols})`);
+  }
+  if (tableArgs.length === 0) return [];
+  return [`    __table_args__ = (`, ...tableArgs.map((arg) => `        ${arg},`), `    )`];
+}
+
+function renderSaColumn(col: DiagramColumn): string {
+  const attrs: string[] = [sqlToSa(col.type)];
+  if (col.primaryKey) attrs.push("primary_key=True");
+  if (!col.nullable && !col.primaryKey) attrs.push("nullable=False");
+  if (col.unique && !col.primaryKey) attrs.push("unique=True");
+  if (col.defaultValue) attrs.push(`server_default="${col.defaultValue}"`);
+  if (col.comment) attrs.push(`comment="${col.comment}"`);
+  return `    ${toSnake(col.name)} = Column(${attrs.join(", ")})`;
+}
+
 function generateSqlAlchemy(doc: DiagramDocument): string {
-  const lines: string[] = [
-    `from sqlalchemy import Column, Integer, String, Boolean, Text, Float, DateTime, Date, BigInteger, SmallInteger, Numeric, JSON, Index, UniqueConstraint`,
-    `from sqlalchemy.orm import DeclarativeBase, relationship`,
-    `from sqlalchemy.dialects.postgresql import UUID`,
-    ``,
-    ``,
-    `class Base(DeclarativeBase):`,
-    `    pass`,
-    ``,
-    ``,
-  ];
+  const lines: string[] = [...SQLALCHEMY_HEADER];
 
   for (const entity of doc.entities) {
-    const entityIndexes = doc.indexes.filter((i) => i.entityId === entity.id);
-
     if (entity.comment) lines.push(`# ${entity.comment}`);
     lines.push(
       `class ${toPascalCase(entity.name)}(Base):`,
       `    __tablename__ = "${toSnake(entity.name)}"`,
     );
-
-    const tableArgs: string[] = [];
-    for (const idx of entityIndexes) {
-      const cols = idx.columnIds
-        .map((id) => entity.columns.find((c) => c.id === id)?.name ?? id)
-        .map((n) => `"${toSnake(n)}"`)
-        .join(", ");
-      tableArgs.push(idx.unique
-        ? `UniqueConstraint(${cols}, name="${idx.name}")`
-        : `Index("${idx.name}", ${cols})`);
-    }
-    if (tableArgs.length > 0) {
-      lines.push(`    __table_args__ = (`);
-      for (const arg of tableArgs) lines.push(`        ${arg},`);
-      lines.push(`    )`);
-    }
+    lines.push(...renderSaTableArgs(indexesOf(doc, entity.id), entity));
     lines.push(``);
-
-    const sorted = [...entity.columns].sort((a, b) => a.ordinal - b.ordinal);
-    for (const col of sorted) {
-      const saType = sqlToSa(col.type);
-      const attrs: string[] = [saType];
-      if (col.primaryKey) attrs.push("primary_key=True");
-      if (!col.nullable && !col.primaryKey) attrs.push("nullable=False");
-      if (col.unique && !col.primaryKey) attrs.push("unique=True");
-      if (col.defaultValue) attrs.push(`server_default="${col.defaultValue}"`);
-      if (col.comment) attrs.push(`comment="${col.comment}"`);
-      lines.push(`    ${toSnake(col.name)} = Column(${attrs.join(", ")})`);
-    }
-
+    for (const col of sortedColumns(entity)) lines.push(renderSaColumn(col));
     lines.push(``, ``);
   }
 
