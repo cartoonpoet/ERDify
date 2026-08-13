@@ -120,4 +120,63 @@ describe("analyzeSchema", () => {
     ]);
     expect(analyzeSchema(d)).toEqual([]);
   });
+
+  it("flags a repeating column group with underscore suffixes (phone_1, phone_2)", () => {
+    const d = docWith([
+      entity("e1", "contacts", [col({ name: "phone_1", type: "varchar" }), col({ name: "phone_2", type: "varchar" })]),
+    ]);
+    const f = analyzeSchema(d).find((x) => x.kind === "repeating_group");
+    expect(f).toBeDefined();
+    expect(f!.detail).toContain("phone");
+  });
+
+  it("reports snake as the minority style when camel is dominant", () => {
+    const d = docWith([
+      entity("e1", "users", [
+        col({ name: "userName", type: "varchar" }),
+        col({ name: "userEmail", type: "varchar" }),
+        col({ name: "created_at", type: "timestamptz" }),
+      ]),
+    ]);
+    const f = analyzeSchema(d).find((x) => x.kind === "naming_inconsistency");
+    expect(f).toBeDefined();
+    expect(f!.detail).toContain("소수 스타일(snake)");
+    expect(f!.detail).toContain("users.created_at");
+  });
+
+  it("ignores relationships pointing at missing entities or columns", () => {
+    const d = docWith([entity("e1", "users", [col({ id: "c1", name: "id", type: "uuid", primaryKey: true, nullable: false })])]);
+    d.relationships = [
+      { id: "r1", name: "", sourceEntityId: "ghost", sourceColumnIds: ["c1"], targetEntityId: "e1", targetColumnIds: [], cardinality: "many-to-one", onDelete: "no-action", onUpdate: "no-action", identifying: false },
+      { id: "r2", name: "", sourceEntityId: "e1", sourceColumnIds: ["ghost_col"], targetEntityId: "e1", targetColumnIds: [], cardinality: "many-to-one", onDelete: "no-action", onUpdate: "no-action", identifying: false },
+    ];
+    expect(analyzeSchema(d).some((f) => f.kind === "fk_without_index")).toBe(false);
+  });
+
+  // MAX_FINDINGS 절단 때문에 블록 간 순서가 곧 "어떤 finding이 살아남는지"를 결정한다.
+  // 리팩터링으로 블록을 분리하더라도 이 순서는 바이트 단위로 보존되어야 한다.
+  it("keeps the finding order: pk issues → fk index → type mismatch → naming → repeating groups", () => {
+    const fk = col({ id: "c_fk", name: "user_id", type: "uuid", nullable: false });
+    const d = docWith([
+      entity("e1", "users", [
+        col({ name: "id", type: "uuid", primaryKey: true, nullable: true }),
+        col({ name: "user_id", type: "bigint" }),
+        col({ name: "userName", type: "varchar" }),
+        col({ name: "addr1", type: "varchar" }),
+        col({ name: "addr2", type: "varchar" }),
+      ]),
+      entity("e2", "orders", [fk]),
+    ]);
+    d.relationships = [
+      { id: "r1", name: "", sourceEntityId: "e2", sourceColumnIds: ["c_fk"], targetEntityId: "e1", targetColumnIds: [], cardinality: "many-to-one", onDelete: "no-action", onUpdate: "no-action", identifying: false },
+    ];
+    expect(analyzeSchema(d).map((f) => f.kind)).toEqual([
+      "nullable_pk",
+      "missing_pk",
+      "fk_without_index",
+      "type_mismatch",
+      "naming_inconsistency",
+      "repeating_group",
+    ]);
+  });
 });

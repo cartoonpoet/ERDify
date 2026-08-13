@@ -107,6 +107,27 @@ describe("detectConventions", () => {
       ]);
       expect(detectConventions(d).primaryKey.pattern).toBe("id");
     });
+
+    it("detects uuid and seq PK patterns", () => {
+      const d1 = docWith([entity("e1", "users", [col({ name: "uuid", type: "uuid", primaryKey: true, nullable: false })])]);
+      expect(detectConventions(d1).primaryKey.pattern).toBe("uuid");
+      const d2 = docWith([entity("e1", "users", [col({ name: "user_seq", type: "bigint", primaryKey: true, nullable: false })])]);
+      expect(detectConventions(d2).primaryKey.pattern).toBe("seq");
+    });
+
+    it("returns null for PK names matching no known pattern", () => {
+      const d = docWith([entity("e1", "codes", [col({ name: "pk_code", type: "varchar", primaryKey: true, nullable: false })])]);
+      expect(detectConventions(d).primaryKey.pattern).toBeNull();
+    });
+
+    // mode()의 계약: 동률이면 "처음 등장한 값"이 이긴다. 리팩터링 시 이 결정성을 보존해야 한다.
+    it("breaks frequency ties by first appearance", () => {
+      const d = docWith([
+        entity("e1", "users", [col({ name: "id", type: "bigint", primaryKey: true, nullable: false })]),
+        entity("e2", "sessions", [col({ name: "uuid", type: "uuid", primaryKey: true, nullable: false })]),
+      ]);
+      expect(detectConventions(d).primaryKey.pattern).toBe("id");
+    });
   });
 
   describe("foreignKey", () => {
@@ -120,6 +141,41 @@ describe("detectConventions", () => {
         { relationships: [rel({ id: "r1", sourceEntityId: "e2", sourceColumnIds: ["c_fk"], targetEntityId: "e1" })] },
       );
       expect(detectConventions(d).foreignKey.pattern).toBe("<table>_id");
+    });
+
+    it("detects the camelCase <table>Id FK pattern", () => {
+      const fk = col({ id: "c_fk", name: "userId", type: "uuid", nullable: false });
+      const d = docWith(
+        [entity("e1", "users", []), entity("e2", "orders", [fk])],
+        { relationships: [rel({ id: "r1", sourceEntityId: "e2", sourceColumnIds: ["c_fk"], targetEntityId: "e1" })] },
+      );
+      expect(detectConventions(d).foreignKey.pattern).toBe("<table>Id");
+    });
+
+    it("detects the <table>No FK pattern", () => {
+      const fk = col({ id: "c_fk", name: "orderNo", type: "bigint", nullable: false });
+      const d = docWith(
+        [entity("e1", "orders", []), entity("e2", "order_items", [fk])],
+        { relationships: [rel({ id: "r1", sourceEntityId: "e2", sourceColumnIds: ["c_fk"], targetEntityId: "e1" })] },
+      );
+      expect(detectConventions(d).foreignKey.pattern).toBe("<table>No");
+    });
+
+    it("returns null for FK names matching no known pattern", () => {
+      const fk = col({ id: "c_fk", name: "owner", type: "uuid", nullable: false });
+      const d = docWith(
+        [entity("e1", "users", []), entity("e2", "orders", [fk])],
+        { relationships: [rel({ id: "r1", sourceEntityId: "e2", sourceColumnIds: ["c_fk"], targetEntityId: "e1" })] },
+      );
+      expect(detectConventions(d).foreignKey.pattern).toBeNull();
+    });
+
+    it("ignores relationships pointing at a missing source entity", () => {
+      const d = docWith(
+        [entity("e1", "users", [])],
+        { relationships: [rel({ id: "r1", sourceEntityId: "ghost", sourceColumnIds: ["c_fk"], targetEntityId: "e1" })] },
+      );
+      expect(detectConventions(d).foreignKey.pattern).toBeNull();
     });
   });
 
@@ -169,6 +225,16 @@ describe("detectConventions", () => {
       const c = detectConventions(d).comments;
       expect(c.coveragePct).toBe(67);
       expect(c.language).toBe("korean");
+    });
+
+    it("detects English comment language", () => {
+      const d = docWith([
+        entity("e1", "users", [
+          col({ name: "id", type: "uuid", comment: "unique identifier" }),
+          col({ name: "email", type: "varchar", comment: "email address" }),
+        ]),
+      ]);
+      expect(detectConventions(d).comments.language).toBe("english");
     });
   });
 
