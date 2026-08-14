@@ -110,4 +110,110 @@ describe("SchemaStrip", () => {
 
     expect(screen.queryByPlaceholderText("스키마 입력 또는 선택...")).not.toBeInTheDocument();
   });
+
+  // nodrag/nopan은 React Flow가 드래그/팬으로 가로채지 않게 하는 클래스다.
+  // 이게 빠지면 스타일이 아니라 기능이 죽는다(드롭다운 입력이 노드 드래그로 하이재킹됨).
+  describe("nodrag/nopan 클래스 보존", () => {
+    it("interactive trigger는 nodrag 클래스를 가진다 (schema 없음)", () => {
+      render(<SchemaStrip schema={null} onChange={vi.fn()} />);
+      expect(screen.getByRole("button").className).toContain("nodrag");
+    });
+
+    it("interactive trigger는 nodrag 클래스를 가진다 (schema 있음)", () => {
+      render(<SchemaStrip schema="public" onChange={vi.fn()} />);
+      expect(screen.getByRole("button").className).toContain("nodrag");
+    });
+
+    it("드롭다운 backdrop·컨테이너는 nodrag nopan, 입력과 옵션 버튼은 nodrag를 가진다", () => {
+      const { container } = render(<SchemaStrip schema={null} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByRole("button"));
+
+      const backdrop = container.querySelector('[role="presentation"]')!;
+      expect(backdrop.className).toContain("nodrag");
+      expect(backdrop.className).toContain("nopan");
+      const input = screen.getByPlaceholderText("스키마 입력 또는 선택...");
+      expect(input.className).toContain("nodrag");
+      expect(screen.getByText("billing").closest("button")!.className).toContain("nodrag");
+    });
+  });
+
+  describe("드롭다운 입력", () => {
+    it("입력값으로 스키마 목록을 필터링한다", () => {
+      render(<SchemaStrip schema={null} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByRole("button"));
+
+      fireEvent.change(screen.getByPlaceholderText("스키마 입력 또는 선택..."), { target: { value: "bil" } });
+      expect(screen.getByText("billing")).toBeInTheDocument();
+      expect(screen.queryByText("public")).not.toBeInTheDocument();
+    });
+
+    it("입력 후 Enter를 누르면 입력값으로 onChange가 호출되고 드롭다운이 닫힌다", () => {
+      const onChange = vi.fn();
+      render(<SchemaStrip schema={null} onChange={onChange} />);
+      fireEvent.click(screen.getByRole("button"));
+
+      const input = screen.getByPlaceholderText("스키마 입력 또는 선택...");
+      fireEvent.change(input, { target: { value: "audit" } });
+      fireEvent.keyDown(input, { key: "Enter" });
+
+      expect(onChange).toHaveBeenCalledWith("audit");
+      expect(screen.queryByPlaceholderText("스키마 입력 또는 선택...")).not.toBeInTheDocument();
+    });
+
+    it("Escape를 누르면 드롭다운이 닫힌다", () => {
+      render(<SchemaStrip schema={null} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByRole("button"));
+
+      fireEvent.keyDown(screen.getByPlaceholderText("스키마 입력 또는 선택..."), { key: "Escape" });
+      expect(screen.queryByPlaceholderText("스키마 입력 또는 선택...")).not.toBeInTheDocument();
+    });
+
+    it("목록에 없는 값을 입력하면 생성 버튼이 나타나고, 누르면 그 값으로 onChange가 호출된다", () => {
+      const onChange = vi.fn();
+      render(<SchemaStrip schema={null} onChange={onChange} />);
+      fireEvent.click(screen.getByRole("button"));
+
+      fireEvent.change(screen.getByPlaceholderText("스키마 입력 또는 선택..."), { target: { value: "audit" } });
+      const createBtn = screen.getByText('+ "audit" 스키마 생성');
+      fireEvent.mouseDown(createBtn);
+
+      expect(onChange).toHaveBeenCalledWith("audit");
+    });
+  });
+
+  describe("스키마 해제", () => {
+    it("schema가 있으면 해제 버튼이 노출되고, 누르면 onChange(null)이 호출된다", () => {
+      const onChange = vi.fn();
+      render(<SchemaStrip schema="public" onChange={onChange} />);
+      fireEvent.click(screen.getByRole("button"));
+
+      fireEvent.mouseDown(screen.getByText("없음 (해제)"));
+      expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it("schema가 없으면 해제 버튼이 노출되지 않는다", () => {
+      render(<SchemaStrip schema={null} onChange={vi.fn()} />);
+      fireEvent.click(screen.getByRole("button"));
+      expect(screen.queryByText("없음 (해제)")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("hover 상태", () => {
+    it("interactive schema trigger에 마우스를 올리면 화살표·힌트가 나타난다", () => {
+      render(<SchemaStrip schema="public" onChange={vi.fn()} />);
+      const trigger = screen.getByRole("button");
+
+      const arrow = screen.getByText("▾");
+      const hint = screen.getByText("스키마 변경");
+      expect(arrow.getAttribute("style")).toContain("opacity: 0");
+      expect(hint.getAttribute("style")).toContain("opacity: 0");
+
+      fireEvent.mouseEnter(trigger);
+      expect(arrow.getAttribute("style")).toContain("opacity: 1");
+      expect(hint.getAttribute("style")).toContain("opacity: 0.55");
+
+      fireEvent.mouseLeave(trigger);
+      expect(arrow.getAttribute("style")).toContain("opacity: 0");
+    });
+  });
 });
