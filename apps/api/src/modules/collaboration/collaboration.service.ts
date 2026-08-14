@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Diagram } from "@erdify/db";
@@ -109,6 +110,27 @@ export class CollaborationService {
         : [];
     }
     return result;
+  }
+
+  /**
+   * HTTP/MCP 등 웹소켓 밖 경로가 DB의 content를 바꿨을 때 룸의 메모리 문서를 따라잡게 한다.
+   * 이게 없으면 다음 persist가 stale한 룸 문서로 DB를 덮어써 외부 변경이 되살아난다(#111).
+   * 반환한 change 바이트를 룸 참여자들에게 am:change로 브로드캐스트해야 클라이언트도 동기화된다.
+   * 룸이 없거나 내용이 이미 같으면 null.
+   */
+  syncExternalContent(diagramId: string, content: DiagramDocument): Uint8Array | null {
+    const room = this.rooms.get(diagramId);
+    if (!room) return null;
+    if (isDeepStrictEqual(structuredClone(room.doc), structuredClone(content))) return null;
+    // 최상위 키 통째 대입 — op 단위는 거칠지만(동시 편집과 충돌 시 외부 쓰기가 키 단위로 이김)
+    // 외부 쓰기는 드물고, 정합성이 세밀한 병합보다 우선이다.
+    const newDoc = Automerge.change(room.doc, (draft) => {
+      for (const [key, value] of Object.entries(content)) {
+        (draft as unknown as Record<string, unknown>)[key] = value;
+      }
+    });
+    room.doc = newDoc;
+    return Automerge.getLastLocalChange(newDoc) ?? null;
   }
 
   schedulePersist(diagramId: string): void {
