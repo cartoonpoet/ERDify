@@ -48,7 +48,6 @@ const mockUseAIModelSelection = vi.mocked(useAIModelSelection);
 const mockUseAIChatCore = vi.mocked(useAIChatCore);
 
 const makeStoreState = (overrides: Partial<AiChatSlice> = {}): AiChatSlice => ({
-  isOpen: false,
   isLoading: false,
   reviewingMessageId: null,
   currentSessionId: null,
@@ -62,8 +61,6 @@ const makeStoreState = (overrides: Partial<AiChatSlice> = {}): AiChatSlice => ({
   setSessionMessages: vi.fn(),
   prependSessionMessages: vi.fn(),
   setSessionHistoryLoading: vi.fn(),
-  openChat: vi.fn(),
-  closeChat: vi.fn(),
   addUserMessage: vi.fn(),
   addAssistantMessage: vi.fn(),
   acceptDiff: vi.fn(),

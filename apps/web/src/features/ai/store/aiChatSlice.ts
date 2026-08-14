@@ -22,7 +22,6 @@ export interface AiSession {
 }
 
 export interface AiChatSlice {
-  isOpen: boolean;
   isLoading: boolean;
   reviewingMessageId: string | null;
   currentSessionId: string | null;
@@ -36,8 +35,6 @@ export interface AiChatSlice {
   setSessionMessages: (sessionId: string, messages: AiMessage[], hasMore: boolean) => void;
   prependSessionMessages: (sessionId: string, messages: AiMessage[], hasMore: boolean) => void;
   setSessionHistoryLoading: (sessionId: string, loading: boolean) => void;
-  openChat: (initialMessage?: string) => void;
-  closeChat: () => void;
   addUserMessage: (content: string, sessionId?: string) => void;
   addAssistantMessage: (response: AiChatResponse, sessionId?: string) => void;
   acceptDiff: (messageId: string) => void;
@@ -75,7 +72,6 @@ const withMessageAccepted = (
 };
 
 export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
-  isOpen: false,
   isLoading: false,
   reviewingMessageId: null,
   currentSessionId: null,
@@ -107,22 +103,6 @@ export const createAiChatSlice: StateCreator<AiChatSlice> = (set) => ({
     set((state) => ({
       sessionHistoryLoading: { ...state.sessionHistoryLoading, [sessionId]: loading },
     })),
-
-  openChat: (initialMessage) =>
-    set((state) => {
-      if (!initialMessage) return { isOpen: true };
-      const sid = state.currentSessionId ?? DEFAULT_SESSION_ID;
-      const existing = state.sessionMessages[sid] ?? [];
-      return {
-        isOpen: true,
-        sessionMessages: {
-          ...state.sessionMessages,
-          [sid]: [...existing, { id: randomUUID(), role: "user", content: initialMessage, diff: null, pendingDocument: null, accepted: null }],
-        },
-      };
-    }),
-
-  closeChat: () => set({ isOpen: false }),
 
   addUserMessage: (content, sessionId) =>
     set((state) => {

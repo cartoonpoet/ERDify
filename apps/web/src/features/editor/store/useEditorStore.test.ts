@@ -89,6 +89,13 @@ describe("useEditorStore — 우측 사이드바 UI 슬라이스", () => {
     expect(useEditorStore.getState().rightSidebarActiveTab).toBe(1);
     expect(useEditorStore.getState().rightSidebarPanelOpen).toBe(true);
   });
+
+  it("openAiTab은 탭 0(AI)으로 전환하고 패널을 연다", () => {
+    useEditorStore.setState({ rightSidebarActiveTab: 2, rightSidebarPanelOpen: false });
+    useEditorStore.getState().openAiTab();
+    expect(useEditorStore.getState().rightSidebarActiveTab).toBe(0);
+    expect(useEditorStore.getState().rightSidebarPanelOpen).toBe(true);
+  });
 });
 
 describe("useEditorStore — viewport / flashingEntityId", () => {

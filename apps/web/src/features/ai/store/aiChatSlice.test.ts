@@ -13,7 +13,6 @@ const getDefaultMessages = () =>
   useAIChatStore.getState().sessionMessages[DEFAULT_SESSION_ID] ?? [];
 
 const initialState = {
-  isOpen: false,
   sessionMessages: {},
   isLoading: false,
   reviewingMessageId: null,
@@ -22,45 +21,6 @@ const initialState = {
 beforeEach(() => {
   useAIChatStore.setState(initialState);
   vi.mocked(randomUUID).mockReset();
-});
-
-describe("useAIChatStore — openChat", () => {
-  it("초기 메시지 없이 호출 시 isOpen=true, default 세션 메시지 없음", () => {
-    useAIChatStore.getState().openChat();
-
-    const state = useAIChatStore.getState();
-    expect(state.isOpen).toBe(true);
-    expect(getDefaultMessages()).toHaveLength(0);
-  });
-
-  it("초기 메시지와 함께 호출 시 isOpen=true, default 세션에 user 메시지 추가", () => {
-    vi.mocked(randomUUID).mockReturnValueOnce("fixed-uuid-1");
-
-    useAIChatStore.getState().openChat("안녕하세요");
-
-    const state = useAIChatStore.getState();
-    expect(state.isOpen).toBe(true);
-    const messages = getDefaultMessages();
-    expect(messages).toHaveLength(1);
-    expect(messages[0]).toEqual({
-      id: "fixed-uuid-1",
-      role: "user",
-      content: "안녕하세요",
-      diff: null,
-      pendingDocument: null,
-      accepted: null,
-    });
-  });
-});
-
-describe("useAIChatStore — closeChat", () => {
-  it("closeChat 호출 시 isOpen=false", () => {
-    useAIChatStore.setState({ isOpen: true });
-
-    useAIChatStore.getState().closeChat();
-
-    expect(useAIChatStore.getState().isOpen).toBe(false);
-  });
 });
 
 describe("useAIChatStore — addUserMessage", () => {

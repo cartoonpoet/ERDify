@@ -28,6 +28,7 @@ export interface UISlice {
   setRightSidebarPanelOpen: (open: boolean) => void;
   setRightSidebarWidth: (width: number) => void;
   openSearchTab: () => void;
+  openAiTab: () => void;
   toggleSchemaVisibility: (schema: string) => void;
   setSchemaFilterExpanded: (expanded: boolean) => void;
   setGroupViewEnabled: (enabled: boolean) => void;
@@ -65,6 +66,7 @@ export const createUISlice: StateCreator<EditorState, [], [], UISlice> = (set) =
       ),
     }),
   openSearchTab: () => set({ rightSidebarActiveTab: 1, rightSidebarPanelOpen: true }),
+  openAiTab: () => set({ rightSidebarActiveTab: 0, rightSidebarPanelOpen: true }),
   toggleSchemaVisibility: (schema) =>
     set((state) => {
       const next = new Set(state.hiddenSchemas);
