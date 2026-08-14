@@ -8,7 +8,6 @@ import "@xyflow/react/dist/style.css";
 import { updateEntityPosition, addRelationship, removeRelationship, removeEntity } from "@erdify/domain";
 import type { DiagramRelationship, DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
-import { useAIChatStore } from "@/features/ai/store/useAIChatStore";
 import type { EditableTableNodeType, UnmatchedPkInput } from "@/features/editor/store/useEditorStore";
 import { getSchemaColor } from "@/shared/utils/schema-colors";
 import { EditableTableNode } from "./EditableTableNode";
@@ -203,7 +202,7 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
   const nodes = useEditorStore((s) => s.nodes);
   const edges = useEditorStore((s) => s.edges);
   const canEdit = useEditorStore((s) => s.canEdit);
-  const openChat = useAIChatStore((s) => s.openChat);
+  const openAiTab = useEditorStore((s) => s.openAiTab);
   const applyNodeChanges = useEditorStore((s) => s.applyNodeChanges);
   const applyCommand = useEditorStore((s) => s.applyCommand);
   const selectedRelationshipId = useEditorStore((s) => s.selectedRelationshipId);
@@ -376,7 +375,7 @@ export const EditorCanvas = ({ hideMinimap }: { hideMinimap?: boolean }) => {
           <p className={css.emptyText}>테이블을 추가해 ERD를 만들어보세요.</p>
           <button
             type="button"
-            onClick={() => openChat("어떤 서비스의 DB를 설계할까요? 서비스 이름이나 기능을 설명해주시면 ERD를 만들어드릴게요.")}
+            onClick={openAiTab}
             className={css.aiButton}
           >
             ✦ AI로 ERD 생성하기
