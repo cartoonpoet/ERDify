@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Diagram, DiagramVersion, Project, User } from "@erdify/db";
 import type { Repository } from "typeorm";
@@ -26,7 +27,8 @@ export class DiagramsVersionService {
     private readonly projectRepo: Repository<Project>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    private readonly authorizationService: AuthorizationService
+    private readonly authorizationService: AuthorizationService,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   private async getDiagramWithOrg(diagramId: string): Promise<{ diagram: Diagram; orgId: string }> {
@@ -80,6 +82,9 @@ export class DiagramsVersionService {
     const version = await this.versionRepo.findOne({ where: { id: versionId, diagramId } });
     if (!version) throw new NotFoundException("Version not found");
     diagram.content = version.content;
-    return this.diagramRepo.save(diagram);
+    const saved = await this.diagramRepo.save(diagram);
+    // 활성 협업 룸이 stale 문서로 DB를 되덮지 않게 룸 동기화를 트리거한다(#111)
+    this.eventEmitter.emit("diagram.content.updated", { diagramId, content: saved.content });
+    return saved;
   }
 }

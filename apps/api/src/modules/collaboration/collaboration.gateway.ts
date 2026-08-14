@@ -123,6 +123,22 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     this.collaborationService.schedulePersist(diagramId);
   }
 
+  /**
+   * HTTP/MCP 쓰기 경로가 DB content를 바꿨을 때 발행되는 이벤트.
+   * 활성 룸의 메모리 문서를 따라잡게 하고(안 하면 다음 persist가 stale 문서로
+   * DB를 덮어써 외부 변경이 되살아난다, #111), 참여자들에게도 브로드캐스트한다.
+   */
+  @OnEvent("diagram.content.updated", { async: false })
+  handleDiagramContentUpdated(payload: { diagramId: string; content: object }): void {
+    const change = this.collaborationService.syncExternalContent(
+      payload.diagramId,
+      payload.content as never
+    );
+    if (change) {
+      this.server.to(payload.diagramId).emit("am:change", Array.from(change));
+    }
+  }
+
   @OnEvent("mcp.tool_call.recorded", { async: false })
   broadcastMcpActivity(data: {
     diagramId: string;

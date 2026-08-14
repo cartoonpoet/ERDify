@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Diagram, Project } from "@erdify/db";
 import type { Repository } from "typeorm";
@@ -21,7 +22,8 @@ export class DiagramsSchemaService {
     @InjectRepository(Project)
     private readonly projectRepo: Repository<Project>,
     private readonly authorizationService: AuthorizationService,
-    private readonly domainLoader: DomainLoaderService
+    private readonly domainLoader: DomainLoaderService,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   private async getDiagramWithOrg(diagramId: string): Promise<{ diagram: Diagram; orgId: string }> {
@@ -49,7 +51,10 @@ export class DiagramsSchemaService {
     await this.authorizationService.requireEditorOrOwner(orgId, userId);
     const doc = this.toDiagramDocument(diagram.content);
     diagram.content = fn(doc) as unknown as object;
-    return this.diagramRepo.save(diagram);
+    const saved = await this.diagramRepo.save(diagram);
+    // 활성 협업 룸이 stale 문서로 DB를 되덮지 않게 룸 동기화를 트리거한다(#111)
+    this.eventEmitter.emit("diagram.content.updated", { diagramId, content: saved.content });
+    return saved;
   }
 
   async addTable(diagramId: string, userId: string, dto: AddTableDto): Promise<Diagram> {

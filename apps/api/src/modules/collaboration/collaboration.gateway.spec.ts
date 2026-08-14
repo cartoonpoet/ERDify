@@ -29,7 +29,8 @@ describe("CollaborationGateway", () => {
     leaveRoom: vi.fn(),
     getPresence: vi.fn(),
     schedulePersist: vi.fn(),
-    persistNow: vi.fn()
+    persistNow: vi.fn(),
+    syncExternalContent: vi.fn()
   };
   const mockJwt = { verify: vi.fn() };
   const mockDiagramsService = { canAccessDiagram: vi.fn() };
@@ -47,6 +48,29 @@ describe("CollaborationGateway", () => {
     }).compile();
     gateway = module.get(CollaborationGateway);
     gateway.server = mockServer;
+  });
+
+  describe("handleDiagramContentUpdated", () => {
+    const content = { id: "d1", entities: [] };
+
+    it("룸 동기화 change가 있으면 룸에 am:change로 브로드캐스트한다", () => {
+      const change = new Uint8Array([7, 8, 9]);
+      mockService.syncExternalContent.mockReturnValue(change);
+
+      gateway.handleDiagramContentUpdated({ diagramId: "d1", content });
+
+      expect(mockService.syncExternalContent).toHaveBeenCalledWith("d1", content);
+      expect(mockServer.to).toHaveBeenCalledWith("d1");
+      expect(mockServer.emit).toHaveBeenCalledWith("am:change", [7, 8, 9]);
+    });
+
+    it("룸이 없거나 내용이 같으면(null) 브로드캐스트하지 않는다", () => {
+      mockService.syncExternalContent.mockReturnValue(null);
+
+      gateway.handleDiagramContentUpdated({ diagramId: "d1", content });
+
+      expect(mockServer.emit).not.toHaveBeenCalled();
+    });
   });
 
   describe("handleConnection", () => {

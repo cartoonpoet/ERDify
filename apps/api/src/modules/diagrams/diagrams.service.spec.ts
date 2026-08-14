@@ -11,6 +11,7 @@ import type { DomainLoaderService } from "../../common/services/domain-loader.se
 import type { DiagramDocument } from "@erdify/domain";
 import * as erdifyDomain from "@erdify/domain";
 import type { CollaborationService } from "../collaboration/collaboration.service";
+import type { EventEmitter2 } from "@nestjs/event-emitter";
 
 const makeDoc = (overrides: Partial<DiagramDocument> = {}): DiagramDocument => ({
   format: "erdify.schema.v1",
@@ -98,25 +99,29 @@ describe("DiagramsService", () => {
 
     const authService = new AuthorizationService(memberRepo as unknown as Repository<OrganizationMember>);
     const domainLoader = { load: vi.fn().mockResolvedValue(erdifyDomain) } as unknown as DomainLoaderService;
+    const eventEmitter = { emit: vi.fn() } as unknown as EventEmitter2;
 
     const crud = new DiagramsCrudService(
       diagramRepo as unknown as Repository<Diagram>,
       projectRepo as unknown as Repository<Project>,
       orgRepo as unknown as Repository<Organization>,
-      authService
+      authService,
+      eventEmitter
     );
     const schema = new DiagramsSchemaService(
       diagramRepo as unknown as Repository<Diagram>,
       projectRepo as unknown as Repository<Project>,
       authService,
-      domainLoader
+      domainLoader,
+      eventEmitter
     );
     const version = new DiagramsVersionService(
       diagramRepo as unknown as Repository<Diagram>,
       versionRepo as unknown as Repository<DiagramVersion>,
       projectRepo as unknown as Repository<Project>,
       userRepo as unknown as Repository<User>,
-      authService
+      authService,
+      eventEmitter
     );
     const share = new DiagramsShareService(
       diagramRepo as unknown as Repository<Diagram>,

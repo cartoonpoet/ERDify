@@ -183,6 +183,50 @@ describe("CollaborationService", () => {
     });
   });
 
+  describe("syncExternalContent", () => {
+    const contentWithTable = {
+      ...mockDiagramContent,
+      entities: [{ id: "e1", name: "users", logicalName: null, comment: null, color: null, columns: [] }],
+    };
+
+    it("룸이 없으면 null을 반환하고 아무 것도 하지 않는다", () => {
+      expect(service.syncExternalContent("nonexistent", mockDiagramContent as never)).toBeNull();
+    });
+
+    // #111 재현: 에디터(룸)가 열린 채 HTTP/MCP로 테이블을 지우면, 룸의 메모리 문서가
+    // 다음 persist에서 DB를 덮어써 지운 테이블이 되살아났다. 외부 쓰기를 룸에
+    // 동기화하면 persist가 최신 내용을 저장해야 한다.
+    it("외부 쓰기 동기화 후 persistNow는 지운 테이블을 되살리지 않는다", async () => {
+      mockRepo.findOne.mockResolvedValue({ ...mockDiagram, content: contentWithTable } as Diagram);
+      mockRepo.update.mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+
+      service.syncExternalContent("d1", mockDiagramContent as never);
+      await service.persistNow("d1");
+
+      const persisted = (mockRepo.update.mock.calls[0]![1] as { content: { entities: unknown[] } }).content;
+      expect(persisted.entities).toEqual([]);
+    });
+
+    it("반환한 change를 다른 피어에 적용하면 같은 내용이 된다", async () => {
+      mockRepo.findOne.mockResolvedValue({ ...mockDiagram, content: contentWithTable } as Diagram);
+      const initBytes = await service.joinRoom("d1");
+
+      const change = service.syncExternalContent("d1", mockDiagramContent as never);
+      expect(change).toBeInstanceOf(Uint8Array);
+
+      const peer = Automerge.load<{ entities: unknown[] }>(initBytes);
+      const [peerSynced] = Automerge.applyChanges(peer, [change!]);
+      expect(peerSynced.entities).toEqual([]);
+    });
+
+    it("내용이 이미 같으면 null을 반환한다 (불필요한 op 방지)", async () => {
+      mockRepo.findOne.mockResolvedValue({ ...mockDiagram, content: contentWithTable } as Diagram);
+      await service.joinRoom("d1");
+      expect(service.syncExternalContent("d1", contentWithTable as never)).toBeNull();
+    });
+  });
+
   describe("schedulePersist", () => {
     beforeEach(() => {
       vi.useFakeTimers();
