@@ -1,12 +1,27 @@
 import { describe, it, expect } from "vitest";
 import { createEmptyDiagram } from "@erdify/domain";
-import type { DiagramDocument, DiagramEntity } from "@erdify/domain";
-import { applyDiff } from "./collaboration-diff";
+import type { DiagramColumn, DiagramDocument, DiagramEntity } from "@erdify/domain";
+import { applyColumnDiff, applyDiff } from "./collaboration-diff";
 
 // Fresh entity fixtures per call, so tests never share (and risk cross-mutating)
 // the same array/object instances.
 function makeEntities(ids: string[]): DiagramEntity[] {
   return ids.map((id) => ({ id, name: id, logicalName: null, comment: null, color: null, columns: [] }));
+}
+
+function makeColumn(id: string, overrides: Partial<DiagramColumn> = {}): DiagramColumn {
+  return {
+    id,
+    name: id,
+    type: "varchar",
+    nullable: true,
+    primaryKey: false,
+    unique: false,
+    defaultValue: null,
+    comment: null,
+    ordinal: 0,
+    ...overrides,
+  };
 }
 
 function makeDoc(
@@ -72,5 +87,290 @@ describe("applyDiff - layout.entityPositions diff", () => {
     applyDiff(draft, prev, next);
 
     expect(draft.layout.entityPositions).toEqual({ e1: { x: 0, y: 0 } });
+  });
+});
+
+// ─── 특성화 테스트 (#74 리팩터링 안전망) ─────────────────────────────────────
+// 아래 테스트는 리팩터링 전 현재 동작을 그대로 고정한다. "[현재 동작:버그]"로 표시된
+// 케이스는 알려진 결함을 문서화한 것으로, 결함 수정 시 해당 테스트를 함께 뒤집는다.
+
+describe("applyColumnDiff — 특성화", () => {
+  it("next에 없는 draft 컬럼을 제거한다", () => {
+    const draft = [makeColumn("c1"), makeColumn("c2")];
+    applyColumnDiff(draft, [makeColumn("c1"), makeColumn("c2")], [makeColumn("c1")]);
+    expect(draft.map((c) => c.id)).toEqual(["c1"]);
+  });
+
+  it("prev에 없는 next 컬럼을 얕은 복사로 추가한다", () => {
+    const draft = [makeColumn("c1")];
+    const added = makeColumn("c2");
+    applyColumnDiff(draft, [makeColumn("c1")], [makeColumn("c1"), added]);
+    expect(draft.map((c) => c.id)).toEqual(["c1", "c2"]);
+    expect(draft[1]).not.toBe(added);
+    expect(draft[1]).toEqual(added);
+  });
+
+  it("공통 컬럼의 8개 스칼라 필드 변경을 모두 전파한다", () => {
+    const draft = [makeColumn("c1")];
+    const changed = makeColumn("c1", {
+      name: "renamed", type: "bigint", nullable: false, primaryKey: true,
+      unique: true, defaultValue: "0", comment: "설명", ordinal: 3,
+    });
+    applyColumnDiff(draft, [makeColumn("c1")], [changed]);
+    expect(draft[0]).toEqual(changed);
+  });
+
+  it("draft에 없는 공통 컬럼은 조용히 건너뛴다", () => {
+    const draft: DiagramColumn[] = [];
+    applyColumnDiff(draft, [makeColumn("c1")], [makeColumn("c1", { name: "renamed" })]);
+    expect(draft).toEqual([]);
+  });
+
+  it("[현재 동작:버그] autoIncrement·onUpdate 변경은 전파되지 않는다", () => {
+    const draft = [makeColumn("c1")];
+    applyColumnDiff(
+      draft,
+      [makeColumn("c1")],
+      [makeColumn("c1", { autoIncrement: true, onUpdate: "CURRENT_TIMESTAMP" })],
+    );
+    expect(draft[0]!.autoIncrement).toBeUndefined();
+    expect(draft[0]!.onUpdate).toBeUndefined();
+  });
+
+  it("[현재 동작:버그] draft에 이미 있는 컬럼이 prev에 없으면 같은 id가 중복 push된다", () => {
+    const draft = [makeColumn("c1")];
+    applyColumnDiff(draft, [], [makeColumn("c1")]);
+    expect(draft.map((c) => c.id)).toEqual(["c1", "c1"]);
+  });
+});
+
+describe("applyDiff — entities 특성화", () => {
+  it("엔티티 삭제·추가·필드 갱신을 draft에 재현한다", () => {
+    const prev = makeDoc(makeEntities(["e1", "e2"]), {});
+    const nextE1: DiagramEntity = {
+      ...makeEntities(["e1"])[0]!,
+      name: "renamed", logicalName: "논리명", comment: "설명", color: "#ff0000",
+    };
+    const next = makeDoc([nextE1, ...makeEntities(["e3"])], {});
+    const draft = makeDoc(makeEntities(["e1", "e2"]), {});
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.entities.map((e) => e.id)).toEqual(["e1", "e3"]);
+    expect(draft.entities[0]).toMatchObject({ name: "renamed", logicalName: "논리명", comment: "설명", color: "#ff0000" });
+  });
+
+  it("추가된 엔티티의 columns 배열은 next와 다른 인스턴스다", () => {
+    const prev = makeDoc([], {});
+    const added: DiagramEntity = { ...makeEntities(["e1"])[0]!, columns: [makeColumn("c1")] };
+    const next = makeDoc([added], {});
+    const draft = makeDoc([], {});
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.entities[0]!.columns).not.toBe(added.columns);
+    expect(draft.entities[0]!.columns).toEqual(added.columns);
+  });
+
+  it("공통 엔티티의 컬럼 변경을 applyColumnDiff로 전파한다", () => {
+    const prevE = { ...makeEntities(["e1"])[0]!, columns: [makeColumn("c1")] };
+    const nextE = { ...makeEntities(["e1"])[0]!, columns: [makeColumn("c1", { name: "renamed" }), makeColumn("c2")] };
+    const draft = makeDoc([{ ...makeEntities(["e1"])[0]!, columns: [makeColumn("c1")] }], {});
+
+    applyDiff(draft, makeDoc([prevE], {}), makeDoc([nextE], {}));
+
+    expect(draft.entities[0]!.columns.map((c) => [c.id, c.name])).toEqual([["c1", "renamed"], ["c2", "c2"]]);
+  });
+
+  it("seedData 추가는 행 단위 복사, 제거는 delete로 재현한다", () => {
+    const base = () => makeEntities(["e1"])[0]!;
+    const seed = [{ c1: "v1" }];
+
+    const draftAdd = makeDoc([base()], {});
+    applyDiff(draftAdd, makeDoc([base()], {}), makeDoc([{ ...base(), seedData: seed }], {}));
+    expect(draftAdd.entities[0]!.seedData).toEqual(seed);
+    expect(draftAdd.entities[0]!.seedData![0]).not.toBe(seed[0]);
+
+    const withSeed = { ...base(), seedData: [{ c1: "v1" }] };
+    const draftRemove = makeDoc([{ ...base(), seedData: [{ c1: "v1" }] }], {});
+    applyDiff(draftRemove, makeDoc([withSeed], {}), makeDoc([base()], {}));
+    expect("seedData" in draftRemove.entities[0]!).toBe(false);
+  });
+
+  it("[현재 동작:버그] schema 필드 변경은 전파되지 않는다", () => {
+    const prevE = makeEntities(["e1"])[0]!;
+    const nextE = { ...makeEntities(["e1"])[0]!, schema: "billing" };
+    const draft = makeDoc(makeEntities(["e1"]), {});
+
+    applyDiff(draft, makeDoc([prevE], {}), makeDoc([nextE], {}));
+
+    expect(draft.entities[0]!.schema).toBeUndefined();
+  });
+
+  it("[현재 동작:버그 #111] draft에 이미 있는 엔티티가 prev에 없으면 중복 push된다", () => {
+    // 시나리오: 오프라인 구간(prev가 draft보다 오래됨) 후 재합류 병합.
+    // 추가 루프가 draft 멤버십을 확인하지 않고 prev만 보므로 같은 id가 두 번 들어간다.
+    const draft = makeDoc(makeEntities(["e1"]), {});
+    applyDiff(draft, makeDoc([], {}), makeDoc(makeEntities(["e1"]), {}));
+    expect(draft.entities.map((e) => e.id)).toEqual(["e1", "e1"]);
+  });
+
+  it("[현재 동작:버그 #111] 재합류 local-wins — 상대가 지운 테이블이 로컬 스냅샷 기준으로 부활한다", () => {
+    // prev = 서버 문서(상대가 e2를 지움), next = 내 로컬 문서(e2가 아직 있음)
+    const serverDoc = makeDoc(makeEntities(["e1"]), {});
+    const localDoc = makeDoc(makeEntities(["e1", "e2"]), {});
+    const draft = makeDoc(makeEntities(["e1"]), {});
+
+    applyDiff(draft, serverDoc, localDoc);
+
+    expect(draft.entities.map((e) => e.id)).toEqual(["e1", "e2"]);
+  });
+});
+
+describe("applyDiff — relationships 특성화", () => {
+  const makeRel = (id: string, overrides: Partial<DiagramDocument["relationships"][number]> = {}) => ({
+    id, name: "", sourceEntityId: "e1", sourceColumnIds: ["c1"], targetEntityId: "e2", targetColumnIds: ["c2"],
+    cardinality: "many-to-one" as const, onDelete: "no-action" as const, onUpdate: "no-action" as const,
+    identifying: false, ...overrides,
+  });
+
+  it("관계 삭제·추가를 draft에 재현한다", () => {
+    const draft = makeDoc([], {});
+    draft.relationships = [makeRel("r1"), makeRel("r2")];
+    const prev = makeDoc([], {});
+    prev.relationships = [makeRel("r1"), makeRel("r2")];
+    const next = makeDoc([], {});
+    next.relationships = [makeRel("r1"), makeRel("r3")];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.relationships.map((r) => r.id)).toEqual(["r1", "r3"]);
+  });
+
+  it("[현재 동작:버그] 같은 id 관계의 필드 변경(cardinality 등)은 전파되지 않는다 — 갱신 루프 부재", () => {
+    const draft = makeDoc([], {});
+    draft.relationships = [makeRel("r1")];
+    const prev = makeDoc([], {});
+    prev.relationships = [makeRel("r1")];
+    const next = makeDoc([], {});
+    next.relationships = [makeRel("r1", { cardinality: "one-to-one", onDelete: "cascade", name: "fk_renamed" })];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.relationships[0]).toMatchObject({ cardinality: "many-to-one", onDelete: "no-action", name: "" });
+  });
+
+  it("[현재 동작:주의] 추가된 관계는 얕은 복사라 sourceColumnIds 배열 인스턴스를 next와 공유한다", () => {
+    const draft = makeDoc([], {});
+    const prev = makeDoc([], {});
+    const added = makeRel("r1");
+    const next = makeDoc([], {});
+    next.relationships = [added];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.relationships[0]!.sourceColumnIds).toBe(added.sourceColumnIds);
+  });
+});
+
+describe("applyDiff — indexes 특성화", () => {
+  const makeIdx = (id: string, overrides: Partial<DiagramDocument["indexes"][number]> = {}) => ({
+    id, entityId: "e1", name: `idx_${id}`, columnIds: ["c1"], unique: false, ...overrides,
+  });
+
+  it("인덱스 삭제·추가를 재현하고, 추가 시 columnIds는 새 인스턴스다", () => {
+    const draft = makeDoc([], {});
+    draft.indexes = [makeIdx("i1")];
+    const prev = makeDoc([], {});
+    prev.indexes = [makeIdx("i1")];
+    const added = makeIdx("i2");
+    const next = makeDoc([], {});
+    next.indexes = [makeIdx("i1"), added];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.indexes.map((i) => i.id)).toEqual(["i1", "i2"]);
+    expect(draft.indexes[1]!.columnIds).not.toBe(added.columnIds);
+  });
+
+  it("공통 인덱스의 name/unique/columnIds(순서 포함) 변경을 전파한다", () => {
+    const draft = makeDoc([], {});
+    draft.indexes = [makeIdx("i1", { columnIds: ["c1", "c2"] })];
+    const prev = makeDoc([], {});
+    prev.indexes = [makeIdx("i1", { columnIds: ["c1", "c2"] })];
+    const next = makeDoc([], {});
+    next.indexes = [makeIdx("i1", { name: "ux_renamed", unique: true, columnIds: ["c2", "c1"] })];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.indexes[0]).toMatchObject({ name: "ux_renamed", unique: true, columnIds: ["c2", "c1"] });
+  });
+
+  it("columnIds가 내용까지 같으면 배열을 재대입하지 않는다 (op 최소화)", () => {
+    const draftCols = ["c1", "c2"];
+    const draft = makeDoc([], {});
+    draft.indexes = [makeIdx("i1", { columnIds: draftCols })];
+    const prev = makeDoc([], {});
+    prev.indexes = [makeIdx("i1", { columnIds: ["c1", "c2"] })];
+    const next = makeDoc([], {});
+    next.indexes = [makeIdx("i1", { columnIds: ["c1", "c2"] })];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.indexes[0]!.columnIds).toBe(draftCols);
+  });
+});
+
+describe("applyDiff — Automerge 통합 (실제 draft 프록시)", () => {
+  it("삭제+추가+갱신 종합 변경이 피어 replica에 그대로 재현된다", async () => {
+    const Automerge = await import("@automerge/automerge");
+
+    const prev = makeDoc(
+      [
+        { ...makeEntities(["e1"])[0]!, columns: [makeColumn("c1")] },
+        makeEntities(["e2"])[0]!,
+      ],
+      { e1: { x: 0, y: 0 }, e2: { x: 1, y: 1 } },
+    );
+    const next = makeDoc(
+      [
+        { ...makeEntities(["e1"])[0]!, name: "renamed", columns: [makeColumn("c1", { name: "id2" }), makeColumn("c2")] },
+        makeEntities(["e3"])[0]!,
+      ],
+      { e1: { x: 10, y: 20 }, e3: { x: 5, y: 5 } },
+    );
+
+    const base = Automerge.from(structuredClone(prev) as unknown as Record<string, unknown>) as import("@automerge/automerge").Doc<DiagramDocument>;
+    const peer = Automerge.clone(base);
+
+    const updated = Automerge.change(base, (draft) => {
+      applyDiff(draft as DiagramDocument, prev, next);
+    });
+    const change = Automerge.getLastLocalChange(updated);
+    expect(change).toBeDefined();
+
+    const [peerSynced] = Automerge.applyChanges(peer, [change!]);
+    const result = structuredClone(peerSynced) as DiagramDocument;
+    expect(result.entities.map((e) => e.id)).toEqual(["e1", "e3"]);
+    expect(result.entities[0]).toMatchObject({ name: "renamed" });
+    expect(result.entities[0]!.columns.map((c) => [c.id, c.name])).toEqual([["c1", "id2"], ["c2", "c2"]]);
+    expect(result.layout.entityPositions).toEqual({ e1: { x: 10, y: 20 }, e3: { x: 5, y: 5 } });
+  });
+
+  it("내용 변화가 없으면 Automerge op를 만들지 않는다 (조건부 대입 시맨틱)", async () => {
+    const Automerge = await import("@automerge/automerge");
+
+    const prev = makeDoc([{ ...makeEntities(["e1"])[0]!, columns: [makeColumn("c1")] }], { e1: { x: 0, y: 0 } });
+    // 내용은 같지만 참조가 달라 가드를 통과하는 next — 필드 비교가 대입을 전부 걸러야 한다
+    const next = structuredClone(prev);
+
+    const base = Automerge.from(structuredClone(prev) as unknown as Record<string, unknown>) as import("@automerge/automerge").Doc<DiagramDocument>;
+    const headsBefore = Automerge.getHeads(base);
+    const updated = Automerge.change(base, (draft) => {
+      applyDiff(draft as DiagramDocument, prev, next);
+    });
+
+    // op가 하나도 없으면 change가 만들어지지 않아 heads가 그대로다
+    expect(Automerge.getHeads(updated)).toEqual(headsBefore);
   });
 });
