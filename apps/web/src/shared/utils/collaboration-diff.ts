@@ -42,21 +42,26 @@ function applyListDiff<T extends { id: string }>(
 }
 
 /**
- * 나열된 필드 중 값이 다른 것만 대입한다. "변경된 값만 대입"은 성능 최적화가 아니라
- * Automerge op 최소화 시맨틱이므로, 무조건 대입으로 단순화하면 op 폭증 + 불필요한 충돌이 생긴다.
+ * "내가 바꾼 필드(prev≠next)"만, 그것도 draft와 값이 다를 때만 대입한다.
+ * - prev 비교를 빼면 내가 안 건드린 필드의 원격 변경(draft에만 반영됨)을 stale한
+ *   내 스냅샷 값으로 되돌린다 (동시 편집 유실).
+ * - draft 비교("변경된 값만 대입")는 성능이 아니라 Automerge op 최소화 시맨틱 —
+ *   무조건 대입으로 단순화하면 op 폭증 + 불필요한 충돌이 생긴다.
+ * prev가 없으면(이론상 도달 불가) 전 필드를 로컬 변경으로 간주한다.
  */
-function copyChangedFields<T>(draft: T, next: T, fields: readonly (keyof T)[]): void {
+function copyChangedFields<T>(draft: T, prev: T | undefined, next: T, fields: readonly (keyof T)[]): void {
   for (const field of fields) {
+    if (prev != null && prev[field] === next[field]) continue;
     if (draft[field] !== next[field]) draft[field] = next[field];
   }
 }
 
-/** 배열 필드는 요소·순서까지 비교해 달라진 경우에만 통째로 재대입한다 (op 최소화 + next와 인스턴스 분리). */
-function syncIdArrayField<T, K extends keyof T>(draft: T, next: T, field: K): void {
-  const draftArr = draft[field] as unknown as string[];
-  const nextArr = next[field] as unknown as string[];
-  if (JSON.stringify(draftArr) !== JSON.stringify(nextArr)) {
-    (draft[field] as unknown as string[]) = [...nextArr];
+/** copyChangedFields의 배열 필드 버전 — 요소·순서까지 값 비교, 재대입 시 인스턴스 분리. */
+function syncIdArrayField<T, K extends keyof T>(draft: T, prev: T | undefined, next: T, field: K): void {
+  const nextJson = JSON.stringify(next[field]);
+  if (prev != null && JSON.stringify(prev[field]) === nextJson) return;
+  if (JSON.stringify(draft[field]) !== nextJson) {
+    (draft[field] as unknown as string[]) = [...(next[field] as unknown as string[])];
   }
 }
 
@@ -81,7 +86,7 @@ export function applyColumnDiff(
 ): void {
   applyListDiff(draftColumns, prevColumns, nextColumns, {
     clone: (col) => ({ ...col }),
-    update: (draftCol, _prevCol, nextCol) => copyChangedFields(draftCol, nextCol, COLUMN_SYNC_FIELDS),
+    update: (draftCol, prevCol, nextCol) => copyChangedFields(draftCol, prevCol, nextCol, COLUMN_SYNC_FIELDS),
   });
 }
 
@@ -124,7 +129,7 @@ export function applyDiff(
       }),
       update: (draftEntity, prevEntity, nextEntity) => {
         if (prevEntity === nextEntity) return;
-        copyChangedFields(draftEntity, nextEntity, ENTITY_SYNC_FIELDS);
+        copyChangedFields(draftEntity, prevEntity, nextEntity, ENTITY_SYNC_FIELDS);
         applyColumnDiff(draftEntity.columns as DiagramColumn[], prevEntity?.columns ?? [], nextEntity.columns);
         syncSeedData(draftEntity, prevEntity, nextEntity);
       },
@@ -138,10 +143,10 @@ export function applyDiff(
   if (prev.relationships !== next.relationships) {
     applyListDiff(draft.relationships as DiagramRelationship[], prev.relationships, next.relationships, {
       clone: (rel) => ({ ...rel, sourceColumnIds: [...rel.sourceColumnIds], targetColumnIds: [...rel.targetColumnIds] }),
-      update: (draftRel, _prevRel, nextRel) => {
-        copyChangedFields(draftRel, nextRel, RELATIONSHIP_SYNC_FIELDS);
-        syncIdArrayField(draftRel, nextRel, "sourceColumnIds");
-        syncIdArrayField(draftRel, nextRel, "targetColumnIds");
+      update: (draftRel, prevRel, nextRel) => {
+        copyChangedFields(draftRel, prevRel, nextRel, RELATIONSHIP_SYNC_FIELDS);
+        syncIdArrayField(draftRel, prevRel, nextRel, "sourceColumnIds");
+        syncIdArrayField(draftRel, prevRel, nextRel, "targetColumnIds");
       },
     });
   }
@@ -149,9 +154,9 @@ export function applyDiff(
   if (prev.indexes !== next.indexes) {
     applyListDiff(draft.indexes as DiagramIndex[], prev.indexes, next.indexes, {
       clone: (idx) => ({ ...idx, columnIds: [...idx.columnIds] }),
-      update: (draftIdx, _prevIdx, nextIdx) => {
-        copyChangedFields(draftIdx, nextIdx, INDEX_SYNC_FIELDS);
-        syncIdArrayField(draftIdx, nextIdx, "columnIds");
+      update: (draftIdx, prevIdx, nextIdx) => {
+        copyChangedFields(draftIdx, prevIdx, nextIdx, INDEX_SYNC_FIELDS);
+        syncIdArrayField(draftIdx, prevIdx, nextIdx, "columnIds");
       },
     });
   }

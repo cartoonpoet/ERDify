@@ -365,6 +365,62 @@ describe("applyDiff — indexes 특성화", () => {
   });
 });
 
+// 동시 편집: 필드 동기화는 "내가 바꾼 필드(prev≠next)"만 대입해야 한다.
+// draft에만 있는 원격 필드 변경을 내 stale 스냅샷 값으로 되돌리면 안 된다.
+describe("applyDiff — 동시 필드 편집 (원격 변경 보존)", () => {
+  it("컬럼: 로컬 name 변경은 적용되고 원격 comment 변경은 보존된다", () => {
+    const draft = [makeColumn("c1", { comment: "원격이 단 설명" })];
+    applyColumnDiff(draft, [makeColumn("c1")], [makeColumn("c1", { name: "renamed" })]);
+    expect(draft[0]).toMatchObject({ name: "renamed", comment: "원격이 단 설명" });
+  });
+
+  it("엔티티: 로컬 name 변경은 적용되고 원격 color 변경은 보존된다", () => {
+    const draft = makeDoc([{ ...makeEntities(["e1"])[0]!, color: "#00ff00" }], {});
+    const prev = makeDoc(makeEntities(["e1"]), {});
+    const next = makeDoc([{ ...makeEntities(["e1"])[0]!, name: "renamed" }], {});
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.entities[0]).toMatchObject({ name: "renamed", color: "#00ff00" });
+  });
+
+  it("관계: 로컬 name 변경은 적용되고 원격 onDelete·sourceColumnIds 변경은 보존된다", () => {
+    const makeRel = (overrides: Partial<DiagramDocument["relationships"][number]> = {}) => ({
+      id: "r1", name: "", sourceEntityId: "e1", sourceColumnIds: ["c1"], targetEntityId: "e2", targetColumnIds: ["c2"],
+      cardinality: "many-to-one" as const, onDelete: "no-action" as const, onUpdate: "no-action" as const,
+      identifying: false, ...overrides,
+    });
+    const draft = makeDoc([], {});
+    draft.relationships = [makeRel({ onDelete: "cascade", sourceColumnIds: ["c9"] })];
+    const prev = makeDoc([], {});
+    prev.relationships = [makeRel()];
+    const next = makeDoc([], {});
+    next.relationships = [makeRel({ name: "fk_renamed" })];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.relationships[0]).toMatchObject({
+      name: "fk_renamed", onDelete: "cascade", sourceColumnIds: ["c9"],
+    });
+  });
+
+  it("인덱스: 로컬 name 변경은 적용되고 원격 unique·columnIds 변경은 보존된다", () => {
+    const makeIdx = (overrides: Partial<DiagramDocument["indexes"][number]> = {}) => ({
+      id: "i1", entityId: "e1", name: "idx_a", columnIds: ["c1"], unique: false, ...overrides,
+    });
+    const draft = makeDoc([], {});
+    draft.indexes = [makeIdx({ unique: true, columnIds: ["c1", "c2"] })];
+    const prev = makeDoc([], {});
+    prev.indexes = [makeIdx()];
+    const next = makeDoc([], {});
+    next.indexes = [makeIdx({ name: "idx_renamed" })];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.indexes[0]).toMatchObject({ name: "idx_renamed", unique: true, columnIds: ["c1", "c2"] });
+  });
+});
+
 describe("applyDiff — Automerge 통합 (실제 draft 프록시)", () => {
   it("삭제+추가+갱신 종합 변경이 피어 replica에 그대로 재현된다", async () => {
     const Automerge = await import("@automerge/automerge");
