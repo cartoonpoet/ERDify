@@ -30,11 +30,14 @@ export const useRealtimeCollaboration = (diagramId: string) => {
       setCollaborating(true);
       const Automerge = await loadAutomerge();
       const serverDoc = Automerge.load<DiagramDocument>(Uint8Array.from(bytes));
-      const { isDirty, document: localDoc } = useEditorStore.getState();
+      const { isDirty, document: localDoc, baselineDocument } = useEditorStore.getState();
       if (isDirty && localDoc) {
+        // base는 "내 편집이 시작된 기준 문서"여야 한다. 서버 문서를 base로 쓰면
+        // 내가 안 건드린 항목의 서버측 삭제/추가가 전부 내 변경으로 오인되어
+        // 지운 테이블이 부활하거나 남이 추가한 테이블이 소실된다(#111).
         const baseDoc = amDocRef.current
           ? (structuredClone(amDocRef.current) as DiagramDocument)
-          : (structuredClone(serverDoc) as DiagramDocument);
+          : (baselineDocument ?? (structuredClone(serverDoc) as DiagramDocument));
         const mergedDoc = Automerge.change(serverDoc, (draft) => {
           applyDiff(draft as DiagramDocument, baseDoc, localDoc);
         });

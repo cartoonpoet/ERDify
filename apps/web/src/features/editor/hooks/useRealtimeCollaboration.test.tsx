@@ -200,6 +200,38 @@ describe("useRealtimeCollaboration", () => {
     );
   });
 
+  it("합류 병합 시 상대가 지운 테이블을 부활시키지 않는다 (#111) — baselineDocument를 base로 사용", async () => {
+    mockSocket.connected = true;
+    renderHook(() => useRealtimeCollaboration("d1"));
+
+    // HTTP로 로드한 문서(e-shared 포함)에서 편집을 시작(isDirty)한 뒤 협업에 합류하는데,
+    // 그 사이 상대가 e-shared를 지워 서버 문서에는 없다. 나는 e-shared를 건드리지 않았으므로
+    // 병합 결과에 부활시키면 안 된다 — base가 서버 문서면 "내가 추가한 것"으로 오인된다.
+    const sharedEntity = { id: "e-shared", name: "Shared", logicalName: null, comment: null, color: null, columns: [] };
+    const loadedDoc: DiagramDocument = { ...makeEmptyDoc(), entities: [{ ...sharedEntity }] };
+    const localDoc: DiagramDocument = { ...makeEmptyDoc(), entities: [{ ...sharedEntity }] };
+    const serverDocDeleted = Automerge.from(makeEmptyDoc() as unknown as Record<string, unknown>);
+
+    (storeHook.getState as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+      isDirty: true,
+      document: localDoc,
+      baselineDocument: loadedDoc,
+    });
+    const initCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "am:init"
+    );
+    await act(async () => { await (initCall![1] as (b: number[]) => Promise<void>)(Array.from(Automerge.save(serverDocDeleted))); });
+
+    const changeCalls = (mockSocket.emit as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (c: unknown[]) => c[0] === "am:change"
+    );
+    let finalDoc = serverDocDeleted;
+    for (const [, bytes] of changeCalls as Array<[string, number[]]>) {
+      [finalDoc] = Automerge.applyChanges(finalDoc, [Uint8Array.from(bytes)]);
+    }
+    expect((finalDoc as unknown as DiagramDocument).entities).toEqual([]);
+  });
+
   it("calls setCollaborators in store from presence:state event", () => {
     renderHook(() => useRealtimeCollaboration("d1"));
 

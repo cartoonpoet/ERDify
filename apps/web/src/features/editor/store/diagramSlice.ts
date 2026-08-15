@@ -37,6 +37,12 @@ function computeIndexesByEntityId(doc: DiagramDocument): Map<string, DiagramInde
 
 export interface DiagramSlice {
   document: DiagramDocument | null;
+  /**
+   * 마지막 권위(authoritative) 문서 — setDocument로 들어온 그대로의 스냅샷.
+   * 로컬 편집(applyCommand)에는 영향받지 않으며, 협업 재합류 병합에서 "내 변경분"을
+   * 계산하는 base로 쓰인다(#111 — 이게 없으면 stale 로컬과 서버의 차이가 전부 내 변경으로 오인됨).
+   */
+  baselineDocument: DiagramDocument | null;
   nodes: EditableTableNodeType[];
   edges: Edge[];
   isDirty: boolean;
@@ -55,6 +61,7 @@ export interface DiagramSlice {
 
 export const createDiagramSlice: StateCreator<EditorState, [], [], DiagramSlice> = (set, get) => ({
   document: null,
+  baselineDocument: null,
   nodes: [],
   edges: [],
   isDirty: false,
@@ -67,6 +74,7 @@ export const createDiagramSlice: StateCreator<EditorState, [], [], DiagramSlice>
   setDocument: (doc) =>
     set((state) => ({
       document: doc,
+      baselineDocument: doc,
       nodes: docToNodes(doc, state.collaborators),
       edges: docToEdges(doc),
       isDirty: false,
