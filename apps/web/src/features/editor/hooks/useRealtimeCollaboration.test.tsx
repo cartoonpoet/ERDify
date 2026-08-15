@@ -153,8 +153,10 @@ describe("useRealtimeCollaboration", () => {
     );
     await act(async () => { await (initCall![1] as (b: number[]) => Promise<void>)(Array.from(bytes)); });
 
-    // The merge branch emits the resulting change instead of calling setDocument directly.
-    expect(mockSetDocument).not.toHaveBeenCalled();
+    // 병합 결과는 서버로 emit되고, 서버가 발신자에게 echo하지 않으므로 로컬 UI에도 직접 반영돼야 한다.
+    expect(mockSetDocument).toHaveBeenCalledWith(
+      expect.objectContaining({ entities: expect.arrayContaining([expect.objectContaining({ id: "e-local" })]) })
+    );
     const changeCall = (mockSocket.emit as ReturnType<typeof vi.fn>).mock.calls.find(
       (c: unknown[]) => c[0] === "am:change"
     );
@@ -230,6 +232,10 @@ describe("useRealtimeCollaboration", () => {
       [finalDoc] = Automerge.applyChanges(finalDoc, [Uint8Array.from(bytes)]);
     }
     expect((finalDoc as unknown as DiagramDocument).entities).toEqual([]);
+
+    // 로컬 UI도 병합 결과로 갱신되어야 한다 — 아니면 부활 방지된 테이블이 화면에 남아
+    // 이후 편집이 조용히 유실된다 (서버는 발신자에게 echo하지 않음).
+    expect(mockSetDocument).toHaveBeenCalledWith(expect.objectContaining({ entities: [] }));
   });
 
   it("calls setCollaborators in store from presence:state event", () => {

@@ -46,6 +46,12 @@ export const useRealtimeCollaboration = (diagramId: string) => {
         if (pendingChange && socketRef.current?.connected) {
           socketRef.current.emit("am:change", Array.from(pendingChange));
         }
+        // 병합 결과를 로컬 UI에도 반영한다. 서버는 발신자에게 echo하지 않으므로
+        // 이걸 빼면 병합에서 걸러진 항목(예: 부활 방지된 삭제 테이블)이 화면에 남고,
+        // 그 항목을 편집하면 공유 문서에 없어서 조용히 유실된다.
+        isRemoteRef.current = true;
+        setDocument(structuredClone(mergedDoc) as DiagramDocument);
+        isRemoteRef.current = false;
         return;
       }
       amDocRef.current = serverDoc;
