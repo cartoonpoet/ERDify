@@ -1,7 +1,10 @@
-import type { DiagramDocument, DiagramEntity, DiagramColumn, DiagramIndex } from "@erdify/domain";
+import type { DiagramDocument, DiagramEntity, DiagramColumn, DiagramIndex, DiagramRelationship } from "@erdify/domain";
 
 /**
- * "next 기준 삭제 → prev 기준 추가 → 교집합 갱신" 3단 diff를 draft 배열에 재현한다.
+ * "삭제 → 추가 → 교집합 갱신" 3-way diff를 draft 배열에 재현한다.
+ * prev→next가 "내 변경분"이고 draft에는 원격 변경이 먼저 반영돼 있을 수 있으므로:
+ * - 삭제는 prev에 있던 것만 (draft에만 있는 항목 = 원격 추가 → 보존, #111 데이터 유실 방지)
+ * - 추가는 prev에도 draft에도 없는 것만 (중복 push 방지, #111 중복 생성 방지)
  *
  * draft는 Automerge.change() 콜백의 프록시 배열이므로 반드시 splice/push/필드 대입으로
  * in-place 변경해야 한다(새 배열을 만들어 반환하면 change op가 기록되지 않는다).
@@ -23,10 +26,11 @@ function applyListDiff<T extends { id: string }>(
 
   for (let i = draftList.length - 1; i >= 0; i--) {
     const item = draftList[i];
-    if (item && !nextIds.has(item.id)) draftList.splice(i, 1);
+    if (item && prevIds.has(item.id) && !nextIds.has(item.id)) draftList.splice(i, 1);
   }
+  const draftIds = new Set(draftList.map((item) => item.id));
   for (const item of nextList) {
-    if (!prevIds.has(item.id)) draftList.push(handlers.clone(item));
+    if (!prevIds.has(item.id) && !draftIds.has(item.id)) draftList.push(handlers.clone(item));
   }
   if (!handlers.update) return;
   for (const nextItem of nextList) {
@@ -47,13 +51,26 @@ function copyChangedFields<T>(draft: T, next: T, fields: readonly (keyof T)[]): 
   }
 }
 
+/** 배열 필드는 요소·순서까지 비교해 달라진 경우에만 통째로 재대입한다 (op 최소화 + next와 인스턴스 분리). */
+function syncIdArrayField<T, K extends keyof T>(draft: T, next: T, field: K): void {
+  const draftArr = draft[field] as unknown as string[];
+  const nextArr = next[field] as unknown as string[];
+  if (JSON.stringify(draftArr) !== JSON.stringify(nextArr)) {
+    (draft[field] as unknown as string[]) = [...nextArr];
+  }
+}
+
 const COLUMN_SYNC_FIELDS = [
-  "name", "type", "nullable", "primaryKey", "unique", "defaultValue", "comment", "ordinal",
+  "name", "type", "nullable", "primaryKey", "unique", "defaultValue", "comment", "autoIncrement", "onUpdate", "ordinal",
 ] as const satisfies readonly (keyof DiagramColumn)[];
 
 const ENTITY_SYNC_FIELDS = [
-  "name", "logicalName", "comment", "color",
+  "schema", "name", "logicalName", "comment", "color",
 ] as const satisfies readonly (keyof DiagramEntity)[];
+
+const RELATIONSHIP_SYNC_FIELDS = [
+  "name", "sourceEntityId", "targetEntityId", "cardinality", "onDelete", "onUpdate", "identifying",
+] as const satisfies readonly (keyof DiagramRelationship)[];
 
 const INDEX_SYNC_FIELDS = ["name", "unique"] as const satisfies readonly (keyof DiagramIndex)[];
 
@@ -78,6 +95,7 @@ function syncSeedData(draftEntity: DiagramEntity, prevEntity: DiagramEntity | un
 }
 
 function applyPositionDiff(draft: DiagramDocument, prev: DiagramDocument, next: DiagramDocument): void {
+  const prevEntityIds = new Set(prev.entities.map((e) => e.id));
   const nextEntityIds = new Set(next.entities.map((e) => e.id));
   const positions = draft.layout.entityPositions as Record<string, { x: number; y: number }>;
   for (const [id, pos] of Object.entries(next.layout.entityPositions)) {
@@ -85,7 +103,8 @@ function applyPositionDiff(draft: DiagramDocument, prev: DiagramDocument, next: 
     if (p?.x !== pos.x || p?.y !== pos.y) positions[id] = pos;
   }
   for (const id of Object.keys(positions)) {
-    if (!nextEntityIds.has(id)) delete positions[id];
+    // 내가(prev→next) 지운 엔티티의 좌표만 정리 — draft에만 있는 좌표는 원격 추가분이므로 보존
+    if (prevEntityIds.has(id) && !nextEntityIds.has(id)) delete positions[id];
   }
 }
 
@@ -98,7 +117,11 @@ export function applyDiff(
   // 값 비교로 바꾸면 성능이 급락하고, 제거하면 op가 폭증한다 — 반드시 유지할 것.
   if (prev.entities !== next.entities) {
     applyListDiff(draft.entities as DiagramEntity[], prev.entities, next.entities, {
-      clone: (entity) => ({ ...entity, columns: [...entity.columns] }),
+      clone: (entity) => ({
+        ...entity,
+        columns: [...entity.columns],
+        ...(entity.seedData ? { seedData: entity.seedData.map((r) => ({ ...r })) } : {}),
+      }),
       update: (draftEntity, prevEntity, nextEntity) => {
         if (prevEntity === nextEntity) return;
         copyChangedFields(draftEntity, nextEntity, ENTITY_SYNC_FIELDS);
@@ -113,8 +136,13 @@ export function applyDiff(
   }
 
   if (prev.relationships !== next.relationships) {
-    applyListDiff(draft.relationships as DiagramDocument["relationships"], prev.relationships, next.relationships, {
-      clone: (rel) => ({ ...rel }),
+    applyListDiff(draft.relationships as DiagramRelationship[], prev.relationships, next.relationships, {
+      clone: (rel) => ({ ...rel, sourceColumnIds: [...rel.sourceColumnIds], targetColumnIds: [...rel.targetColumnIds] }),
+      update: (draftRel, _prevRel, nextRel) => {
+        copyChangedFields(draftRel, nextRel, RELATIONSHIP_SYNC_FIELDS);
+        syncIdArrayField(draftRel, nextRel, "sourceColumnIds");
+        syncIdArrayField(draftRel, nextRel, "targetColumnIds");
+      },
     });
   }
 
@@ -123,10 +151,7 @@ export function applyDiff(
       clone: (idx) => ({ ...idx, columnIds: [...idx.columnIds] }),
       update: (draftIdx, _prevIdx, nextIdx) => {
         copyChangedFields(draftIdx, nextIdx, INDEX_SYNC_FIELDS);
-        // 배열은 요소 순서 변경까지 감지해야 하므로 값 비교 후 통째 재대입
-        if (JSON.stringify(draftIdx.columnIds) !== JSON.stringify(nextIdx.columnIds)) {
-          draftIdx.columnIds = [...nextIdx.columnIds];
-        }
+        syncIdArrayField(draftIdx, nextIdx, "columnIds");
       },
     });
   }
