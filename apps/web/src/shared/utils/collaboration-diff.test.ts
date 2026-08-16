@@ -90,9 +90,10 @@ describe("applyDiff - layout.entityPositions diff", () => {
   });
 });
 
-// ─── 특성화 테스트 (#74 리팩터링 안전망) ─────────────────────────────────────
-// 아래 테스트는 리팩터링 전 현재 동작을 그대로 고정한다. "[현재 동작:버그]"로 표시된
-// 케이스는 알려진 결함을 문서화한 것으로, 결함 수정 시 해당 테스트를 함께 뒤집는다.
+// ─── 동작 명세 테스트 (#74 리팩터링 안전망 → #111 수정 검증) ──────────────────
+// 원래 "[현재 동작:버그]"로 현재 결함을 고정했던 특성화 테스트를, 결함 수정과 함께
+// 원하는 동작의 명세로 뒤집었다. diff의 3-way 원칙: 삭제는 prev에 있던 것만,
+// 추가는 prev에도 draft에도 없는 것만 — draft에만 있는 항목은 원격 변경이므로 보존.
 
 describe("applyColumnDiff — 특성화", () => {
   it("next에 없는 draft 컬럼을 제거한다", () => {
@@ -126,21 +127,27 @@ describe("applyColumnDiff — 특성화", () => {
     expect(draft).toEqual([]);
   });
 
-  it("[현재 동작:버그] autoIncrement·onUpdate 변경은 전파되지 않는다", () => {
+  it("autoIncrement·onUpdate 변경도 전파된다", () => {
     const draft = [makeColumn("c1")];
     applyColumnDiff(
       draft,
       [makeColumn("c1")],
       [makeColumn("c1", { autoIncrement: true, onUpdate: "CURRENT_TIMESTAMP" })],
     );
-    expect(draft[0]!.autoIncrement).toBeUndefined();
-    expect(draft[0]!.onUpdate).toBeUndefined();
+    expect(draft[0]!.autoIncrement).toBe(true);
+    expect(draft[0]!.onUpdate).toBe("CURRENT_TIMESTAMP");
   });
 
-  it("[현재 동작:버그] draft에 이미 있는 컬럼이 prev에 없으면 같은 id가 중복 push된다", () => {
+  it("draft에 이미 있는 컬럼은 중복 push하지 않는다", () => {
     const draft = [makeColumn("c1")];
     applyColumnDiff(draft, [], [makeColumn("c1")]);
-    expect(draft.map((c) => c.id)).toEqual(["c1", "c1"]);
+    expect(draft.map((c) => c.id)).toEqual(["c1"]);
+  });
+
+  it("draft에만 있는 컬럼(원격 추가)은 지우지 않는다 — 삭제는 prev에 있던 것만", () => {
+    const draft = [makeColumn("c1"), makeColumn("c2_remote")];
+    applyColumnDiff(draft, [makeColumn("c1")], [makeColumn("c1")]);
+    expect(draft.map((c) => c.id)).toEqual(["c1", "c2_remote"]);
   });
 });
 
@@ -197,33 +204,52 @@ describe("applyDiff — entities 특성화", () => {
     expect("seedData" in draftRemove.entities[0]!).toBe(false);
   });
 
-  it("[현재 동작:버그] schema 필드 변경은 전파되지 않는다", () => {
+  it("schema 필드 변경도 전파된다", () => {
     const prevE = makeEntities(["e1"])[0]!;
     const nextE = { ...makeEntities(["e1"])[0]!, schema: "billing" };
     const draft = makeDoc(makeEntities(["e1"]), {});
 
     applyDiff(draft, makeDoc([prevE], {}), makeDoc([nextE], {}));
 
-    expect(draft.entities[0]!.schema).toBeUndefined();
+    expect(draft.entities[0]!.schema).toBe("billing");
   });
 
-  it("[현재 동작:버그 #111] draft에 이미 있는 엔티티가 prev에 없으면 중복 push된다", () => {
+  it("draft에 이미 있는 엔티티는 중복 push하지 않는다 (#111 중복 생성)", () => {
     // 시나리오: 오프라인 구간(prev가 draft보다 오래됨) 후 재합류 병합.
-    // 추가 루프가 draft 멤버십을 확인하지 않고 prev만 보므로 같은 id가 두 번 들어간다.
     const draft = makeDoc(makeEntities(["e1"]), {});
     applyDiff(draft, makeDoc([], {}), makeDoc(makeEntities(["e1"]), {}));
-    expect(draft.entities.map((e) => e.id)).toEqual(["e1", "e1"]);
+    expect(draft.entities.map((e) => e.id)).toEqual(["e1"]);
   });
 
-  it("[현재 동작:버그 #111] 재합류 local-wins — 상대가 지운 테이블이 로컬 스냅샷 기준으로 부활한다", () => {
-    // prev = 서버 문서(상대가 e2를 지움), next = 내 로컬 문서(e2가 아직 있음)
-    const serverDoc = makeDoc(makeEntities(["e1"]), {});
+  it("draft에만 있는 엔티티(원격 추가)는 지우지 않는다 — 삭제는 prev에 있던 것만 (#111 데이터 유실)", () => {
+    // 시나리오: 원격 am:change가 amDoc에 먼저 도착하고 스토어 반영 전에 로컬 편집이 송신되는 경합.
+    // draft에는 상대가 추가한 e2가 있지만 내 prev/next 스냅샷에는 아직 없다 — 지우면 안 된다.
+    const draft = makeDoc(makeEntities(["e1", "e2"]), {});
+    applyDiff(draft, makeDoc(makeEntities(["e1"]), {}), makeDoc(makeEntities(["e1"]), {}));
+    expect(draft.entities.map((e) => e.id)).toEqual(["e1", "e2"]);
+  });
+
+  it("재합류 병합: 마지막 동기화 스냅샷을 base(prev)로 쓰면 상대의 삭제가 보존된다 (#111 부활)", () => {
+    // prev = 연결 끊기기 전 마지막 동기화 문서(e1, e2), next = 내 로컬 문서(e2 유지),
+    // draft = 서버 문서(상대가 e2를 지움). 나는 e2를 건드리지 않았으므로 부활시키면 안 된다.
+    const lastSyncedDoc = makeDoc(makeEntities(["e1", "e2"]), {});
     const localDoc = makeDoc(makeEntities(["e1", "e2"]), {});
     const draft = makeDoc(makeEntities(["e1"]), {});
 
-    applyDiff(draft, serverDoc, localDoc);
+    applyDiff(draft, lastSyncedDoc, localDoc);
 
-    expect(draft.entities.map((e) => e.id)).toEqual(["e1", "e2"]);
+    expect(draft.entities.map((e) => e.id)).toEqual(["e1"]);
+  });
+
+  it("추가된 엔티티의 seedData는 행 단위로 복사되어 next와 인스턴스를 공유하지 않는다", () => {
+    const added: DiagramEntity = { ...makeEntities(["e1"])[0]!, seedData: [{ c1: "v1" }] };
+    const draft = makeDoc([], {});
+
+    applyDiff(draft, makeDoc([], {}), makeDoc([added], {}));
+
+    expect(draft.entities[0]!.seedData).toEqual([{ c1: "v1" }]);
+    expect(draft.entities[0]!.seedData).not.toBe(added.seedData);
+    expect(draft.entities[0]!.seedData![0]).not.toBe(added.seedData![0]);
   });
 });
 
@@ -247,20 +273,36 @@ describe("applyDiff — relationships 특성화", () => {
     expect(draft.relationships.map((r) => r.id)).toEqual(["r1", "r3"]);
   });
 
-  it("[현재 동작:버그] 같은 id 관계의 필드 변경(cardinality 등)은 전파되지 않는다 — 갱신 루프 부재", () => {
+  it("같은 id 관계의 필드 변경(cardinality·onDelete·name·컬럼 매핑)이 전파된다", () => {
     const draft = makeDoc([], {});
     draft.relationships = [makeRel("r1")];
     const prev = makeDoc([], {});
     prev.relationships = [makeRel("r1")];
     const next = makeDoc([], {});
-    next.relationships = [makeRel("r1", { cardinality: "one-to-one", onDelete: "cascade", name: "fk_renamed" })];
+    next.relationships = [makeRel("r1", { cardinality: "one-to-one", onDelete: "cascade", name: "fk_renamed", sourceColumnIds: ["c9"] })];
 
     applyDiff(draft, prev, next);
 
-    expect(draft.relationships[0]).toMatchObject({ cardinality: "many-to-one", onDelete: "no-action", name: "" });
+    expect(draft.relationships[0]).toMatchObject({
+      cardinality: "one-to-one", onDelete: "cascade", name: "fk_renamed", sourceColumnIds: ["c9"],
+    });
   });
 
-  it("[현재 동작:주의] 추가된 관계는 얕은 복사라 sourceColumnIds 배열 인스턴스를 next와 공유한다", () => {
+  it("관계 컬럼 매핑이 내용까지 같으면 배열을 재대입하지 않는다 (op 최소화)", () => {
+    const draftIds = ["c1"];
+    const draft = makeDoc([], {});
+    draft.relationships = [makeRel("r1", { sourceColumnIds: draftIds })];
+    const prev = makeDoc([], {});
+    prev.relationships = [makeRel("r1")];
+    const next = makeDoc([], {});
+    next.relationships = [makeRel("r1")];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.relationships[0]!.sourceColumnIds).toBe(draftIds);
+  });
+
+  it("추가된 관계의 sourceColumnIds·targetColumnIds는 next와 다른 인스턴스다", () => {
     const draft = makeDoc([], {});
     const prev = makeDoc([], {});
     const added = makeRel("r1");
@@ -269,7 +311,9 @@ describe("applyDiff — relationships 특성화", () => {
 
     applyDiff(draft, prev, next);
 
-    expect(draft.relationships[0]!.sourceColumnIds).toBe(added.sourceColumnIds);
+    expect(draft.relationships[0]!.sourceColumnIds).not.toBe(added.sourceColumnIds);
+    expect(draft.relationships[0]!.sourceColumnIds).toEqual(added.sourceColumnIds);
+    expect(draft.relationships[0]!.targetColumnIds).not.toBe(added.targetColumnIds);
   });
 });
 
@@ -318,6 +362,62 @@ describe("applyDiff — indexes 특성화", () => {
     applyDiff(draft, prev, next);
 
     expect(draft.indexes[0]!.columnIds).toBe(draftCols);
+  });
+});
+
+// 동시 편집: 필드 동기화는 "내가 바꾼 필드(prev≠next)"만 대입해야 한다.
+// draft에만 있는 원격 필드 변경을 내 stale 스냅샷 값으로 되돌리면 안 된다.
+describe("applyDiff — 동시 필드 편집 (원격 변경 보존)", () => {
+  it("컬럼: 로컬 name 변경은 적용되고 원격 comment 변경은 보존된다", () => {
+    const draft = [makeColumn("c1", { comment: "원격이 단 설명" })];
+    applyColumnDiff(draft, [makeColumn("c1")], [makeColumn("c1", { name: "renamed" })]);
+    expect(draft[0]).toMatchObject({ name: "renamed", comment: "원격이 단 설명" });
+  });
+
+  it("엔티티: 로컬 name 변경은 적용되고 원격 color 변경은 보존된다", () => {
+    const draft = makeDoc([{ ...makeEntities(["e1"])[0]!, color: "#00ff00" }], {});
+    const prev = makeDoc(makeEntities(["e1"]), {});
+    const next = makeDoc([{ ...makeEntities(["e1"])[0]!, name: "renamed" }], {});
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.entities[0]).toMatchObject({ name: "renamed", color: "#00ff00" });
+  });
+
+  it("관계: 로컬 name 변경은 적용되고 원격 onDelete·sourceColumnIds 변경은 보존된다", () => {
+    const makeRel = (overrides: Partial<DiagramDocument["relationships"][number]> = {}) => ({
+      id: "r1", name: "", sourceEntityId: "e1", sourceColumnIds: ["c1"], targetEntityId: "e2", targetColumnIds: ["c2"],
+      cardinality: "many-to-one" as const, onDelete: "no-action" as const, onUpdate: "no-action" as const,
+      identifying: false, ...overrides,
+    });
+    const draft = makeDoc([], {});
+    draft.relationships = [makeRel({ onDelete: "cascade", sourceColumnIds: ["c9"] })];
+    const prev = makeDoc([], {});
+    prev.relationships = [makeRel()];
+    const next = makeDoc([], {});
+    next.relationships = [makeRel({ name: "fk_renamed" })];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.relationships[0]).toMatchObject({
+      name: "fk_renamed", onDelete: "cascade", sourceColumnIds: ["c9"],
+    });
+  });
+
+  it("인덱스: 로컬 name 변경은 적용되고 원격 unique·columnIds 변경은 보존된다", () => {
+    const makeIdx = (overrides: Partial<DiagramDocument["indexes"][number]> = {}) => ({
+      id: "i1", entityId: "e1", name: "idx_a", columnIds: ["c1"], unique: false, ...overrides,
+    });
+    const draft = makeDoc([], {});
+    draft.indexes = [makeIdx({ unique: true, columnIds: ["c1", "c2"] })];
+    const prev = makeDoc([], {});
+    prev.indexes = [makeIdx()];
+    const next = makeDoc([], {});
+    next.indexes = [makeIdx({ name: "idx_renamed" })];
+
+    applyDiff(draft, prev, next);
+
+    expect(draft.indexes[0]).toMatchObject({ name: "idx_renamed", unique: true, columnIds: ["c1", "c2"] });
   });
 });
 
