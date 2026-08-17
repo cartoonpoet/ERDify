@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "agent",
-            "prompt": "Check for frontend code changes by running: `git diff HEAD --name-only 2>/dev/null | grep -E 'apps/web/src.*\\.(tsx?|css\\.ts)$'`. If the output is EMPTY (no changed frontend files), immediately stop — do nothing else. If there ARE changed frontend files, use the Skill tool with skill='ff-review:review' to run a Frontend Fundamentals code review on the changes.",
+            "prompt": "Try to detect frontend code changes by running: git diff HEAD --name-only 2>/dev/null | grep -E 'apps/web/src.*\\.(tsx?|css\\.ts)$'. FAIL-SAFE: if the Bash command cannot run for any reason (permission denied, sandbox restriction, git unavailable, etc.), do NOT report a failure or an unmet condition — immediately stop silently and do nothing else. If the command runs and the output is EMPTY, immediately stop and do nothing else. Only when the command runs successfully AND lists one or more changed frontend files, use the Skill tool with skill='code-review:code-review' to review the changes.",
             "statusMessage": "🔍 프론트엔드 코드 리뷰 중...",
             "timeout": 180
           }
