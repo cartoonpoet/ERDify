@@ -20,25 +20,10 @@ jobs:
         with:
           node-version: 22
 
-      # 키가 없으면 스크립트가 모든 provider를 건너뛰고 "신규 없음"으로 끝나 매주 초록불이 된다.
-      # 조회를 시도하기 전에 무엇이 빠졌는지 이름을 대며 실패시킨다.
-      - name: Verify provider API keys are configured
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        shell: bash
-        run: |
-          missing=()
-          for key in ANTHROPIC_API_KEY OPENAI_API_KEY GEMINI_API_KEY; do
-            [ -n "${!key}" ] || missing+=("$key")
-          done
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::저장소 시크릿 미설정: ${missing[*]} — 이 provider의 신규 모델은 감지되지 않습니다."
-            echo "Settings → Secrets and variables → Actions 에서 등록하세요."
-            exit 1
-          fi
-
+      # 키 검증을 여기서 따로 하지 않는다 — 스크립트가 이미 부분 설정을 처리한다:
+      # 키 없는 provider는 [skip], 일부만 없으면 [warn] 후 나머지로 진행,
+      # 셋 다 없을 때만 [fatal]로 실패한다. 워크플로에서 "하나라도 없으면 실패"로
+      # 앞을 막으면 키가 하나만 있어도 감지를 아예 못 돌리게 된다.
       - name: Detect new models and update models.ts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -48,6 +33,26 @@ jobs:
         # provider 조회가 실패해도 잡이 성공으로 끝나던 원인. `shell: bash`가 -eo pipefail을 켠다.
         shell: bash
         run: node scripts/check-new-models.mjs --write | tee .model-check.log
+
+      # 건너뛴 provider를 잡 요약에 남긴다. 초록불이어도 "무엇이 검사되지 않았는지"가
+      # 보이지 않으면 부분 검사가 전수 검사처럼 읽힌다.
+      - name: Summarize skipped providers
+        if: always()
+        shell: bash
+        run: |
+          [ -f .model-check.log ] || exit 0
+          skipped=$(grep '^\[skip\]' .model-check.log || true)
+          [ -n "$skipped" ] || exit 0
+          {
+            echo "### ⚠️ 검사되지 않은 provider"
+            echo ""
+            echo '```'
+            echo "$skipped"
+            echo '```'
+            echo ""
+            echo "해당 provider의 신규 모델은 감지되지 않는다."
+            echo "Settings → Secrets and variables → Actions 에서 키를 등록하면 다음 주부터 포함된다."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
