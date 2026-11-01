@@ -292,8 +292,8 @@ describe("CollaborationService", () => {
     });
   });
 
-  describe("beforeApplicationShutdown", () => {
-    it("종료 신호를 받으면 열린 방을 모두 저장한다", async () => {
+  describe("persistAll (종료 시)", () => {
+    it("열린 방을 모두 저장한다", async () => {
       mockRepo.findOne
         .mockResolvedValueOnce(mockDiagram)
         .mockResolvedValueOnce({ ...mockDiagram, id: "d2" } as Diagram);
@@ -301,10 +301,45 @@ describe("CollaborationService", () => {
       await service.joinRoom("d1");
       await service.joinRoom("d2");
 
-      await service.beforeApplicationShutdown();
+      await service.persistAll();
 
       expect(mockRepo.update).toHaveBeenCalledWith({ id: "d1" }, expect.anything());
       expect(mockRepo.update).toHaveBeenCalledWith({ id: "d2" }, expect.anything());
+    });
+
+    it("종료 중 마지막 사용자가 나가도 방을 지우거나 따로 저장하지 않는다", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      mockRepo.update.mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+      service.addPresence("d1", "u1", "socket1", "u1@example.com");
+
+      const persisted = service.persistAll();
+      await service.leaveRoom("d1", "u1");
+      await persisted;
+
+      expect(mockRepo.update).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("persistNow 순서", () => {
+    // 저장이 겹치면 먼저 뜬 스냅샷이 나중에 커밋돼 최신 편집을 덮을 수 있었다
+    it("저장이 겹쳐도 스냅샷을 뜬 순서대로 DB에 쓴다", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      await service.joinRoom("d1");
+      const order: string[] = [];
+      let releaseFirst!: () => void;
+      mockRepo.update
+        .mockImplementationOnce(() => new Promise<void>((r) => { releaseFirst = () => { order.push("first"); r(); }; }))
+        .mockImplementationOnce(() => { order.push("second"); return Promise.resolve(); });
+
+      const first = service.persistNow("d1");
+      const second = service.persistNow("d1");
+      await Promise.resolve();
+      expect(mockRepo.update).toHaveBeenCalledTimes(1);
+      releaseFirst();
+      await Promise.all([first, second]);
+
+      expect(order).toEqual(["first", "second"]);
     });
   });
 });

@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import { BeforeApplicationShutdown, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Diagram } from "@erdify/db";
 import type { Repository } from "typeorm";
@@ -16,17 +16,20 @@ export interface CollaboratorPresence {
 }
 
 interface RoomState {
+  /** 저장을 방마다 한 줄로 세운다 — 겹치면 먼저 뜬 스냅샷이 나중에 커밋돼 최신 편집을 덮을 수 있다 */
+  persisting?: Promise<void>;
   doc: Automerge.Doc<DiagramDocument>;
   presence: Map<string, CollaboratorPresence>;
-  persistTimer?: ReturnType<typeof setTimeout> | undefined;
+  persistTimer?: ReturnType<typeof setTimeout>;
 }
 
 const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899"];
 
 @Injectable()
-export class CollaborationService implements BeforeApplicationShutdown {
+export class CollaborationService {
   private readonly logger = new Logger(CollaborationService.name);
   private readonly rooms = new Map<string, RoomState>();
+  private shuttingDown = false;
   private readonly persistIntervalMs: number;
 
   constructor(
@@ -81,6 +84,8 @@ export class CollaborationService implements BeforeApplicationShutdown {
     const room = this.rooms.get(diagramId);
     if (!room) return;
     room.presence.delete(userId);
+    // 종료 중에는 persistAll이 방을 저장한다 — 여기서 방을 지우면 그 저장에서 빠진다
+    if (this.shuttingDown) return;
     if (room.presence.size === 0) {
       clearTimeout(room.persistTimer);
       await this.persistNow(diagramId);
@@ -148,8 +153,12 @@ export class CollaborationService implements BeforeApplicationShutdown {
     }, this.persistIntervalMs);
   }
 
-  /** 배포·재시작(SIGTERM) 시 열린 방을 모두 저장한다 — DB 연결이 닫히기 전 단계라 beforeApplicationShutdown */
-  async beforeApplicationShutdown(): Promise<void> {
+  /**
+   * 배포·재시작(SIGTERM) 시 게이트웨이가 소켓을 모두 끊은 뒤 부른다. 열린 방을 모두 저장하고,
+   * 이후 leaveRoom은 방을 지우지 않는다.
+   */
+  async persistAll(): Promise<void> {
+    this.shuttingDown = true;
     await Promise.all(
       Array.from(this.rooms.keys()).map((diagramId) =>
         this.persistNow(diagramId).catch((err: Error) =>
@@ -164,7 +173,7 @@ export class CollaborationService implements BeforeApplicationShutdown {
     if (!room) return;
     // 아래 스냅샷 이후의 편집은 다음 타이머가 저장하도록 비운다
     clearTimeout(room.persistTimer);
-    room.persistTimer = undefined;
+    delete room.persistTimer;
     // Automerge uses Proxy internally during Automerge.change() callbacks, but the
     // materialized Doc returned by Automerge.from()/applyChanges() (as stored in
     // room.doc) is a plain, non-proxied, JSON-safe object for this domain model
@@ -172,6 +181,10 @@ export class CollaborationService implements BeforeApplicationShutdown {
     // structuredClone against real multi-actor Automerge docs across several
     // change/delete rounds, and exercised by the passing persistNow spec below.
     const content = structuredClone(room.doc) as DiagramDocument;
-    await this.diagramRepo.update({ id: diagramId }, { content });
+    const write = (room.persisting ?? Promise.resolve()).then(async () => {
+      await this.diagramRepo.update({ id: diagramId }, { content });
+    });
+    room.persisting = write.catch(() => undefined);
+    await write;
   }
 }

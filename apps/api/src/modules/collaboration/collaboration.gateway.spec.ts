@@ -30,11 +30,12 @@ describe("CollaborationGateway", () => {
     getPresence: vi.fn(),
     schedulePersist: vi.fn(),
     persistNow: vi.fn(),
-    syncExternalContent: vi.fn()
+    syncExternalContent: vi.fn(),
+    persistAll: vi.fn()
   };
   const mockJwt = { verify: vi.fn() };
   const mockDiagramsService = { canAccessDiagram: vi.fn() };
-  const mockServer = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as unknown as Server;
+  const mockServer = { to: vi.fn().mockReturnThis(), emit: vi.fn(), disconnectSockets: vi.fn() } as unknown as Server;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -48,6 +49,28 @@ describe("CollaborationGateway", () => {
     }).compile();
     gateway = module.get(CollaborationGateway);
     gateway.server = mockServer;
+  });
+
+  describe("beforeApplicationShutdown", () => {
+    it("열린 방 저장을 시작한 직후 소켓을 끊고, 저장이 끝날 때까지 기다린다", async () => {
+      const calls: string[] = [];
+      let finish!: () => void;
+      mockService.persistAll.mockImplementation(() => {
+        calls.push("persistAll");
+        return new Promise<void>((r) => { finish = r; });
+      });
+      vi.mocked(mockServer.disconnectSockets).mockImplementation(() => { calls.push("disconnect"); });
+
+      let done = false;
+      const shutdown = gateway.beforeApplicationShutdown().then(() => { done = true; });
+      await Promise.resolve();
+
+      expect(calls).toEqual(["persistAll", "disconnect"]);
+      expect(done).toBe(false);
+      finish();
+      await shutdown;
+      expect(done).toBe(true);
+    });
   });
 
   describe("handleDiagramContentUpdated", () => {
