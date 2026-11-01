@@ -108,14 +108,14 @@ describe("CollaborationService", () => {
       service.addPresence("d1", "u1", "socket1", "u1@example.com");
       // Add a second user so the room isn't deleted (no persist triggered)
       service.addPresence("d1", "u2", "socket2", "u2@example.com");
-      await service.leaveRoom("d1", "u1");
+      await service.leaveRoom("d1", "socket1");
       expect(service.getPresence("d1")).toHaveLength(1);
     });
 
     it("leaveRoom deletes the room so re-join queries the DB again", async () => {
       mockRepo.update.mockResolvedValue(undefined);
       service.addPresence("d1", "u1", "socket1", "u1@example.com");
-      await service.leaveRoom("d1", "u1");
+      await service.leaveRoom("d1", "socket1");
       // Room is gone — next joinRoom must hit the DB
       mockRepo.findOne.mockResolvedValue(mockDiagram);
       await service.joinRoom("d1");
@@ -126,8 +126,38 @@ describe("CollaborationService", () => {
     it("leaveRoom persists before deleting room when last user leaves", async () => {
       mockRepo.update.mockResolvedValue(undefined);
       service.addPresence("d1", "u1", "socket1", "u1@example.com");
-      await service.leaveRoom("d1", "u1");
+      await service.leaveRoom("d1", "socket1");
       expect(mockRepo.update).toHaveBeenCalledWith({ id: "d1" }, expect.objectContaining({ content: expect.any(Object) }));
+    });
+
+    // 부하 테스트: 같은 계정으로 탭 2개 → 탭 1 닫기 → 탭 2 편집이 Room not found로 유실됐다
+    describe("같은 사용자가 탭 여러 개", () => {
+      beforeEach(() => {
+        mockRepo.update.mockResolvedValue(undefined);
+        service.addPresence("d1", "u1", "tab1", "u1@example.com");
+        service.addPresence("d1", "u1", "tab2", "u1@example.com");
+      });
+
+      it("presence에는 사용자당 한 번만 보인다", () => {
+        expect(service.getPresence("d1")).toHaveLength(1);
+      });
+
+      it("탭 하나를 닫아도 방과 presence가 남고, 남은 탭의 편집이 적용된다", async () => {
+        await service.leaveRoom("d1", "tab1");
+
+        expect(service.getPresence("d1")).toMatchObject([{ userId: "u1" }]);
+        expect(mockRepo.update).not.toHaveBeenCalled();
+        const change = Automerge.getAllChanges(Automerge.change(Automerge.init<{ v: number }>(), (d) => { d.v = 1; }));
+        expect(() => service.applyChanges("d1", change)).not.toThrow();
+      });
+
+      it("마지막 탭이 닫히면 저장하고 방을 정리한다", async () => {
+        await service.leaveRoom("d1", "tab1");
+        await service.leaveRoom("d1", "tab2");
+
+        expect(service.getPresence("d1")).toEqual([]);
+        expect(mockRepo.update).toHaveBeenCalledTimes(1);
+      });
     });
   });
 
@@ -314,7 +344,7 @@ describe("CollaborationService", () => {
       service.addPresence("d1", "u1", "socket1", "u1@example.com");
 
       const persisted = service.persistAll();
-      await service.leaveRoom("d1", "u1");
+      await service.leaveRoom("d1", "socket1");
       await persisted;
 
       expect(mockRepo.update).toHaveBeenCalledTimes(1);

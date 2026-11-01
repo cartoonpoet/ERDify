@@ -58,9 +58,9 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   async handleDisconnect(client: Socket): Promise<void> {
-    const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
-    if (!diagramId || !userId) return;
-    await this.collaborationService.leaveRoom(diagramId, userId);
+    const { diagramId } = client.data as { diagramId?: string };
+    if (!diagramId) return;
+    await this.collaborationService.leaveRoom(diagramId, client.id);
     const presence = this.collaborationService.getPresence(diagramId);
     this.server.to(diagramId).emit("presence:state", presence);
   }

@@ -190,7 +190,7 @@ describe("CollaborationGateway", () => {
 
       await gateway.handleDisconnect(client);
 
-      expect(mockService.leaveRoom).toHaveBeenCalledWith("d1", "user-1");
+      expect(mockService.leaveRoom).toHaveBeenCalledWith("d1", "socket-1");
       expect(mockServer.to).toHaveBeenCalledWith("d1");
       expect(mockServer.emit).toHaveBeenCalledWith("presence:state", []);
     });
