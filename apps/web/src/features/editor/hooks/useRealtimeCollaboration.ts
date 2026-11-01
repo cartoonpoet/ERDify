@@ -1,9 +1,10 @@
 import { useRef } from "react";
-import type { Doc } from "@automerge/automerge";
+import type { Doc, Patch } from "@automerge/automerge";
 import type { Socket } from "socket.io-client";
 import type { DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { applyDiff } from "@/shared/utils/collaboration-diff";
+import { applyPatchesImmutable } from "@/shared/utils/apply-patches-immutable";
 import { useCollaborationSocket } from "./useCollaborationSocket";
 import { usePresence } from "./usePresence";
 
@@ -26,8 +27,12 @@ export const useRealtimeCollaboration = (diagramId: string) => {
   const isRemoteRef = useRef(false);
   const pendingRemoteRef = useRef<Uint8Array[]>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // amDocRef와 항상 같은 내용의 일반 객체 사본. Automerge 패치로만 갱신해 바뀌지 않은 부분의
+  // 참조를 유지한다 — 스토어가 바뀐 테이블의 노드만 새로 만들 수 있게(#139)
+  const mirrorRef = useRef<DiagramDocument | null>(null);
 
   const setDocument = useEditorStore((s) => s.setDocument);
+  const applyRemoteDocument = useEditorStore((s) => s.applyRemoteDocument);
   const setCollaborators = useEditorStore((s) => s.setCollaborators);
   const setCollaborating = useEditorStore((s) => s.setCollaborating);
 
@@ -44,13 +49,25 @@ export const useRealtimeCollaboration = (diagramId: string) => {
     if (changes.length === 0) return;
     const Automerge = await loadAutomerge();
     if (!amDocRef.current) return;
-    const [newDoc] = Automerge.applyChanges(amDocRef.current, changes);
+    let patches: Patch[] = [];
+    const [newDoc] = Automerge.applyChanges(amDocRef.current, changes, {
+      patchCallback: (p) => { patches = p; },
+    });
     amDocRef.current = newDoc;
-    const wasDirty = useEditorStore.getState().isDirty;
+    mirrorRef.current = mirrorRef.current
+      ? applyPatchesImmutable(mirrorRef.current, patches, Automerge.applyPatch)
+      : (structuredClone(newDoc) as DiagramDocument);
     isRemoteRef.current = true;
-    setDocument(structuredClone(newDoc) as DiagramDocument);
+    applyRemoteDocument(mirrorRef.current);
     isRemoteRef.current = false;
-    if (wasDirty) useEditorStore.setState({ isDirty: true });
+  };
+
+  const replaceDocument = (doc: Doc<DiagramDocument>) => {
+    amDocRef.current = doc;
+    mirrorRef.current = structuredClone(doc) as DiagramDocument;
+    isRemoteRef.current = true;
+    setDocument(mirrorRef.current);
+    isRemoteRef.current = false;
   };
 
   const socketRef = useCollaborationSocket(diagramId, {
@@ -73,22 +90,16 @@ export const useRealtimeCollaboration = (diagramId: string) => {
           applyDiff(draft as DiagramDocument, baseDoc, localDoc);
         });
         const pendingChange = Automerge.getLastLocalChange(mergedDoc);
-        amDocRef.current = mergedDoc;
         if (pendingChange && socketRef.current?.connected) {
           socketRef.current.emit("am:change", Array.from(pendingChange));
         }
         // 병합 결과를 로컬 UI에도 반영한다. 서버는 발신자에게 echo하지 않으므로
         // 이걸 빼면 병합에서 걸러진 항목(예: 부활 방지된 삭제 테이블)이 화면에 남고,
         // 그 항목을 편집하면 공유 문서에 없어서 조용히 유실된다.
-        isRemoteRef.current = true;
-        setDocument(structuredClone(mergedDoc) as DiagramDocument);
-        isRemoteRef.current = false;
+        replaceDocument(mergedDoc);
         return;
       }
-      amDocRef.current = serverDoc;
-      isRemoteRef.current = true;
-      setDocument(structuredClone(serverDoc) as DiagramDocument);
-      isRemoteRef.current = false;
+      replaceDocument(serverDoc);
     },
 
     onChange: (change) => {
@@ -106,12 +117,14 @@ export const useRealtimeCollaboration = (diagramId: string) => {
         const prevDoc = prevState.document;
         if (isRemoteRef.current || !newDoc || !prevDoc || !amDocRef.current || !socket.connected) return;
         const Automerge = await loadAutomerge();
-        const newAmDoc = Automerge.change(amDocRef.current, (draft) => {
+        let patches: Patch[] = [];
+        const newAmDoc = Automerge.change(amDocRef.current, { patchCallback: (p) => { patches = p; } }, (draft) => {
           applyDiff(draft as DiagramDocument, prevDoc, newDoc);
         });
         const change = Automerge.getLastLocalChange(newAmDoc);
         if (change) {
           amDocRef.current = newAmDoc;
+          if (mirrorRef.current) mirrorRef.current = applyPatchesImmutable(mirrorRef.current, patches, Automerge.applyPatch);
           socket.emit("am:change", Array.from(change));
         }
       }),
@@ -119,6 +132,7 @@ export const useRealtimeCollaboration = (diagramId: string) => {
     onDisconnect: () => {
       clearPendingRemote();
       amDocRef.current = null;
+      mirrorRef.current = null;
       setCollaborators([]);
       // 협업 끊김 → HTTP 자동저장을 백업 지속성 경로로 다시 활성화
       setCollaborating(false);
