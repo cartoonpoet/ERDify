@@ -129,11 +129,67 @@ describe("useRealtimeCollaboration", () => {
     const changeCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
       (c: unknown[]) => c[0] === "am:change"
     );
-    await act(async () => { await (changeCall![1] as (b: number[]) => Promise<void>)(Array.from(change)); });
+    act(() => { (changeCall![1] as (b: number[]) => void)(Array.from(change)); });
 
-    expect(mockSetDocument).toHaveBeenLastCalledWith(
+    await vi.waitFor(() => expect(mockSetDocument).toHaveBeenLastCalledWith(
       expect.objectContaining({ entities: expect.arrayContaining([expect.objectContaining({ id: "e1" })]) })
-    );
+    ));
+  });
+
+  // #137: 원격 변경마다 문서 전체를 복사·재렌더하면 초당 수백 건에서 탭이 멈췄다
+  describe("원격 변경 묶어서 적용", () => {
+    const setupJoined = async () => {
+      const { unmount } = renderHook(() => useRealtimeCollaboration("d1"));
+      const doc = Automerge.from(makeEmptyDoc() as unknown as Record<string, unknown>);
+      const initCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+        (c: unknown[]) => c[0] === "am:init"
+      );
+      await act(async () => { await (initCall![1] as (b: number[]) => Promise<void>)(Array.from(Automerge.save(doc))); });
+      const changeCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+        (c: unknown[]) => c[0] === "am:change"
+      );
+      mockSetDocument.mockClear();
+      return { doc, unmount, onChange: changeCall![1] as (b: number[]) => void };
+    };
+
+    const changesAddingTables = (doc: Automerge.Doc<unknown>, count: number) => {
+      const changes: Uint8Array[] = [];
+      let current = doc;
+      for (let i = 0; i < count; i++) {
+        current = Automerge.change(current, (d) => {
+          ((d as unknown as DiagramDocument).entities).push({
+            id: `e${i}`, name: `T${i}`, logicalName: null, comment: null, color: null, columns: []
+          });
+        });
+        changes.push(Automerge.getLastLocalChange(current)!);
+      }
+      return changes;
+    };
+
+    it("짧은 간격에 들어온 변경은 한 번만 문서를 갱신한다", async () => {
+      const { doc, onChange } = await setupJoined();
+      const changes = changesAddingTables(doc, 20);
+
+      act(() => { changes.forEach((c) => onChange(Array.from(c))); });
+
+      await vi.waitFor(() => expect(mockSetDocument).toHaveBeenCalledTimes(1));
+      const applied = mockSetDocument.mock.calls[0]![0] as DiagramDocument;
+      expect(applied.entities).toHaveLength(20);
+    });
+
+    it("적용 전에 연결이 끊기면 쌓인 변경을 버린다", async () => {
+      const { doc, onChange, unmount } = await setupJoined();
+      vi.useFakeTimers();
+      try {
+        const [change] = changesAddingTables(doc, 1);
+        act(() => { onChange(Array.from(change!)); });
+        unmount(); // 정리에서 onDisconnect → 쌓인 변경과 타이머를 비운다
+        await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+        expect(mockSetDocument).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   it("merges a pending local edit into a cloned server doc when isDirty on am:init (no prior am doc)", async () => {
