@@ -256,5 +256,55 @@ describe("CollaborationService", () => {
       await vi.advanceTimersByTimeAsync(30_000);
       expect(mockRepo.update).toHaveBeenCalledTimes(1);
     });
+
+    // 부하 테스트: 1초마다 계속 편집하면 디바운스가 저장을 끝없이 미뤄 DB 저장이 0번이었다
+    it("계속 편집해도 첫 미저장 편집 후 30초가 지나면 저장한다", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      mockRepo.update.mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+      for (let i = 0; i < 30; i++) {
+        service.schedulePersist("d1");
+        await vi.advanceTimersByTimeAsync(1_000);
+      }
+      expect(mockRepo.update).toHaveBeenCalledTimes(1);
+    });
+
+    it("저장 이후의 편집은 다음 주기에 다시 저장한다", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      mockRepo.update.mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+      service.schedulePersist("d1");
+      await vi.advanceTimersByTimeAsync(30_000);
+      service.schedulePersist("d1");
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(mockRepo.update).toHaveBeenCalledTimes(2);
+    });
+
+    it("저장이 실패해도 예외를 밖으로 던지지 않고 다음 편집에서 다시 예약한다", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      mockRepo.update.mockRejectedValueOnce(new Error("db down")).mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+      service.schedulePersist("d1");
+      await vi.advanceTimersByTimeAsync(30_000);
+      service.schedulePersist("d1");
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(mockRepo.update).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("beforeApplicationShutdown", () => {
+    it("종료 신호를 받으면 열린 방을 모두 저장한다", async () => {
+      mockRepo.findOne
+        .mockResolvedValueOnce(mockDiagram)
+        .mockResolvedValueOnce({ ...mockDiagram, id: "d2" } as Diagram);
+      mockRepo.update.mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+      await service.joinRoom("d2");
+
+      await service.beforeApplicationShutdown();
+
+      expect(mockRepo.update).toHaveBeenCalledWith({ id: "d1" }, expect.anything());
+      expect(mockRepo.update).toHaveBeenCalledWith({ id: "d2" }, expect.anything());
+    });
   });
 });

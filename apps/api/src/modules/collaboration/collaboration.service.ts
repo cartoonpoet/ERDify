@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BeforeApplicationShutdown, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Diagram } from "@erdify/db";
 import type { Repository } from "typeorm";
@@ -18,13 +18,14 @@ export interface CollaboratorPresence {
 interface RoomState {
   doc: Automerge.Doc<DiagramDocument>;
   presence: Map<string, CollaboratorPresence>;
-  persistTimer?: ReturnType<typeof setTimeout>;
+  persistTimer?: ReturnType<typeof setTimeout> | undefined;
 }
 
 const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899"];
 
 @Injectable()
-export class CollaborationService {
+export class CollaborationService implements BeforeApplicationShutdown {
+  private readonly logger = new Logger(CollaborationService.name);
   private readonly rooms = new Map<string, RoomState>();
   private readonly persistIntervalMs: number;
 
@@ -133,16 +134,37 @@ export class CollaborationService {
     return Automerge.getLastLocalChange(newDoc) ?? null;
   }
 
+  /**
+   * 첫 미저장 편집 후 persistIntervalMs가 지나면 저장한다. 편집마다 타이머를 다시 거는 디바운스는
+   * 누군가 계속 편집하면 저장이 끝없이 밀려, 그 사이 재시작하면 편집이 전부 사라졌다.
+   */
   schedulePersist(diagramId: string): void {
     const room = this.rooms.get(diagramId);
-    if (!room) return;
-    clearTimeout(room.persistTimer);
-    room.persistTimer = setTimeout(() => void this.persistNow(diagramId), this.persistIntervalMs);
+    if (!room || room.persistTimer) return;
+    room.persistTimer = setTimeout(() => {
+      this.persistNow(diagramId).catch((err: Error) =>
+        this.logger.error(`Failed to persist diagram ${diagramId}`, err.stack)
+      );
+    }, this.persistIntervalMs);
+  }
+
+  /** 배포·재시작(SIGTERM) 시 열린 방을 모두 저장한다 — DB 연결이 닫히기 전 단계라 beforeApplicationShutdown */
+  async beforeApplicationShutdown(): Promise<void> {
+    await Promise.all(
+      Array.from(this.rooms.keys()).map((diagramId) =>
+        this.persistNow(diagramId).catch((err: Error) =>
+          this.logger.error(`Failed to persist diagram ${diagramId} on shutdown`, err.stack)
+        )
+      )
+    );
   }
 
   async persistNow(diagramId: string): Promise<void> {
     const room = this.rooms.get(diagramId);
     if (!room) return;
+    // 아래 스냅샷 이후의 편집은 다음 타이머가 저장하도록 비운다
+    clearTimeout(room.persistTimer);
+    room.persistTimer = undefined;
     // Automerge uses Proxy internally during Automerge.change() callbacks, but the
     // materialized Doc returned by Automerge.from()/applyChanges() (as stored in
     // room.doc) is a plain, non-proxied, JSON-safe object for this domain model
