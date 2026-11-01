@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Test } from "@nestjs/testing";
 import { JwtService } from "@nestjs/jwt";
 import { CollaborationGateway } from "./collaboration.gateway";
@@ -141,6 +141,55 @@ describe("CollaborationGateway", () => {
       expect(mockService.applyChanges).toHaveBeenCalledWith("d1", [Uint8Array.from(change)]);
       expect(client.to).toHaveBeenCalledWith("d1");
       expect(mockService.schedulePersist).toHaveBeenCalledWith("d1");
+    });
+
+    // 부하 테스트: 편집마다 DB 권한 확인을 하면 200명 동시 편집에서 전달 지연이 수 초로 늘었다
+    describe("권한 확인 캐시", () => {
+      beforeEach(() => vi.useFakeTimers());
+      afterEach(() => vi.useRealTimers());
+
+      it("입장 때 확인한 권한을 30초 동안 편집에 재사용한다", async () => {
+        mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
+        mockService.joinRoom.mockResolvedValue(new Uint8Array([1]));
+        mockService.getPresence.mockReturnValue([]);
+        const client = makeSocket();
+        client.data.userId = "user-1";
+
+        await gateway.handleJoin(client, { diagramId: "d1" });
+        await gateway.handleChange(client, [1]);
+        await gateway.handleChange(client, [2]);
+
+        expect(mockDiagramsService.canAccessDiagram).toHaveBeenCalledTimes(1);
+        expect(mockService.applyChanges).toHaveBeenCalledTimes(2);
+      });
+
+      it("30초가 지나면 다시 확인하고, 권한이 없어졌으면 끊는다", async () => {
+        mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
+        const client = makeSocket();
+        client.data = { userId: "user-1", diagramId: "d1" };
+        await gateway.handleChange(client, [1]);
+
+        vi.advanceTimersByTime(30_001);
+        mockDiagramsService.canAccessDiagram.mockResolvedValue(false);
+        await gateway.handleChange(client, [2]);
+
+        expect(mockDiagramsService.canAccessDiagram).toHaveBeenCalledTimes(2);
+        expect(client.emit).toHaveBeenCalledWith("error", { message: "Forbidden" });
+        expect(client.disconnect).toHaveBeenCalled();
+        expect(mockService.applyChanges).toHaveBeenCalledTimes(1);
+      });
+
+      it("다른 다이어그램 권한 캐시는 재사용하지 않는다", async () => {
+        mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
+        const client = makeSocket();
+        client.data = { userId: "user-1", diagramId: "d1" };
+        await gateway.handleChange(client, [1]);
+
+        client.data.diagramId = "d2";
+        await gateway.handleChange(client, [2]);
+
+        expect(mockDiagramsService.canAccessDiagram).toHaveBeenNthCalledWith(2, "d2", "user-1");
+      });
     });
   });
 

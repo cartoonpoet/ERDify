@@ -233,10 +233,23 @@ export class DiagramsCrudService {
     return { ...saved, organizationId: orgId, organizationName: orgName, projectName: targetProject.name, myRole: member.role };
   }
 
+  /**
+   * 협업 소켓이 편집마다 부르는 경로라 가볍게 유지한다 — content(jsonb)는 테이블 1000개면
+   * 1.6MB라서 읽지 않고 권한 판단에 필요한 projectId·organizationId만 조회한다.
+   */
   async canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {
+    const diagram = await this.diagramRepo.findOne({
+      where: { id: diagramId },
+      select: { id: true, projectId: true },
+    });
+    if (!diagram) return false;
+    const project = await this.projectRepo.findOne({
+      where: { id: diagram.projectId },
+      select: { id: true, organizationId: true },
+    });
+    if (!project) return false;
     try {
-      const { orgId } = await this.getDiagramWithOrg(diagramId);
-      await this.authorizationService.requireMember(orgId, userId);
+      await this.authorizationService.requireMember(project.organizationId, userId);
       return true;
     } catch {
       return false;
