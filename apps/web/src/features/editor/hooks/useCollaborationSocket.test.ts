@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useCollaborationSocket } from "./useCollaborationSocket";
+import { emitChange, useCollaborationSocket } from "./useCollaborationSocket";
 import type { CollaborationSocketHandlers } from "./useCollaborationSocket";
 
 const mockSocket = {
@@ -16,6 +16,7 @@ vi.mock("socket.io-client", () => ({
 }));
 
 import { io } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 
 const makeHandlers = (): CollaborationSocketHandlers => ({
   onInit: vi.fn(),
@@ -54,7 +55,7 @@ describe("useCollaborationSocket", () => {
     const connectHandler = connectCall![1] as () => void;
     connectHandler();
 
-    expect(mockSocket.emit).toHaveBeenCalledWith("join", { diagramId: "diagram-1" });
+    expect(mockSocket.emit).toHaveBeenCalledWith("join", { diagramId: "diagram-1", encoding: "base64" });
   });
 
   it("am:init, am:change, presence:state 이벤트 핸들러가 등록된다", () => {
@@ -75,10 +76,9 @@ describe("useCollaborationSocket", () => {
     expect(initCall).toBeDefined();
 
     const initHandler = initCall![1] as (bytes: number[]) => void;
-    const bytes = [1, 2, 3];
-    initHandler(bytes);
+    initHandler([1, 2, 3]);
 
-    expect(handlers.onInit).toHaveBeenCalledWith(bytes);
+    expect(handlers.onInit).toHaveBeenCalledWith(Uint8Array.from([1, 2, 3]));
   });
 
   it("am:change 이벤트 핸들러가 onChange를 호출한다", () => {
@@ -89,10 +89,36 @@ describe("useCollaborationSocket", () => {
     expect(changeCall).toBeDefined();
 
     const changeHandler = changeCall![1] as (change: number[]) => void;
-    const change = [4, 5, 6];
-    changeHandler(change);
+    changeHandler([4, 5, 6]);
 
-    expect(handlers.onChange).toHaveBeenCalledWith(change);
+    expect(handlers.onChange).toHaveBeenCalledWith(Uint8Array.from([4, 5, 6]));
+  });
+
+  // 숫자 배열(JSON)은 원래 크기의 약 3.6배라 base64로 받는다. 예전 서버의 숫자 배열도 받아야 한다(#143)
+  it("base64로 받은 문서·변경도 Uint8Array로 넘긴다", () => {
+    const handlers = makeHandlers();
+    renderHook(() => useCollaborationSocket("diagram-1", handlers));
+    const handlerOf = (name: string) => mockSocket.on.mock.calls.find(([event]) => event === name)![1] as (p: unknown) => void;
+
+    handlerOf("am:init")("AQID");
+    handlerOf("am:change")("BwgJ");
+
+    expect(handlers.onInit).toHaveBeenCalledWith(Uint8Array.from([1, 2, 3]));
+    expect(handlers.onChange).toHaveBeenCalledWith(Uint8Array.from([7, 8, 9]));
+  });
+
+  it("emitChange는 am:init을 base64로 준 서버에만 base64로, 아니면 숫자 배열로 보낸다", () => {
+    renderHook(() => useCollaborationSocket("diagram-1", makeHandlers()));
+    const init = mockSocket.on.mock.calls.find(([event]) => event === "am:init")![1] as (p: unknown) => void;
+    const socket = mockSocket as unknown as Socket;
+
+    init([1]);
+    emitChange(socket, Uint8Array.from([7, 8, 9]));
+    init("AQ==");
+    emitChange(socket, Uint8Array.from([7, 8, 9]));
+
+    expect(mockSocket.emit).toHaveBeenCalledWith("am:change", [7, 8, 9]);
+    expect(mockSocket.emit).toHaveBeenCalledWith("am:change", "BwgJ");
   });
 
   it("presence:state 이벤트 핸들러가 onPresenceState를 호출한다", () => {
