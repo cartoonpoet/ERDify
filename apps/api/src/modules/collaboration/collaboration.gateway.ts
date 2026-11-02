@@ -19,6 +19,15 @@ import { DiagramsService } from "../diagrams/diagrams.service";
 
 const ACCESS_RECHECK_MS = 30_000;
 
+/**
+ * Automerge 바이트를 숫자 배열(JSON)로 보내면 원래 크기의 약 3.6배다(#143). join에 encoding: "base64"를
+ * 보낸 소켓엔 base64 문자열(약 1.33배)로, 그 전 버전 웹(열려 있던 탭)엔 숫자 배열로 보낸다.
+ * Socket.IO 바이너리는 메시지 하나가 프레임 2개로 나뉘어 200명 동시 편집에서 지연이 2배 넘게 늘어서 쓰지 않는다.
+ */
+const base64Room = (diagramId: string) => `${diagramId}:am-base64`;
+const legacyRoom = (diagramId: string) => `${diagramId}:am-legacy`;
+const toBase64 = (bytes: Uint8Array) => Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("base64");
+
 @WebSocketGateway({
   namespace: "/collaboration",
   cors: {
@@ -86,7 +95,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   @SubscribeMessage("join")
   async handleJoin(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { diagramId: string }
+    @MessageBody() payload: { diagramId: string; encoding?: "base64" }
   ): Promise<void> {
     if (!client.data.userId) { client.disconnect(); return; }
     const { diagramId } = payload;
@@ -101,11 +110,12 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     }
 
     try {
+      const base64 = payload.encoding === "base64";
       client.data.diagramId = diagramId;
-      client.join(diagramId);
+      client.join([diagramId, base64 ? base64Room(diagramId) : legacyRoom(diagramId)]);
 
       const docBytes = await this.collaborationService.joinRoom(diagramId);
-      client.emit("am:init", Array.from(docBytes));
+      client.emit("am:init", base64 ? toBase64(docBytes) : Array.from(docBytes));
 
       this.collaborationService.addPresence(
         diagramId,
@@ -125,7 +135,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   @SubscribeMessage("am:change")
   async handleChange(
     @ConnectedSocket() client: Socket,
-    @MessageBody() change: number[]
+    @MessageBody() change: string | number[]
   ): Promise<void> {
     const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
     if (!diagramId || !userId) return;
@@ -142,9 +152,10 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
       return;
     }
 
-    const changeBytes = Uint8Array.from(change);
+    const changeBytes = typeof change === "string" ? Buffer.from(change, "base64") : Uint8Array.from(change);
     this.collaborationService.applyChanges(diagramId, [changeBytes]);
-    client.to(diagramId).emit("am:change", change);
+    client.to(base64Room(diagramId)).emit("am:change", typeof change === "string" ? change : toBase64(changeBytes));
+    client.to(legacyRoom(diagramId)).emit("am:change", Array.isArray(change) ? change : Array.from(changeBytes));
     this.collaborationService.schedulePersist(diagramId);
   }
 
@@ -160,7 +171,8 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
       payload.content as never
     );
     if (change) {
-      this.server.to(payload.diagramId).emit("am:change", Array.from(change));
+      this.server.to(base64Room(payload.diagramId)).emit("am:change", toBase64(change));
+      this.server.to(legacyRoom(payload.diagramId)).emit("am:change", Array.from(change));
     }
   }
 
