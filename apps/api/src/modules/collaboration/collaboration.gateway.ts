@@ -11,7 +11,9 @@ import {
 import { OnEvent } from "@nestjs/event-emitter";
 import { JwtService } from "@nestjs/jwt";
 import type { Server, Socket } from "socket.io";
+import type { MemberRole } from "@erdify/db";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
+import { Role } from "../../common/enums/role.enum";
 import { CollaborationService } from "./collaboration.service";
 import { DiagramsService } from "../diagrams/diagrams.service";
 
@@ -48,16 +50,16 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
 
   /**
    * am:change는 1인당 초당 여러 번 들어오므로 매번 DB로 권한을 확인하면 200명부터 전달이 수 초씩 밀린다.
-   * 소켓·다이어그램 단위로 확인 결과를 ACCESS_RECHECK_MS 동안 재사용한다 — 멤버에서 빠진 사용자는
-   * 최대 그 시간만큼 더 편집할 수 있다.
+   * 소켓·다이어그램 단위로 확인한 역할을 ACCESS_RECHECK_MS 동안 재사용한다 — 멤버에서 빠지거나
+   * 보기 권한으로 바뀐 사용자는 최대 그 시간만큼 더 편집할 수 있다. 멤버가 아니면 null.
    */
-  private async hasDiagramAccess(client: Socket, diagramId: string, userId: string): Promise<boolean> {
-    const cached = client.data.access as { diagramId: string; until: number } | undefined;
-    if (cached?.diagramId === diagramId && cached.until > Date.now()) return true;
+  private async getAccessRole(client: Socket, diagramId: string, userId: string): Promise<MemberRole | null> {
+    const cached = client.data.access as { diagramId: string; role: MemberRole; until: number } | undefined;
+    if (cached?.diagramId === diagramId && cached.until > Date.now()) return cached.role;
 
-    const permitted = await this.diagramsService.canAccessDiagram(diagramId, userId);
-    client.data.access = permitted ? { diagramId, until: Date.now() + ACCESS_RECHECK_MS } : undefined;
-    return permitted;
+    const role = await this.diagramsService.getDiagramRole(diagramId, userId);
+    client.data.access = role ? { diagramId, role, until: Date.now() + ACCESS_RECHECK_MS } : undefined;
+    return role;
   }
 
   handleConnection(client: Socket): void {
@@ -91,8 +93,8 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
 
     // 입장은 항상 DB로 새로 확인하고, 그 결과로 편집용 캐시를 채운다
     client.data.access = undefined;
-    const permitted = await this.hasDiagramAccess(client, diagramId, client.data.userId as string);
-    if (!permitted) {
+    const role = await this.getAccessRole(client, diagramId, client.data.userId as string);
+    if (!role) {
       client.emit("error", { message: "Forbidden" });
       client.disconnect();
       return;
@@ -128,10 +130,15 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
     if (!diagramId || !userId) return;
 
-    const permitted = await this.hasDiagramAccess(client, diagramId, userId);
-    if (!permitted) {
+    const role = await this.getAccessRole(client, diagramId, userId);
+    if (!role) {
       client.emit("error", { message: "Forbidden" });
       client.disconnect();
+      return;
+    }
+    // 보기 권한은 실시간 화면은 계속 봐야 하므로 연결은 두고 편집만 버린다(REST 수정과 같은 기준)
+    if (role === Role.Viewer) {
+      client.emit("error", { message: "Forbidden" });
       return;
     }
 

@@ -3,6 +3,7 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Diagram, Organization, Project } from "@erdify/db";
+import type { MemberRole } from "@erdify/db";
 import type { Repository } from "typeorm";
 import { AuthorizationService } from "../../../common/services/authorization.service";
 import type { DiagramDocument } from "@erdify/domain";
@@ -236,24 +237,29 @@ export class DiagramsCrudService {
   /**
    * 협업 소켓이 편집마다 부르는 경로라 가볍게 유지한다 — content(jsonb)는 테이블 1000개면
    * 1.6MB라서 읽지 않고 권한 판단에 필요한 projectId·organizationId만 조회한다.
+   * 멤버가 아니거나 다이어그램이 없으면 null.
    */
-  async canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {
+  async getDiagramRole(diagramId: string, userId: string): Promise<MemberRole | null> {
     const diagram = await this.diagramRepo.findOne({
       where: { id: diagramId },
       select: { id: true, projectId: true },
     });
-    if (!diagram) return false;
+    if (!diagram) return null;
     const project = await this.projectRepo.findOne({
       where: { id: diagram.projectId },
       select: { id: true, organizationId: true },
     });
-    if (!project) return false;
+    if (!project) return null;
     try {
-      await this.authorizationService.requireMember(project.organizationId, userId);
-      return true;
+      const member = await this.authorizationService.requireMember(project.organizationId, userId);
+      return member.role;
     } catch {
-      return false;
+      return null;
     }
+  }
+
+  async canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {
+    return (await this.getDiagramRole(diagramId, userId)) !== null;
   }
 
   async assertReadAccess(diagramId: string, userId: string): Promise<void> {

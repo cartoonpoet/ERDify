@@ -1055,6 +1055,16 @@ describe("DiagramsService", () => {
       memberRepo.findOne.mockResolvedValue(null);
       await expect(service.canAccessDiagram("diag-1", "user-1")).resolves.toBe(false);
     });
+
+    it("getDiagramRole은 멤버 역할을, 멤버가 아니면 null을 돌려준다", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram());
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+      await expect(service.getDiagramRole("diag-1", "user-1")).resolves.toBe("viewer");
+
+      memberRepo.findOne.mockResolvedValue(null);
+      await expect(service.getDiagramRole("diag-1", "user-1")).resolves.toBeNull();
+    });
   });
 
   describe("getActiveUsers", () => {
