@@ -1,4 +1,4 @@
-import { Logger } from "@nestjs/common";
+import { BeforeApplicationShutdown, Logger } from "@nestjs/common";
 import {
   ConnectedSocket,
   MessageBody,
@@ -11,9 +11,22 @@ import {
 import { OnEvent } from "@nestjs/event-emitter";
 import { JwtService } from "@nestjs/jwt";
 import type { Server, Socket } from "socket.io";
+import type { MemberRole } from "@erdify/db";
 import type { JwtPayload } from "../auth/strategies/jwt.strategy";
+import { Role } from "../../common/enums/role.enum";
 import { CollaborationService } from "./collaboration.service";
 import { DiagramsService } from "../diagrams/diagrams.service";
+
+const ACCESS_RECHECK_MS = 30_000;
+
+/**
+ * Automerge 바이트를 숫자 배열(JSON)로 보내면 원래 크기의 약 3.6배다(#143). join에 encoding: "base64"를
+ * 보낸 소켓엔 base64 문자열(약 1.33배)로, 그 전 버전 웹(열려 있던 탭)엔 숫자 배열로 보낸다.
+ * Socket.IO 바이너리는 메시지 하나가 프레임 2개로 나뉘어 200명 동시 편집에서 지연이 2배 넘게 늘어서 쓰지 않는다.
+ */
+const base64Room = (diagramId: string) => `${diagramId}:am-base64`;
+const legacyRoom = (diagramId: string) => `${diagramId}:am-legacy`;
+const toBase64 = (bytes: Uint8Array) => Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("base64");
 
 @WebSocketGateway({
   namespace: "/collaboration",
@@ -24,7 +37,7 @@ import { DiagramsService } from "../diagrams/diagrams.service";
     credentials: true,
   },
 })
-export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisconnect, BeforeApplicationShutdown {
   @WebSocketServer() server!: Server;
   private readonly logger = new Logger(CollaborationGateway.name);
 
@@ -44,7 +57,21 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     return bearer ? bearer.replace("Bearer ", "") : null;
   }
 
-  async handleConnection(client: Socket): Promise<void> {
+  /**
+   * am:change는 1인당 초당 여러 번 들어오므로 매번 DB로 권한을 확인하면 200명부터 전달이 수 초씩 밀린다.
+   * 소켓·다이어그램 단위로 확인한 역할을 ACCESS_RECHECK_MS 동안 재사용한다 — 멤버에서 빠지거나
+   * 보기 권한으로 바뀐 사용자는 최대 그 시간만큼 더 편집할 수 있다. 멤버가 아니면 null.
+   */
+  private async getAccessRole(client: Socket, diagramId: string, userId: string): Promise<MemberRole | null> {
+    const cached = client.data.access as { diagramId: string; role: MemberRole; until: number } | undefined;
+    if (cached?.diagramId === diagramId && cached.until > Date.now()) return cached.role;
+
+    const role = await this.diagramsService.getDiagramRole(diagramId, userId);
+    client.data.access = role ? { diagramId, role, until: Date.now() + ACCESS_RECHECK_MS } : undefined;
+    return role;
+  }
+
+  handleConnection(client: Socket): void {
     try {
       const token = this.extractToken(client);
       if (!token) throw new Error("no token");
@@ -58,9 +85,9 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   async handleDisconnect(client: Socket): Promise<void> {
-    const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
-    if (!diagramId || !userId) return;
-    await this.collaborationService.leaveRoom(diagramId, userId);
+    const { diagramId } = client.data as { diagramId?: string };
+    if (!diagramId) return;
+    await this.collaborationService.leaveRoom(diagramId, client.id);
     const presence = this.collaborationService.getPresence(diagramId);
     this.server.to(diagramId).emit("presence:state", presence);
   }
@@ -68,24 +95,27 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   @SubscribeMessage("join")
   async handleJoin(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { diagramId: string }
+    @MessageBody() payload: { diagramId: string; encoding?: "base64" }
   ): Promise<void> {
     if (!client.data.userId) { client.disconnect(); return; }
     const { diagramId } = payload;
 
-    const permitted = await this.diagramsService.canAccessDiagram(diagramId, client.data.userId as string);
-    if (!permitted) {
+    // 입장은 항상 DB로 새로 확인하고, 그 결과로 편집용 캐시를 채운다
+    client.data.access = undefined;
+    const role = await this.getAccessRole(client, diagramId, client.data.userId as string);
+    if (!role) {
       client.emit("error", { message: "Forbidden" });
       client.disconnect();
       return;
     }
 
     try {
+      const base64 = payload.encoding === "base64";
       client.data.diagramId = diagramId;
-      client.join(diagramId);
+      await client.join([diagramId, base64 ? base64Room(diagramId) : legacyRoom(diagramId)]);
 
       const docBytes = await this.collaborationService.joinRoom(diagramId);
-      client.emit("am:init", Array.from(docBytes));
+      client.emit("am:init", base64 ? toBase64(docBytes) : Array.from(docBytes));
 
       this.collaborationService.addPresence(
         diagramId,
@@ -105,21 +135,27 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
   @SubscribeMessage("am:change")
   async handleChange(
     @ConnectedSocket() client: Socket,
-    @MessageBody() change: number[]
+    @MessageBody() change: string | number[]
   ): Promise<void> {
     const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
     if (!diagramId || !userId) return;
 
-    const permitted = await this.diagramsService.canAccessDiagram(diagramId, userId);
-    if (!permitted) {
+    const role = await this.getAccessRole(client, diagramId, userId);
+    if (!role) {
       client.emit("error", { message: "Forbidden" });
       client.disconnect();
       return;
     }
+    // 보기 권한은 실시간 화면은 계속 봐야 하므로 연결은 두고 편집만 버린다(REST 수정과 같은 기준)
+    if (role === Role.Viewer) {
+      client.emit("error", { message: "Forbidden" });
+      return;
+    }
 
-    const changeBytes = Uint8Array.from(change);
+    const changeBytes = typeof change === "string" ? Buffer.from(change, "base64") : Uint8Array.from(change);
     this.collaborationService.applyChanges(diagramId, [changeBytes]);
-    client.to(diagramId).emit("am:change", change);
+    client.to(base64Room(diagramId)).emit("am:change", typeof change === "string" ? change : toBase64(changeBytes));
+    client.to(legacyRoom(diagramId)).emit("am:change", Array.isArray(change) ? change : Array.from(changeBytes));
     this.collaborationService.schedulePersist(diagramId);
   }
 
@@ -135,7 +171,8 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
       payload.content as never
     );
     if (change) {
-      this.server.to(payload.diagramId).emit("am:change", Array.from(change));
+      this.server.to(base64Room(payload.diagramId)).emit("am:change", toBase64(change));
+      this.server.to(legacyRoom(payload.diagramId)).emit("am:change", Array.from(change));
     }
   }
 
@@ -162,5 +199,15 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     this.collaborationService.updatePresence(diagramId, userId, data);
     const presence = this.collaborationService.getPresence(diagramId);
     this.server.to(diagramId).emit("presence:state", presence);
+  }
+
+  /**
+   * 배포(SIGTERM) 시 열린 방을 모두 저장한다. persistAll이 스냅샷을 동기로 뜬 직후 소켓을 끊으므로
+   * 저장에서 빠지는 편집이 없다. DB 연결은 그다음 단계(onApplicationShutdown)에서 닫힌다.
+   */
+  async beforeApplicationShutdown(): Promise<void> {
+    const persisted = this.collaborationService.persistAll();
+    this.server.disconnectSockets(true);
+    await persisted;
   }
 }

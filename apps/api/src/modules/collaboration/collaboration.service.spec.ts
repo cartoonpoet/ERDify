@@ -108,14 +108,14 @@ describe("CollaborationService", () => {
       service.addPresence("d1", "u1", "socket1", "u1@example.com");
       // Add a second user so the room isn't deleted (no persist triggered)
       service.addPresence("d1", "u2", "socket2", "u2@example.com");
-      await service.leaveRoom("d1", "u1");
+      await service.leaveRoom("d1", "socket1");
       expect(service.getPresence("d1")).toHaveLength(1);
     });
 
     it("leaveRoom deletes the room so re-join queries the DB again", async () => {
       mockRepo.update.mockResolvedValue(undefined);
       service.addPresence("d1", "u1", "socket1", "u1@example.com");
-      await service.leaveRoom("d1", "u1");
+      await service.leaveRoom("d1", "socket1");
       // Room is gone — next joinRoom must hit the DB
       mockRepo.findOne.mockResolvedValue(mockDiagram);
       await service.joinRoom("d1");
@@ -126,8 +126,38 @@ describe("CollaborationService", () => {
     it("leaveRoom persists before deleting room when last user leaves", async () => {
       mockRepo.update.mockResolvedValue(undefined);
       service.addPresence("d1", "u1", "socket1", "u1@example.com");
-      await service.leaveRoom("d1", "u1");
+      await service.leaveRoom("d1", "socket1");
       expect(mockRepo.update).toHaveBeenCalledWith({ id: "d1" }, expect.objectContaining({ content: expect.any(Object) }));
+    });
+
+    // 부하 테스트: 같은 계정으로 탭 2개 → 탭 1 닫기 → 탭 2 편집이 Room not found로 유실됐다
+    describe("같은 사용자가 탭 여러 개", () => {
+      beforeEach(() => {
+        mockRepo.update.mockResolvedValue(undefined);
+        service.addPresence("d1", "u1", "tab1", "u1@example.com");
+        service.addPresence("d1", "u1", "tab2", "u1@example.com");
+      });
+
+      it("presence에는 사용자당 한 번만 보인다", () => {
+        expect(service.getPresence("d1")).toHaveLength(1);
+      });
+
+      it("탭 하나를 닫아도 방과 presence가 남고, 남은 탭의 편집이 적용된다", async () => {
+        await service.leaveRoom("d1", "tab1");
+
+        expect(service.getPresence("d1")).toMatchObject([{ userId: "u1" }]);
+        expect(mockRepo.update).not.toHaveBeenCalled();
+        const change = Automerge.getAllChanges(Automerge.change(Automerge.init<{ v: number }>(), (d) => { d.v = 1; }));
+        expect(() => service.applyChanges("d1", change)).not.toThrow();
+      });
+
+      it("마지막 탭이 닫히면 저장하고 방을 정리한다", async () => {
+        await service.leaveRoom("d1", "tab1");
+        await service.leaveRoom("d1", "tab2");
+
+        expect(service.getPresence("d1")).toEqual([]);
+        expect(mockRepo.update).toHaveBeenCalledTimes(1);
+      });
     });
   });
 
@@ -255,6 +285,91 @@ describe("CollaborationService", () => {
       service.schedulePersist("d1");
       await vi.advanceTimersByTimeAsync(30_000);
       expect(mockRepo.update).toHaveBeenCalledTimes(1);
+    });
+
+    // 부하 테스트: 1초마다 계속 편집하면 디바운스가 저장을 끝없이 미뤄 DB 저장이 0번이었다
+    it("계속 편집해도 첫 미저장 편집 후 30초가 지나면 저장한다", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      mockRepo.update.mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+      for (let i = 0; i < 30; i++) {
+        service.schedulePersist("d1");
+        await vi.advanceTimersByTimeAsync(1_000);
+      }
+      expect(mockRepo.update).toHaveBeenCalledTimes(1);
+    });
+
+    it("저장 이후의 편집은 다음 주기에 다시 저장한다", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      mockRepo.update.mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+      service.schedulePersist("d1");
+      await vi.advanceTimersByTimeAsync(30_000);
+      service.schedulePersist("d1");
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(mockRepo.update).toHaveBeenCalledTimes(2);
+    });
+
+    it("저장이 실패해도 예외를 밖으로 던지지 않고 다음 편집에서 다시 예약한다", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      mockRepo.update.mockRejectedValueOnce(new Error("db down")).mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+      service.schedulePersist("d1");
+      await vi.advanceTimersByTimeAsync(30_000);
+      service.schedulePersist("d1");
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(mockRepo.update).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("persistAll (종료 시)", () => {
+    it("열린 방을 모두 저장한다", async () => {
+      mockRepo.findOne
+        .mockResolvedValueOnce(mockDiagram)
+        .mockResolvedValueOnce({ ...mockDiagram, id: "d2" } as Diagram);
+      mockRepo.update.mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+      await service.joinRoom("d2");
+
+      await service.persistAll();
+
+      expect(mockRepo.update).toHaveBeenCalledWith({ id: "d1" }, expect.anything());
+      expect(mockRepo.update).toHaveBeenCalledWith({ id: "d2" }, expect.anything());
+    });
+
+    it("종료 중 마지막 사용자가 나가도 방을 지우거나 따로 저장하지 않는다", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      mockRepo.update.mockResolvedValue(undefined);
+      await service.joinRoom("d1");
+      service.addPresence("d1", "u1", "socket1", "u1@example.com");
+
+      const persisted = service.persistAll();
+      await service.leaveRoom("d1", "socket1");
+      await persisted;
+
+      expect(mockRepo.update).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("persistNow 순서", () => {
+    // 저장이 겹치면 먼저 뜬 스냅샷이 나중에 커밋돼 최신 편집을 덮을 수 있었다
+    it("저장이 겹쳐도 스냅샷을 뜬 순서대로 DB에 쓴다", async () => {
+      mockRepo.findOne.mockResolvedValue(mockDiagram);
+      await service.joinRoom("d1");
+      const order: string[] = [];
+      let releaseFirst!: () => void;
+      mockRepo.update
+        .mockImplementationOnce(() => new Promise<void>((r) => { releaseFirst = () => { order.push("first"); r(); }; }))
+        .mockImplementationOnce(() => { order.push("second"); return Promise.resolve(); });
+
+      const first = service.persistNow("d1");
+      const second = service.persistNow("d1");
+      await Promise.resolve();
+      expect(mockRepo.update).toHaveBeenCalledTimes(1);
+      releaseFirst();
+      await Promise.all([first, second]);
+
+      expect(order).toEqual(["first", "second"]);
     });
   });
 });

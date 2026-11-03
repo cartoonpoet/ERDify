@@ -12,6 +12,8 @@ import { configureTrustProxy } from "./bootstrap-config";
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
   configureTrustProxy(app);
+  // SIGTERM(배포) 때 협업 룸의 미저장 편집을 저장할 수 있도록 종료 훅을 켠다
+  app.enableShutdownHooks();
 
   app.useBodyParser("json", { limit: "50mb" });
   app.useBodyParser("urlencoded", { limit: "50mb", extended: true } as Parameters<typeof app.useBodyParser>[1]);
