@@ -20,6 +20,8 @@ interface RoomState {
   persisting?: Promise<void>;
   doc: Automerge.Doc<DiagramDocument>;
   presence: Map<string, CollaboratorPresence>;
+  /** socketId → userId. 같은 사용자가 탭을 여러 개 열 수 있어 presence(사용자 단위)와 따로 센다 */
+  connections: Map<string, string>;
   persistTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -46,7 +48,7 @@ export class CollaborationService {
       const diagram = await this.diagramRepo.findOne({ where: { id: diagramId } });
       if (!diagram) throw new NotFoundException("Diagram not found");
       const doc = Automerge.from(diagram.content as unknown as Record<string, unknown>) as Automerge.Doc<DiagramDocument>;
-      room = { doc, presence: new Map() };
+      room = { doc, presence: new Map(), connections: new Map() };
       this.rooms.set(diagramId, room);
     }
     return Automerge.save(room.doc);
@@ -63,6 +65,8 @@ export class CollaborationService {
   addPresence(diagramId: string, userId: string, socketId: string, email: string): void {
     const room = this.rooms.get(diagramId);
     if (!room) return;
+    room.connections.set(socketId, userId);
+    if (room.presence.has(userId)) return; // 같은 사용자의 다른 탭 — 색·선택 상태는 그대로 둔다
     const colorIndex = room.presence.size % COLORS.length;
     room.presence.set(userId, {
       userId,
@@ -80,18 +84,23 @@ export class CollaborationService {
     if (existing) room.presence.set(userId, { ...existing, ...data });
   }
 
-  async leaveRoom(diagramId: string, userId: string): Promise<void> {
+  async leaveRoom(diagramId: string, socketId: string): Promise<void> {
     const room = this.rooms.get(diagramId);
     if (!room) return;
-    room.presence.delete(userId);
+    const userId = room.connections.get(socketId);
+    room.connections.delete(socketId);
+    // 사용자 단위로 지우면 탭 하나만 닫아도 방이 사라져 남은 탭의 편집이 Room not found로 유실됐다
+    if (userId && !Array.from(room.connections.values()).includes(userId)) {
+      room.presence.delete(userId);
+    }
     // 종료 중에는 persistAll이 방을 저장한다 — 여기서 방을 지우면 그 저장에서 빠진다
     if (this.shuttingDown) return;
-    if (room.presence.size === 0) {
+    if (room.connections.size === 0) {
       clearTimeout(room.persistTimer);
       await this.persistNow(diagramId);
       // Recheck after async persist: a reconnecting client may have re-joined
-      // during the DB write and added itself back to room.presence.
-      if (room.presence.size === 0) {
+      // during the DB write and added itself back to room.connections.
+      if (room.connections.size === 0) {
         this.rooms.delete(diagramId);
       }
     }
