@@ -44,7 +44,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     return bearer ? bearer.replace("Bearer ", "") : null;
   }
 
-  async handleConnection(client: Socket): Promise<void> {
+  handleConnection(client: Socket): void {
     try {
       const token = this.extractToken(client);
       if (!token) throw new Error("no token");
@@ -82,7 +82,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
 
     try {
       client.data.diagramId = diagramId;
-      client.join(diagramId);
+      await client.join(diagramId);
 
       const docBytes = await this.collaborationService.joinRoom(diagramId);
       client.emit("am:init", Array.from(docBytes));
