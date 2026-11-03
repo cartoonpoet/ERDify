@@ -71,7 +71,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     return role;
   }
 
-  async handleConnection(client: Socket): Promise<void> {
+  handleConnection(client: Socket): void {
     try {
       const token = this.extractToken(client);
       if (!token) throw new Error("no token");
@@ -112,7 +112,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     try {
       const base64 = payload.encoding === "base64";
       client.data.diagramId = diagramId;
-      client.join([diagramId, base64 ? base64Room(diagramId) : legacyRoom(diagramId)]);
+      await client.join([diagramId, base64 ? base64Room(diagramId) : legacyRoom(diagramId)]);
 
       const docBytes = await this.collaborationService.joinRoom(diagramId);
       client.emit("am:init", base64 ? toBase64(docBytes) : Array.from(docBytes));
