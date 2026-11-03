@@ -91,7 +91,7 @@ describe("useRealtimeCollaboration", () => {
       (c: unknown[]) => c[0] === "connect"
     );
     act(() => { (connectCall![1] as () => void)(); });
-    expect(mockSocket.emit).toHaveBeenCalledWith("join", { diagramId: "d1" });
+    expect(mockSocket.emit).toHaveBeenCalledWith("join", { diagramId: "d1", encoding: "base64" });
   });
 
   it("calls setDocument with doc content on am:init", async () => {
@@ -237,6 +237,32 @@ describe("useRealtimeCollaboration", () => {
     });
   });
 
+  it("am:init을 base64로 준 서버에는 변경도 base64로 보낸다(#143)", async () => {
+    mockSocket.connected = true;
+    const localDoc: DiagramDocument = {
+      ...makeEmptyDoc(),
+      entities: [{ id: "e-local", name: "Local", logicalName: null, comment: null, color: null, columns: [] }]
+    };
+    (storeHook.getState as ReturnType<typeof vi.fn>).mockReturnValueOnce({ isDirty: true, document: localDoc });
+
+    renderHook(() => useRealtimeCollaboration("d1"));
+
+    const doc = Automerge.from(makeEmptyDoc() as unknown as Record<string, unknown>);
+    const initCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "am:init"
+    );
+    await act(async () => { await (initCall![1] as (b: string) => Promise<void>)(Buffer.from(Automerge.save(doc)).toString("base64")); });
+
+    const changeCall = (mockSocket.emit as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => c[0] === "am:change"
+    );
+    expect(typeof changeCall![1]).toBe("string");
+    const [appliedDoc] = Automerge.applyChanges(doc, [Uint8Array.from(Buffer.from(changeCall![1] as string, "base64"))]);
+    expect((appliedDoc as unknown as DiagramDocument).entities).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "e-local" })])
+    );
+  });
+
   it("merges a pending local edit into a cloned server doc when isDirty on am:init (no prior am doc)", async () => {
     mockSocket.connected = true;
     const localDoc: DiagramDocument = {
@@ -263,6 +289,8 @@ describe("useRealtimeCollaboration", () => {
     );
     expect(changeCall).toBeTruthy();
 
+    // am:init을 숫자 배열로 준 예전 서버에는 숫자 배열로 보낸다 — 받은 그대로 예전 웹 탭에 전달하므로(#143)
+    expect(Array.isArray(changeCall![1])).toBe(true);
     const [appliedDoc] = Automerge.applyChanges(doc, [Uint8Array.from(changeCall![1] as number[])]);
     expect((appliedDoc as unknown as DiagramDocument).entities).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: "e-local" })])

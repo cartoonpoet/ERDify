@@ -5,7 +5,7 @@ import type { DiagramDocument } from "@erdify/domain";
 import { useEditorStore } from "@/features/editor/store/useEditorStore";
 import { applyDiff } from "@/shared/utils/collaboration-diff";
 import { applyPatchesImmutable } from "@/shared/utils/apply-patches-immutable";
-import { useCollaborationSocket } from "./useCollaborationSocket";
+import { emitChange, useCollaborationSocket } from "./useCollaborationSocket";
 import { usePresence } from "./usePresence";
 
 export type { Collaborator } from "@/features/editor/store/useEditorStore";
@@ -77,7 +77,7 @@ export const useRealtimeCollaboration = (diagramId: string) => {
       // 협업 룸 합류 완료 → 이제부터 지속성은 협업 레이어가 담당(HTTP 자동저장 비활성화)
       setCollaborating(true);
       const Automerge = await loadAutomerge();
-      const serverDoc = Automerge.load<DiagramDocument>(Uint8Array.from(bytes));
+      const serverDoc = Automerge.load<DiagramDocument>(bytes);
       const { isDirty, document: localDoc, baselineDocument } = useEditorStore.getState();
       if (isDirty && localDoc) {
         // base는 "내 편집이 시작된 기준 문서"여야 한다. 서버 문서를 base로 쓰면
@@ -91,7 +91,7 @@ export const useRealtimeCollaboration = (diagramId: string) => {
         });
         const pendingChange = Automerge.getLastLocalChange(mergedDoc);
         if (pendingChange && socketRef.current?.connected) {
-          socketRef.current.emit("am:change", Array.from(pendingChange));
+          emitChange(socketRef.current, pendingChange);
         }
         // 병합 결과를 로컬 UI에도 반영한다. 서버는 발신자에게 echo하지 않으므로
         // 이걸 빼면 병합에서 걸러진 항목(예: 부활 방지된 삭제 테이블)이 화면에 남고,
@@ -104,7 +104,7 @@ export const useRealtimeCollaboration = (diagramId: string) => {
 
     onChange: (change) => {
       if (!amDocRef.current) return;
-      pendingRemoteRef.current.push(Uint8Array.from(change));
+      pendingRemoteRef.current.push(change);
       flushTimerRef.current ??= setTimeout(() => void flushRemoteChanges(), REMOTE_FLUSH_MS);
     },
 
@@ -125,7 +125,7 @@ export const useRealtimeCollaboration = (diagramId: string) => {
         if (change) {
           amDocRef.current = newAmDoc;
           if (mirrorRef.current) mirrorRef.current = applyPatchesImmutable(mirrorRef.current, patches, Automerge.applyPatch);
-          socket.emit("am:change", Array.from(change));
+          emitChange(socket, change);
         }
       }),
 
