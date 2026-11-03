@@ -76,21 +76,21 @@ describe("CollaborationGateway", () => {
   describe("handleConnection", () => {
     it("disconnects if no token provided", async () => {
       const client = makeSocket({ handshake: { auth: {} } });
-      await gateway.handleConnection(client);
+      gateway.handleConnection(client);
       expect(client.disconnect).toHaveBeenCalled();
     });
 
     it("disconnects if token is invalid", async () => {
       mockJwt.verify.mockImplementation(() => { throw new Error("invalid"); });
       const client = makeSocket();
-      await gateway.handleConnection(client);
+      gateway.handleConnection(client);
       expect(client.disconnect).toHaveBeenCalled();
     });
 
     it("sets userId on client.data when token is valid", async () => {
       mockJwt.verify.mockReturnValue({ sub: "user-1", email: "a@b.com" });
       const client = makeSocket();
-      await gateway.handleConnection(client);
+      gateway.handleConnection(client);
       expect(client.data.userId).toBe("user-1");
       expect(client.disconnect).not.toHaveBeenCalled();
     });
