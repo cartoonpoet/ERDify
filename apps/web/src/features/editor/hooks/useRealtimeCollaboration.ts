@@ -16,16 +16,47 @@ function loadAutomerge() {
   return _amPromise;
 }
 
+// 원격 변경을 이 간격으로 모아 한 번에 적용한다. 변경마다 문서 전체를 복사·재렌더하면
+// 초당 수백 건이 들어올 때 탭이 멈췄다(#137). 백그라운드 탭에서는 브라우저가 타이머를
+// 1초 단위로 늦추므로 그만큼 더 크게 묶인다.
+const REMOTE_FLUSH_MS = 50;
+
 export const useRealtimeCollaboration = (diagramId: string) => {
   const amDocRef = useRef<Doc<DiagramDocument> | null>(null);
   const isRemoteRef = useRef(false);
+  const pendingRemoteRef = useRef<Uint8Array[]>([]);
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setDocument = useEditorStore((s) => s.setDocument);
   const setCollaborators = useEditorStore((s) => s.setCollaborators);
   const setCollaborating = useEditorStore((s) => s.setCollaborating);
 
+  const clearPendingRemote = () => {
+    if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
+    flushTimerRef.current = null;
+    pendingRemoteRef.current = [];
+  };
+
+  const flushRemoteChanges = async () => {
+    flushTimerRef.current = null;
+    const changes = pendingRemoteRef.current;
+    pendingRemoteRef.current = [];
+    if (changes.length === 0) return;
+    const Automerge = await loadAutomerge();
+    if (!amDocRef.current) return;
+    const [newDoc] = Automerge.applyChanges(amDocRef.current, changes);
+    amDocRef.current = newDoc;
+    const wasDirty = useEditorStore.getState().isDirty;
+    isRemoteRef.current = true;
+    setDocument(structuredClone(newDoc) as DiagramDocument);
+    isRemoteRef.current = false;
+    if (wasDirty) useEditorStore.setState({ isDirty: true });
+  };
+
   const socketRef = useCollaborationSocket(diagramId, {
     onInit: async (bytes) => {
+      // 서버 문서가 이전 세션의 원격 변경까지 담고 있으므로 쌓여 있던 것은 버린다
+      clearPendingRemote();
       // 협업 룸 합류 완료 → 이제부터 지속성은 협업 레이어가 담당(HTTP 자동저장 비활성화)
       setCollaborating(true);
       const Automerge = await loadAutomerge();
@@ -60,16 +91,10 @@ export const useRealtimeCollaboration = (diagramId: string) => {
       isRemoteRef.current = false;
     },
 
-    onChange: async (change) => {
+    onChange: (change) => {
       if (!amDocRef.current) return;
-      const Automerge = await loadAutomerge();
-      const [newDoc] = Automerge.applyChanges(amDocRef.current, [Uint8Array.from(change)]);
-      amDocRef.current = newDoc;
-      const wasDirty = useEditorStore.getState().isDirty;
-      isRemoteRef.current = true;
-      setDocument(structuredClone(newDoc) as DiagramDocument);
-      isRemoteRef.current = false;
-      if (wasDirty) useEditorStore.setState({ isDirty: true });
+      pendingRemoteRef.current.push(Uint8Array.from(change));
+      flushTimerRef.current ??= setTimeout(() => void flushRemoteChanges(), REMOTE_FLUSH_MS);
     },
 
     onPresenceState: (presence) => setCollaborators(presence),
@@ -92,6 +117,7 @@ export const useRealtimeCollaboration = (diagramId: string) => {
       }),
 
     onDisconnect: () => {
+      clearPendingRemote();
       amDocRef.current = null;
       setCollaborators([]);
       // 협업 끊김 → HTTP 자동저장을 백업 지속성 경로로 다시 활성화
