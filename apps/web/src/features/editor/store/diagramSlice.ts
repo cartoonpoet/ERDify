@@ -52,6 +52,12 @@ export interface DiagramSlice {
   indexesByEntityId: Map<string, DiagramIndex[]>;
   allSchemas: string[];
   setDocument: (doc: DiagramDocument) => void;
+  /**
+   * 협업 원격 변경 반영. setDocument와 같은 의미(권위 문서 교체, 되돌리기 기록 비움)지만
+   * 노드를 전부 새로 만들지 않고 updateNodes로 바뀐 테이블만 갱신하며 isDirty는 건드리지 않는다.
+   * doc은 바뀌지 않은 부분의 참조를 유지한 문서여야 효과가 있다(#139).
+   */
+  applyRemoteDocument: (doc: DiagramDocument) => void;
   applyCommand: (fn: (doc: DiagramDocument) => DiagramDocument) => void;
   applyNodeChanges: (changes: NodeChange<EditableTableNodeType>[]) => void;
   setCanEdit: (canEdit: boolean) => void;
@@ -83,6 +89,28 @@ export const createDiagramSlice: StateCreator<EditorState, [], [], DiagramSlice>
       indexesByEntityId: computeIndexesByEntityId(doc),
       allSchemas: getSchemasFromDocument(doc.entities),
     })),
+
+  applyRemoteDocument: (next) => {
+    const { document, nodes, collaborators, edges, fkColumnIds, indexesByEntityId, allSchemas } = get();
+    if (!document) {
+      get().setDocument(next);
+      return;
+    }
+    const relationshipsChanged = next.relationships !== document.relationships;
+    const indexesChanged = next.indexes !== document.indexes;
+    const entitiesChanged = next.entities !== document.entities;
+
+    set({
+      document: next,
+      baselineDocument: next,
+      nodes: updateNodes(document, next, nodes, collaborators),
+      edges: relationshipsChanged ? docToEdges(next) : edges,
+      history: [],
+      fkColumnIds: relationshipsChanged ? computeFkColumnIds(next) : fkColumnIds,
+      indexesByEntityId: indexesChanged ? computeIndexesByEntityId(next) : indexesByEntityId,
+      allSchemas: computeAllSchemas(next.entities, entitiesChanged, allSchemas),
+    });
+  },
 
   applyCommand: (fn) => {
     const { document, nodes, collaborators, edges, history, fkColumnIds, indexesByEntityId, allSchemas } = get();

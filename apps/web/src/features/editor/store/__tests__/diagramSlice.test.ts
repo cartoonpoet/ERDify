@@ -189,3 +189,43 @@ describe("DiagramSlice - undo", () => {
     expect(store.getState().history).toHaveLength(0);
   });
 });
+
+// #139: 원격 변경마다 노드를 전부 새로 만들면 큰 다이어그램에서 매번 전체가 다시 그려졌다
+describe("DiagramSlice - applyRemoteDocument", () => {
+  it("바뀐 테이블의 노드만 새로 만들고 나머지 노드는 그대로 둔다", () => {
+    const store = makeStore();
+    const doc = makeDoc();
+    store.getState().setDocument(doc);
+    const [n1, n2] = store.getState().nodes;
+
+    const next = { ...doc, layout: { entityPositions: { ...doc.layout.entityPositions, e2: { x: 300, y: 500 } } } };
+    store.getState().applyRemoteDocument(next);
+
+    const [m1, m2] = store.getState().nodes;
+    expect(m1).toBe(n1);
+    expect(m2).not.toBe(n2);
+    expect(m2!.position).toEqual({ x: 300, y: 500 });
+    expect(store.getState().document).toBe(next);
+    expect(store.getState().baselineDocument).toBe(next);
+  });
+
+  it("isDirty는 유지하고, 되돌리기 기록은 setDocument처럼 비운다", () => {
+    const store = makeStore();
+    const doc = makeDoc();
+    store.getState().setDocument(doc);
+    store.getState().applyCommand((d) => ({ ...d, name: "edited" }));
+    expect(store.getState().isDirty).toBe(true);
+
+    store.getState().applyRemoteDocument({ ...store.getState().document!, indexes: [] });
+
+    expect(store.getState().isDirty).toBe(true);
+    expect(store.getState().history).toEqual([]);
+    expect(store.getState().indexesByEntityId.size).toBe(0);
+  });
+
+  it("문서가 아직 없으면 setDocument처럼 동작한다", () => {
+    const store = makeStore();
+    store.getState().applyRemoteDocument(makeDoc());
+    expect(store.getState().nodes).toHaveLength(2);
+  });
+});

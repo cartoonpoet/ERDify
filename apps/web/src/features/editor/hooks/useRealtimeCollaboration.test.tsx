@@ -23,9 +23,10 @@ vi.mock("@/shared/store/useAuthStore", () => ({
 // vi.mock is hoisted to the top of the file, so variables referenced in the
 // factory must also be hoisted via vi.hoisted() to avoid "Cannot access before
 // initialization" errors.
-const { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, storeHook } =
+const { mockSetDocument, mockApplyRemoteDocument, mockSetCollaborators, mockSubscribeUnsub, storeHook } =
   vi.hoisted(() => {
     const mockSetDocument = vi.fn();
+    const mockApplyRemoteDocument = vi.fn();
     const mockSetCollaborators = vi.fn();
     const mockSetCollaborating = vi.fn();
     const mockSubscribeUnsub = vi.fn();
@@ -33,12 +34,12 @@ const { mockSetDocument, mockSetCollaborators, mockSubscribeUnsub, storeHook } =
     const mockGetState = vi.fn(() => ({ isDirty: false, document: null }));
     const mockSetState = vi.fn();
     const storeHook = Object.assign(
-      vi.fn((selector: (s: { document: null; setDocument: typeof mockSetDocument; setCollaborators: typeof mockSetCollaborators; setCollaborating: typeof mockSetCollaborating }) => unknown) =>
-        selector({ document: null, setDocument: mockSetDocument, setCollaborators: mockSetCollaborators, setCollaborating: mockSetCollaborating })
+      vi.fn((selector: (s: { document: null; setDocument: typeof mockSetDocument; applyRemoteDocument: typeof mockApplyRemoteDocument; setCollaborators: typeof mockSetCollaborators; setCollaborating: typeof mockSetCollaborating }) => unknown) =>
+        selector({ document: null, setDocument: mockSetDocument, applyRemoteDocument: mockApplyRemoteDocument, setCollaborators: mockSetCollaborators, setCollaborating: mockSetCollaborating })
       ),
       { subscribe: mockSubscribe, getState: mockGetState, setState: mockSetState }
     );
-    return { mockSetDocument, mockSetCollaborators, mockSetCollaborating, mockSubscribeUnsub, mockSubscribe, storeHook };
+    return { mockSetDocument, mockApplyRemoteDocument, mockSetCollaborators, mockSetCollaborating, mockSubscribeUnsub, mockSubscribe, storeHook };
   });
 
 vi.mock("@/features/editor/store/useEditorStore", () => ({
@@ -109,7 +110,7 @@ describe("useRealtimeCollaboration", () => {
     );
   });
 
-  it("calls setDocument on am:change with updated content", async () => {
+  it("calls applyRemoteDocument on am:change with updated content", async () => {
     renderHook(() => useRealtimeCollaboration("d1"));
 
     const doc = Automerge.from(makeEmptyDoc() as unknown as Record<string, unknown>);
@@ -131,7 +132,7 @@ describe("useRealtimeCollaboration", () => {
     );
     act(() => { (changeCall![1] as (b: number[]) => void)(Array.from(change)); });
 
-    await vi.waitFor(() => expect(mockSetDocument).toHaveBeenLastCalledWith(
+    await vi.waitFor(() => expect(mockApplyRemoteDocument).toHaveBeenLastCalledWith(
       expect.objectContaining({ entities: expect.arrayContaining([expect.objectContaining({ id: "e1" })]) })
     ));
   });
@@ -148,7 +149,7 @@ describe("useRealtimeCollaboration", () => {
       const changeCall = (mockSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
         (c: unknown[]) => c[0] === "am:change"
       );
-      mockSetDocument.mockClear();
+      mockApplyRemoteDocument.mockClear();
       return { doc, unmount, onChange: changeCall![1] as (b: number[]) => void };
     };
 
@@ -172,9 +173,53 @@ describe("useRealtimeCollaboration", () => {
 
       act(() => { changes.forEach((c) => onChange(Array.from(c))); });
 
-      await vi.waitFor(() => expect(mockSetDocument).toHaveBeenCalledTimes(1));
-      const applied = mockSetDocument.mock.calls[0]![0] as DiagramDocument;
+      await vi.waitFor(() => expect(mockApplyRemoteDocument).toHaveBeenCalledTimes(1));
+      const applied = mockApplyRemoteDocument.mock.calls[0]![0] as DiagramDocument;
       expect(applied.entities).toHaveLength(20);
+    });
+
+    // #139: 원격 반영은 패치로 바뀐 부분만 새 객체로 만든다
+    it("바뀌지 않은 부분은 직전 문서와 참조가 같다", async () => {
+      const { doc, onChange } = await setupJoined();
+      const initial = mockSetDocument.mock.calls.at(-1)![0] as DiagramDocument;
+      const moved = Automerge.change(doc, (d) => {
+        ((d as unknown as DiagramDocument).layout.entityPositions)["e9"] = { x: 1, y: 2 };
+      });
+
+      act(() => { onChange(Array.from(Automerge.getLastLocalChange(moved)!)); });
+
+      await vi.waitFor(() => expect(mockApplyRemoteDocument).toHaveBeenCalledTimes(1));
+      const applied = mockApplyRemoteDocument.mock.calls[0]![0] as DiagramDocument;
+      expect(applied.layout.entityPositions["e9"]).toEqual({ x: 1, y: 2 });
+      expect(applied.entities).toBe(initial.entities);
+      expect(applied.relationships).toBe(initial.relationships);
+    });
+
+    it("내 편집 뒤 원격 변경이 와도 반영 문서가 공유 문서와 같다 (사본 동기화)", async () => {
+      mockSocket.connected = true;
+      const { doc, onChange } = await setupJoined();
+      const initial = mockSetDocument.mock.calls.at(-1)![0] as DiagramDocument;
+
+      // 내 편집: 스토어 문서가 바뀌면 구독자가 Automerge 변경을 만들어 보낸다
+      // 첫 구독이 협업 소켓의 송신 구독이다(두 번째는 usePresence)
+      const listener = (storeHook.subscribe as ReturnType<typeof vi.fn>).mock.calls[0]![0] as (s: unknown, p: unknown) => Promise<void>;
+      const localNext: DiagramDocument = {
+        ...initial,
+        entities: [{ id: "mine", name: "mine", logicalName: null, comment: null, color: null, columns: [] }],
+      };
+      await act(async () => { await listener({ document: localNext }, { document: initial }); });
+      const sent = (mockSocket.emit as ReturnType<typeof vi.fn>).mock.calls.filter((c: unknown[]) => c[0] === "am:change");
+      expect(sent).toHaveLength(1);
+
+      // 동료의 원격 편집(내 편집과 동시)
+      const remote = Automerge.change(doc, (d) => {
+        ((d as unknown as DiagramDocument).layout.entityPositions)["other"] = { x: 5, y: 5 };
+      });
+      act(() => { onChange(Array.from(Automerge.getLastLocalChange(remote)!)); });
+      await vi.waitFor(() => expect(mockApplyRemoteDocument).toHaveBeenCalledTimes(1));
+
+      const [truth] = Automerge.applyChanges(remote, [Uint8Array.from((sent[0] as [string, number[]])[1])]);
+      expect(mockApplyRemoteDocument.mock.calls[0]![0]).toEqual(structuredClone(truth));
     });
 
     it("적용 전에 연결이 끊기면 쌓인 변경을 버린다", async () => {
@@ -185,7 +230,7 @@ describe("useRealtimeCollaboration", () => {
         act(() => { onChange(Array.from(change!)); });
         unmount(); // 정리에서 onDisconnect → 쌓인 변경과 타이머를 비운다
         await act(async () => { await vi.advanceTimersByTimeAsync(100); });
-        expect(mockSetDocument).not.toHaveBeenCalled();
+        expect(mockApplyRemoteDocument).not.toHaveBeenCalled();
       } finally {
         vi.useRealTimers();
       }
