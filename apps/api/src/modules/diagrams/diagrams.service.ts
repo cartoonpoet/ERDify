@@ -1,5 +1,5 @@
 import { Inject, Injectable, forwardRef } from "@nestjs/common";
-import type { Diagram, DiagramVersion } from "@erdify/db";
+import type { Diagram, DiagramVersion, MemberRole } from "@erdify/db";
 import type { CreateDiagramDto } from "./dto/create-diagram.dto";
 import type { UpdateDiagramDto } from "./dto/update-diagram.dto";
 import type { SharePreset } from "./dto/share-diagram.dto";
@@ -56,6 +56,10 @@ export class DiagramsService {
 
   move(diagramId: string, userId: string, dto: MoveDiagramDto) {
     return this.crud.move(diagramId, userId, dto);
+  }
+
+  getDiagramRole(diagramId: string, userId: string): Promise<MemberRole | null> {
+    return this.crud.getDiagramRole(diagramId, userId);
   }
 
   canAccessDiagram(diagramId: string, userId: string): Promise<boolean> {

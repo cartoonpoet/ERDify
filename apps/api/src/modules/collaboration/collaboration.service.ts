@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Diagram } from "@erdify/db";
 import type { Repository } from "typeorm";
@@ -16,8 +16,12 @@ export interface CollaboratorPresence {
 }
 
 interface RoomState {
+  /** 저장을 방마다 한 줄로 세운다 — 겹치면 먼저 뜬 스냅샷이 나중에 커밋돼 최신 편집을 덮을 수 있다 */
+  persisting?: Promise<void>;
   doc: Automerge.Doc<DiagramDocument>;
   presence: Map<string, CollaboratorPresence>;
+  /** socketId → userId. 같은 사용자가 탭을 여러 개 열 수 있어 presence(사용자 단위)와 따로 센다 */
+  connections: Map<string, string>;
   persistTimer?: ReturnType<typeof setTimeout>;
 }
 
@@ -25,7 +29,9 @@ const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"
 
 @Injectable()
 export class CollaborationService {
+  private readonly logger = new Logger(CollaborationService.name);
   private readonly rooms = new Map<string, RoomState>();
+  private shuttingDown = false;
   private readonly persistIntervalMs: number;
 
   constructor(
@@ -42,7 +48,7 @@ export class CollaborationService {
       const diagram = await this.diagramRepo.findOne({ where: { id: diagramId } });
       if (!diagram) throw new NotFoundException("Diagram not found");
       const doc = Automerge.from(diagram.content as unknown as Record<string, unknown>) as Automerge.Doc<DiagramDocument>;
-      room = { doc, presence: new Map() };
+      room = { doc, presence: new Map(), connections: new Map() };
       this.rooms.set(diagramId, room);
     }
     return Automerge.save(room.doc);
@@ -59,6 +65,8 @@ export class CollaborationService {
   addPresence(diagramId: string, userId: string, socketId: string, email: string): void {
     const room = this.rooms.get(diagramId);
     if (!room) return;
+    room.connections.set(socketId, userId);
+    if (room.presence.has(userId)) return; // 같은 사용자의 다른 탭 — 색·선택 상태는 그대로 둔다
     const colorIndex = room.presence.size % COLORS.length;
     room.presence.set(userId, {
       userId,
@@ -76,16 +84,23 @@ export class CollaborationService {
     if (existing) room.presence.set(userId, { ...existing, ...data });
   }
 
-  async leaveRoom(diagramId: string, userId: string): Promise<void> {
+  async leaveRoom(diagramId: string, socketId: string): Promise<void> {
     const room = this.rooms.get(diagramId);
     if (!room) return;
-    room.presence.delete(userId);
-    if (room.presence.size === 0) {
+    const userId = room.connections.get(socketId);
+    room.connections.delete(socketId);
+    // 사용자 단위로 지우면 탭 하나만 닫아도 방이 사라져 남은 탭의 편집이 Room not found로 유실됐다
+    if (userId && !Array.from(room.connections.values()).includes(userId)) {
+      room.presence.delete(userId);
+    }
+    // 종료 중에는 persistAll이 방을 저장한다 — 여기서 방을 지우면 그 저장에서 빠진다
+    if (this.shuttingDown) return;
+    if (room.connections.size === 0) {
       clearTimeout(room.persistTimer);
       await this.persistNow(diagramId);
       // Recheck after async persist: a reconnecting client may have re-joined
-      // during the DB write and added itself back to room.presence.
-      if (room.presence.size === 0) {
+      // during the DB write and added itself back to room.connections.
+      if (room.connections.size === 0) {
         this.rooms.delete(diagramId);
       }
     }
@@ -133,16 +148,41 @@ export class CollaborationService {
     return Automerge.getLastLocalChange(newDoc) ?? null;
   }
 
+  /**
+   * 첫 미저장 편집 후 persistIntervalMs가 지나면 저장한다. 편집마다 타이머를 다시 거는 디바운스는
+   * 누군가 계속 편집하면 저장이 끝없이 밀려, 그 사이 재시작하면 편집이 전부 사라졌다.
+   */
   schedulePersist(diagramId: string): void {
     const room = this.rooms.get(diagramId);
-    if (!room) return;
-    clearTimeout(room.persistTimer);
-    room.persistTimer = setTimeout(() => void this.persistNow(diagramId), this.persistIntervalMs);
+    if (!room || room.persistTimer) return;
+    room.persistTimer = setTimeout(() => {
+      this.persistNow(diagramId).catch((err: Error) =>
+        this.logger.error(`Failed to persist diagram ${diagramId}`, err.stack)
+      );
+    }, this.persistIntervalMs);
+  }
+
+  /**
+   * 배포·재시작(SIGTERM) 시 게이트웨이가 소켓을 모두 끊은 뒤 부른다. 열린 방을 모두 저장하고,
+   * 이후 leaveRoom은 방을 지우지 않는다.
+   */
+  async persistAll(): Promise<void> {
+    this.shuttingDown = true;
+    await Promise.all(
+      Array.from(this.rooms.keys()).map((diagramId) =>
+        this.persistNow(diagramId).catch((err: Error) =>
+          this.logger.error(`Failed to persist diagram ${diagramId} on shutdown`, err.stack)
+        )
+      )
+    );
   }
 
   async persistNow(diagramId: string): Promise<void> {
     const room = this.rooms.get(diagramId);
     if (!room) return;
+    // 아래 스냅샷 이후의 편집은 다음 타이머가 저장하도록 비운다
+    clearTimeout(room.persistTimer);
+    delete room.persistTimer;
     // Automerge uses Proxy internally during Automerge.change() callbacks, but the
     // materialized Doc returned by Automerge.from()/applyChanges() (as stored in
     // room.doc) is a plain, non-proxied, JSON-safe object for this domain model
@@ -150,6 +190,10 @@ export class CollaborationService {
     // structuredClone against real multi-actor Automerge docs across several
     // change/delete rounds, and exercised by the passing persistNow spec below.
     const content = structuredClone(room.doc) as DiagramDocument;
-    await this.diagramRepo.update({ id: diagramId }, { content });
+    const write = (room.persisting ?? Promise.resolve()).then(async () => {
+      await this.diagramRepo.update({ id: diagramId }, { content });
+    });
+    room.persisting = write.catch(() => undefined);
+    await write;
   }
 }

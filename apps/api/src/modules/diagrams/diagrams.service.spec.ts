@@ -1031,6 +1031,42 @@ describe("DiagramsService", () => {
     });
   });
 
+  describe("canAccessDiagram", () => {
+    // 협업 소켓이 편집마다 부르는 경로 — content(jsonb)를 읽으면 큰 다이어그램에서 지연이 수 초로 늘었다
+    it("다이어그램은 id·projectId만 조회한다 (content 제외)", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram());
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+
+      await expect(service.canAccessDiagram("diag-1", "user-1")).resolves.toBe(true);
+
+      expect(diagramRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ select: { id: true, projectId: true } })
+      );
+      expect(orgRepo.findOne).not.toHaveBeenCalled();
+    });
+
+    it("다이어그램이나 멤버십이 없으면 false", async () => {
+      diagramRepo.findOne.mockResolvedValue(null);
+      await expect(service.canAccessDiagram("diag-x", "user-1")).resolves.toBe(false);
+
+      diagramRepo.findOne.mockResolvedValue(makeDiagram());
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(null);
+      await expect(service.canAccessDiagram("diag-1", "user-1")).resolves.toBe(false);
+    });
+
+    it("getDiagramRole은 멤버 역할을, 멤버가 아니면 null을 돌려준다", async () => {
+      diagramRepo.findOne.mockResolvedValue(makeDiagram());
+      projectRepo.findOne.mockResolvedValue(makeProject());
+      memberRepo.findOne.mockResolvedValue(makeMember("viewer"));
+      await expect(service.getDiagramRole("diag-1", "user-1")).resolves.toBe("viewer");
+
+      memberRepo.findOne.mockResolvedValue(null);
+      await expect(service.getDiagramRole("diag-1", "user-1")).resolves.toBeNull();
+    });
+  });
+
   describe("getActiveUsers", () => {
     const diagramIds = ["diag-1", "diag-2"];
 
