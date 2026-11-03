@@ -33,7 +33,7 @@ describe("CollaborationGateway", () => {
     syncExternalContent: vi.fn()
   };
   const mockJwt = { verify: vi.fn() };
-  const mockDiagramsService = { canAccessDiagram: vi.fn() };
+  const mockDiagramsService = { getDiagramRole: vi.fn() };
   const mockServer = { to: vi.fn().mockReturnThis(), emit: vi.fn() } as unknown as Server;
 
   beforeEach(async () => {
@@ -99,7 +99,7 @@ describe("CollaborationGateway", () => {
   describe("handleJoin", () => {
     it("joins socket room, emits am:init, broadcasts presence:state", async () => {
       const docBytes = new Uint8Array([1, 2, 3]);
-      mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
+      mockDiagramsService.getDiagramRole.mockResolvedValue("editor");
       mockService.joinRoom.mockResolvedValue(docBytes);
       mockService.getPresence.mockReturnValue([]);
       const client = makeSocket();
@@ -116,7 +116,7 @@ describe("CollaborationGateway", () => {
     });
 
     it("disconnects if user has no access to diagram", async () => {
-      mockDiagramsService.canAccessDiagram.mockResolvedValue(false);
+      mockDiagramsService.getDiagramRole.mockResolvedValue(null);
       const client = makeSocket();
       client.data.userId = "user-1";
 
@@ -134,7 +134,7 @@ describe("CollaborationGateway", () => {
       const change = [1, 2, 3];
       const client = makeSocket();
       client.data = { userId: "user-1", diagramId: "d1" };
-      mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
+      mockDiagramsService.getDiagramRole.mockResolvedValue("editor");
 
       await gateway.handleChange(client, change);
 
@@ -143,13 +143,63 @@ describe("CollaborationGateway", () => {
       expect(mockService.schedulePersist).toHaveBeenCalledWith("d1");
     });
 
+    // REST 수정은 보기 권한을 막는데 소켓은 멤버인지만 봐서 보기 권한도 편집이 들어갔다(#141)
+    describe("보기 권한", () => {
+      it("보기 권한의 편집은 반영·전달·저장하지 않고 연결은 유지한다", async () => {
+        mockDiagramsService.getDiagramRole.mockResolvedValue("viewer");
+        const client = makeSocket();
+        client.data = { userId: "user-1", diagramId: "d1" };
+
+        await gateway.handleChange(client, [1, 2, 3]);
+
+        expect(mockService.applyChanges).not.toHaveBeenCalled();
+        expect(client.to).not.toHaveBeenCalled();
+        expect(mockService.schedulePersist).not.toHaveBeenCalled();
+        expect(client.emit).toHaveBeenCalledWith("error", { message: "Forbidden" });
+        expect(client.disconnect).not.toHaveBeenCalled();
+      });
+
+      it("보기 권한도 입장해서 문서를 받는다", async () => {
+        mockDiagramsService.getDiagramRole.mockResolvedValue("viewer");
+        mockService.joinRoom.mockResolvedValue(new Uint8Array([1]));
+        mockService.getPresence.mockReturnValue([]);
+        const client = makeSocket();
+        client.data.userId = "user-1";
+
+        await gateway.handleJoin(client, { diagramId: "d1" });
+
+        expect(client.join).toHaveBeenCalledWith("d1");
+        expect(client.emit).toHaveBeenCalledWith("am:init", [1]);
+        expect(client.disconnect).not.toHaveBeenCalled();
+      });
+
+      it("편집 중 보기 권한으로 바뀌면 캐시가 끝난 뒤부터 편집을 버린다", async () => {
+        vi.useFakeTimers();
+        try {
+          mockDiagramsService.getDiagramRole.mockResolvedValue("editor");
+          const client = makeSocket();
+          client.data = { userId: "user-1", diagramId: "d1" };
+          await gateway.handleChange(client, [1]);
+
+          mockDiagramsService.getDiagramRole.mockResolvedValue("viewer");
+          vi.advanceTimersByTime(30_001);
+          await gateway.handleChange(client, [2]);
+
+          expect(mockService.applyChanges).toHaveBeenCalledTimes(1);
+          expect(client.disconnect).not.toHaveBeenCalled();
+        } finally {
+          vi.useRealTimers();
+        }
+      });
+    });
+
     // 부하 테스트: 편집마다 DB 권한 확인을 하면 200명 동시 편집에서 전달 지연이 수 초로 늘었다
     describe("권한 확인 캐시", () => {
       beforeEach(() => vi.useFakeTimers());
       afterEach(() => vi.useRealTimers());
 
       it("입장 때 확인한 권한을 30초 동안 편집에 재사용한다", async () => {
-        mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
+        mockDiagramsService.getDiagramRole.mockResolvedValue("editor");
         mockService.joinRoom.mockResolvedValue(new Uint8Array([1]));
         mockService.getPresence.mockReturnValue([]);
         const client = makeSocket();
@@ -159,28 +209,28 @@ describe("CollaborationGateway", () => {
         await gateway.handleChange(client, [1]);
         await gateway.handleChange(client, [2]);
 
-        expect(mockDiagramsService.canAccessDiagram).toHaveBeenCalledTimes(1);
+        expect(mockDiagramsService.getDiagramRole).toHaveBeenCalledTimes(1);
         expect(mockService.applyChanges).toHaveBeenCalledTimes(2);
       });
 
       it("30초가 지나면 다시 확인하고, 권한이 없어졌으면 끊는다", async () => {
-        mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
+        mockDiagramsService.getDiagramRole.mockResolvedValue("editor");
         const client = makeSocket();
         client.data = { userId: "user-1", diagramId: "d1" };
         await gateway.handleChange(client, [1]);
 
         vi.advanceTimersByTime(30_001);
-        mockDiagramsService.canAccessDiagram.mockResolvedValue(false);
+        mockDiagramsService.getDiagramRole.mockResolvedValue(null);
         await gateway.handleChange(client, [2]);
 
-        expect(mockDiagramsService.canAccessDiagram).toHaveBeenCalledTimes(2);
+        expect(mockDiagramsService.getDiagramRole).toHaveBeenCalledTimes(2);
         expect(client.emit).toHaveBeenCalledWith("error", { message: "Forbidden" });
         expect(client.disconnect).toHaveBeenCalled();
         expect(mockService.applyChanges).toHaveBeenCalledTimes(1);
       });
 
       it("다른 다이어그램 권한 캐시는 재사용하지 않는다", async () => {
-        mockDiagramsService.canAccessDiagram.mockResolvedValue(true);
+        mockDiagramsService.getDiagramRole.mockResolvedValue("editor");
         const client = makeSocket();
         client.data = { userId: "user-1", diagramId: "d1" };
         await gateway.handleChange(client, [1]);
@@ -188,7 +238,7 @@ describe("CollaborationGateway", () => {
         client.data.diagramId = "d2";
         await gateway.handleChange(client, [2]);
 
-        expect(mockDiagramsService.canAccessDiagram).toHaveBeenNthCalledWith(2, "d2", "user-1");
+        expect(mockDiagramsService.getDiagramRole).toHaveBeenNthCalledWith(2, "d2", "user-1");
       });
     });
   });
