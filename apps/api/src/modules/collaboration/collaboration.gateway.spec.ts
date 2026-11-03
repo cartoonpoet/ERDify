@@ -6,6 +6,13 @@ import { CollaborationService } from "./collaboration.service";
 import { DiagramsService } from "../diagrams/diagrams.service";
 import type { Socket, Server } from "socket.io";
 
+// to(room).emit(...)을 방별로 모은다 — base64·숫자 배열 방에 각각 무엇을 보냈는지 보려고(#143)
+function recordRoomEmits(target: { to: unknown }): Array<{ room: string; event: string; data: unknown }> {
+  const sent: Array<{ room: string; event: string; data: unknown }> = [];
+  target.to = vi.fn((room: string) => ({ emit: (event: string, data: unknown) => sent.push({ room, event, data }) }));
+  return sent;
+}
+
 function makeSocket(overrides: Partial<Record<string, unknown>> = {}): Socket {
   return {
     id: "socket-1",
@@ -53,15 +60,20 @@ describe("CollaborationGateway", () => {
   describe("handleDiagramContentUpdated", () => {
     const content = { id: "d1", entities: [] };
 
-    it("룸 동기화 change가 있으면 룸에 am:change로 브로드캐스트한다", () => {
+    it("룸 동기화 change가 있으면 base64 방엔 문자열로, 예전 방엔 숫자 배열로 보낸다", () => {
       const change = new Uint8Array([7, 8, 9]);
       mockService.syncExternalContent.mockReturnValue(change);
+      const server = { to: vi.fn() };
+      const sent = recordRoomEmits(server);
+      gateway.server = server as unknown as Server;
 
       gateway.handleDiagramContentUpdated({ diagramId: "d1", content });
 
       expect(mockService.syncExternalContent).toHaveBeenCalledWith("d1", content);
-      expect(mockServer.to).toHaveBeenCalledWith("d1");
-      expect(mockServer.emit).toHaveBeenCalledWith("am:change", [7, 8, 9]);
+      expect(sent).toEqual([
+        { room: "d1:am-base64", event: "am:change", data: "BwgJ" },
+        { room: "d1:am-legacy", event: "am:change", data: [7, 8, 9] },
+      ]);
     });
 
     it("룸이 없거나 내용이 같으면(null) 브로드캐스트하지 않는다", () => {
@@ -107,7 +119,7 @@ describe("CollaborationGateway", () => {
 
       await gateway.handleJoin(client, { diagramId: "d1" });
 
-      expect(client.join).toHaveBeenCalledWith("d1");
+      expect(client.join).toHaveBeenCalledWith(["d1", "d1:am-legacy"]);
       expect(client.data.diagramId).toBe("d1");
       expect(client.emit).toHaveBeenCalledWith("am:init", Array.from(docBytes));
       expect(mockService.addPresence).toHaveBeenCalledWith("d1", "user-1", "socket-1", undefined);
@@ -127,21 +139,52 @@ describe("CollaborationGateway", () => {
       expect(client.join).not.toHaveBeenCalled();
       expect(mockService.joinRoom).not.toHaveBeenCalled();
     });
+
+    it("encoding: base64로 들어오면 base64 방에 넣고 문서를 base64로 보낸다", async () => {
+      const docBytes = new Uint8Array([1, 2, 3]);
+      mockDiagramsService.getDiagramRole.mockResolvedValue("editor");
+      mockService.joinRoom.mockResolvedValue(docBytes);
+      mockService.getPresence.mockReturnValue([]);
+      const client = makeSocket();
+      client.data.userId = "user-1";
+
+      await gateway.handleJoin(client, { diagramId: "d1", encoding: "base64" });
+
+      expect(client.join).toHaveBeenCalledWith(["d1", "d1:am-base64"]);
+      expect(client.emit).toHaveBeenCalledWith("am:init", "AQID");
+    });
   });
 
   describe("handleChange", () => {
     it("applies changes, broadcasts am:change to others in room, schedules persist", async () => {
       const change = [1, 2, 3];
       const client = makeSocket();
+      const sent = recordRoomEmits(client as unknown as { to: unknown });
       client.data = { userId: "user-1", diagramId: "d1" };
       mockDiagramsService.getDiagramRole.mockResolvedValue("editor");
 
       await gateway.handleChange(client, change);
 
       expect(mockService.applyChanges).toHaveBeenCalledWith("d1", [Uint8Array.from(change)]);
-      expect(client.to).toHaveBeenCalledWith("d1");
+      expect(sent).toEqual([
+        { room: "d1:am-base64", event: "am:change", data: "AQID" },
+        { room: "d1:am-legacy", event: "am:change", data: [1, 2, 3] },
+      ]);
       expect(mockService.schedulePersist).toHaveBeenCalledWith("d1");
     });
+
+    it("base64로 받은 변경도 반영하고 두 형식으로 전달한다", async () => {
+      const change = "BAUG"; // [4, 5, 6]
+      const client = makeSocket();
+      const sent = recordRoomEmits(client as unknown as { to: unknown });
+      client.data = { userId: "user-1", diagramId: "d1" };
+      mockDiagramsService.getDiagramRole.mockResolvedValue("editor");
+
+      await gateway.handleChange(client, change);
+
+      expect(mockService.applyChanges).toHaveBeenCalledWith("d1", [Buffer.from([4, 5, 6])]);
+      expect(sent.map((m) => m.data)).toEqual(["BAUG", [4, 5, 6]]);
+      });
 
     // REST 수정은 보기 권한을 막는데 소켓은 멤버인지만 봐서 보기 권한도 편집이 들어갔다(#141)
     describe("보기 권한", () => {
@@ -168,7 +211,7 @@ describe("CollaborationGateway", () => {
 
         await gateway.handleJoin(client, { diagramId: "d1" });
 
-        expect(client.join).toHaveBeenCalledWith("d1");
+        expect(client.join).toHaveBeenCalledWith(["d1", "d1:am-legacy"]);
         expect(client.emit).toHaveBeenCalledWith("am:init", [1]);
         expect(client.disconnect).not.toHaveBeenCalled();
       });
