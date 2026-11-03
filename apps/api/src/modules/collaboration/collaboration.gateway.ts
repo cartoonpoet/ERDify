@@ -1,4 +1,4 @@
-import { Logger } from "@nestjs/common";
+import { BeforeApplicationShutdown, Logger } from "@nestjs/common";
 import {
   ConnectedSocket,
   MessageBody,
@@ -37,7 +37,7 @@ const toBase64 = (bytes: Uint8Array) => Buffer.from(bytes.buffer, bytes.byteOffs
     credentials: true,
   },
 })
-export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisconnect, BeforeApplicationShutdown {
   @WebSocketServer() server!: Server;
   private readonly logger = new Logger(CollaborationGateway.name);
 
@@ -199,5 +199,15 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     this.collaborationService.updatePresence(diagramId, userId, data);
     const presence = this.collaborationService.getPresence(diagramId);
     this.server.to(diagramId).emit("presence:state", presence);
+  }
+
+  /**
+   * 배포(SIGTERM) 시 열린 방을 모두 저장한다. persistAll이 스냅샷을 동기로 뜬 직후 소켓을 끊으므로
+   * 저장에서 빠지는 편집이 없다. DB 연결은 그다음 단계(onApplicationShutdown)에서 닫힌다.
+   */
+  async beforeApplicationShutdown(): Promise<void> {
+    const persisted = this.collaborationService.persistAll();
+    this.server.disconnectSockets(true);
+    await persisted;
   }
 }
