@@ -15,6 +15,8 @@ import type { JwtPayload } from "../auth/strategies/jwt.strategy";
 import { CollaborationService } from "./collaboration.service";
 import { DiagramsService } from "../diagrams/diagrams.service";
 
+const ACCESS_RECHECK_MS = 30_000;
+
 @WebSocketGateway({
   namespace: "/collaboration",
   cors: {
@@ -44,7 +46,21 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     return bearer ? bearer.replace("Bearer ", "") : null;
   }
 
-  async handleConnection(client: Socket): Promise<void> {
+  /**
+   * am:change는 1인당 초당 여러 번 들어오므로 매번 DB로 권한을 확인하면 200명부터 전달이 수 초씩 밀린다.
+   * 소켓·다이어그램 단위로 확인 결과를 ACCESS_RECHECK_MS 동안 재사용한다 — 멤버에서 빠진 사용자는
+   * 최대 그 시간만큼 더 편집할 수 있다.
+   */
+  private async hasDiagramAccess(client: Socket, diagramId: string, userId: string): Promise<boolean> {
+    const cached = client.data.access as { diagramId: string; until: number } | undefined;
+    if (cached?.diagramId === diagramId && cached.until > Date.now()) return true;
+
+    const permitted = await this.diagramsService.canAccessDiagram(diagramId, userId);
+    client.data.access = permitted ? { diagramId, until: Date.now() + ACCESS_RECHECK_MS } : undefined;
+    return permitted;
+  }
+
+  handleConnection(client: Socket): void {
     try {
       const token = this.extractToken(client);
       if (!token) throw new Error("no token");
@@ -73,7 +89,9 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     if (!client.data.userId) { client.disconnect(); return; }
     const { diagramId } = payload;
 
-    const permitted = await this.diagramsService.canAccessDiagram(diagramId, client.data.userId as string);
+    // 입장은 항상 DB로 새로 확인하고, 그 결과로 편집용 캐시를 채운다
+    client.data.access = undefined;
+    const permitted = await this.hasDiagramAccess(client, diagramId, client.data.userId as string);
     if (!permitted) {
       client.emit("error", { message: "Forbidden" });
       client.disconnect();
@@ -82,7 +100,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
 
     try {
       client.data.diagramId = diagramId;
-      client.join(diagramId);
+      await client.join(diagramId);
 
       const docBytes = await this.collaborationService.joinRoom(diagramId);
       client.emit("am:init", Array.from(docBytes));
@@ -110,7 +128,7 @@ export class CollaborationGateway implements OnGatewayConnection, OnGatewayDisco
     const { diagramId, userId } = client.data as { diagramId?: string; userId?: string };
     if (!diagramId || !userId) return;
 
-    const permitted = await this.diagramsService.canAccessDiagram(diagramId, userId);
+    const permitted = await this.hasDiagramAccess(client, diagramId, userId);
     if (!permitted) {
       client.emit("error", { message: "Forbidden" });
       client.disconnect();
